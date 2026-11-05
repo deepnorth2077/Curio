@@ -32,9 +32,11 @@ Luka 不写代码，只负责部署和验收。所以：
 - 每个交付物都要附「怎么验收」：打开什么、点哪里、应该看到什么。
 - 不要引入需要构建工具链才能运行的依赖，除非架构文档里已经决定要用。
 
-## 子模块派发
+## 知识点工作流
 
-1. Claude 用 `prompts/module-template.md` 写好提示词，存到 `prompts/<活动 id>.md`。
+每个知识点都按 `docs/workflow.md` 的八步走：一个知识点一个 PR，分支名 `kp/<知识点 id>`，PR 描述使用 `.github/pull_request_template.md`。概括如下：
+
+1. Claude 写知识点卡和提示词（`prompts/<活动 id>.md`）。
 2. 实现模型交付 `manifest.yaml` 和 `index.html`。
-3. 用 `schemas/activity.schema.json` 校验，再跑契约测试（P1 阶段建设）。
-4. Claude 初审，Luka 抽查之后合入。
+3. 自动校验通过之后，Claude 审核。
+4. 孩子试玩，Luka 写试玩记录并合入。
