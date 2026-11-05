@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deepnorth2077/curio/schemas/event.schema.json",
+  "title": "event/1 · 学习事件",
+  "description": "事件流里的一条记录，只追加、不改写。掌握度、复习计划、点亮状态都从事件流计算。",
+  "type": "object",
+  "required": ["verb", "ts"],
+  "additionalProperties": false,
+  "properties": {
+    "verb": { "type": "string", "pattern": "^[a-z_]+$", "examples": ["started", "predicted", "adjusted", "observed", "answered", "hint_used", "reflected", "completed", "question_noted", "diagnosed", "repaired", "task_done", "task_undone", "ai_call", "contract_warning"] },
+    "ts": { "type": "string", "format": "date-time" },
+    "node": { "type": "string", "pattern": "^[a-z]+(\\.[a-z0-9-]+)+$" },
+    "activity": { "type": "string" },
+    "result": { "type": "object", "description": "各动词自己的结果。answered: {correct, response, misconception}；completed: {score} 或 {experiment: true}" },
+    "kind": { "enum": ["ai", "warn"], "description": "非学习事件的分类：AI 调用、契约警告" },
+    "seed": { "type": "boolean", "description": "示例数据标记" }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deepnorth2077/curio/schemas/knode.schema.json",
+  "title": "knode/1 · 知识点",
+  "description": "一个知识点（星图上的一颗星球、地铁上的一个站）。ID 一旦发布永不复用、永不改动。",
+  "type": "object",
+  "required": ["id", "schema", "title", "subjects", "theme", "grade", "prerequisites", "status", "version"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z]+(\\.[a-z0-9-]+)+$", "description": "学科.领域.短名，例如 math.number.fraction-intro" },
+    "schema": { "const": "knode/1" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 24 },
+    "subjects": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["math", "science", "physics", "chemistry", "biology", "geography"] } },
+    "theme": { "enum": ["num", "rel", "geo", "stat", "mat", "ene", "life", "earth"], "description": "课标大概念，对应知识地铁上的一条线。num 数与运算、rel 数量关系、geo 图形与测量、stat 统计与概率、mat 物质、ene 能量与运动、life 生命、earth 地球与宇宙" },
+    "grade": { "enum": ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12"], "description": "首次出现的年级" },
+    "unit": { "type": "string", "description": "所属教材单元，例如「三上 · 分数的初步认识」" },
+    "curriculum": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "type": "object", "required": ["std", "ref"], "additionalProperties": false, "properties": { "std": { "type": "string" }, "ref": { "type": "string" } } },
+          { "type": "object", "required": ["textbook"], "additionalProperties": false, "properties": { "textbook": { "type": "string" }, "unit": { "type": ["integer", "string"] } } }
+        ]
+      },
+      "description": "课标映射（主轴）和教材映射（可挂多套）"
+    },
+    "prerequisites": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/nodeId" } },
+    "related": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/nodeId" } },
+    "driving_question": { "type": "string", "description": "开场的驱动问题，写给孩子看" },
+    "objectives": { "type": "array", "items": { "type": "string" } },
+    "misconceptions": {
+      "type": "array",
+      "items": { "type": "object", "required": ["id", "text"], "additionalProperties": false, "properties": { "id": { "type": "string", "pattern": "^[a-z0-9-]+$" }, "text": { "type": "string" } } },
+      "description": "常见误区。id 用作学习事件和错因诊断里的标签"
+    },
+    "lenses": {
+      "type": "array",
+      "items": { "type": "object", "required": ["band", "approach"], "additionalProperties": false, "properties": { "band": { "type": "string", "pattern": "^G\\d{1,2}(-\\d{1,2})?$" }, "approach": { "type": "string" } } },
+      "description": "同一个知识点在不同年龄段的讲法"
+    },
+    "activities": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^act\\.[a-z]+\\.[a-z0-9-]+$" } },
+    "icon": { "type": "string", "description": "手绘插画名；不填时用所属大概念的默认插画" },
+    "status": { "enum": ["draft", "reviewed", "published"] },
+    "version": { "type": "integer", "minimum": 1 }
+  },
+  "$defs": { "nodeId": { "type": "string", "pattern": "^[a-z]+(\\.[a-z0-9-]+)+$" } }
+}

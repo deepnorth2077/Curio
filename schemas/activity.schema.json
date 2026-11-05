@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deepnorth2077/curio/schemas/activity.schema.json",
+  "title": "activity/1.1 · 互动模块 manifest",
+  "description": "讲解、实验、测验等互动模块的描述文件。消息协议见 docs/activity-contract.md。",
+  "type": "object",
+  "required": ["id", "contract", "type", "title", "targets", "age_band", "entry", "pedagogy", "emits", "review"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^act\\.[a-z]+\\.[a-z0-9-]+$" },
+    "contract": { "const": "activity/1.1" },
+    "type": { "type": "string", "examples": ["explain", "experiment", "quiz"], "pattern": "^[a-z-]+$" },
+    "title": { "type": "string", "maxLength": 20 },
+    "targets": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[a-z]+(\\.[a-z0-9-]+)+$" } },
+    "age_band": { "type": "string", "pattern": "^G\\d{1,2}(-\\d{1,2})?$" },
+    "entry": { "const": "index.html" },
+    "capabilities": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^(pointer|keyboard|audio|ai:[a-z]+\\.[a-z_]+)$" } },
+    "duration_min": { "type": "integer", "minimum": 1, "maximum": 30 },
+    "pedagogy": { "enum": ["POE", "hint-ladder", "explain"], "description": "POE：预测 → 观察 → 解释，由平台负责前后两步" },
+    "controls": { "type": "array", "items": { "type": "object", "required": ["key", "label"], "properties": { "key": { "type": "string" }, "label": { "type": "string" }, "values": { "type": "array", "items": { "type": "string" } } } }, "description": "孩子可调的量" },
+    "observables": { "type": "array", "items": { "type": "object", "required": ["key", "label"], "properties": { "key": { "type": "string" }, "label": { "type": "string" } } }, "description": "可观测量，模块用 state 消息上报" },
+    "predict": { "type": "object", "required": ["prompt", "options", "correct"], "additionalProperties": false, "properties": { "prompt": { "type": "string" }, "options": { "type": "array", "minItems": 2, "maxItems": 5, "items": { "type": "string" } }, "correct": { "type": "integer", "minimum": 0 } } },
+    "explain": { "type": "string", "description": "解释一步里给孩子看的话，按 age_band 的措辞写" },
+    "params": { "type": "object", "description": "平台传入的可配置参数，各字段用 JSON Schema 描述" },
+    "emits": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z_]+$" } },
+    "author": { "type": "object", "properties": { "model": { "type": "string" }, "prompt_ref": { "type": "string" } } },
+    "review": { "enum": ["pending", "claude-reviewed", "approved"] }
+  },
+  "allOf": [ { "if": { "properties": { "pedagogy": { "const": "POE" } } }, "then": { "required": ["controls", "observables", "predict", "explain"] } } ]
+}

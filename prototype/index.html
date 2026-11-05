@@ -1,0 +1,1321 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>好奇号 Curio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;600&family=ZCOOL+KuaiLe&display=swap">
+<style>
+/* Layout: one navigation only — ribbon (tablet/desktop) or bottom bar (phone). Explorer = knowledge index. Centre = star chart / metro / tools. Note pane = the planet.
+   Light = warm paper with ink drawings; dark = Obsidian night. */
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6; --on-accent:#FFFFFF;
+  --c-math:#ECCDB6; --c-math-2:#D59E7A; --c-math-bg:#F2E1D3;
+  --c-sci:#CCD6C0; --c-sci-2:#93A982; --c-sci-bg:#DCE3D2;
+  --c-sky:#CFDCE6; --wash:#EFE4D6;
+  --good:#3B7A56; --bad:#B4432E;
+  --l1:#C2603F; --l2:#C9962A; --l3:#4F7FA8; --l4:#8E5B8A; --l5:#3E8C86; --l6:#D07A2E; --l7:#6E9A4E; --l8:#5D6B8A;
+  --shadow:0 1px 2px rgba(31,30,28,.06),0 8px 28px rgba(31,30,28,.08);
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --f-hand:"ZCOOL KuaiLe","Noto Sans SC","PingFang SC",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943; --on-accent:#15121F;
+  --c-math:#5A4536; --c-math-2:#9A7558; --c-math-bg:#33291F;
+  --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
+  --c-sky:#2D3B47; --wash:#2A2738; --good:#7CC79A; --bad:#EF8A72;
+  --l1:#E08A6C; --l2:#E0B65A; --l3:#7FA8D0; --l4:#B98AB5; --l5:#6CB8B1; --l6:#E9A05F; --l7:#97C277; --l8:#93A0C2;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943; --on-accent:#15121F;
+  --c-math:#5A4536; --c-math-2:#9A7558; --c-math-bg:#33291F;
+  --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
+  --c-sky:#2D3B47; --wash:#2A2738; --good:#7CC79A; --bad:#EF8A72;
+  --l1:#E08A6C; --l2:#E0B65A; --l3:#7FA8D0; --l4:#B98AB5; --l5:#6CB8B1; --l6:#E9A05F; --l7:#97C277; --l8:#93A0C2;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+h1,h2,h3{margin:0;text-wrap:balance;color:var(--ink);font-weight:600;line-height:1.3}
+p{margin:0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.hand{font-family:var(--f-hand)}
+.muted{color:var(--muted)}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.kq{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.f{fill:var(--icon-fill,var(--c-sci))}
+.f2{fill:var(--icon-fill-2,var(--c-sci-2))}
+.fa{fill:var(--accent)}
+.fp{fill:var(--pane)}
+
+/* ---------- workspace ---------- */
+.app{position:fixed;inset:0;padding-top:env(safe-area-inset-top,0px);display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;grid-template-areas:"top" "center" "nav"}
+.ribbon,.explorer,.notepane,.statusbar{display:none}
+.topbar{grid-area:top;display:flex;align-items:center;gap:4px;background:var(--side);border-bottom:1px solid var(--rule);
+  padding-block:6px;padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.topbar .title{flex:1;font-family:var(--f-serif);font-weight:600;color:var(--ink);font-size:17px;padding-left:4px}
+.ibtn{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;color:var(--muted);position:relative}
+.ibtn:hover{background:var(--hover);color:var(--ink)}
+.ibtn[aria-current="page"],.ibtn[aria-expanded="true"]{color:var(--accent);background:var(--accent-soft)}
+.ibtn svg{width:20px;height:20px}
+.badge{position:absolute;top:4px;right:4px;min-width:15px;height:15px;border-radius:9px;background:var(--accent);color:var(--on-accent);font-size:10px;font-family:var(--f-mono);display:grid;place-items:center;padding:0 3px;line-height:1}
+.bottomnav{grid-area:nav;display:grid;grid-template-columns:repeat(5,1fr);background:var(--side);border-top:1px solid var(--rule);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(4px,env(safe-area-inset-left,0px));padding-right:max(4px,env(safe-area-inset-right,0px))}
+.bottomnav a,.bottomnav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;color:var(--muted);text-decoration:none;font-size:11px;position:relative}
+.bottomnav svg{width:22px;height:22px}
+.bottomnav [aria-current="page"],.bottomnav [aria-expanded="true"]{color:var(--accent)}
+.bottomnav .badge{top:6px;right:calc(50% - 20px)}
+.center{grid-area:center;background:var(--pane);min-width:0;min-height:0;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;overflow:auto}
+.statusbar{grid-area:status;align-items:center;gap:4px;background:var(--side);border-top:1px solid var(--rule);font-size:12px;color:var(--muted);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));min-height:30px;overflow-x:auto}
+.statusbar .sp{flex:1}
+.sitem{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:6px;white-space:nowrap}
+button.sitem:hover{background:var(--hover);color:var(--ink)}
+.ribbon .sep{width:22px;height:1px;background:var(--rule);margin:6px 0}
+@media (min-width:760px){
+  .app{grid-template-columns:48px minmax(0,1fr) 340px;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"ribbon center note" "status status status"}
+  .topbar,.bottomnav{display:none}
+  .ribbon{grid-area:ribbon;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;background:var(--side);border-right:1px solid var(--rule);padding-left:env(safe-area-inset-left,0px)}
+  .ribbon .sp{flex:1}
+  .notepane{grid-area:note;display:block;background:var(--pane);border-left:1px solid var(--rule);overflow:auto;padding-right:env(safe-area-inset-right,0px)}
+  .statusbar{display:flex}
+}
+@media (min-width:1180px){
+  .tree-btn{display:none!important}
+  .app{grid-template-columns:48px 264px minmax(0,1fr) 360px;grid-template-areas:"ribbon explorer center note" "status status status status"}
+  .explorer{grid-area:explorer;display:flex;flex-direction:column;background:var(--side);border-right:1px solid var(--rule);overflow:auto}
+}
+
+/* ---------- explorer: knowledge index ---------- */
+.vault{display:flex;align-items:center;gap:10px;padding:14px 14px 8px}
+.vault b{font-family:var(--f-serif);color:var(--ink);font-size:17px;font-weight:600;display:block;line-height:1.2}
+.vault small{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}
+.xsearch{margin:6px 12px 4px;position:relative}
+.xsearch input{width:100%;border:1px solid var(--rule);border-radius:8px;background:var(--pane);padding:6px 10px 6px 30px;font-size:13px;min-height:34px}
+.xsearch svg{position:absolute;left:9px;top:9px;width:15px;height:15px;color:var(--muted)}
+.tree{padding:4px 8px 16px;display:grid;gap:1px}
+.tree .sec{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);padding:12px 8px 4px}
+.tree .grp{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;color:var(--ink);font-size:13.5px;width:100%;text-align:left}
+.tree .grp:hover{background:var(--hover)}
+.tree .grp>svg{width:12px;height:12px;flex:none;transition:transform .15s;color:var(--muted)}
+.tree .grp[aria-expanded="false"]>svg{transform:rotate(-90deg)}
+.tree .grp .sw{width:8px;height:8px;border-radius:2px;flex:none}
+.tree .grp .c{margin-left:auto;font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.tree .grp.band{font-weight:600}
+.tree .leaf{display:flex;align-items:center;gap:8px;padding:4px 8px 4px 34px;border-radius:6px;font-size:13.5px;color:var(--text);width:100%;text-align:left}
+.tree .leaf:hover{background:var(--hover);color:var(--ink)}
+.tree .leaf[aria-current="true"]{background:var(--hover);color:var(--ink);font-weight:500}
+.tree .leaf .g{margin-left:auto;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.tree .ind{padding-left:22px}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;border:1.5px solid var(--muted)}
+.dot.lit{background:var(--ink);border-color:var(--ink)}
+.dot.landed{border-color:var(--ink);background:linear-gradient(90deg,var(--ink) 50%,transparent 50%)}
+.dot.ahead{border-style:dashed}
+.xfoot{margin-top:auto;padding:10px 14px 16px;border-top:1px solid var(--rule);font-size:13px}
+.xfoot a{color:var(--muted)}
+
+/* ---------- view headers ---------- */
+.vhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;padding-block:14px 6px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.vhead h1{font-family:var(--f-serif);font-size:24px}
+.vhead .sub{font-size:13px;color:var(--muted)}
+.crumb{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.crumb button{color:var(--accent)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:9px;overflow:hidden;background:var(--pane)}
+.seg button{padding:6px 14px;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--pane)}
+
+/* ---------- star chart ---------- */
+.graphwrap{position:absolute;inset:0;display:flex;flex-direction:column}
+.graph{flex:1;min-height:0;position:relative}
+.graph>svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.graph.scroll{overflow:auto}
+.graph.scroll>svg{position:static;height:auto;max-width:860px;margin:0 auto}
+.cons,.node{cursor:pointer;transition:opacity .25s}
+.cons .hit,.node .hit{fill:transparent}
+.cons:hover .cname,.cons:focus-visible .cname{fill:var(--accent)}
+.cons:focus-visible{outline:none}
+.graph.focusing .cons:not(.nb){opacity:.25}
+.graph.focusing .clink:not(.nb){opacity:.1}
+.clink{transition:opacity .25s}
+.lbl{font-family:var(--f-sans);font-size:14px;fill:var(--ink)}
+.cname{font-family:var(--f-sans);font-size:14px;fill:var(--ink);font-weight:500;transition:fill .2s}
+.cname.small{font-size:11.5px;font-weight:400;fill:var(--muted)}
+.ccount{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+.ring-lbl{font-family:var(--f-hand);font-size:15px;fill:var(--muted)}
+.sector-lbl{font-family:var(--f-serif);font-size:18px;fill:var(--ink);font-weight:600}
+.anno{font-family:var(--f-hand);font-size:17px;fill:var(--accent)}
+.unit-lbl{font-family:var(--f-hand);font-size:16px;fill:var(--muted)}
+.graph.narrow .lbl,.graph.narrow .cname{font-size:19px}.graph.narrow .cname.small{font-size:15px}.graph.narrow .ring-lbl{font-size:18px}.graph.narrow .anno{font-size:21px}.graph.narrow .ccount{font-size:14px}
+.band-now{fill:none;stroke:var(--wash);opacity:.9}
+.ping{fill:none;stroke:var(--accent);stroke-width:1.6;transform-box:fill-box;transform-origin:center}
+.sel-ring{fill:none;stroke:var(--accent);stroke-width:2.2}
+@media (prefers-reduced-motion:no-preference){.ping{animation:ping 2.6s ease-out infinite}@keyframes ping{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.9);opacity:0}}}
+
+/* ---------- metro ---------- */
+.metro{position:absolute;inset:0;display:flex;flex-direction:column}
+.mscroll{flex:1;min-height:0;overflow:auto;position:relative}
+.mscroll svg{display:block}
+.station{cursor:pointer}
+.station .hit{fill:transparent}
+.station:hover .slbl,.station:focus-visible .slbl{fill:var(--accent)}
+.station:focus-visible{outline:none}
+.slbl{font-family:var(--f-sans);font-size:12.5px;fill:var(--ink)}
+.slbl.dim{fill:var(--muted)}
+.zone-lbl{font-family:var(--f-serif);font-size:14px;fill:var(--ink);font-weight:600}
+.zone-sub{font-family:var(--f-mono);font-size:10.5px;fill:var(--muted)}
+.line-lbl{font-family:var(--f-sans);font-size:13px;fill:var(--ink);font-weight:500}
+.cards{padding-block:6px 40px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+.cards h2{font-size:15px;display:flex;align-items:center;gap:8px;font-family:var(--f-serif)}
+.cards h2 i{width:18px;height:6px;border-radius:9px;display:inline-block}
+.cards h2 small{font-family:var(--f-mono);font-weight:400;font-size:11px;color:var(--muted)}
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;margin-top:10px}
+.spec{border:1px solid var(--rule);border-radius:12px;background:var(--pane);padding:10px 10px 12px;display:grid;gap:2px;text-align:left;position:relative;transition:transform .15s,box-shadow .15s}
+.spec:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.spec .no{font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.spec svg{width:64px;height:64px;margin:2px auto 4px;display:block}
+.spec b{font-size:13px;color:var(--ink);font-weight:500;line-height:1.35}
+.spec small{font-size:11px;color:var(--muted)}
+.spec.locked{background:transparent;border-style:dashed}
+.spec.locked svg{filter:grayscale(1);opacity:.32}
+.spec.locked b{color:var(--muted)}
+.spec .stamp{position:absolute;top:8px;right:8px;font-family:var(--f-hand);font-size:12px;color:var(--accent);transform:rotate(8deg)}
+
+/* ---------- note pane ---------- */
+.note{padding-block:18px 40px;padding-left:22px;padding-right:22px;display:grid;gap:16px}
+.crumbs{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap}
+.crumbs span+span::before{content:"/";margin-right:6px;opacity:.6}
+.note h1{font-family:var(--f-serif);font-size:26px}
+.props{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:13px;border-block:1px solid var(--rule);padding-block:10px}
+.props dt{color:var(--muted)}
+.props dd{margin:0;color:var(--ink);min-width:0}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:0 9px;font-size:12px;background:var(--hover);color:var(--text);line-height:22px}
+.pill.lit{background:var(--ink);color:var(--pane)}
+.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.meter{height:6px;border-radius:99px;background:var(--hover);overflow:hidden;margin-top:6px;max-width:180px}
+.meter i{display:block;height:100%;background:var(--ink);border-radius:99px}
+.signal-card{border-radius:14px;padding:16px 16px 16px 18px;display:grid;grid-template-columns:1fr 100px;gap:8px;align-items:center;background:var(--card-bg,var(--c-sci-bg))}
+.signal-card .eyebrow{font-size:12px;color:var(--text)}
+.signal-card p.q{font-family:var(--f-serif);font-size:19px;line-height:1.45;color:var(--ink);font-weight:600;margin-top:4px}
+.signal-card svg{width:100px;height:100px}
+.note h2{font-family:var(--f-serif);font-size:17px;display:flex;align-items:center;gap:8px}
+.note h2::before{content:"#";font-family:var(--f-mono);color:var(--muted);font-weight:400;font-size:14px}
+.tasklist{display:grid;gap:8px}
+.taskrow{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--rule);border-radius:12px;background:var(--pane)}
+.taskrow svg{width:48px;height:48px}
+.taskrow b{color:var(--ink);display:block;font-weight:500}
+.taskrow small{color:var(--muted);font-size:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 14px;border-radius:9px;font-weight:500;font-size:14px;border:1px solid var(--rule);background:var(--pane);color:var(--ink)}
+.btn:hover{background:var(--hover)}
+.btn.ink{background:var(--ink);border-color:var(--ink);color:var(--pane)}
+.btn.ink:hover{opacity:.88;background:var(--ink)}
+.btn.big{min-height:46px;padding:0 20px;font-size:15px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.links{display:flex;flex-wrap:wrap;gap:6px 10px}
+.wikilink{color:var(--accent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 40%,transparent);text-underline-offset:3px;font-size:14px}
+.lenses{display:grid;gap:6px;font-size:14px}
+.lenses div{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:6px 0;border-bottom:1px dashed var(--rule)}
+.lenses .b{font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-top:2px}
+.lenses .on .b{color:var(--accent)}
+details.parent summary{cursor:pointer;color:var(--muted);font-size:13px}
+details.parent div{font-size:13px;margin-top:8px}
+.capture{display:flex;gap:6px}
+.capture input{flex:1;min-width:0;border:1px solid var(--rule);border-radius:9px;background:var(--bg);padding:8px 12px;min-height:40px}
+.callout{border-radius:10px;padding:12px 14px;background:var(--callout-bg,var(--hover));display:grid;gap:4px}
+.callout .ct{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--callout-ink,var(--ink));font-size:14px}
+.callout.q{--callout-bg:var(--accent-soft);--callout-ink:var(--accent)}
+.callout.tip{--callout-bg:var(--c-sci-bg)}
+.minispec{display:flex;gap:10px;align-items:center;border:1px dashed var(--rule);border-radius:10px;padding:8px 10px}
+.minispec svg{width:40px;height:40px;flex:none}
+.minispec.locked svg{filter:grayscale(1);opacity:.35}
+
+/* ---------- pages ---------- */
+.page{max-width:820px;margin:0 auto;padding-block:22px 60px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:grid;gap:18px}
+.hero{border-radius:16px;padding:22px 22px 22px 24px;display:grid;grid-template-columns:1fr 132px;gap:16px;align-items:center;background:var(--hero-bg,var(--c-sci-bg))}
+.hero h1{font-family:var(--f-serif);font-size:30px}
+.hero p{color:var(--text);margin-top:6px;max-width:46ch}
+.hero .actions{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+.hero svg{width:132px;height:132px}
+@media (max-width:520px){.hero{grid-template-columns:1fr 88px}.hero svg{width:88px;height:88px}.hero h1{font-size:25px}}
+.empty{border:1.5px dashed var(--rule);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
+.tickets{display:grid;gap:10px}
+.ticket{display:grid;grid-template-columns:96px 1fr;gap:14px;border:1px solid var(--rule);border-radius:14px;padding:12px;background:var(--pane)}
+.ticket .th{width:96px;height:72px;border-radius:8px;background:var(--hover);overflow:hidden;display:grid;place-items:center;color:var(--muted);font-size:12px}
+.ticket .th img{width:100%;height:100%;object-fit:cover}
+.ticket .stem{color:var(--ink);font-weight:500}
+.ticket .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ticket .sub{font-size:13px;color:var(--muted)}
+.qitem{display:grid;gap:8px}
+.ask-row{display:flex;gap:8px}
+.ask-row input{flex:1;min-width:0;border:1px solid var(--rule);border-radius:10px;background:var(--pane);padding:10px 14px;min-height:46px}
+
+/* ---------- overlays ---------- */
+.scrim{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,var(--ink) 28%,transparent);display:flex;align-items:flex-end;justify-content:center}
+@media (min-width:760px){.scrim{align-items:center;padding:24px}}
+.modal{background:var(--pane);border:1px solid var(--rule);box-shadow:var(--shadow);width:100%;max-width:620px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;
+  padding-block:18px calc(20px + env(safe-area-inset-bottom,0px));padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+@media (min-width:760px){.modal{border-radius:16px}}
+.mhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.mhead h2{font-family:var(--f-serif);font-size:22px}
+.mhead small{font-size:12px;color:var(--muted);display:block}
+.close{width:38px;height:38px;border-radius:8px;display:grid;place-items:center;color:var(--muted);flex:none}
+.close:hover{background:var(--hover);color:var(--ink)}
+.sheet-note{position:fixed;left:0;right:0;bottom:0;z-index:30;max-height:80vh;overflow:auto;background:var(--pane);border-top:1px solid var(--rule);border-radius:16px 16px 0 0;box-shadow:var(--shadow);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet-note .grab{width:40px;height:4px;border-radius:9px;background:var(--rule);margin:8px auto 0}
+@media (min-width:760px){.sheet-note{display:none!important}}
+.drawer{position:fixed;top:0;bottom:0;left:0;z-index:35;width:min(300px,86vw);background:var(--side);border-right:1px solid var(--rule);overflow:auto;box-shadow:var(--shadow);padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-left,0px);display:flex;flex-direction:column}
+.pop{position:fixed;z-index:36;left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));bottom:calc(64px + env(safe-area-inset-bottom,0px));
+  background:var(--pane);border:1px solid var(--rule);border-radius:14px;box-shadow:var(--shadow);padding:16px;display:grid;gap:14px;max-height:74vh;overflow:auto}
+@media (min-width:760px){.pop{left:58px;right:auto;width:360px;bottom:auto;top:calc(var(--pop-top,120px))}.pop.right{left:auto;right:max(12px,env(safe-area-inset-right,0px));top:auto;bottom:40px}}
+.pop h3{font-family:var(--f-serif);font-size:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--rule);border-radius:99px;padding:5px 12px;font-size:13px;background:var(--pane);min-height:34px}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--pane)}
+.route{display:grid;gap:6px}
+.route label{display:flex;align-items:center;gap:10px;font-size:14px;padding:4px 0}
+.route .tag{font-family:var(--f-mono);font-size:11px;color:var(--muted);width:52px}
+.route input{width:18px;height:18px;accent-color:var(--ink)}
+.switcher input{width:100%;border:1px solid var(--rule);border-radius:10px;background:var(--bg);padding:10px 14px;min-height:46px}
+.switcher ul{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:2px;max-height:50vh;overflow:auto}
+.switcher li button{width:100%;text-align:left;display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px}
+.switcher li button:hover,.switcher li button.on{background:var(--hover)}
+.switcher li .g{margin-left:auto;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.toast{position:fixed;z-index:50;left:50%;transform:translateX(-50%);bottom:calc(72px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--pane);
+  padding:9px 14px;border-radius:10px;font-size:14px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);max-width:calc(100vw - 24px)}
+@media (min-width:760px){.toast{bottom:44px}}
+.toast button{border:1px solid currentColor;border-radius:7px;padding:2px 10px}
+textarea,.field input{width:100%;border:1px solid var(--rule);border-radius:10px;background:var(--bg);padding:10px 12px;min-height:44px}
+textarea{min-height:84px;resize:vertical}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.steps{display:flex;gap:4px;flex-wrap:wrap;font-size:12px}
+.steps span{padding:3px 10px;border-radius:99px;background:var(--hover);color:var(--muted)}
+.steps span.on{background:var(--ink);color:var(--pane)}
+.cropper{border-radius:12px;overflow:hidden;background:var(--hover);touch-action:none}
+.cropper canvas{display:block;width:100%;height:auto}
+.variant{display:grid;gap:8px;padding:12px;border-radius:12px;background:var(--hover)}
+.variant .row{display:flex;gap:8px;align-items:center}
+.ok{color:var(--good);font-weight:600}.no{color:var(--bad);font-weight:600}
+.lab{position:fixed;inset:0;z-index:38;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.labhead{display:flex;align-items:center;gap:12px;background:var(--side);border-bottom:1px solid var(--rule);padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.labhead .t{flex:1;min-width:0}
+.labhead h2{font-family:var(--f-serif);font-size:20px}
+.labhead small{font-size:12px;color:var(--muted)}
+.labbody{flex:1;min-height:0;overflow:auto;display:grid;gap:16px;grid-template-columns:1fr;padding-block:16px calc(20px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));align-content:start}
+@media (min-width:960px){.labbody.poe{grid-template-columns:320px 1fr}}
+.poe-col{display:grid;gap:10px;align-content:start}
+.pstep{border:1px solid var(--rule);border-radius:14px;padding:14px;background:var(--pane);display:grid;gap:10px}
+.pstep .n{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.pstep .n i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--muted);font-family:var(--f-mono);font-size:11px}
+.pstep.on{border-color:var(--ink)}
+.pstep.on .n i{background:var(--ink);border-color:var(--ink);color:var(--pane)}
+.pstep.done .n i{background:var(--c-sci-2);border-color:var(--c-sci-2);color:var(--pane)}
+.pstep h3{font-family:var(--f-serif);font-size:16px}
+.opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--pane);font-size:14px}
+.opt::before{content:"";width:14px;height:14px;border-radius:50%;border:1.5px solid var(--muted);flex:none}
+.opt[aria-pressed="true"]{border-color:var(--ink);background:var(--hover)}
+.opt[aria-pressed="true"]::before{background:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 3px var(--pane)}
+.frame{border:1px solid var(--rule);border-radius:14px;overflow:hidden;background:var(--pane)}
+.frame iframe{border:0;width:100%;min-height:560px;display:block;background:var(--pane)}
+.drawn-check path{stroke-dasharray:60;stroke-dashoffset:0}
+@media (prefers-reduced-motion:no-preference){
+  .drawn-check path{animation:draw .6s ease-out both}@keyframes draw{from{stroke-dashoffset:60}to{stroke-dashoffset:0}}
+  .drawin .k,.drawin .k1{stroke-dasharray:400;animation:drawin 1.1s ease-out both}@keyframes drawin{from{stroke-dashoffset:400}to{stroke-dashoffset:0}}
+}
+.pin{display:grid;grid-template-columns:repeat(3,68px);gap:10px;justify-content:center}
+.pin button{height:60px;border-radius:14px;border:1px solid var(--rule);background:var(--pane);font-family:var(--f-mono);font-size:20px;color:var(--ink)}
+.pin button:hover{background:var(--hover)}
+.pdots{display:flex;gap:12px;justify-content:center;margin:12px 0 18px}
+.pdots i{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--ink)}
+.pdots i.f{background:var(--ink)}
+.card{border:1px solid var(--rule);border-radius:14px;padding:16px;background:var(--pane);display:grid;gap:12px;min-width:0}
+.card h3{font-family:var(--f-serif);font-size:17px}
+.grid2{display:grid;gap:14px;grid-template-columns:1fr}
+@media (min-width:720px){.grid2{grid-template-columns:1fr 1fr}}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-family:var(--f-mono);color:var(--ink)}
+.log{font-family:var(--f-mono);font-size:12px;max-height:220px;overflow:auto;background:var(--bg);border-radius:10px;padding:8px 10px}
+.log div{padding:3px 0;border-bottom:1px solid var(--rule);overflow-wrap:anywhere}
+.ev.warn .v{color:var(--bad)}.ev.ai .v{color:var(--accent)}
+.toggle{display:flex;align-items:center;gap:10px;font-size:14px}
+.toggle input{width:18px;height:18px;accent-color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <header class="topbar">
+    <button class="ibtn" data-act="tree" aria-label="打开知识索引"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+    <span class="title">好奇号</span>
+    <button class="ibtn" data-act="switcher" aria-label="跳转到星球"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg></button>
+    <button class="ibtn" data-act="ask" aria-label="发一个问题"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9.2 9.3a2.9 2.9 0 1 1 4 2.7c-.8.4-1.2 1-1.2 1.9"/><circle cx="12" cy="17.2" r=".7" fill="currentColor"/><circle cx="12" cy="12" r="9"/></svg></button>
+  </header>
+
+  <nav class="ribbon" aria-label="导航">
+    <button class="ibtn tree-btn" data-act="tree" title="知识索引" aria-label="打开知识索引"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="4" y="4.5" width="16" height="15" rx="2"/><path d="M9.5 4.5v15"/></svg></button>
+    <a class="ibtn" href="#chart" data-view="chart" title="星图" aria-label="星图"></a>
+    <a class="ibtn" href="#metro" data-view="metro" title="知识地铁" aria-label="知识地铁"></a>
+    <a class="ibtn" href="#repair" data-view="repair" title="维修舱" aria-label="维修舱"></a>
+    <a class="ibtn" href="#signal" data-view="signal" title="信号站" aria-label="信号站"></a>
+    <button class="ibtn" data-act="route" title="今日航线" aria-label="今日航线" aria-expanded="false"></button>
+    <span class="sep"></span>
+    <button class="ibtn" data-act="switcher" title="跳转（Ctrl K）" aria-label="跳转到星球"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg></button>
+    <button class="ibtn" data-act="ask" title="发一个问题" aria-label="发一个问题"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9.2 9.3a2.9 2.9 0 1 1 4 2.7c-.8.4-1.2 1-1.2 1.9"/><circle cx="12" cy="17.2" r=".7" fill="currentColor"/><circle cx="12" cy="12" r="9"/></svg></button>
+    <span class="sp"></span>
+    <a class="ibtn" href="#ground" data-view="ground" title="家长入口" aria-label="家长入口"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg></a>
+  </nav>
+
+  <aside class="explorer" id="explorer" aria-label="知识索引"></aside>
+
+  <main class="center">
+    <section class="view" id="v-chart" hidden><div class="graphwrap" id="chartWrap"></div></section>
+    <section class="view" id="v-metro" hidden><div class="metro" id="metroWrap"></div></section>
+    <section class="view" id="v-repair" hidden><div class="page" id="repairPage"></div></section>
+    <section class="view" id="v-signal" hidden><div class="page" id="signalPage"></div></section>
+    <section class="view" id="v-ground" hidden><div class="page" id="groundPage"></div></section>
+  </main>
+
+  <aside class="notepane" id="notepane" aria-label="星球笔记"></aside>
+  <footer class="statusbar" id="statusbar"></footer>
+
+  <nav class="bottomnav" aria-label="导航">
+    <a href="#chart" data-view="chart"></a>
+    <a href="#metro" data-view="metro"></a>
+    <a href="#repair" data-view="repair"></a>
+    <a href="#signal" data-view="signal"></a>
+    <button data-act="route" aria-expanded="false"></button>
+  </nav>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   SKETCH — tiny hand-drawn line generator (deterministic, seeded). Shared with modules.
+   ============================================================ */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function dline(x1,y1,x2,y2,seed,j){ return line(x1,y1,x2,y2,seed,j)+line(x1,y1,x2,y2,seed+97,(j==null?1:j)*.6); }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function blob(cx,cy,rx,ry,seed){ const r=R(seed), N=9, p=[]; for(let i=0;i<N;i++){ const t=i/N*Math.PI*2, k=1+(r()-.5)*.1; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); } return cr(p,true)+"Z"; }
+  function rect(x,y,w,h,seed,j){ return line(x,y,x+w,y,seed,j)+line(x+w,y,x+w,y+h,seed+1,j)+line(x+w,y+h,x,y+h,seed+2,j)+line(x,y+h,x,y,seed+3,j); }
+  function poly(pts,seed,closed,j){ let d=""; const n=pts.length; for(let i=0;i<(closed?n:n-1);i++){ const a=pts[i],b=pts[(i+1)%n]; d+=line(a[0],a[1],b[0],b[1],seed+i*3,j);} return d; }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  function area(pts){ return "M"+pts.map(q=>f(q[0])+" "+f(q[1])).join("L")+"Z"; }
+  return {line,dline,ellipse,blob,rect,poly,curve,area,R};
+}
+const Sk = sketchLib();
+
+/* ---------- hand-drawn illustrations (100×100 box) ---------- */
+const P = (d,c)=>`<path class="${c||"k"}" d="${d}"/>`;
+const wedge=(cx,cy,r,a0,a1)=>{ const x0=cx+r*Math.cos(a0),y0=cy+r*Math.sin(a0),x1=cx+r*Math.cos(a1),y1=cy+r*Math.sin(a1); return `M${cx} ${cy}L${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 ${a1-a0>Math.PI?1:0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}Z`; };
+const ICONS = {
+  cake: s=>P(Sk.blob(54,56,34,34,s),"f")+`<path class="f2" d="${wedge(52,52,33,-Math.PI/2,Math.PI/6)}"/>`+P(Sk.ellipse(52,52,34,34,s+1))+P(Sk.line(52,52,52,18,s+2)+Sk.line(52,52,81,69,s+3)+Sk.line(52,52,23,69,s+4))+P(Sk.curve([[66,24],[72,14],[76,12]],s+5),"k1"),
+  clock: s=>P(Sk.blob(53,57,32,32,s),"f")+P(Sk.ellipse(50,54,32,32,s+1))+P(Sk.line(50,54,50,33,s+2)+Sk.line(50,54,64,61,s+3))+P(Sk.line(50,24,50,29,s+4)+Sk.line(80,54,75,54,s+5)+Sk.line(50,84,50,79,s+6)+Sk.line(20,54,25,54,s+7),"k1")+P(Sk.ellipse(30,22,8,6,s+8)+Sk.ellipse(70,22,8,6,s+9),"k1"),
+  perimeter: s=>`<path class="f" d="${Sk.area([[22,34],[80,32],[82,72],[24,74]])}"/>`+P(Sk.rect(20,30,58,40,s))+[0,1,2,3,4,5].map(i=>`<circle class="f2" cx="${24+i*10}" cy="22" r="2.4"/>`).join("")+P(Sk.curve([[82,22],[88,30],[88,40]],s+3),"k1")+P(Sk.line(84,38,88,42,s+4)+Sk.line(92,37,88,42,s+5),"k1"),
+  candy: s=>[20,50,80].map((x,i)=>P(Sk.blob(x+2,74,15,5,s+i),"f")+P(Sk.ellipse(x,72,15,5,s+i+10),"k1")).join("")+[[16,58],[24,58],[20,50],[46,58],[54,58],[50,50],[76,58],[84,58],[80,50]].map((q,i)=>`<circle class="f2" cx="${q[0]}" cy="${q[1]}" r="4"/>`+P(Sk.ellipse(q[0],q[1],4,4,s+20+i),"k1")).join("")+P(Sk.curve([[38,24],[50,16],[62,24]],s+40),"k1")+P(Sk.line(58,20,62,24,s+41)+Sk.line(62,24,57,26,s+42),"k1"),
+  bars: s=>`<path class="f2" d="${Sk.area([[16,26],[40,26],[40,42],[16,42]])}"/><path class="f2" d="${Sk.area([[16,58],[56,58],[56,74],[16,74]])}"/>`+P(Sk.rect(16,26,64,16,s)+Sk.rect(16,58,64,16,s+5))+[1,2,3,4,5,6,7].map(i=>P(Sk.line(16+i*8,26,16+i*8,42,s+10+i)+Sk.line(16+i*8,58,16+i*8,74,s+20+i),"k1")).join(""),
+  cup: s=>`<path class="f" d="${Sk.area([[8,56],[92,54],[92,90],[8,90]])}"/>`+P(Sk.curve([[8,56],[22,52],[36,57],[50,53],[64,57],[78,53],[92,56]],s),"k1")+`<path class="fp" d="${Sk.area([[34,24],[66,24],[62,70],[38,70]])}"/>`+P(Sk.poly([[38,70],[34,24],[66,24],[62,70]],s+2,false))+P(Sk.curve([[40,64],[50,61],[60,64]],s+4),"k1")+`<circle class="f2" cx="50" cy="40" r="5"/>`,
+  ice: s=>`<path class="f" d="${Sk.area([[12,52],[40,50],[42,78],[14,80]])}"/>`+P(Sk.rect(12,50,28,28,s))+P(Sk.line(18,56,26,56,s+1),"k1")+`<path class="f2" d="${Sk.area([[52,80],[60,62],[68,80]])}"/>`+P(Sk.curve([[60,58],[52,74],[56,82],[64,82],[68,74],[60,58]],s+2))+P(Sk.curve([[80,80],[76,70],[84,62],[80,52]],s+3)+Sk.curve([[90,78],[86,68],[94,60],[90,50]],s+4),"k1"),
+  torch: s=>`<path class="f" d="${Sk.area([[44,40],[94,22],[94,78],[44,60]])}"/>`+P(Sk.rect(8,42,24,16,s))+P(Sk.poly([[32,40],[44,36],[44,64],[32,60]],s+1,true))+P(Sk.line(46,40,94,24,s+2)+Sk.line(46,60,94,76,s+3),"k1")+`<circle class="f2" cx="20" cy="50" r="3"/>`,
+  pinhole: s=>`<path class="f" d="${Sk.area([[50,48],[84,30],[84,70]])}"/><path class="f" d="${Sk.area([[16,30],[50,48],[50,52],[16,70]])}"/>`+P(Sk.line(16,40,16,72,s)+Sk.line(50,20,50,46,s+1)+Sk.line(50,54,50,80,s+2)+Sk.line(84,20,84,80,s+3))+P(Sk.line(16,34,84,66,s+4)+Sk.line(16,72,84,32,s+5),"k1")+`<path class="f2" d="M16 26c4 4 4 8 0 10c-4-2-4-6 0-10z"/>`+P(Sk.line(84,40,84,62,s+6)+Sk.line(80,58,84,64,s+7)+Sk.line(88,58,84,64,s+8),"k"),
+  wrench: s=>P(Sk.blob(58,58,30,30,s),"f")+P(Sk.curve([[30,78],[58,48],[62,40],[66,28],[78,22],[74,34],[82,38],[92,30],[88,44],[74,50],[66,52],[38,84],[30,78]],s+1))+P(Sk.ellipse(34,80,3,3,s+2),"k1")+P(Sk.curve([[12,30],[20,22],[30,24]],s+3)+Sk.line(14,40,24,36,s+4),"k1"),
+  radar: s=>P(Sk.blob(52,62,30,24,s),"f")+P(Sk.line(50,88,50,56,s+1)+Sk.line(38,88,62,88,s+2))+P(Sk.ellipse(50,50,6,6,s+3))+P(Sk.curve([[34,34],[26,50],[34,66]],s+4)+Sk.curve([[66,34],[74,50],[66,66]],s+5)+Sk.curve([[22,22],[10,50],[22,78]],s+6)+Sk.curve([[78,22],[90,50],[78,78]],s+7),"k1"),
+  ship: s=>P(Sk.curve([[50,10],[64,30],[66,56],[60,74],[40,74],[34,56],[36,30],[50,10]],s))+P(Sk.ellipse(50,40,6,6,s+1),"k1")+P(Sk.poly([[36,58],[24,76],[38,72]],s+2,false)+Sk.poly([[64,58],[76,76],[62,72]],s+3,false),"k1")+`<path class="fa" d="M44 76q6 14 12 0z" opacity=".85"/>`
+};
+function icon(name, galaxy, size, seed, cls){
+  const fill = galaxy==="math" ? "var(--c-math)" : galaxy==="science" ? "var(--c-sci)" : "var(--c-sky)";
+  const fill2 = galaxy==="math" ? "var(--c-math-2)" : galaxy==="science" ? "var(--c-sci-2)" : "var(--c-sci-2)";
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" class="${cls||""}" style="--icon-fill:${fill};--icon-fill-2:${fill2}" aria-hidden="true">${ICONS[name](seed||3)}</svg>`;
+}
+
+/* ---------- more hand-drawn icons (theme defaults) ---------- */
+Object.assign(ICONS,{
+  blocks: s=>`<path class="f" d="${Sk.area([[18,54],[44,54],[44,80],[18,80]])}"/><path class="f2" d="${Sk.area([[46,54],[72,54],[72,80],[46,80]])}"/><path class="f" d="${Sk.area([[32,26],[58,26],[58,52],[32,52]])}"/>`+P(Sk.rect(16,52,28,28,s)+Sk.rect(44,52,28,28,s+4)+Sk.rect(30,24,28,28,s+8))+P(Sk.curve([[78,30],[86,22],[90,30]],s+12),"k1"),
+  scale: s=>P(Sk.blob(22,60,12,5,s),"f")+P(Sk.blob(78,54,12,5,s+1),"f")+P(Sk.line(50,22,50,84,s+2)+Sk.line(34,84,66,84,s+3)+Sk.line(18,36,82,28,s+4))+P(Sk.line(18,36,10,58,s+5)+Sk.line(18,36,28,58,s+6)+Sk.line(82,28,72,52,s+7)+Sk.line(82,28,90,52,s+8)+Sk.curve([[8,58],[18,66],[30,58]],s+9)+Sk.curve([[70,52],[80,60],[92,52]],s+10),"k1")+`<circle class="fa" cx="50" cy="20" r="3"/>`,
+  ruler: s=>`<path class="f" d="${Sk.area([[12,64],[72,24],[86,44],[26,84]])}"/>`+P(Sk.poly([[12,64],[72,24],[86,44],[26,84]],s,true))+[0,1,2,3,4,5,6].map(i=>{ const t=i/7, x=16+t*56, y=62-t*37, L=i%2?7:12; return P(Sk.line(x,y,x+L*.55,y+L*.83,s+10+i),"k1"); }).join(""),
+  sprout: s=>`<path class="f" d="${Sk.area([[8,74],[92,72],[92,92],[8,92]])}"/>`+P(Sk.curve([[8,74],[30,70],[60,74],[92,71]],s),"k1")+P(Sk.curve([[50,74],[48,58],[50,42],[54,30]],s+1))+P(Sk.blob(36,46,14,7,s+2),"f2")+P(Sk.ellipse(36,46,14,7,s+3),"k1")+P(Sk.blob(66,36,14,7,s+4),"f2")+P(Sk.ellipse(66,36,14,7,s+5),"k1"),
+  sun: s=>P(Sk.blob(52,52,18,18,s),"f2")+P(Sk.ellipse(50,50,18,18,s+1))+[0,1,2,3,4,5,6,7].map(i=>{ const a=i/8*Math.PI*2; return P(Sk.line(50+Math.cos(a)*26,50+Math.sin(a)*26,50+Math.cos(a)*38,50+Math.sin(a)*38,s+3+i),"k1"); }).join("")
+});
+
+/* ============================================================
+   CONTENT — sample of the content repo (knode/1). 三年级按人教版单元，其余年级为代表点。
+   theme = 课标「大概念」→ 地铁线；theme × 年级段 → 星图上的星座
+   ============================================================ */
+const THEMES={
+  num:{g:"math",name:"数与运算",line:"数与运算线",c:"--l1",sec:[100,140],icon:"blocks"},
+  rel:{g:"math",name:"数量关系",line:"数量关系线",c:"--l2",sec:[140,180],icon:"scale"},
+  geo:{g:"math",name:"图形与测量",line:"图形与测量线",c:"--l3",sec:[180,220],icon:"ruler"},
+  stat:{g:"math",name:"统计与概率",line:"统计与概率线",c:"--l4",sec:[220,260],icon:"bars"},
+  mat:{g:"science",name:"物质",line:"物质线",c:"--l5",sec:[40,80],icon:"ice",later:"化学"},
+  ene:{g:"science",name:"能量与运动",line:"能量线",c:"--l6",sec:[0,40],icon:"torch",later:"物理"},
+  life:{g:"science",name:"生命",line:"生命线",c:"--l7",sec:[-40,0],icon:"sprout",later:"生物"},
+  earth:{g:"science",name:"地球与宇宙",line:"地球线",c:"--l8",sec:[-80,-40],icon:"sun",later:"地理"}
+};
+const THEME_ORDER=["num","rel","geo","stat","mat","ene","life","earth"];
+const RAW=[
+ ["m.g1.count","数一数","G1","num","一上 · 准备课"],["m.g1.add20","20 以内加减法","G1","num","一上 · 20 以内加减法",["m.g1.count"]],["m.g1.shapes","认识图形","G1","geo","一上 · 认识图形"],["m.g1.clock","认识钟表","G1","geo","一上 · 认识钟表"],
+ ["m.g2.add100","100 以内加减法","G2","num","二上 · 100 以内加减法",["m.g1.add20"]],["m.g2.times","表内乘法","G2","num","二上 · 表内乘法",["m.g2.add100"]],["math.number.division-meaning","除法的意义","G2","num","二下 · 表内除法",["m.g2.times"]],
+ ["m.g2.length","厘米和米","G2","geo","二上 · 长度单位"],["m.g2.angle","角的初步认识","G2","geo","二上 · 角的初步认识",["m.g1.shapes"]],["m.g2.data","数据收集整理","G2","stat","二下 · 数据收集整理"],
+ ["math.measure.time-units","时、分、秒","G3","geo","三上 · 时、分、秒",["m.g1.clock"]],["m.g3.timecalc","经过的时间","G3","geo","三上 · 时、分、秒",["math.measure.time-units"]],
+ ["m.g3.mental","两位数加减口算","G3","num","三上 · 万以内加减法（一）",["m.g2.add100"]],["m.g3.mm","毫米和分米","G3","geo","三上 · 测量",["m.g2.length"]],["m.g3.km","千米","G3","geo","三上 · 测量",["m.g3.mm"]],["m.g3.ton","吨","G3","geo","三上 · 测量"],
+ ["m.g3.add3","三位数加法","G3","num","三上 · 万以内加减法（二）",["m.g3.mental"]],["m.g3.sub3","三位数减法","G3","num","三上 · 万以内加减法（二）",["m.g3.add3"]],
+ ["m.g3.times-concept","倍的认识","G3","rel","三上 · 倍的认识",["m.g2.times"]],["m.g3.times-find","求一个数的几倍","G3","rel","三上 · 倍的认识",["m.g3.times-concept"]],
+ ["m.g3.mul1-oral","口算乘法","G3","num","三上 · 多位数乘一位数",["m.g2.times"]],["m.g3.mul1-written","笔算乘法","G3","num","三上 · 多位数乘一位数",["m.g3.mul1-oral"]],
+ ["m.g3.quad","四边形","G3","geo","三上 · 长方形和正方形",["m.g2.angle"]],["math.geometry.perimeter","周长","G3","geo","三上 · 长方形和正方形",["m.g3.quad"]],["m.g3.rect-perim","长方形的周长","G3","geo","三上 · 长方形和正方形",["math.geometry.perimeter"]],
+ ["math.number.fraction-intro","分数的初步认识","G3","num","三上 · 分数的初步认识",["math.number.division-meaning"]],["math.number.fraction-compare","同分母分数比大小","G3","num","三上 · 分数的初步认识",["math.number.fraction-intro"]],["m.g3.frac-calc","分数的简单计算","G3","num","三上 · 分数的初步认识",["math.number.fraction-compare"]],["m.g3.frac-app","分数的简单应用","G3","rel","三上 · 分数的初步认识",["math.number.fraction-intro"]],
+ ["m.g3.sets","集合","G3","stat","三上 · 数学广角"],
+ ["m.g3.direction","东南西北","G3","geo","三下 · 位置与方向"],["m.g3.div1","除数是一位数的除法","G3","num","三下 · 除数是一位数的除法",["math.number.division-meaning"]],["m.g3.table2","复式统计表","G3","stat","三下 · 复式统计表",["m.g2.data"]],
+ ["m.g3.mul2","两位数乘两位数","G3","num","三下 · 两位数乘两位数",["m.g3.mul1-written"]],["m.g3.area","面积","G3","geo","三下 · 面积",["math.geometry.perimeter"]],["m.g3.area-rect","长方形的面积","G3","geo","三下 · 面积",["m.g3.area"]],
+ ["m.g3.calendar","年、月、日","G3","geo","三下 · 年、月、日",["math.measure.time-units"]],["m.g3.decimal","小数的初步认识","G3","num","三下 · 小数的初步认识",["math.number.fraction-intro"]],["m.g3.combo","搭配","G3","stat","三下 · 数学广角"],
+ ["m.g4.big","大数的认识","G4","num","四上",["m.g3.add3"]],["m.g4.laws","运算定律","G4","rel","四下",["m.g3.mul2"]],["m.g4.decimal","小数的意义","G4","num","四下",["m.g3.decimal"]],["m.g4.triangle","三角形","G4","geo","四下",["m.g3.quad"]],
+ ["m.g5.fraction","分数的意义","G5","num","五下",["m.g3.frac-calc"]],["m.g5.line-chart","折线统计图","G5","stat","五下",["m.g3.table2"]],["m.g6.circle","圆","G6","geo","六上",["m.g4.triangle"]],["m.g6.percent","百分数","G6","num","六上",["m.g5.fraction"]],["m.g6.ratio","比和比例","G6","rel","六下",["m.g5.fraction"]],
+ ["m.g7.rational","有理数","G7","num","七上",["m.g6.percent"]],["m.g7.equation","一元一次方程","G7","rel","七上",["m.g4.laws"]],["m.g8.function","一次函数","G8","rel","八下",["m.g7.equation"]],["m.g10.func","函数的概念","G10","rel","必修一",["m.g8.function"]],
+ ["science.matter.water-states","水的三种样子","G3","mat","水"],["s.g3.melt","冰的融化","G3","mat","水",["science.matter.water-states"]],["s.g3.evap","水的蒸发","G3","mat","水",["science.matter.water-states"]],
+ ["science.matter.air-space","空气占据空间","G3","mat","空气"],["s.g3.air-mass","空气有质量吗","G3","mat","空气",["science.matter.air-space"]],
+ ["s.g3.temp","测量气温","G3","earth","天气"],["s.g3.wind","风向和风力","G3","earth","天气",["s.g3.temp"]],["s.g3.seed","种子发芽","G3","life","植物的生长"],["s.g3.plant","植物的一生","G3","life","植物的生长",["s.g3.seed"]],
+ ["s.g4.sound","声音的产生","G4","ene","声音"],["s.g4.circuit","简单电路","G4","ene","电"],["s.g4.animal","动物的一生","G4","life","动物"],
+ ["science.light.straight-line","光沿直线传播","G5","ene","光"],["science.light.pinhole","小孔成像","G5","ene","光",["science.light.straight-line"]],["s.g5.shadow","影子","G5","ene","光",["science.light.straight-line"]],["s.g5.daynight","昼夜交替","G5","earth","地球的运动"],
+ ["s.g6.change","物质的变化","G6","mat","物质的变化",["s.g3.melt"]],
+ ["p.g8.reflect","光的反射","G8","ene","物理 · 光现象",["science.light.straight-line"]],["p.g8.force","力","G8","ene","物理 · 力"],["p.g9.current","电流和电路","G9","ene","物理 · 电流",["s.g4.circuit"]],
+ ["c.g9.atom","分子和原子","G9","mat","化学 · 物质构成",["s.g6.change"]],["c.g9.equation","化学方程式","G9","mat","化学 · 化学方程式",["c.g9.atom","m.g6.ratio"]],
+ ["b.g7.cell","细胞","G7","life","生物 · 细胞"],["b.g7.photo","光合作用","G7","life","生物 · 绿色植物",["s.g3.plant","b.g7.cell"]],["e.g7.earth","地球的运动","G7","earth","地理 · 地球",["s.g5.daynight"]],
+ ["p.g10.newton","牛顿运动定律","G10","ene","物理 · 必修一",["p.g8.force"]],["c.g11.equil","化学平衡","G11","mat","化学 · 选择性必修",["c.g9.equation"]],["b.g11.gene","遗传与进化","G11","life","生物 · 必修二",["b.g7.cell"]]
+];
+const DETAIL={
+  "math.number.division-meaning":{icon:"candy",dq:"12 颗糖平均分给 3 个人，每人几颗？怎样分才公平？",objectives:["理解平均分","会用除法表示平均分"],misconceptions:["以为分了就是平均分"],lenses:[["G1-2","用实物一个一个分"],["G3-4","用除法算式表示"]]},
+  "math.measure.time-units":{icon:"clock",dq:"1 分钟里，你能拍多少下手？",objectives:["知道 1 分 = 60 秒","会读钟面"],misconceptions:["以为 1 时 = 100 分"],lenses:[["G3-4","钟面与秒表"]]},
+  "math.geometry.perimeter":{icon:"perimeter",dq:"一只蚂蚁沿着课本封面的边爬一圈，爬了多远？",objectives:["理解周长是一圈的长度","会算长方形周长"],misconceptions:["把面积当成周长"],lenses:[["G3-4","用线绕一圈再量"],["G5-6","公式 2×(长+宽)"]]},
+  "math.number.fraction-intro":{icon:"cake",dq:"一块蛋糕平均分给 3 个人，每人分到多少？",objectives:["能用图形表示几分之一","会读写简单分数"],misconceptions:["分母越大，分数越大","没有平均分也叫几分之一"],lenses:[["G3-4","切蛋糕、折纸"],["G7-9","有理数与数轴"]],acts:["act.quiz.fraction-intro-01"]},
+  "math.number.fraction-compare":{icon:"bars",dq:"3/8 块披萨和 5/8 块披萨，哪个吃得多？",objectives:["会比较同分母分数"],misconceptions:["只看分母"],lenses:[["G3-4","画图比较"]]},
+  "science.matter.air-space":{icon:"cup",dq:"把杯子倒扣着压进水里，杯底的纸巾会湿吗？",objectives:["知道空气看不见但占地方"],misconceptions:["空的杯子里什么都没有"],lenses:[["G3-4","杯子压水实验"]]},
+  "science.matter.water-states":{icon:"ice",dq:"冰块、水、水蒸气，是同一种东西吗？",objectives:["认识固态、液态、气态"],misconceptions:["水蒸气就是白雾"],lenses:[["G3-4","冰块融化观察"],["G7-9","物态变化与吸放热"]]},
+  "science.light.straight-line":{icon:"torch",dq:"为什么手电筒的光是一条直直的光柱？",objectives:["知道光在同一种物质里沿直线走"],misconceptions:["光会自己拐弯绕过障碍"],lenses:[["G3-4","手电筒与小孔卡片"],["G8","光的直线传播与影子"]]},
+  "science.light.pinhole":{icon:"pinhole",dq:"为什么墙上会出现一幅倒过来的窗外风景？",objectives:["观察到小孔成倒立的像","知道孔越大越亮但越模糊"],misconceptions:["像只是上下颠倒","孔越大像越清楚"],lenses:[["G3-4","更亮/更暗、清楚/模糊"],["G8","像高 = 物高 × 像距 ÷ 物距"]],acts:["act.experiment.pinhole-g3"]}
+};
+const GRADES=["G1","G2","G3","G4","G5","G6","G7","G8","G9","G10","G11","G12"];
+const GRADE={G1:"一年级",G2:"二年级",G3:"三年级",G4:"四年级",G5:"五年级",G6:"六年级",G7:"初一",G8:"初二",G9:"初三",G10:"高一",G11:"高二",G12:"高三"};
+const BAND_OF=g=>({G1:0,G2:0,G3:1,G4:1,G5:2,G6:2,G7:3,G8:3,G9:3})[g]??4;
+const BAND_NAME=["一二年级","三四年级","五六年级","初中","高中"];
+const CURRENT_BAND=1, CURRENT_GRADE="G3";
+const NODES=RAW.map(([id,title,grade,theme,unit,prereq],i)=>{ const t=THEMES[theme], d=DETAIL[id]||{};
+  return {id,title,grade,theme,unit,prereq:prereq||[],galaxy:t.g,band:BAND_OF(grade),icon:d.icon||t.icon,dq:d.dq||null,objectives:d.objectives||[],misconceptions:d.misconceptions||[],lenses:d.lenses||[],acts:d.acts||[],seed:11+i*7,no:i+1}; });
+const NODE=Object.fromEntries(NODES.map(n=>[n.id,n]));
+const GALAXY={math:"数学",science:"科学"};
+const consId=n=>n.theme+"|"+n.band;
+const CONS={}; NODES.forEach(n=>{ const k=consId(n); (CONS[k]=CONS[k]||{id:k,theme:n.theme,band:n.band,nodes:[]}).nodes.push(n); });
+const consName=c=>{ const t=THEMES[c.theme]; return (c.band>=3&&t.later?t.later+" · ":"")+t.name; };
+
+const ACTIVITIES={
+  "act.experiment.pinhole-g3":{id:"act.experiment.pinhole-g3",contract:"activity/1.1",type:"experiment",title:"暗箱里的倒影",targets:["science.light.pinhole"],age_band:"G3-4",duration_min:8,pedagogy:"POE",
+    predict:{prompt:"把「孔的大小」从小调到大，屏上的像会变成什么样？",options:["更亮，也更清楚","更亮，但更模糊","更暗，但更清楚","不会有变化"],correct:1},
+    explain:"孔越大，钻进暗箱的光越多，所以像更亮。可是蜡烛上每一个点的光，穿过大孔后会在屏上散成一个大光斑，光斑叠在一起，像就糊了。所以照相机要用镜头，既能多进光，又能保持清楚。",
+    emits:["started","adjusted","observed","question_noted"],entry:"pinholeModule"},
+  "act.quiz.fraction-intro-01":{id:"act.quiz.fraction-intro-01",contract:"activity/1.1",type:"quiz",title:"分蛋糕小挑战",targets:["math.number.fraction-intro"],age_band:"G3-4",duration_min:5,pedagogy:"hint-ladder",emits:["started","answered","hint_used"],entry:"quizModule"}
+};
+const TASK_LIB_DEFAULT=["数学","科学","阅读","运动","下棋","弹琴"];
+
+/* ============================================================
+   STORE
+   ============================================================ */
+const STORE_KEY="haoqihao.state.v3", VERSION=1, MIGRATIONS={};
+const todayStr=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const addDays=n=>{ const d=new Date(); d.setDate(d.getDate()+n); return todayStr(d); };
+function seedState(){
+  const t=Date.now(), events=[]; let k=0;
+  const lit=["m.g1.count","m.g1.add20","m.g1.shapes","m.g1.clock","m.g2.add100","m.g2.times","math.number.division-meaning","m.g2.length","m.g2.angle","m.g2.data","math.measure.time-units","m.g3.timecalc","m.g3.mental","m.g3.mm","m.g3.km","m.g3.ton","m.g3.add3","m.g3.sub3","m.g3.times-concept","m.g3.quad","science.matter.water-states"];
+  const landed={"m.g3.times-find":.5,"m.g3.mul1-oral":.6,"math.geometry.perimeter":.45,"science.matter.air-space":.4,"s.g3.seed":.3};
+  lit.forEach(id=>events.push({verb:"completed",node:id,activity:"seed",result:{score:.95},ts:new Date(t-(40-k++)*864e5).toISOString(),seed:true}));
+  Object.entries(landed).forEach(([id,s])=>events.push({verb:"completed",node:id,activity:"seed",result:{score:s},ts:new Date(t-(8-k%7)*864e5).toISOString(),seed:true}));
+  return {version:VERSION,energy:4,rewardPoints:7,rewardGoal:{name:"周末家庭活动选择权",target:18,status:"active"},rewardHistory:[],
+    tasks:[...TASK_LIB_DEFAULT],plans:{},done:{[addDays(-1)]:["数学","阅读","运动"],[addDays(-2)]:["科学","下棋"],[addDays(-4)]:["数学"]},
+    events,repairs:[],questions:[{id:"q-seed",text:"为什么月亮会跟着我走？",at:new Date(t-864e5).toISOString(),answer:null,seed:true}],
+    ai:{calls:[],dailyCap:30},pin:"1234",debug:false};
+}
+let S;
+try{ const raw=localStorage.getItem(STORE_KEY); S=raw?(function m(s){ while((s.version||0)<VERSION){ const n=(s.version||0)+1; if(MIGRATIONS[n]) s=MIGRATIONS[n](s); s.version=n; } return s; })(JSON.parse(raw)):seedState(); }catch(e){ S=seedState(); }
+function save(){ try{ localStorage.setItem(STORE_KEY,JSON.stringify(S)); }catch(e){} }
+
+/* ============================================================
+   EVENTS + DERIVED STATE
+   ============================================================ */
+let MCACHE=null;
+function logEvent(e){ const rec=Object.assign({ts:new Date().toISOString()},e); S.events.push(rec); MCACHE=null; save(); renderStatus(); return rec; }
+function computeMastery(){ const m={}; for(const e of S.events){ if(!e.node) continue; const r=e.result||{}; let v=m[e.node]||0;
+  if(e.verb==="completed"&&typeof r.score==="number") v=Math.max(v,Math.min(1,r.score*.95+.05));
+  if(e.verb==="completed"&&r.experiment) v=Math.min(1,v+.35);
+  if(e.verb==="answered"&&r.correct===false&&r.misconception) v=Math.max(0,v-.08);
+  if(e.verb==="repaired") v=Math.min(1,v+.2);
+  if(e.verb==="diagnosed") v=Math.max(0,v-.15);
+  m[e.node]=v; } return m; }
+function mastery(id){ if(!MCACHE) MCACHE=computeMastery(); return MCACHE[id]||0; }
+const visited=id=>S.events.some(e=>e.node===id);
+function nodeState(n){ const m=mastery(n.id); if(m>=.8) return "lit"; if(visited(n.id)) return "landed"; return n.band>CURRENT_BAND?"ahead":"new"; }
+const STATE_WORD={lit:"已点亮",landed:"登陆过",new:"还没去过",ahead:"超前探险"};
+const repairsFor=id=>S.repairs.filter(r=>r.node===id&&r.status!=="archived");
+const dueRepairs=()=>S.repairs.filter(r=>r.status==="practice"&&(!r.nextReview||r.nextReview<=todayStr()));
+function recommend(){ const ok=n=>n.prereq.every(p=>mastery(p)>=.8); return NODES.find(n=>nodeState(n)!=="lit"&&ok(n)&&n.acts.length&&n.band<=CURRENT_BAND)||NODES.find(n=>nodeState(n)!=="lit"&&n.acts.length)||NODES[0]; }
+/* ============================================================
+   AI GATEWAY (MOCK) — same call shape as the real one
+   ============================================================ */
+const AI={ async call(cap,input){ const today=todayStr(); const used=S.ai.calls.filter(c=>c.at.slice(0,10)===today).length;
+  if(used>=S.ai.dailyCap){ logEvent({verb:"ai_refused",kind:"ai",result:{capability:cap}}); throw new Error("今天的 AI 额度用完了。明天再来，或者请家长调高额度。"); }
+  await new Promise(r=>setTimeout(r,700+Math.random()*600)); const out=MOCK[cap](input);
+  S.ai.calls.push({capability:cap,at:new Date().toISOString(),cost:0,mock:true}); logEvent({verb:"ai_call",kind:"ai",result:{capability:cap,mock:true}}); return out; } };
+const MOCK={
+  "vision.capture_question"(i){ if(i.sample) return {stem:"圆被平均分成 4 份，涂色部分是这个圆的几分之几？",childAnswer:"1/3",rightAnswer:"1/4"}; return {stem:"",childAnswer:"",rightAnswer:"",needsEdit:true}; },
+  "tutor.diagnose"(i){ const t=i.stem+" "+i.childAnswer; let node="math.number.fraction-intro";
+    if(/周长|一圈|长方形/.test(t)) node="math.geometry.perimeter"; else if(/时|分钟|秒/.test(t)&&!/几分之/.test(t)) node="math.measure.time-units"; else if(/比大小|哪个大/.test(t)) node="math.number.fraction-compare";
+    let mis=NODE[node].misconceptions[0]; if(node==="math.number.fraction-intro"&&/1\/3/.test(i.childAnswer)&&/4/.test(i.stem)) mis="把涂色的份数和没涂色的份数相比（1 比 3）";
+    return {node,misconception:mis}; },
+  "gen.variants"(i){ return {variants:makeVariants(i.node)}; },
+  "tutor.ask"(i){ const q=i.text;
+    if(/天/.test(q)&&/蓝/.test(q)) return {answer:"阳光里藏着很多颜色。它穿过空气时，蓝光最容易被空气里的小颗粒弹来弹去，满天都是被弹散的蓝光，所以天看起来是蓝的。",followUp:"那傍晚的天空为什么会变红？"};
+    if(/月亮/.test(q)) return {answer:"月亮离我们非常非常远。你走几步，看它的角度几乎不变；路边的树离你近，一下就被甩到后面。所以月亮好像一直跟着你。",followUp:"坐车看远处的山，是不是也像在跟着你？"};
+    return {answer:"好问题！先说说你自己的猜想。它已经记在信号站了，探索到相关星球时我们一起揭晓。",followUp:"可以做个什么小实验来验证你的猜想？"}; }
+};
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+function makeVariants(node){ const o=[];
+  if(node==="math.number.fraction-intro"){ for(let i=0;i<3;i++){ const n=rnd(3,8),k=rnd(1,n-1),t=["饼","比萨","西瓜","巧克力板"][rnd(0,3)]; o.push({q:`把一块${t}平均分成 ${n} 份，吃了 ${k} 份，吃了这块${t}的几分之几？`,a:`${k}/${n}`,kind:"fraction"}); } }
+  else if(node==="math.number.fraction-compare"){ for(let i=0;i<3;i++){ const n=rnd(5,10); let a=rnd(1,n-1),b=rnd(1,n-1); while(b===a) b=rnd(1,n-1); o.push({q:`${a}/${n} 和 ${b}/${n}，哪个大？（写出较大的那个）`,a:`${Math.max(a,b)}/${n}`,kind:"fraction"}); } }
+  else if(node==="math.geometry.perimeter"){ for(let i=0;i<3;i++){ const l=rnd(4,12),w=rnd(2,l-1); o.push({q:`长方形长 ${l} 厘米、宽 ${w} 厘米，周长是多少厘米？`,a:String(2*(l+w)),kind:"number"}); } }
+  else o.push({q:"1 分 = 多少秒？",a:"60",kind:"number"},{q:"2 分 = 多少秒？",a:"120",kind:"number"},{q:"1 时 = 多少分？",a:"60",kind:"number"});
+  return o; }
+const parseFrac=s=>{ s=String(s).replace(/\s/g,""); let m=s.match(/^(\d+)\/(\d+)$/); if(m) return +m[1]/+m[2]; m=s.match(/^(\d+)分之(\d+)$/); if(m) return +m[2]/+m[1]; return NaN; };
+const checkAnswer=(v,g)=>v.kind==="fraction"?Math.abs(parseFrac(v.a)-parseFrac(g))<1e-9:String(g).replace(/[^\d]/g,"")===v.a;
+
+/* ============================================================
+   UI helpers
+   ============================================================ */
+const $=(s,el=document)=>el.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const X_ICON=`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+let tt=null;
+function toast(msg,action){ document.querySelectorAll(".toast").forEach(t=>t.remove()); const t=document.createElement("div"); t.className="toast"; t.setAttribute("role","status"); t.innerHTML=`<span>${esc(msg)}</span>`;
+  if(action){ const b=document.createElement("button"); b.textContent=action.label; b.onclick=()=>{ action.fn(); t.remove(); }; t.appendChild(b); }
+  document.body.appendChild(t); clearTimeout(tt); tt=setTimeout(()=>t.remove(),action?8000:3000); }
+function modal(html,{onClose,wide}={}){ const s=document.createElement("div"); s.className="scrim"; s.innerHTML=`<div class="modal" role="dialog" aria-modal="true" style="${wide?"max-width:900px":""}">${html}</div>`;
+  const close=()=>{ s.remove(); document.removeEventListener("keydown",k); onClose&&onClose(); }; const k=e=>{ if(e.key==="Escape") close(); };
+  s.addEventListener("click",e=>{ if(e.target===s) close(); }); s.querySelectorAll("[data-close]").forEach(b=>b.onclick=close); document.addEventListener("keydown",k); document.body.appendChild(s);
+  return {el:s.firstElementChild,close}; }
+function closePops(){ document.querySelectorAll(".pop,.drawer,.sheet-note,.drawer-scrim").forEach(p=>p.remove()); document.querySelectorAll("[data-act=route]").forEach(b=>b.setAttribute("aria-expanded","false")); }
+function addEnergy(n=1){ S.energy+=n; S.rewardPoints+=n; save(); renderStatus(); }
+
+/* ============================================================
+   NAVIGATION — one definition, rendered into the ribbon (≥760px) or the bottom bar (phone)
+   ============================================================ */
+const NAV_ICON={
+  chart:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4" stroke-dasharray="2 2.5"/><circle cx="15.6" cy="7.4" r="1.5" fill="currentColor"/><circle cx="8.4" cy="14.6" r="1.1" fill="currentColor"/></svg>`,
+  metro:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h6l4 8h8"/><path d="M3 16h7"/><circle cx="9" cy="8" r="1.8" fill="var(--side)"/><circle cx="13" cy="16" r="1.8" fill="var(--side)"/><circle cx="19" cy="16" r="1.8" fill="var(--side)"/></svg>`,
+  repair:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5a4 4 0 0 0 4.9 4.9L11 18.8a2.1 2.1 0 1 1-3-3l8.4-8.4"/><path d="M14.5 5.5l2-2 4 4-2 2"/></svg>`,
+  signal:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 20v-7"/><circle cx="12" cy="11" r="2"/><path d="M8 7a5.5 5.5 0 0 0 0 8M16 7a5.5 5.5 0 0 1 0 8"/></svg>`,
+  route:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 10h16"/><path d="M9 15l2 2 4-4"/></svg>`
+};
+const NAV_LABEL={chart:"星图",metro:"地铁",repair:"维修舱",signal:"信号站",route:"航线"};
+function renderNav(){
+  const due=dueRepairs().length, plan=S.plans[todayStr()], done=S.done[todayStr()]||[], left=plan?[...plan.main,plan.free].filter(t=>!done.includes(t)).length:null;
+  document.querySelectorAll(".ribbon [data-view], .ribbon [data-act=route], .bottomnav [data-view], .bottomnav [data-act=route]").forEach(el=>{
+    const key=el.dataset.view||"route"; if(key==="ground") return;
+    const inBar=el.closest(".bottomnav"); const badge = key==="repair"&&due ? due : key==="route"&&(left===null||left>0) ? (left===null?"·":left) : "";
+    el.innerHTML=NAV_ICON[key]+(inBar?`<span>${NAV_LABEL[key]}</span>`:"")+(badge!==""?`<span class="badge">${badge}</span>`:"");
+  });
+}
+
+/* ============================================================
+   ROUTER
+   ============================================================ */
+const VIEWS=["chart","metro","repair","signal","ground"];
+let current="chart", selected=null, chartZoom=null, metroMode="lines";
+function route(){
+  current=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"chart";
+  VIEWS.forEach(v=>$("#v-"+v).hidden=v!==current);
+  document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===current?"page":"false"));
+  closePops();
+  rerender();
+}
+function rerender(){ ({chart:renderChart,metro:renderMetro,repair:renderRepair,signal:renderSignal,ground:renderGround})[current](); renderNav(); }
+window.addEventListener("hashchange",route);
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(!b) return;
+  const a=b.dataset.act; if(a==="tree") openTree(); else if(a==="route") openRoute(b); else if(a==="switcher") openSwitcher(); else if(a==="ask") openAsk(); });
+
+/* ============================================================
+   EXPLORER — the knowledge index (subject → constellation → planet), searchable
+   ============================================================ */
+const openCons={}; let treeQuery="";
+function treeHTML(inDrawer){
+  const rec=recommend(); if(!(consId(rec) in openCons)) openCons[consId(rec)]=true;
+  const q=treeQuery.trim();
+  let body="";
+  if(q){ const hits=NODES.filter(n=>n.title.includes(q)||n.unit.includes(q)||THEMES[n.theme].name.includes(q));
+    body=`<div class="sec">找到 ${hits.length} 颗星球</div>`+hits.map(n=>leaf(n,true)).join(""); }
+  else for(const g of ["math","science"]){
+    const all=NODES.filter(n=>n.galaxy===g);
+    body+=`<div class="sec">${GALAXY[g]}星系 · ${all.filter(n=>nodeState(n)==="lit").length}/${all.length}</div>`;
+    Object.values(CONS).filter(c=>THEMES[c.theme].g===g).sort((a,b)=>a.band-b.band||THEME_ORDER.indexOf(a.theme)-THEME_ORDER.indexOf(b.theme)).forEach(c=>{
+      const open=!!openCons[c.id], litN=c.nodes.filter(n=>nodeState(n)==="lit").length;
+      body+=`<button class="grp" data-cons="${c.id}" aria-expanded="${open}"><svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span class="sw" style="background:var(${THEMES[c.theme].c})"></span>${esc(consName(c))}<span class="muted" style="font-size:11.5px">· ${BAND_NAME[c.band]}</span><span class="c">${litN}/${c.nodes.length}</span></button>`;
+      if(open) body+=c.nodes.map(n=>leaf(n,false)).join("");
+    });
+  }
+  return `<div class="vault">${icon("ship",null,34,5)}<div><b>好奇号</b><small>舰长 · 三年级 · 人教版</small></div></div>
+    <div class="xsearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><input type="search" placeholder="搜索知识点" value="${esc(treeQuery)}" aria-label="搜索知识点" data-treeq></div>
+    <div class="tree">${body}</div>${inDrawer?`<div class="xfoot"><a href="#ground">家长入口</a></div>`:""}`;
+}
+function leaf(n,flat){ return `<button class="leaf ${flat?"ind":""}" data-node="${n.id}" aria-current="${selected===n.id}"><span class="dot ${nodeState(n)}"></span>${esc(n.title)}${repairsFor(n.id).length?`<span style="width:6px;height:6px;border-radius:50%;background:var(--bad)"></span>`:""}<span class="g">${n.grade}</span></button>`; }
+function bindTree(root){
+  root.querySelectorAll("[data-cons]").forEach(b=>b.onclick=()=>{ openCons[b.dataset.cons]=!openCons[b.dataset.cons]; renderExplorer(); });
+  root.querySelectorAll("[data-node]").forEach(b=>b.onclick=()=>{ const inDrawer=!!b.closest(".drawer"); if(inDrawer) closePops(); if(current!=="chart"&&current!=="metro") location.hash="#chart"; setTimeout(()=>select(b.dataset.node,true),0); });
+  const qi=root.querySelector("[data-treeq]"); if(qi) qi.oninput=()=>{ treeQuery=qi.value; const pos=qi.selectionStart; renderExplorer(); const again=document.querySelector(root.classList.contains("drawer")?".drawer [data-treeq]":"#explorer [data-treeq]"); if(again){ again.focus(); again.setSelectionRange(pos,pos); } };
+}
+function renderExplorer(){ const ex=$("#explorer"); ex.innerHTML=treeHTML(false); bindTree(ex); const d=$(".drawer"); if(d){ d.innerHTML=treeHTML(true); bindTree(d); } }
+function openTree(){ closePops(); const sc=document.createElement("div"); sc.className="scrim drawer-scrim"; sc.style.zIndex=34; sc.onclick=closePops; document.body.appendChild(sc);
+  const d=document.createElement("aside"); d.className="drawer"; d.setAttribute("aria-label","知识索引"); d.innerHTML=treeHTML(true); document.body.appendChild(d); bindTree(d); }
+
+/* ============================================================
+   STAR CHART — overview of constellations (theme × school band), zoom into one constellation
+   ============================================================ */
+const BANDS=[[40,84],[84,216],[216,264],[264,310],[310,350]];   // fisheye: the current band gets the room
+const C=380, polar=(th,r)=>[C+r*Math.cos(th*Math.PI/180), C-r*Math.sin(th*Math.PI/180)];
+let floatRaf=0;
+function consGeom(c){ const t=THEMES[c.theme], [a,b]=BANDS[c.band], th=(t.sec[0]+t.sec[1])/2, cur=c.band===CURRENT_BAND;
+  const r=(a+b)/2 + (cur? (THEME_ORDER.indexOf(c.theme)%2? 18:-14) : 0); const [x,y]=polar(th,r); const rr=cur?Math.min(44,14+c.nodes.length*2.4):Math.min(14,6+c.nodes.length*1.5);
+  const pts=c.nodes.map((n,i)=>{ const ang=i*2.39996+c.band, rad=rr*Math.sqrt((i+.6)/c.nodes.length); return [Math.cos(ang)*rad, Math.sin(ang)*rad]; });
+  return {x,y,rr,pts,cur}; }
+function renderChart(){ cancelAnimationFrame(floatRaf); if(chartZoom&&CONS[chartZoom]) renderConstellation(CONS[chartZoom]); else { chartZoom=null; renderOverview(); } }
+function renderOverview(){
+  const wrap=$("#chartWrap"), rec=recommend(), recC=consId(rec);
+  const lit=NODES.filter(n=>nodeState(n)==="lit").length;
+  wrap.innerHTML=`<div class="vhead"><div><h1>星图</h1><p class="sub">从里到外是年级，扇区是学科大概念。点一个星座飞进去。</p></div>
+    <div class="legend" aria-hidden="true"><span><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="var(--ink)"/></svg>点亮</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="none" stroke="var(--muted)" stroke-width="1.3"/></svg>未点亮</span><span class="mono">${lit}/${NODES.length}</span></div></div>
+    <div class="graph" id="graph"><svg id="gsvg" role="img" aria-label="好奇号星图：年级环与学科扇区"></svg></div>`;
+  const g=$("#graph"), svg=$("#gsvg"), narrow=g.clientWidth<620; g.classList.toggle("narrow",narrow);
+  svg.setAttribute("viewBox",narrow?"6 40 748 690":"0 0 760 760");
+  let h=`<circle class="band-now" cx="${C}" cy="${C}" r="${(BANDS[1][0]+BANDS[1][1])/2}" stroke-width="${BANDS[1][1]-BANDS[1][0]}"/>`;
+  BANDS.forEach(([a,b],i)=>{ h+=`<path class="kq" d="${Sk.ellipse(C,C,b,b,200+i,.6)}" ${i>=3?'stroke-dasharray="3 6"':""}/>`; });
+  h+=`<path class="kq" d="${Sk.ellipse(C,C,40,40,190,.6)}"/>`;
+  BANDS.forEach(([a,b],i)=>{ h+=`<text class="${i===CURRENT_BAND?"anno":"ring-lbl"}" x="${C}" y="${C+(a+b)/2+6}" text-anchor="middle">${BAND_NAME[i]}${i===CURRENT_BAND?" · 你在这一圈":""}</text>`; });
+  // sector dividers (between themes) and the math | science split
+  THEME_ORDER.forEach((k,i)=>{ const a0=THEMES[k].sec[0]; const p=polar(a0,44), q=polar(a0,350); h+=`<path class="kq" stroke-dasharray="1 7" d="${Sk.line(p[0],p[1],q[0],q[1],330+i,.3)}" opacity=".7"/>`; });
+  h+=`<path class="kq" stroke-dasharray="2 6" d="${Sk.line(C,C-44,C,C-352,301,.4)}"/><path class="kq" stroke-dasharray="2 6" d="${Sk.line(C,C+44,C,C+352,302,.4)}"/>`;
+  const SL=(t,th,r,cls,anc)=>{ const p=polar(th,r); return `<text class="${cls}" x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" text-anchor="${anc||"middle"}">${t}</text>`; };
+  h+=`<text class="sector-lbl" x="40" y="44">数学</text><text class="sector-lbl" x="720" y="44" text-anchor="end">科学</text>`;
+  ["mat","ene","life","earth"].forEach(k=>{ const t=THEMES[k], th=(t.sec[0]+t.sec[1])/2, p=polar(th,364); h+=`<text class="ring-lbl" x="${p[0].toFixed(1)}" y="${(p[1]+5).toFixed(1)}" text-anchor="middle" style="fill:var(${t.c})">${t.later}</text>`; });
+  { const p=polar(60,286); h+=`<text class="ring-lbl" x="${p[0]+8}" y="${p[1]}" text-anchor="start">初中起分科</text>`; }
+  // annotation
+  h+=`<g transform="translate(${C-22} ${C-26}) scale(.44)">${ICONS.ship(9)}</g>`;
+  // links between constellations (any prerequisite across them)
+  const links=new Set(); NODES.forEach(n=>n.prereq.forEach(p=>{ const a=consId(NODE[p]), b=consId(n); if(a!==b) links.add(a+">"+b); }));
+  const G={}; Object.values(CONS).forEach(c=>G[c.id]=consGeom(c));
+  [...links].forEach((l,i)=>{ const [a,b]=l.split(">"); h+=`<path class="clink kq" data-a="${a}" data-b="${b}" stroke-dasharray="2 5" d="" opacity=".8"/>`; });
+  // constellations
+  Object.values(CONS).forEach((c,ci)=>{ const geo=G[c.id], t=THEMES[c.theme], litN=c.nodes.filter(n=>nodeState(n)==="lit").length;
+    let fig=""; const idx=Object.fromEntries(c.nodes.map((n,i)=>[n.id,i]));
+    c.nodes.forEach((n,i)=>n.prereq.forEach(p=>{ if(p in idx){ const A=geo.pts[idx[p]], B=geo.pts[i]; fig+=`<path class="${geo.cur?"k1":"kq"}" d="${Sk.line(A[0],A[1],B[0],B[1],ci*31+i,.25)}" opacity="${geo.cur?.55:.6}"/>`; } }));
+    c.nodes.forEach((n,i)=>{ const st=nodeState(n), [x,y]=geo.pts[i], r=geo.cur?4.4:2.6;
+      fig+= st==="lit"?`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="var(--ink)"/>`:`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="var(--pane)" stroke="${st==="landed"?"var(--ink)":"var(--muted)"}" stroke-width="1.2" ${st==="ahead"?'stroke-dasharray="1.5 1.5"':""}/>`;
+      if(n.acts.length&&geo.cur) fig+=`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(x+4,y-4,x+9,y-9,n.seed)+Sk.line(x+5,y-10,x+9,y-4,n.seed+1)}"/>`; });
+    const hasRep=c.nodes.some(n=>repairsFor(n.id).length);
+    const label = (c.band===1||c.band===2) ? `<text class="cname ${geo.cur?"":"small"}" x="0" y="${geo.rr+(geo.cur?20:15)}" text-anchor="middle">${esc(t.name)}</text>${geo.cur?`<text class="ccount" x="0" y="${geo.rr+36}" text-anchor="middle">${litN}/${c.nodes.length}</text>`:""}` : "";
+    h+=`<g class="cons" data-id="${c.id}" tabindex="0" role="button" aria-label="${esc(consName(c))}，${BAND_NAME[c.band]}，${c.nodes.length} 颗星球，点亮 ${litN}" transform="translate(${geo.x.toFixed(1)} ${geo.y.toFixed(1)})">
+      <circle class="hit" r="${geo.rr+(geo.cur?16:10)}"/>${c.id===recC?`<circle class="ping" r="${geo.rr+6}"/>`:""}
+      ${geo.cur?`<path d="${Sk.blob(0,0,geo.rr+8,geo.rr+8,ci+3)}" style="fill:var(${t.c})" opacity=".1"/>`:""}${fig}${hasRep?`<circle cx="${geo.rr*.8}" cy="${-geo.rr*.8}" r="4" fill="var(--bad)"/>`:""}${label}</g>`;
+  });
+  svg.innerHTML=h;
+  const cons=[...svg.querySelectorAll(".cons")], clinks=[...svg.querySelectorAll(".clink")];
+  const neighbors=id=>{ const s=new Set([id]); clinks.forEach(l=>{ if(l.dataset.a===id) s.add(l.dataset.b); if(l.dataset.b===id) s.add(l.dataset.a); }); return s; };
+  const focus=id=>{ g.classList.toggle("focusing",!!id); if(!id) return; const nb=neighbors(id); cons.forEach(el=>el.classList.toggle("nb",nb.has(el.dataset.id))); clinks.forEach(l=>l.classList.toggle("nb",l.dataset.a===id||l.dataset.b===id)); };
+  cons.forEach(el=>{ el.onclick=()=>zoomTo(el.dataset.id,el); el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); zoomTo(el.dataset.id,el);} };
+    el.onpointerenter=()=>focus(el.dataset.id); el.onpointerleave=()=>focus(null); el.onfocus=()=>focus(el.dataset.id); el.onblur=()=>focus(null); });
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const place=t=>{ const off={}; cons.forEach((el,i)=>{ const geo=G[el.dataset.id], o=reduce?[0,0]:[Math.sin(t/1900+i*1.7)*(geo.cur?2.2:1.2),Math.cos(t/2300+i*2.1)*(geo.cur?2.2:1.2)]; off[el.dataset.id]=[geo.x+o[0],geo.y+o[1]]; el.setAttribute("transform",`translate(${off[el.dataset.id][0].toFixed(1)} ${off[el.dataset.id][1].toFixed(1)})`); });
+    clinks.forEach((l,i)=>{ const A=off[l.dataset.a], B=off[l.dataset.b], ga=G[l.dataset.a], gb=G[l.dataset.b]; const L=Math.hypot(B[0]-A[0],B[1]-A[1])||1, ux=(B[0]-A[0])/L, uy=(B[1]-A[1])/L;
+      l.setAttribute("d",Sk.line(A[0]+ux*(ga.rr+6),A[1]+uy*(ga.rr+6),B[0]-ux*(gb.rr+6),B[1]-uy*(gb.rr+6),600+i,.4)); }); };
+  place(0);
+  if(!reduce){ const loop=t=>{ if(current==="chart"&&!chartZoom&&!document.hidden) place(t); floatRaf=requestAnimationFrame(loop); }; floatRaf=requestAnimationFrame(loop); }
+  if(!selected) select(rec.id,false);
+}
+function zoomTo(id,el){ const svg=$("#gsvg"); const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduce||!svg||!el||!svg.animate){ chartZoom=id; renderChart(); return; }
+  const r=el.getBoundingClientRect(), s=svg.getBoundingClientRect(); const ox=r.left+r.width/2-s.left, oy=r.top+r.height/2-s.top;
+  svg.style.transformOrigin=`${ox}px ${oy}px`;
+  svg.animate([{transform:"scale(1)",opacity:1},{transform:"scale(2.4)",opacity:0}],{duration:320,easing:"ease-in"}).onfinish=()=>{ chartZoom=id; renderChart(); const ns=$("#gsvg"); if(ns&&ns.animate) ns.animate([{transform:"scale(.92)",opacity:0},{transform:"scale(1)",opacity:1}],{duration:260,easing:"ease-out"}); }; }
+function zoomOut(){ const svg=$("#gsvg"); const go=()=>{ chartZoom=null; renderChart(); const ns=$("#gsvg"); if(ns&&ns.animate&&!matchMedia("(prefers-reduced-motion: reduce)").matches) ns.animate([{transform:"scale(1.25)",opacity:0},{transform:"scale(1)",opacity:1}],{duration:300,easing:"ease-out"}); };
+  if(svg&&svg.animate&&!matchMedia("(prefers-reduced-motion: reduce)").matches) svg.animate([{opacity:1,transform:"scale(1)"},{opacity:0,transform:"scale(.85)"}],{duration:200}).onfinish=go; else go(); }
+
+function renderConstellation(c){
+  const wrap=$("#chartWrap"), t=THEMES[c.theme], litN=c.nodes.filter(n=>nodeState(n)==="lit").length, rec=recommend();
+  const units=[]; c.nodes.forEach(n=>{ let u=units.find(x=>x.name===n.unit); if(!u){ u={name:n.unit,nodes:[]}; units.push(u); } u.nodes.push(n); });
+  // rows: one per unit, wrapping after 4 planets
+  const rows=[]; units.forEach(u=>{ for(let i=0;i<u.nodes.length;i+=4) rows.push({name:i?"":u.name,nodes:u.nodes.slice(i,i+4)}); });
+  const RH=100, W=760, H=60+rows.length*RH, X0=292, DX=130, pos={};
+  rows.forEach((r,ri)=>r.nodes.forEach((n,j)=>pos[n.id]=[X0+j*DX, 70+ri*RH]));
+  wrap.innerHTML=`<div class="vhead"><div><div class="crumb"><button data-zout>← 星图</button><span>/</span><span>${BAND_NAME[c.band]}</span></div><h1>${esc(consName(c))}座</h1><p class="sub">${c.nodes.length} 颗星球 · 已点亮 ${litN} · 属于「${esc(t.line)}」</p></div>
+    <div class="legend"><a class="wikilink" href="#metro" data-metroline="${c.theme}">在地铁上看这条线</a></div></div>
+    <div class="graph scroll" id="graph"><svg id="gsvg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(consName(c))}座的星球"></svg></div>`;
+  let h=`<path d="${Sk.blob(W/2,H/2,W/2-20,H/2-10,c.band+7)}" style="fill:var(${t.c})" opacity=".05"/>`;
+  rows.forEach((r,ri)=>{ const y=70+ri*RH; if(r.name) h+=`<text class="unit-lbl" x="28" y="${y+6}">${esc(r.name)}</text>`; });
+  // edges inside the constellation
+  let ei=0; c.nodes.forEach(n=>n.prereq.forEach(p=>{ if(!pos[p]) return; const [ax,ay]=pos[p], [bx,by]=pos[n.id]; const lit=mastery(p)>=.8;
+    if(ay===by){ h+=`<path class="${lit?"k1":"kq"}" ${lit?"":'stroke-dasharray="4 5"'} d="${Sk.line(ax+20,ay,bx-22,by,700+ei)+Sk.line(bx-22,by,bx-29,by-5,720+ei,.3)+Sk.line(bx-22,by,bx-29,by+5,740+ei,.3)}"/>`; }
+    else { const span=Math.round(Math.abs(by-ay)/RH), bulge=Math.min(62,22+span*12); h+=`<path class="${lit?"k1":"kq"}" ${lit?"":'stroke-dasharray="4 5"'} opacity=".7" d="${Sk.curve([[ax+8,ay+44],[Math.max(ax,bx)+bulge,(ay+by)/2],[bx+10,by-20]],760+ei,.6)}"/>`; }
+    ei++; }));
+  c.nodes.forEach(n=>{ const [x,y]=pos[n.id], st=nodeState(n), m=mastery(n.id), r=n.acts.length?14:12, fill=n.galaxy==="math"?"var(--c-math-2)":"var(--c-sci-2)";
+    let body="";
+    if(st==="lit") body=`<path d="${Sk.blob(2,2,r,r,n.seed)}" style="fill:${fill}"/><path class="k" d="${Sk.ellipse(0,0,r,r,n.seed+1)}"/><path class="k1" d="${Sk.line(-4,0,-1,4,n.seed+2)+Sk.line(-1,4,5,-4,n.seed+3)}"/>`;
+    else if(st==="landed") body=`<path class="k" d="${Sk.ellipse(0,0,r,r,n.seed+1)}"/><path d="M0 ${-r-5}A${r+5} ${r+5} 0 ${m>.5?1:0} 1 ${((r+5)*Math.sin(m*2*Math.PI)).toFixed(1)} ${(-(r+5)*Math.cos(m*2*Math.PI)).toFixed(1)}" fill="none" style="stroke:${fill}" stroke-width="4" stroke-linecap="round"/>`;
+    else body=`<path class="kq" d="${Sk.ellipse(0,0,r,r,n.seed+1)}" ${st==="ahead"?'stroke-dasharray="3 4"':""} style="stroke-width:1.5"/>`;
+    const task=n.acts.length?`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(r*.7+2,-r*.7-2,r*.7+8,-r*.7-8,n.seed+5)+Sk.line(r*.7+4,-r*.7-9,r*.7+9,-r*.7-2,n.seed+6)}"/>`:"";
+    const rep=repairsFor(n.id).length?`<circle cx="${-r*.75}" cy="${-r*.75}" r="4" fill="var(--bad)"/>`:"";
+    const ext=n.prereq.filter(p=>!pos[p]).length;
+    h+=`<g class="node" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.title)}，${STATE_WORD[st]}" transform="translate(${x} ${y})"><circle class="hit" r="30"/>
+      ${n.id===rec.id?`<circle class="ping" r="${r+6}"/>`:""}${n.id===selected?`<path class="sel-ring" d="${Sk.ellipse(0,0,r+9,r+9,n.seed+9,.8)}"/>`:""}${body}${task}${rep}
+      <text class="lbl" y="${r+22}" text-anchor="middle">${esc(n.title)}</text></g>`; });
+  const svg=$("#gsvg"); svg.innerHTML=h;
+  svg.querySelectorAll(".node").forEach(el=>{ el.onclick=()=>select(el.dataset.id,true); el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); select(el.dataset.id,true);} }; });
+  wrap.querySelector("[data-zout]").onclick=zoomOut;
+  const ml=wrap.querySelector("[data-metroline]"); if(ml) ml.onclick=e=>{ e.preventDefault(); metroMode="lines"; metroFocusLine=c.theme; location.hash="#metro"; };
+}
+
+/* ============================================================
+   KNOWLEDGE METRO — lines = 课标大概念; stations = knowledge points; interchanges = cross-line prerequisites
+   ============================================================ */
+let metroFocusLine=null;
+function metroLayout(){
+  const by={}; THEME_ORDER.forEach(k=>{ by[k]={}; GRADES.forEach(g=>by[k][g]=[]); }); NODES.forEach(n=>by[n.theme][n.grade].push(n));
+  const LBLW=150, colW={}, zoneX={}; let x=LBLW;
+  GRADES.forEach(g=>{ const mx=Math.max(...THEME_ORDER.map(k=>by[k][g].length)); colW[g]=Math.max(g===CURRENT_GRADE?140:104, mx*60+36); zoneX[g]=x; x+=colW[g]; });
+  const W=x+60, rowY=k=>{ const i=THEME_ORDER.indexOf(k); return 156+i*80+(i>=4?34:0); }, H=rowY("earth")+90, pos={};
+  THEME_ORDER.forEach(k=>GRADES.forEach(g=>{ const list=by[k][g]; list.forEach((n,i)=>pos[n.id]=[zoneX[g]+18+(i+.5)*(colW[g]-36)/list.length, rowY(k)]); }));
+  return {by,colW,zoneX,W,H,rowY,pos,LBLW};
+}
+function renderMetro(){
+  const wrap=$("#metroWrap");
+  const collected=NODES.filter(n=>nodeState(n)==="lit").length;
+  wrap.innerHTML=`<div class="vhead"><div><h1>知识地铁</h1><p class="sub">每条线是一个大概念，从一年级一直开到高中。换乘站是两条线相遇的地方。</p></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="mono muted" style="font-size:12px">已收集 ${collected}/${NODES.length}</span><div class="seg" role="group" aria-label="显示方式"><button data-mm="lines" aria-pressed="${metroMode==="lines"}">线路图</button><button data-mm="cards" aria-pressed="${metroMode==="cards"}">图鉴</button></div></div></div>
+    <div class="mscroll" id="mscroll"></div>`;
+  wrap.querySelectorAll("[data-mm]").forEach(b=>b.onclick=()=>{ metroMode=b.dataset.mm; renderMetro(); });
+  if(metroMode==="cards") return renderCards();
+  const L=metroLayout(), {W,H,rowY,pos,zoneX,colW,LBLW}=L, rec=recommend();
+  let h=``;
+  // zones
+  GRADES.forEach((g,i)=>{ const x=zoneX[g], w=colW[g], cur=g===CURRENT_GRADE;
+    if(cur) h+=`<rect x="${x}" y="70" width="${w}" height="${H-80}" rx="14" style="fill:var(--wash)"/>`;
+    h+=`<text class="zone-lbl" x="${x+w/2}" y="44" text-anchor="middle" ${cur?'style="fill:var(--accent)"':""}>${GRADE[g]}</text>`;
+    if(i>0) h+=`<path class="kq" stroke-dasharray="${g==="G7"||g==="G10"?"6 4":"1 6"}" d="${Sk.line(x,58,x,H-10,900+i,.3)}" ${g==="G7"||g==="G10"?'style="stroke-width:1.6"':""}/>`; });
+  h+=`<text class="zone-sub" x="${zoneX.G1+4}" y="62">小学</text><text class="zone-sub" x="${zoneX.G7+6}" y="62">初中 · 理科分科</text><text class="zone-sub" x="${zoneX.G10+6}" y="62">高中</text>`;
+  // lines
+  THEME_ORDER.forEach((k,li)=>{ const t=THEMES[k], y=rowY(k), st=NODES.filter(n=>n.theme===k).sort((a,b)=>pos[a.id][0]-pos[b.id][0]);
+    const pts=[[LBLW+6,y],...st.map(n=>pos[n.id])], last=pts[pts.length-1]; let d="";
+    for(let i=0;i<pts.length-1;i++) d+=Sk.line(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1],1000+li*50+i,.35);
+    const dim=metroFocusLine&&metroFocusLine!==k;
+    h+=`<g class="mline" data-line="${k}" opacity="${dim?.25:1}"><path d="${d}" fill="none" style="stroke:var(${t.c})" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${Sk.line(last[0],y,W-20,y,1400+li,.3)}" fill="none" style="stroke:var(${t.c})" stroke-width="2.5" stroke-dasharray="2 7" stroke-linecap="round"/>
+      ${t.later?`<text class="hand" x="${zoneX.G7+8}" y="${y-16}" font-size="15" style="fill:var(${t.c})">→ ${t.later}</text>`:""}</g>`; });
+  // interchanges: prerequisites that cross lines
+  NODES.forEach(n=>n.prereq.forEach((p,j)=>{ const a=NODE[p]; if(a.theme===n.theme) return; const [ax,ay]=pos[p], [bx,by]=pos[n.id];
+    h+=`<path class="k1" d="${Sk.curve([[ax,ay],[ax+(bx-ax)*.5,ay+(by-ay)*.15],[bx-(bx-ax)*.15,by-(by-ay)*.4],[bx,by]],1600+n.seed+j,.5)}" stroke-dasharray="1 5" style="stroke-width:2" opacity=".75"/>`; }));
+  const inter=new Set(); NODES.forEach(n=>n.prereq.forEach(p=>{ if(NODE[p].theme!==n.theme){ inter.add(p); inter.add(n.id); } }));
+  // stations
+  NODES.forEach(n=>{ const [x,y]=pos[n.id], st=nodeState(n), col=`var(${THEMES[n.theme].c})`, dim=metroFocusLine&&metroFocusLine!==n.theme;
+    const ring = inter.has(n.id) ? `<rect x="-11" y="-9" width="22" height="18" rx="9" fill="var(--pane)" stroke="var(--ink)" stroke-width="2"/>` : "";
+    const core = st==="lit" ? `<circle r="6.5" style="fill:${col}" stroke="var(--ink)" stroke-width="1.6"/>` : st==="landed" ? `<circle r="6.5" fill="var(--pane)" style="stroke:${col}" stroke-width="3"/><circle r="2.6" style="fill:${col}"/>` : `<circle r="6" fill="var(--pane)" style="stroke:${col}" stroke-width="2.4" ${st==="ahead"?'stroke-dasharray="2.5 2"':""}/>`;
+    h+=`<g class="station" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.title)} · ${GRADE[n.grade]} · ${STATE_WORD[st]}" transform="translate(${x.toFixed(1)} ${y})" opacity="${dim?.3:1}"><circle class="hit" r="16"/>
+      ${n.id===selected?`<circle r="13" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`:""}${ring}${core}
+      ${n.acts.length?`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(7,-8,12,-13,n.seed)+Sk.line(8,-14,12,-8,n.seed+1)}"/>`:""}${repairsFor(n.id).length?`<circle cx="-8" cy="-8" r="3.5" fill="var(--bad)"/>`:""}
+      <text class="slbl ${st==="lit"||st==="landed"||n.id===rec.id?"":"dim"}" transform="translate(6 -14) rotate(-36)" ${n.id===rec.id?'style="fill:var(--accent);font-weight:700"':""}>${esc(n.title)}${n.id===rec.id?" · 你在这里":""}</text></g>`; });
+  // you are here
+  // sticky line labels
+  let lbl=`<rect x="0" y="0" width="${LBLW}" height="${H}" style="fill:var(--pane)"/><path class="kq" d="M${LBLW} 0V${H}"/>`;
+  THEME_ORDER.forEach(k=>{ const t=THEMES[k], y=rowY(k); lbl+=`<g class="lline" data-line="${k}" style="cursor:pointer"><rect x="14" y="${y-4}" width="18" height="8" rx="4" style="fill:var(${t.c})"/><text class="line-lbl" x="40" y="${y+5}">${t.line}</text><text class="zone-sub" x="40" y="${y+20}">${GALAXY[t.g]}${t.later?" → "+t.later:""}</text></g>`; });
+  lbl+=`<text class="zone-sub" x="14" y="${rowY("num")-34}">数学</text><text class="zone-sub" x="14" y="${rowY("mat")-34}">科学</text>`;
+  const sc=$("#mscroll");
+  sc.innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="知识地铁线路图">${h}<g id="mlabels">${lbl}</g></svg>`;
+  const ml=sc.querySelector("#mlabels"); sc.onscroll=()=>ml.setAttribute("transform",`translate(${sc.scrollLeft} 0)`);
+  sc.scrollLeft=Math.max(0,zoneX[CURRENT_GRADE]-LBLW-80);
+  sc.querySelectorAll(".station").forEach(el=>{ el.onclick=()=>select(el.dataset.id,true); el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); select(el.dataset.id,true);} }; });
+  sc.querySelectorAll(".lline").forEach(el=>el.onclick=()=>{ metroFocusLine=metroFocusLine===el.dataset.line?null:el.dataset.line; const keep=sc.scrollLeft; renderMetro(); $("#mscroll").scrollLeft=keep; });
+}
+function renderCards(){
+  const sc=$("#mscroll"); let h=`<div class="cards">`;
+  THEME_ORDER.forEach(k=>{ const t=THEMES[k], list=NODES.filter(n=>n.theme===k), got=list.filter(n=>nodeState(n)==="lit").length;
+    h+=`<section><h2><i style="background:var(${t.c})"></i>${t.line}<small>${got}/${list.length}</small></h2><div class="cardgrid">`+
+      list.map(n=>{ const lit=nodeState(n)==="lit"; return `<button class="spec ${lit?"":"locked"}" data-id="${n.id}"><span class="no">No.${String(n.no).padStart(3,"0")}</span>${lit?`<span class="stamp">已收集</span>`:""}${icon(n.icon,n.galaxy,64,n.seed)}<b>${lit?esc(n.title):(n.band<=CURRENT_BAND?esc(n.title):"？？？")}</b><small>${GRADE[n.grade]}</small></button>`; }).join("")+`</div></section>`; });
+  sc.innerHTML=h+`</div>`;
+  sc.querySelectorAll(".spec").forEach(b=>b.onclick=()=>select(b.dataset.id,true));
+}
+
+/* ============================================================
+   NOTE PANE — the planet as a note
+   ============================================================ */
+function select(id,user){
+  const n=NODE[id]; if(!n) return; selected=id;
+  if(current==="chart"&&user&&chartZoom!==consId(n)){ chartZoom=consId(n); openCons[consId(n)]=true; renderChart(); }
+  else if(current==="chart"&&chartZoom){ const svg=$("#gsvg"); svg&&svg.querySelectorAll(".sel-ring").forEach(e=>e.remove()); const el=svg&&svg.querySelector(`.node[data-id="${CSS.escape(id)}"]`); if(el){ const r=n.acts.length?14:12; el.insertAdjacentHTML("afterbegin",`<path class="sel-ring" d="${Sk.ellipse(0,0,r+9,r+9,n.seed+9,.8)}"/>`); } }
+  if(current==="metro"&&metroMode==="lines"){ const sc=$("#mscroll"); if(sc){ sc.querySelectorAll(".station .selr").forEach(e=>e.remove()); const el=sc.querySelector(`.station[data-id="${CSS.escape(id)}"]`); if(el) el.insertAdjacentHTML("afterbegin",`<circle class="selr" r="13" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`); } }
+  renderExplorer();
+  const html=noteHTML(n,user); const pane=$("#notepane"); pane.innerHTML=html; bindNote(pane); if(user) pane.scrollTop=0;
+  if(user&&innerWidth<760){ closePops(); const sh=document.createElement("div"); sh.className="sheet-note"; sh.innerHTML=`<div class="grab"></div><div style="display:flex;justify-content:flex-end;padding:0 10px"><button class="close" aria-label="关闭">${X_ICON}</button></div>`+html; document.body.appendChild(sh); sh.querySelector(".close").onclick=closePops; bindNote(sh); }
+}
+function noteHTML(n,animate){
+  const st=nodeState(n), m=mastery(n.id), rec=recommend(), isRec=rec.id===n.id, t=THEMES[n.theme], c=CONS[consId(n)];
+  const nextOnes=NODES.filter(x=>x.prereq.includes(n.id)), acts=n.acts.map(a=>ACTIVITIES[a]), lit=st==="lit";
+  const cardBg=n.galaxy==="math"?"var(--c-math-bg)":"var(--c-sci-bg)";
+  return `<div class="note">
+    <div class="crumbs"><span>${GALAXY[n.galaxy]}</span><span>${esc(consName(c))}座</span><span>${GRADE[n.grade]}</span></div>
+    <h1>${esc(n.title)}</h1>
+    <dl class="props">
+      <dt>状态</dt><dd><span class="pill ${lit?"lit":""}">${STATE_WORD[st]}</span>${isRec?` <span class="pill acc">今日信号</span>`:""}</dd>
+      <dt>点亮</dt><dd><span class="mono">${Math.round(m*100)}%</span><div class="meter"><i style="width:${m*100}%"></i></div></dd>
+      <dt>单元</dt><dd>${esc(n.unit)}</dd>
+      <dt>线路</dt><dd><a class="wikilink" href="#metro" data-line="${n.theme}"><span style="display:inline-block;width:14px;height:5px;border-radius:9px;background:var(${t.c});vertical-align:middle;margin-right:4px"></span>${t.line}</a></dd>
+      ${n.prereq.length?`<dt>先去</dt><dd class="links">${n.prereq.map(p=>`<a class="wikilink" href="#" data-goto="${p}">${esc(NODE[p].title)}</a>`).join("")}</dd>`:""}
+    </dl>
+    ${n.dq?`<div class="signal-card" style="--card-bg:${cardBg}"><div><div class="eyebrow">${isRec?"今日信号":"来自这颗星球的信号"}</div><p class="q">${esc(n.dq)}</p></div>${icon(n.icon,n.galaxy,100,n.seed,animate?"drawin":"")}</div>`
+      :`<div class="callout"><span class="ct">这颗星球的信号还在路上</span><span class="muted" style="font-size:13px">它的讲解、实验和挑战还没造好。示例数据里只有少数星球是完整的。</span></div>`}
+    <div class="minispec ${lit?"":"locked"}">${icon(n.icon,n.galaxy,40,n.seed)}<div><b style="font-size:13px;color:var(--ink)">图鉴 No.${String(n.no).padStart(3,"0")}</b><div class="muted" style="font-size:12px">${lit?"已收集，可以在地铁的「图鉴」里翻到它":"点亮之后，这张标本卡会收进图鉴"}</div></div></div>
+    <h2>任务</h2>
+    <div class="tasklist">${acts.length?acts.map(a=>`<div class="taskrow">${icon(a.type==="experiment"?"pinhole":"cake",n.galaxy,48,a.id.length)}<div><b>${esc(a.title)}</b><small>${a.type==="experiment"?"实验":"挑战"} · 约 ${a.duration_min} 分钟</small></div><button class="btn ink" data-start="${a.id}">开始</button></div>`).join("")
+      :`<p class="muted" style="font-size:13px">还没有任务。</p>`}</div>
+    ${repairsFor(n.id).length?`<div class="callout q"><span class="ct">维修舱里有 ${repairsFor(n.id).length} 道这颗星球的题</span><a class="wikilink" href="#repair">去修一修</a></div>`:""}
+    ${n.lenses.length?`<h2>不同年龄看到的样子</h2><div class="lenses">${n.lenses.map(([b,a])=>`<div class="${b==="G3-4"?"on":""}"><span class="b">${b}</span><span>${esc(a)}</span></div>`).join("")}</div>`:""}
+    ${nextOnes.length?`<h2>反向链接</h2><p class="muted" style="font-size:13px">点亮这里之后可以去：</p><div class="links">${nextOnes.map(x=>`<a class="wikilink" href="#" data-goto="${x.id}">${esc(x.title)}</a>`).join("")}</div>`:""}
+    <form class="capture" data-capture><input type="text" placeholder="有疑问？写下来发到信号站" maxlength="80" aria-label="写下疑问"><button class="btn" type="submit">发出</button></form>
+    ${n.objectives.length?`<details class="parent"><summary>给家长：目标与常见误区</summary><div>目标：${n.objectives.map(esc).join("；")}<br>常见误区：${n.misconceptions.map(esc).join("；")}<br><span class="mono muted">${n.id}</span></div></details>`:`<p class="mono muted" style="font-size:11px">${n.id}</p>`}
+  </div>`;
+}
+function bindNote(root){
+  root.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>{ closePops(); openLab(b.dataset.start); });
+  root.querySelectorAll("[data-goto]").forEach(a=>a.onclick=e=>{ e.preventDefault(); closePops(); if(current!=="chart"&&current!=="metro") location.hash="#chart"; setTimeout(()=>select(a.dataset.goto,true),0); });
+  root.querySelectorAll("[data-line]").forEach(a=>a.onclick=e=>{ e.preventDefault(); closePops(); metroMode="lines"; metroFocusLine=a.dataset.line; if(current==="metro") renderMetro(); else location.hash="#metro"; });
+  const f=root.querySelector("[data-capture]"); if(f) f.onsubmit=e=>{ e.preventDefault(); const i=f.querySelector("input"); const t=i.value.trim(); if(!t) return; addQuestion(t,selected); i.value=""; toast("已发到信号站"); };
+}
+
+/* ============================================================
+   STATUS BAR (information only) + 今日航线 (one nav entry)
+   ============================================================ */
+function renderStatus(){
+  const plan=S.plans[todayStr()], done=S.done[todayStr()]||[], planned=plan?[...plan.main,plan.free]:[], n=planned.filter(t=>done.includes(t)).length;
+  const lit=NODES.filter(x=>nodeState(x)==="lit").length, due=dueRepairs().length;
+  $("#statusbar").innerHTML=`<span class="sitem"><svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 .5l4 4.5-4 4.5-4-4.5z" fill="var(--accent)"/></svg><span class="mono">${S.energy}</span> 能量</span>
+    <span class="sitem">${plan?`今日航线 <span class="mono">${n}/3</span>`:"今日航线还没规划"}</span>
+    <span class="sp"></span>${due?`<span class="sitem" style="color:var(--accent)">${due} 道题待修</span>`:""}
+    <span class="sitem">已点亮 <span class="mono">${lit}/${NODES.length}</span></span>
+    ${S.debug?`<button class="sitem" id="sbBox">黑匣子 <span class="mono">${S.events.length}</span></button>`:""}<span class="sitem muted">示例数据 · 仅存于本机</span>`;
+  const bx=$("#sbBox"); if(bx) bx.onclick=openBlackBox;
+  renderNav();
+}
+let draft=[];
+function openRoute(btn){
+  const was=$(".pop.habits"); closePops(); document.querySelectorAll("[data-act=route]").forEach(b=>b.setAttribute("aria-expanded","false")); if(was) return;
+  const p=document.createElement("div"); p.className="pop habits"; p.setAttribute("role","dialog"); p.setAttribute("aria-label","今日航线");
+  if(innerWidth>=760){ const r=btn.getBoundingClientRect(); p.style.setProperty("--pop-top",Math.max(12,Math.min(innerHeight-560,r.top-8))+"px"); }
+  document.body.appendChild(p); document.querySelectorAll("[data-act=route]").forEach(b=>b.setAttribute("aria-expanded","true"));
+  const draw=()=>{
+    const k=todayStr(), plan=S.plans[k], done=S.done[k]||[], R=S.rewardGoal;
+    const ws=new Date(); ws.setDate(ws.getDate()-((ws.getDay()+6)%7));
+    const days=[...Array(7)].map((_,i)=>{ const d=new Date(ws); d.setDate(ws.getDate()+i); return [todayStr(d),"一二三四五六日"[i]]; });
+    const bars=days.map(([d,l],i)=>{ const v=(S.done[d]||[]).length, hh=Math.max(2,v/4*56), x=14+i*42;
+      return `${v?`<path class="f" d="${Sk.area([[x+2,80-hh+2],[x+26,80-hh+1],[x+27,80],[x+3,80]])}"/><path class="k1" d="${Sk.rect(x,80-hh,26,hh,700+i,.6)}"/>`:`<path class="kq" d="${Sk.line(x,80,x+26,80,720+i)}"/>`}<text x="${x+13}" y="98" text-anchor="middle" font-size="12" style="fill:${d===k?"var(--accent)":"var(--muted)"}">${l}</text>${v?`<text x="${x+13}" y="${80-hh-6}" text-anchor="middle" font-size="12" style="fill:var(--ink)" font-family="JetBrains Mono, monospace">${v}</text>`:""}`; }).join("");
+    p.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3>今日航线</h3><button class="close" data-x aria-label="关闭">${X_ICON}</button></div>
+      ${plan?`<div class="route">${[...plan.main.map(t=>["主线",t]),["自由",plan.free]].map(([tag,t])=>`<label><span class="tag">${tag}</span><input type="checkbox" data-t="${esc(t)}" ${done.includes(t)?"checked disabled":""}>${esc(t)}</label>`).join("")}</div><p class="muted" style="font-size:12px">完成实验或挑战，「数学」「科学」会自动打勾。点错了 8 秒内可撤销。</p>`
+        :`<p class="muted" style="font-size:13px">选 2 个主线 + 1 个自由探索。没有全勤要求。</p><div class="chips">${S.tasks.map(t=>{ const i=draft.indexOf(t); return `<button class="chip" data-pick="${esc(t)}" aria-pressed="${i>=0}">${esc(t)}${i<0?"":i<2?" · 主线":" · 自由"}</button>`; }).join("")}</div><button class="btn ink" id="launch" ${draft.length===3?"":"disabled"}>出发</button>`}
+      <div><h3 style="margin-bottom:6px">本周</h3><svg viewBox="0 0 310 104" width="100%" style="--icon-fill:var(--c-sci)" aria-label="本周每天完成的任务数">${bars}</svg></div>
+      <div><div style="display:flex;justify-content:space-between"><h3>补给站</h3><span class="mono muted" style="font-size:12px">${S.rewardPoints} / ${R.target}</span></div>
+        <p style="font-size:14px;color:var(--ink);margin:4px 0 6px">${esc(R.name)}</p><div class="meter" style="max-width:none"><i style="width:${Math.min(100,S.rewardPoints/R.target*100)}%"></i></div>
+        <button class="btn" id="req" style="margin-top:10px" ${S.rewardPoints>=R.target&&R.status!=="requested"?"":"disabled"}>${R.status==="requested"?"已申请，等家长确认":S.rewardPoints>=R.target?"向家长申请兑换":`还差 ${R.target-S.rewardPoints} 点`}</button></div>`;
+    p.querySelector("[data-x]").onclick=()=>{ p.remove(); document.querySelectorAll("[data-act=route]").forEach(b=>b.setAttribute("aria-expanded","false")); };
+    p.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{ const t=b.dataset.pick, i=draft.indexOf(t); if(i>=0) draft.splice(i,1); else if(draft.length<3) draft.push(t); draw(); });
+    const L2=p.querySelector("#launch"); if(L2) L2.onclick=()=>{ S.plans[k]={main:draft.slice(0,2),free:draft[2]}; draft=[]; save(); renderStatus(); draw(); };
+    p.querySelectorAll("[data-t]").forEach(c=>c.onchange=()=>{ completeTask(c.dataset.t,"manual"); draw(); });
+    const rq=p.querySelector("#req"); if(rq) rq.onclick=()=>{ R.status="requested"; save(); draw(); toast("申请已发给家长"); };
+  };
+  draw();
+}
+function completeTask(t,via){ const k=todayStr(); S.done[k]=S.done[k]||[]; if(S.done[k].includes(t)) return; S.done[k].push(t); addEnergy(1); logEvent({verb:"task_done",result:{task:t,via}});
+  if(via==="manual") toast(`「${t}」完成，能量 +1`,{label:"撤销",fn:()=>{ S.done[k]=S.done[k].filter(x=>x!==t); S.energy--; S.rewardPoints--; logEvent({verb:"task_undone",result:{task:t}}); save(); renderStatus(); }});
+  else toast(`「${t}」自动打勾，能量 +1`); }
+function autoTask(g){ const plan=S.plans[todayStr()]; if(!plan) return; const t=g==="math"?"数学":"科学"; if([...plan.main,plan.free].includes(t)) completeTask(t,"auto"); }
+window.addEventListener("resize",()=>{ if(current==="chart"&&!chartZoom) renderChart(); });
+/* ============================================================
+   QUICK SWITCHER + ASK
+   ============================================================ */
+document.addEventListener("keydown",e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="k"){ e.preventDefault(); openSwitcher(); } });
+function openSwitcher(){
+  const m=modal(`<div class="switcher"><input type="text" id="swq" placeholder="想去哪颗星球？" aria-label="搜索星球" autocomplete="off"><ul id="swl"></ul></div>`);
+  const q=m.el.querySelector("#swq"), ul=m.el.querySelector("#swl"); let idx=0, list=[];
+  const draw=()=>{ const t=q.value.trim(); list=NODES.filter(n=>!t||n.title.includes(t)||GALAXY[n.galaxy].includes(t)); idx=Math.min(idx,Math.max(0,list.length-1));
+    ul.innerHTML=list.map((n,i)=>`<li><button class="${i===idx?"on":""}" data-i="${i}"><span class="dot ${nodeState(n)}"></span>${esc(n.title)}<span class="g">${GALAXY[n.galaxy]} · ${n.grade}</span></button></li>`).join("")||`<li class="muted" style="padding:8px">没有找到</li>`;
+    ul.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>go(+b.dataset.i)); };
+  const go=i=>{ const n=list[i]; if(!n) return; m.close(); if(current!=="chart") location.hash="#chart"; setTimeout(()=>select(n.id,true),0); };
+  q.oninput=()=>{ idx=0; draw(); }; q.onkeydown=e=>{ if(e.key==="ArrowDown"){ idx=Math.min(list.length-1,idx+1); draw(); e.preventDefault(); } if(e.key==="ArrowUp"){ idx=Math.max(0,idx-1); draw(); e.preventDefault(); } if(e.key==="Enter") go(idx); };
+  draw(); q.focus();
+}
+function openAsk(){
+  const m=modal(`<div class="mhead"><div><small>信号站</small><h2>发一个「为什么」</h2></div><button class="close" data-close aria-label="关闭">${X_ICON}</button></div>
+    <form id="af" class="ask-row"><input type="text" id="ai" placeholder="比如：为什么天空是蓝色的？" maxlength="80" aria-label="你的问题"><button class="btn ink big" type="submit">发出</button></form>
+    <p class="muted" style="font-size:13px;margin-top:10px">什么问题都可以，奇怪的更好。</p>`);
+  const i=m.el.querySelector("#ai"); i.focus(); m.el.querySelector("#af").onsubmit=e=>{ e.preventDefault(); const t=i.value.trim(); if(!t) return; addQuestion(t,null); m.close(); toast("信号已发出",{label:"去看看",fn:()=>location.hash="#signal"}); };
+}
+
+/* ============================================================
+   ACTIVITY HOST — sandbox + contract activity/1.1 + platform-owned POE
+   ============================================================ */
+const SDK=`const Host=(()=>{const h={};window.addEventListener("message",e=>{const m=e.data;if(!m||m.contract!=="activity/1.1")return;if(h[m.type])h[m.type](m.payload||{});});const send=(type,payload)=>parent.postMessage({contract:"activity/1.1",type,payload:payload||{}},"*");if(window.ResizeObserver){new ResizeObserver(()=>send("resize",{h:document.documentElement.scrollHeight})).observe(document.body);}return{on:(k,f)=>{h[k]=f},ready:()=>send("ready"),event:(verb,result)=>send("event",{verb,result}),state:(o)=>send("state",o),requestHint:()=>send("request_hint"),noteQuestion:(text)=>send("note_question",{text}),complete:(r)=>send("complete",r)};})();`;
+function palette(){ const cs=getComputedStyle(document.documentElement); const g=k=>cs.getPropertyValue(k).trim();
+  return {bg:g("--bg"),pane:g("--pane"),hover:g("--hover"),rule:g("--rule"),ink:g("--ink"),text:g("--text"),muted:g("--muted"),accent:g("--accent"),accentSoft:g("--accent-soft"),sci:g("--c-sci"),sci2:g("--c-sci-2"),sciBg:g("--c-sci-bg"),math:g("--c-math"),math2:g("--c-math-2"),mathBg:g("--c-math-bg"),good:g("--good"),bad:g("--bad")}; }
+const FONT_LINK=`<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600&family=ZCOOL+KuaiLe&display=swap">`;
+function srcdoc(mod){ return `<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONT_LINK}<style>${MOD_BASE_CSS}${mod.css}</style></head><body>${mod.body}<script>${SDK}\nconst Sk=(${sketchLib.toString()})();\n(${mod.fn.toString()})();<\/script></body></html>`; }
+
+function openLab(actId){
+  const A=ACTIVITIES[actId], node=NODE[A.targets[0]], poe=A.pedagogy==="POE";
+  const run={phase:poe?"predict":"run",prediction:null,first:null,big:null,last:null,hints:0,wrong:[]};
+  const lab=document.createElement("div"); lab.className="lab"; lab.setAttribute("role","dialog"); lab.setAttribute("aria-label",A.title);
+  lab.innerHTML=`<div class="labhead">${icon(node.icon,node.galaxy,40,node.seed)}<div class="t"><small>${esc(node.title)} · ${A.type==="experiment"?"实验":"挑战"} · <span class="mono">${A.contract}</span></small><h2>${esc(A.title)}</h2></div><button class="close" aria-label="关闭">${X_ICON}</button></div>
+    <div class="labbody ${poe?"poe":""}">${poe?`<div class="poe-col" id="poe"></div>`:""}<div><div class="frame"><iframe title="${esc(A.title)}" sandbox="allow-scripts"></iframe></div><div id="after"></div></div></div>`;
+  document.body.appendChild(lab);
+  const frame=lab.querySelector("iframe"), send=(type,payload)=>frame.contentWindow&&frame.contentWindow.postMessage({contract:"activity/1.1",type,payload},"*"), base={node:node.id,activity:A.id};
+  const readyTimer=setTimeout(()=>logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"模块 3 秒内没有发出 ready"}},base)),3000);
+  const close=()=>{ window.removeEventListener("message",onMsg); clearTimeout(readyTimer); lab.remove(); rerender(); select(node.id,false); };
+  lab.querySelector(".close").onclick=close;
+  function onMsg(e){ if(e.source!==frame.contentWindow) return; const m=e.data;
+    if(!m||m.contract!==A.contract){ logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"契约版本不符"}},base)); return; }
+    const p=m.payload||{};
+    switch(m.type){
+      case "ready": clearTimeout(readyTimer); send("init",{age_band:"G3-4",lang:"zh",phase:run.phase,palette:palette(),mastery:mastery(node.id)}); logEvent(Object.assign({verb:"started"},base)); break;
+      case "event": if(!A.emits.includes(p.verb)){ logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"未在 manifest.emits 声明",verb:p.verb}},base)); break; }
+        if(p.verb==="started") break; logEvent(Object.assign({verb:p.verb,result:p.result},base));
+        if(p.verb==="answered"&&p.result&&p.result.correct===false) run.wrong.push(p.result);
+        if(p.verb==="observed"&&poe){ run.phase="explain"; drawPOE(); } break;
+      case "state": if(!run.first) run.first=p; run.last=p; if(p.hole==="大") run.big=p; break;
+      case "request_hint": run.hints++; send("hint",{level:run.hints}); logEvent(Object.assign({verb:"hint_used",result:{level:run.hints}},base)); break;
+      case "note_question": addQuestion(p.text,node.id); toast("问题已发到信号站"); break;
+      case "complete": finish(p); break;
+      case "resize": frame.style.height=Math.max(420,Math.min(2400,+p.h||0))+"px"; frame.style.minHeight="0"; break;
+      default: logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"未知消息",type:m.type}},base)); } }
+  window.addEventListener("message",onMsg);
+  frame.srcdoc=srcdoc(MODULES[A.entry]);
+  function drawPOE(){ const box=lab.querySelector("#poe"); if(!box) return; const P=A.predict, order=["predict","observe","explain","done"], cur=order.indexOf(run.phase);
+    const cls=k=>run.phase===k?"on":(cur>order.indexOf(k)?"done":""); const said=run.prediction==null?"":P.options[run.prediction]; const f=run.first, b=run.big||run.last;
+    box.innerHTML=`
+      <div class="pstep ${cls("predict")}"><div class="n"><i>1</i>预测</div><h3>${esc(P.prompt)}</h3>
+        ${run.phase==="predict"?P.options.map((o,i)=>`<button class="opt" data-p="${i}" aria-pressed="${run.prediction===i}">${esc(o)}</button>`).join("")+`<button class="btn ink big" id="lockP" ${run.prediction==null?"disabled":""}>就这么猜，去做实验</button>`:`<p style="font-size:14px">我猜：<b style="color:var(--ink)">${esc(said)}</b></p>`}</div>
+      <div class="pstep ${cls("observe")}"><div class="n"><i>2</i>观察</div><h3>动手调一调，盯住屏上的像</h3>${run.phase==="observe"?`<p class="muted" style="font-size:14px">拖动右边的滑块。看清楚以后，点实验里的「观察完了」。</p>`:""}</div>
+      <div class="pstep ${cls("explain")}${run.phase==="done"?" done":""}"><div class="n"><i>3</i>解释</div><h3>为什么会这样？</h3>
+        ${cur>=2?`<div class="callout ${run.prediction===P.correct?"tip":"q"}"><span class="ct">${run.prediction===P.correct?"猜对了":"和你猜的不一样"}</span><span style="font-size:14px">${run.prediction===P.correct?"你的预测和观察一致。":`实际是「${esc(P.options[P.correct])}」。猜错很正常，科学家也常这样。`}</span></div>
+          ${f&&b?`<p style="font-size:14px">你看到：亮度从「${esc(f.brightness)}」变成「${esc(b.brightness)}」，清楚程度从「${esc(f.sharpness)}」变成「${esc(b.sharpness)}」，像一直是「${esc(b.orientation)}」的。</p>`:""}
+          <p style="font-size:14px;color:var(--ink)">${esc(A.explain)}</p>
+          ${run.phase==="explain"?`<div class="field"><label for="refl">用一句话说说你发现了什么</label><textarea id="refl" maxlength="120" placeholder="我发现……"></textarea></div><button class="btn ink big" id="finP">写好了，完成实验</button>`
+            :`<div style="display:flex;align-items:center;gap:8px;color:var(--good)"><svg class="drawn-check" width="28" height="28" viewBox="0 0 28 28"><path d="M5 15l6 6L23 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><b>实验完成，能量 +1</b></div>`}`:""}</div>`;
+    box.querySelectorAll("[data-p]").forEach(o=>o.onclick=()=>{ run.prediction=+o.dataset.p; drawPOE(); });
+    const lp=box.querySelector("#lockP"); if(lp) lp.onclick=()=>{ logEvent(Object.assign({verb:"predicted",result:{choice:P.options[run.prediction],correct:run.prediction===P.correct}},base)); run.phase="observe"; send("phase",{phase:"observe"}); drawPOE(); };
+    const fp=box.querySelector("#finP"); if(fp) fp.onclick=()=>{ const t=box.querySelector("#refl"); if(!t.value.trim()){ t.focus(); return; } logEvent(Object.assign({verb:"reflected",result:{text:t.value.trim()}},base)); finish({experiment:true}); }; }
+  if(poe) drawPOE();
+  function finish(r){ if(run.phase==="done") return; run.phase="done";
+    logEvent(Object.assign({verb:"completed",result:r.experiment?{experiment:true,predictionCorrect:run.prediction===A.predict.correct}:{score:r.total?r.score/r.total:0}},base));
+    addEnergy(1); autoTask(node.galaxy);
+    if(poe){ drawPOE(); return; }
+    const wrong=run.wrong.filter(w=>w.misconception);
+    lab.querySelector("#after").innerHTML=`<div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div style="display:flex;gap:10px;align-items:center"><svg class="drawn-check" width="28" height="28" viewBox="0 0 28 28" style="color:var(--good)"><path d="M5 15l6 6L23 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><div><b style="color:var(--ink)">挑战完成 · ${r.score} / ${r.total}</b><p class="muted" style="font-size:13px">能量 +1${wrong.length?`；${wrong.length} 道题掉进了常见陷阱`:""}</p></div></div>${wrong.length?`<button class="btn ink" id="toRep">送进维修舱</button>`:""}</div></div>`;
+    const tr=lab.querySelector("#toRep"); if(tr) tr.onclick=()=>{ wrong.forEach(w=>createRepair({source:"quiz",stem:w.stem,childAnswer:w.response,rightAnswer:w.right,node:node.id,misconception:w.misconceptionText})); close(); location.hash="#repair"; toast(`${wrong.length} 道题已送进维修舱`); }; }
+}
+
+/* ---------- modules (each runs isolated in its own sandbox) ---------- */
+const MOD_BASE_CSS=`*{box-sizing:border-box}:root{--bg:#F5F4EE;--pane:#FBFAF6;--hover:#E7E4D9;--rule:#E0DCD0;--ink:#1F1E1C;--text:#3B3833;--muted:#7A766D;--accent:#C2603F;--accentSoft:#F3E0D6;--sci:#CCD6C0;--sci2:#93A982;--sciBg:#DCE3D2;--math:#ECCDB6;--math2:#D59E7A;--mathBg:#F2E1D3;--good:#3B7A56;--bad:#B4432E}
+  body{margin:0;background:var(--pane);color:var(--text);font:15px/1.6 "Noto Sans SC","PingFang SC",system-ui,sans-serif}
+  .k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}.kq{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round}
+  .hand{font-family:"ZCOOL KuaiLe","Noto Sans SC",sans-serif}.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+  button{font:inherit;cursor:pointer}`;
+function applyPalette(p){ if(!p) return; const r=document.documentElement.style; for(const k in p) r.setProperty("--"+k,p[k]); }
+const MODULES={
+  pinholeModule:{
+    css:`.wrap{display:grid;gap:14px;padding:16px}svg.scene{width:100%;height:auto;display:block}
+      .ctl{display:grid;gap:14px;grid-template-columns:1fr 1fr;position:relative}@media(max-width:560px){.ctl{grid-template-columns:1fr}}
+      .ctl label{display:grid;gap:2px;font-size:14px;color:var(--text)}.ctl label b{color:var(--ink);font-weight:600}
+      .ticks{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:0 4px}
+      input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:34px;background:transparent}
+      input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:9px;background:var(--rule)}
+      input[type=range]::-moz-range-track{height:4px;border-radius:9px;background:var(--rule)}
+      input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-10px;border-radius:50%;background:var(--pane);border:2px solid var(--ink)}
+      input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--pane);border:2px solid var(--ink)}
+      .lock::after{content:"先在左边做个预测，再来动手";position:absolute;inset:-6px;display:grid;place-items:center;background:color-mix(in srgb,var(--pane) 82%,transparent);border-radius:12px;font-family:"ZCOOL KuaiLe",sans-serif;font-size:20px;color:var(--accent)}
+      .obs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}@media(max-width:560px){.obs{grid-template-columns:repeat(2,1fr)}}
+      .obs div{border:1px solid var(--rule);border-radius:12px;padding:8px 12px;font-size:12px;color:var(--muted);background:var(--pane)}.obs b{display:block;font-size:18px;color:var(--ink);font-weight:600;transition:color .3s}
+      .obs b.flash{color:var(--accent)}
+      .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row input{flex:1;min-width:180px;min-height:42px;border:1px solid var(--rule);border-radius:10px;background:var(--bg);padding:0 12px;font:inherit;color:inherit}
+      .btn{min-height:42px;padding:0 16px;border-radius:9px;border:1px solid var(--rule);background:var(--pane);color:var(--ink);font-weight:500}
+      .btn.ink{background:var(--ink);border-color:var(--ink);color:var(--pane)}.btn:disabled{opacity:.4;cursor:not-allowed}
+      .ray{stroke:var(--accent);stroke-width:1.4;fill:none;stroke-dasharray:5 9}
+      .flame{transform-box:fill-box;transform-origin:50% 100%}
+      @media (prefers-reduced-motion:no-preference){.ray.flow{animation:flow 1.1s linear infinite}@keyframes flow{to{stroke-dashoffset:-28}}.flame{animation:flick 1.6s ease-in-out infinite}@keyframes flick{50%{transform:scale(.92,1.06) rotate(-2deg)}}}
+      .note{font-size:13px;color:var(--muted)}`,
+    body:`<div class="wrap"><svg class="scene" id="sc" viewBox="0 0 1200 500" role="img" aria-label="暗箱小孔成像"></svg>
+      <div class="ctl lock" id="ctl"><label>孔的大小 · <b id="hv">小</b><input id="hole" type="range" min="1" max="3" step="1" value="1" disabled aria-label="孔的大小"><span class="ticks"><span>小</span><span>中</span><span>大</span></span></label>
+        <label>屏到小孔的距离 · <b id="dv">中</b><input id="dist" type="range" min="1" max="3" step="1" value="2" disabled aria-label="屏到小孔的距离"><span class="ticks"><span>近</span><span>中</span><span>远</span></span></label></div>
+      <div class="obs"><div>像的亮度<b id="ob">-</b></div><div>清楚程度<b id="os">-</b></div><div>方向<b id="oo">-</b></div><div>像的大小<b id="oz">-</b></div></div>
+      <p class="note">小提示：蜡烛左边有个小圆点。看看它在屏上跑到了哪里。</p>
+      <div class="row"><input id="qt" placeholder="有疑问？写下来发到信号站" maxlength="60" aria-label="写下疑问"><button class="btn" id="qs">发出</button><button class="btn ink" id="done" disabled>观察完了</button></div></div>`,
+    fn:function(){
+      const sc=document.getElementById("sc"), hole=document.getElementById("hole"), dist=document.getElementById("dist");
+      const HOLE=[4,11,24], HW=["小","中","大"], DIST=[160,240,320], DW=["近","中","远"], ax=230, cx0=120, bx=390, U=bx-cx0;
+      let observing=false, adjusted=0, prev={};
+      function model(){ const d=HOLE[hole.value-1], v=DIST[dist.value-1], s=v/U, blur=d*(1+s), bright=Math.min(1,(d/v)**2/((24/160)**2));
+        return {d,v,s,blur,bright,w:{hole:HW[hole.value-1],distance:DW[dist.value-1],brightness:bright<.03?"很暗":bright<.2?"较暗":bright<.6?"较亮":"很亮",sharpness:blur<9?"很清楚":blur<26?"有点糊":"很模糊",orientation:"倒立",size:["小","中","大"][dist.value-1]}}; }
+      function candle(seed){ return `<path d="${Sk.area([[-14,0],[14,0],[14,108],[-14,108]])}" style="fill:var(--pane)"/><path class="k" d="${Sk.rect(-14,0,28,108,seed)}"/><path class="k1" d="${Sk.line(0,0,0,-8,seed+4)}"/>`+
+        `<g class="flame"><path d="M0 -58C12 -40 13 -22 0 -8C-13 -22 -12 -40 0 -58Z" style="fill:var(--math)"/><path class="k1" d="${Sk.curve([[0,-58],[11,-38],[9,-18],[0,-8],[-9,-18],[-11,-38],[0,-58]],seed+5,.6)}"/></g>`+
+        `<circle cx="-6" cy="34" r="4.5" style="fill:var(--accent)"/>`; }
+      function draw(){
+        const m=model(), sx=bx+m.v, tipY=ax-58, baseY=ax+108;
+        const rays=[[tipY,ax-m.d/2],[tipY,ax+m.d/2],[baseY,ax-m.d/2],[baseY,ax+m.d/2]].map(([sy,hy],i)=>{ const ey=hy+(hy-sy)*(m.v/U); return `<path class="ray ${observing?"flow":""}" d="M${cx0} ${sy}L${bx} ${hy}L${sx} ${ey.toFixed(1)}"/>`; }).join("");
+        const coneA=[[cx0,tipY],[bx,ax-m.d/2],[bx,ax+m.d/2],[cx0,baseY]], itY=ax+(ax-tipY)*m.s, ibY=ax-(baseY-ax)*m.s;
+        const coneB=[[bx,ax-m.d/2],[sx,ibY-m.d],[sx,itY+m.d],[bx,ax+m.d/2]];
+        const op=(.45+.55*Math.sqrt(m.bright)).toFixed(2), sd=(m.blur*.2).toFixed(1);
+        sc.innerHTML=`<defs><filter id="bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="${sd}"/></filter></defs>
+          <path d="${Sk.area([[bx,70],[sx+12,70],[sx+12,400],[bx,400]])}" style="fill:var(--hover)" opacity=".55"/>
+          <path class="kq" d="${Sk.rect(bx,70,sx-bx+12,330,21,.6)}"/>
+          <text class="hand" x="${(bx+sx)/2}" y="58" text-anchor="middle" font-size="22" style="fill:var(--muted)">暗箱</text>
+          <path d="${Sk.area(coneA)}" style="fill:var(--math)" opacity="${(.18+.35*m.bright).toFixed(2)}"/><path d="${Sk.area(coneB)}" style="fill:var(--math)" opacity="${(.14+.3*m.bright).toFixed(2)}"/>
+          ${rays}
+          <path d="${Sk.area([[bx-7,70],[bx+7,70],[bx+7,ax-m.d/2],[bx-7,ax-m.d/2]])}" style="fill:var(--ink)"/><path d="${Sk.area([[bx-7,ax+m.d/2],[bx+7,ax+m.d/2],[bx+7,400],[bx-7,400]])}" style="fill:var(--ink)"/>
+          <path d="${Sk.area([[sx,76],[sx+10,76],[sx+10,394],[sx,394]])}" style="fill:var(--pane)"/><path class="k1" d="${Sk.rect(sx,76,10,318,31,.6)}"/>
+          <path d="M${sx+5} ${ibY.toFixed(1)}L${sx+5} ${itY.toFixed(1)}" style="stroke:var(--ink)" stroke-width="5" stroke-linecap="round" opacity="${op}" filter="url(#bl)"/>
+          <g transform="translate(${cx0} ${ax})">${candle(41)}</g>
+          <path class="kq" d="${Sk.line(sx+12,70,800,70,51,.4)+Sk.line(sx+12,400,800,400,52,.4)}" stroke-dasharray="3 6"/>
+          <path d="${Sk.area([[800,62],[1176,62],[1176,408],[800,408]])}" style="fill:var(--pane)"/><path class="k1" d="${Sk.rect(800,62,376,346,61,.7)}"/>
+          <path d="${Sk.area([[818,80],[1158,80],[1158,390],[818,390]])}" style="fill:var(--hover)" opacity=".7"/>
+          <g opacity="${op}" filter="url(#bl)"><g transform="translate(988 ${ax}) scale(${(-m.s).toFixed(3)} ${(-m.s).toFixed(3)})">${candle(41)}</g></g>
+          <path class="kq" d="${Sk.line(bx,440,sx,440,71,.5)+Sk.line(bx,432,bx,448,72,.3)+Sk.line(sx,432,sx,448,73,.3)}"/>
+          <text class="hand" x="${(bx+sx)/2}" y="472" text-anchor="middle" font-size="20" style="fill:var(--muted)">屏离小孔：${m.w.distance}</text>
+          <text class="hand" x="${cx0}" y="${ax+150}" text-anchor="middle" font-size="22" style="fill:var(--ink)">蜡烛</text>
+          <text class="hand" x="988" y="440" text-anchor="middle" font-size="22" style="fill:var(--ink)">屏的正面 · 从暗箱后面看</text>
+          <text class="hand" x="${bx+16}" y="${ax-m.d/2-10}" font-size="20" style="fill:var(--accent)">小孔</text>`;
+        const w=m.w, set=(id,v)=>{ const el=document.getElementById(id); if(el.textContent!==v){ el.textContent=v; el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),500); } };
+        document.getElementById("hv").textContent=w.hole; document.getElementById("dv").textContent=w.distance;
+        set("ob",w.brightness); set("os",w.sharpness); set("oo",w.orientation); set("oz",w.size);
+        return w; }
+      function changed(){ const w=draw(); Host.state(w); if(observing){ adjusted++; Host.event("adjusted",{hole:w.hole,distance:w.distance}); document.getElementById("done").disabled=adjusted<2; } }
+      hole.addEventListener("input",changed); dist.addEventListener("input",changed);
+      document.getElementById("qs").onclick=()=>{ const i=document.getElementById("qt"); const t=i.value.trim(); if(!t) return; Host.noteQuestion(t); i.value=""; };
+      document.getElementById("done").onclick=()=>{ const w=draw(); Host.event("observed",w); const b=document.getElementById("done"); b.disabled=true; b.textContent="已记录"; };
+      function unlock(){ observing=true; document.getElementById("ctl").classList.remove("lock"); hole.disabled=false; dist.disabled=false; draw(); }
+      Host.on("init",p=>{ applyPalette(p.palette); Host.state(draw()); if(p.phase==="observe") unlock(); });
+      Host.on("phase",p=>{ if(p.phase==="observe") unlock(); });
+      function applyPalette(p){ if(!p) return; for(const k in p) document.documentElement.style.setProperty("--"+k,p[k]); }
+      draw(); Host.ready();
+    }
+  },
+  quizModule:{
+    css:`.wrap{padding:22px;display:grid;gap:16px;max-width:640px;margin:0 auto}.top{display:flex;justify-content:space-between;color:var(--muted);font-size:13px}
+      h2{margin:0;font:600 21px/1.45 "Noto Serif SC",serif;color:var(--ink)}svg.fig{display:block;margin:0 auto;width:200px;height:200px}
+      .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}.opt{min-height:54px;border-radius:12px;border:1px solid var(--rule);background:var(--pane);color:var(--ink);font-size:17px}
+      .opt:hover{background:var(--hover)}.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 14%,var(--pane))}.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--pane))}
+      .fb{border-radius:12px;padding:12px 14px;background:var(--sciBg);color:var(--ink);font-size:15px}.fb.h{background:var(--accentSoft);color:var(--ink)}
+      .row{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}.btn{min-height:42px;padding:0 16px;border-radius:9px;border:1px solid var(--rule);background:var(--pane);color:var(--ink);font-weight:500}
+      .btn.ink{background:var(--ink);border-color:var(--ink);color:var(--pane)}.btn:disabled{opacity:.4;cursor:not-allowed}`,
+    body:`<div class="wrap" id="app"></div>`,
+    fn:function(){
+      const pie=(n,k,seed)=>{ let s=`<svg class="fig" viewBox="0 0 200 200" role="img" aria-label="圆被平均分成${n}份">`; for(let i=0;i<k;i++){ const a0=i/n*2*Math.PI-Math.PI/2, a1=(i+1)/n*2*Math.PI-Math.PI/2;
+          s+=`<path d="M104 104L${(104+84*Math.cos(a0)).toFixed(1)} ${(104+84*Math.sin(a0)).toFixed(1)}A84 84 0 0 1 ${(104+84*Math.cos(a1)).toFixed(1)} ${(104+84*Math.sin(a1)).toFixed(1)}Z" style="fill:var(--math)"/>`; }
+        s+=`<path class="k" d="${Sk.ellipse(100,100,84,84,seed)}"/>`; for(let i=0;i<n;i++){ const a=i/n*2*Math.PI-Math.PI/2; s+=`<path class="k1" d="${Sk.line(100,100,100+84*Math.cos(a),100+84*Math.sin(a),seed+i+1)}"/>`; } return s+`</svg>`; };
+      const bars=`<svg class="fig" viewBox="0 0 200 140" role="img" aria-label="长方形被分成大小不等的两块" style="height:140px"><path d="${Sk.area([[14,24],[132,24],[132,116],[14,116]])}" style="fill:var(--math)"/><path class="k" d="${Sk.rect(14,24,172,92,5)}"/><path class="k1" d="${Sk.line(132,24,132,116,9)}"/></svg>`;
+      const Q=[{id:"q1",stem:"圆被平均分成 4 份，涂色部分是这个圆的几分之几？",pic:pie(4,1,3),opts:["1/4","1/3","4/1","3/4"],right:0,mis:{1:["part-vs-rest","把涂色份数和没涂色份数相比"],2:["flip","把分子分母写反"]},hints:["先数一数，圆一共被平均分成了几份？","分母写「一共几份」，分子写「涂了几份」。","一共 4 份，涂了 1 份。"]},
+        {id:"q2",stem:"1/3 块蛋糕和 1/5 块蛋糕，哪个更大？",pic:pie(3,1,13),opts:["1/3","1/5","一样大"],right:0,mis:{1:["denominator-bigger","以为分母越大，分数越大"]},hints:["同一块蛋糕，分给 3 个人和分给 5 个人，谁分到的多？","分的人越多，每人分到的越少。","1/3 是分成 3 份里的 1 份。"]},
+        {id:"q3",stem:"涂色部分是这个长方形的 1/2 吗？",pic:bars,opts:["是","不是"],right:1,mis:{0:["not-equal-parts","没有平均分也叫几分之一"]},hints:["两块一样大吗？","几分之一的前提是「平均分」。","左边那块明显大很多。"]}];
+      let i=0,score=0,lv=0,done=false; const app=document.getElementById("app");
+      function render(fb){ const q=Q[i];
+        app.innerHTML=`<div class="top"><span>第 ${i+1} / ${Q.length} 题</span><span>答对 ${score}</span></div><h2>${q.stem}</h2>${q.pic}<div class="opts">${q.opts.map((o,j)=>`<button class="opt" data-j="${j}">${o}</button>`).join("")}</div>${fb||""}
+          <div class="row"><button class="btn" id="hb" ${done||lv>=3?"disabled":""}>要个提示${lv?`（已用 ${lv}）`:""}</button>${done?`<button class="btn ink" id="nx">${i<Q.length-1?"下一题":"完成挑战"}</button>`:""}</div>`;
+        app.querySelectorAll("[data-j]").forEach(b=>b.onclick=()=>pick(+b.dataset.j)); const hb=document.getElementById("hb"); if(hb) hb.onclick=()=>Host.requestHint();
+        const nx=document.getElementById("nx"); if(nx) nx.onclick=()=>{ if(i<Q.length-1){ i++; lv=0; done=false; render(); } else { Host.complete({score,total:Q.length}); app.innerHTML=`<h2>挑战完成，答对 ${score} / ${Q.length}</h2><p style="color:var(--muted)">结果已交回飞船。</p>`; } }; }
+      function pick(j){ if(done) return; done=true; const q=Q[i], ok=j===q.right; if(ok) score++; const m=q.mis[j];
+        Host.event("answered",{qid:q.id,correct:ok,response:q.opts[j],right:q.opts[q.right],stem:q.stem,misconception:m?m[0]:null,misconceptionText:m?m[1]:null,hintsUsed:lv});
+        render(`<div class="fb">${ok?"答对了！":`正确答案是「${q.opts[q.right]}」。${m?`小心陷阱：${m[1]}。`:""}`}</div>`);
+        app.querySelectorAll("[data-j]").forEach(b=>{ const k=+b.dataset.j; if(k===q.right) b.classList.add("right"); else if(k===j) b.classList.add("wrong"); b.disabled=true; }); }
+      Host.on("hint",p=>{ lv=p.level; render(`<div class="fb h">提示 ${lv}：${Q[i].hints[Math.min(lv,3)-1]}</div>`); });
+      Host.on("init",p=>{ if(p.palette) for(const k in p.palette) document.documentElement.style.setProperty("--"+k,p.palette[k]); render(); });
+      Host.ready();
+    }
+  }
+};
+
+/* ============================================================
+   REPAIR BAY — 错题本 closed loop
+   ============================================================ */
+function createRepair(o){ const r=Object.assign({id:"r"+Date.now()+Math.floor(Math.random()*999),created:new Date().toISOString(),status:"practice",nextReview:todayStr()},o); S.repairs.unshift(r); logEvent({verb:"diagnosed",node:r.node,result:{source:r.source,misconception:r.misconception}}); save(); renderExplorer(); return r; }
+function renderRepair(){
+  const due=dueRepairs().length, fixed=S.repairs.filter(r=>r.status==="archived").length;
+  $("#repairPage").innerHTML=`<div class="hero" style="--hero-bg:var(--c-math-bg)"><div><h1>维修舱</h1><p>做错的题送进来修。三道「举一反三」的新题全做对，才算修好。</p>
+      <div class="actions"><button class="btn ink big" id="newRep">拍照录入一道题</button></div></div>${icon("wrench","math",132,4)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="pill acc">${due} 道待修</span><span class="pill">${fixed} 道已修好</span></div>
+    <div class="tickets" id="tk"></div>`;
+  $("#newRep").onclick=intake;
+  const tk=$("#tk");
+  if(!S.repairs.length){ tk.innerHTML=`<div class="empty">维修舱是空的。可以拍照录入做错的题，挑战里掉进陷阱的题也能一键送进来。</div>`; return; }
+  tk.innerHTML=S.repairs.map(r=>{ const n=NODE[r.node]; const st=r.status==="archived"?`<span class="pill lit">已修好</span>`:r.nextReview>todayStr()?`<span class="pill">明天再练</span>`:`<span class="pill acc">待修</span>`;
+    return `<div class="ticket"><div class="th">${r.crop?`<img src="${r.crop}" alt="题目裁剪图">`:icon(n?n.icon:"cake",n?n.galaxy:"math",56,3)}</div><div style="display:grid;gap:6px;min-width:0">
+      <div class="meta">${st}<a class="wikilink" href="#chart" data-goto="${r.node}">${esc(n?n.title:"")}</a></div><div class="stem">${esc(r.stem)}</div>
+      <div class="sub">我的答案 ${esc(r.childAnswer||"—")} · 正确 ${esc(r.rightAnswer||"—")}${r.misconception?` · 陷阱：${esc(r.misconception)}`:""}</div>
+      ${r.status!=="archived"?`<div><button class="btn" data-pr="${r.id}">举一反三</button></div>`:""}</div></div>`; }).join("");
+  tk.querySelectorAll("[data-pr]").forEach(b=>b.onclick=()=>practice(b.dataset.pr));
+  tk.querySelectorAll("[data-goto]").forEach(a=>a.onclick=e=>{ e.preventDefault(); location.hash="#chart"; setTimeout(()=>select(a.dataset.goto,true),0); });
+}
+async function practice(id){ const r=S.repairs.find(x=>x.id===id);
+  const m=modal(`<div class="mhead"><div><small>举一反三 · gen.variants（模拟）</small><h2>修这道题</h2></div><button class="close" data-close aria-label="关闭">${X_ICON}</button></div><div id="pv" style="display:grid;gap:12px"><p class="muted">正在要三道新题……</p></div>`);
+  const box=m.el.querySelector("#pv");
+  try{ r.variants=(await AI.call("gen.variants",{node:r.node,misconception:r.misconception})).variants.map(v=>Object.assign({},v,{given:"",ok:null})); save(); }catch(err){ box.innerHTML=`<p>${esc(err.message)}</p>`; return; }
+  const draw=()=>{ box.innerHTML=`<div class="callout"><span class="ct">原题</span><span style="font-size:14px">${esc(r.stem)}</span></div>`+
+    r.variants.map((v,i)=>`<div class="variant"><b style="color:var(--ink);font-weight:500">${i+1}. ${esc(v.q)}</b><div class="row"><div class="field" style="flex:1"><input type="text" id="va${i}" value="${esc(v.given)}" placeholder="${v.kind==="fraction"?"比如 2/5":"填数字"}" aria-label="第 ${i+1} 题答案"></div>${v.ok===true?`<span class="ok">对</span>`:v.ok===false?`<span class="no">再想想</span>`:""}</div></div>`).join("")+
+    `<p class="muted" style="font-size:12px">新题的答案已经用程序验算过。</p><button class="btn ink big" id="chk">交卷</button>`;
+    box.querySelector("#chk").onclick=()=>{ r.variants.forEach((v,i)=>{ v.given=box.querySelector("#va"+i).value; v.ok=checkAnswer(v,v.given); }); const all=r.variants.every(v=>v.ok);
+      logEvent({verb:"answered",node:r.node,activity:"repair",result:{correct:all}});
+      if(all){ r.status="archived"; logEvent({verb:"repaired",node:r.node,result:{repair:r.id}}); addEnergy(1); save(); m.close(); renderRepair(); renderExplorer(); toast("修好了，能量 +1"); }
+      else { r.nextReview=addDays(1); save(); draw(); box.insertAdjacentHTML("beforeend",`<p class="muted" style="font-size:13px">还有题没对。可以改了再交，也可以明天再来。</p>`); renderRepair(); } }; };
+  draw(); }
+function intake(){
+  const st={step:1,img:null,rect:null,masks:[],mode:"crop",rec:null,diag:null,crop:null};
+  const m=modal(`<div class="mhead"><div><small>拍照录入 · vision.capture_question（模拟）</small><h2>录入一道错题</h2></div><button class="close" data-close aria-label="关闭">${X_ICON}</button></div><div class="steps" id="sm"></div><div id="ib" style="display:grid;gap:12px;margin-top:14px"></div>`,{wide:true});
+  const box=m.el.querySelector("#ib"), sm=m.el.querySelector("#sm"), STEPS=["选照片","框选与遮挡","识别","确认","诊断"];
+  const steps=()=>sm.innerHTML=STEPS.map((t,i)=>`<span class="${i+1===st.step?"on":""}">${i+1} ${t}</span>`).join("");
+  function s1(){ st.step=1; steps(); box.innerHTML=`<p class="muted" style="font-size:14px">平板和手机上会直接打开相机。照片只在这台设备上处理，上传前会裁剪并遮住姓名。</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn ink big" for="ph">拍照 / 选照片</label><input id="ph" type="file" accept="image/*" capture="environment" hidden><button class="btn big" id="sp">用示例照片试试</button></div>`;
+    box.querySelector("#ph").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ const im=new Image(); im.onload=()=>{ st.img=im; st.sample=false; s2(); }; im.src=rd.result; }; rd.readAsDataURL(f); };
+    box.querySelector("#sp").onclick=()=>{ const im=new Image(); im.onload=()=>{ st.img=im; st.sample=true; s2(); }; im.src=samplePhoto(); }; }
+  function s2(){ st.step=2; steps();
+    box.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><div class="seg" role="group" aria-label="模式"><button id="mc" aria-pressed="${st.mode==="crop"}">框选题目</button><button id="mm" aria-pressed="${st.mode==="mask"}">遮挡姓名</button></div><button class="btn" id="rs">重来</button></div>
+      <div class="cropper"><canvas id="cc"></canvas></div><p class="muted" style="font-size:13px">先拖出题目区域，再切到「遮挡姓名」把名字和班级涂掉。原图不会保存。</p>
+      <div style="display:flex;justify-content:flex-end"><button class="btn ink big" id="n2">下一步：识别</button></div>`;
+    const cc=box.querySelector("#cc"), cx=cc.getContext("2d"), k=Math.min(1,1000/st.img.width); cc.width=Math.round(st.img.width*k); cc.height=Math.round(st.img.height*k);
+    if(!st.rect) st.rect={x:cc.width*.04,y:cc.height*.12,w:cc.width*.92,h:cc.height*.82};
+    const paint=tmp=>{ cx.drawImage(st.img,0,0,cc.width,cc.height); const r=st.rect; cx.fillStyle="rgba(31,30,28,.5)"; cx.beginPath(); cx.rect(0,0,cc.width,cc.height); cx.rect(r.x,r.y+r.h,r.w,-r.h); cx.fill("evenodd");
+      cx.strokeStyle="#C2603F"; cx.lineWidth=3; cx.setLineDash([10,7]); cx.strokeRect(r.x,r.y,r.w,r.h); cx.setLineDash([]); cx.fillStyle="#1F1E1C"; st.masks.concat(tmp?[tmp]:[]).forEach(q=>cx.fillRect(q.x,q.y,q.w,q.h)); };
+    paint(); let drag=null, tmp=null; const pos=e=>{ const b=cc.getBoundingClientRect(); return {x:(e.clientX-b.left)*cc.width/b.width,y:(e.clientY-b.top)*cc.height/b.height}; };
+    cc.onpointerdown=e=>{ cc.setPointerCapture(e.pointerId); drag=pos(e); };
+    cc.onpointermove=e=>{ if(!drag) return; const p=pos(e), r={x:Math.min(drag.x,p.x),y:Math.min(drag.y,p.y),w:Math.abs(p.x-drag.x),h:Math.abs(p.y-drag.y)}; if(st.mode==="crop"){ st.rect=r; paint(); } else { tmp=r; paint(tmp); } };
+    cc.onpointerup=()=>{ if(tmp&&tmp.w>6&&tmp.h>6) st.masks.push(tmp); tmp=null; if(st.rect.w<20||st.rect.h<20) st.rect={x:0,y:0,w:cc.width,h:cc.height}; drag=null; paint(); };
+    box.querySelector("#mc").onclick=()=>{ st.mode="crop"; s2(); }; box.querySelector("#mm").onclick=()=>{ st.mode="mask"; s2(); }; box.querySelector("#rs").onclick=()=>{ st.rect=null; st.masks=[]; s2(); };
+    box.querySelector("#n2").onclick=()=>{ const r=st.rect, out=document.createElement("canvas"), sc=Math.min(1,720/r.w); out.width=Math.round(r.w*sc); out.height=Math.round(r.h*sc); const o=out.getContext("2d");
+      o.drawImage(st.img,r.x/k,r.y/k,r.w/k,r.h/k,0,0,out.width,out.height); o.fillStyle="#1F1E1C"; st.masks.forEach(q=>o.fillRect((q.x-r.x)*sc,(q.y-r.y)*sc,q.w*sc,q.h*sc));
+      st.crop=out.toDataURL("image/jpeg",.82); st.img=null; s3(); }; }
+  async function s3(){ st.step=3; steps(); box.innerHTML=`<img src="${st.crop}" alt="裁剪后的题目" style="border-radius:12px;max-height:260px;object-fit:contain;background:var(--hover)"><p class="muted" style="font-size:14px">原图已丢弃，只留这张裁剪图。正在识别……</p>`;
+    try{ st.rec=await AI.call("vision.capture_question",{sample:st.sample}); s4(); }catch(err){ box.insertAdjacentHTML("beforeend",`<p>${esc(err.message)}</p>`); } }
+  function s4(){ st.step=4; steps(); const R=st.rec;
+    box.innerHTML=`<img src="${st.crop}" alt="裁剪后的题目" style="border-radius:12px;max-height:200px;object-fit:contain;background:var(--hover)">
+      <div class="callout ${R.needsEdit?"q":""}"><span class="ct">${R.needsEdit?"AI 网关还没接入，请手动填写":"识别结果（模拟），请核对"}</span></div>
+      <div class="field"><label for="fs">题目</label><textarea id="fs">${esc(R.stem)}</textarea></div>
+      <div style="display:flex;gap:10px"><div class="field" style="flex:1"><label for="fc">我写的答案</label><input type="text" id="fc" value="${esc(R.childAnswer)}"></div><div class="field" style="flex:1"><label for="fr">正确答案</label><input type="text" id="fr" value="${esc(R.rightAnswer)}"></div></div>
+      <div style="display:flex;justify-content:flex-end"><button class="btn ink big" id="n4">没问题，诊断错因</button></div>`;
+    box.querySelector("#n4").onclick=async()=>{ st.rec={stem:box.querySelector("#fs").value.trim(),childAnswer:box.querySelector("#fc").value.trim(),rightAnswer:box.querySelector("#fr").value.trim()};
+      if(!st.rec.stem){ box.querySelector("#fs").focus(); toast("先把题目填上"); return; }
+      st.step=5; steps(); box.innerHTML=`<p class="muted">正在诊断这道题属于哪颗星球……</p>`;
+      try{ st.diag=await AI.call("tutor.diagnose",st.rec); s5(); }catch(err){ box.innerHTML=`<p>${esc(err.message)}</p>`; } }; }
+  function s5(){ const D=st.diag, n=NODE[D.node];
+    box.innerHTML=`<div class="signal-card" style="--card-bg:${n.galaxy==="math"?"var(--c-math-bg)":"var(--c-sci-bg)"}"><div><div class="eyebrow">诊断结果（模拟，只会从星图里已有的星球中选）</div><p class="q">这道题属于「${esc(n.title)}」</p><p style="font-size:14px;margin-top:6px;color:var(--ink)">可能的错因：${esc(D.misconception)}</p></div>${icon(n.icon,n.galaxy,104,n.seed,"drawin")}</div>
+      <p class="muted" style="font-size:13px">放进维修舱后，这颗星球的点亮进度会先降一点；三道新题全做对就修好了。</p>
+      <div style="display:flex;justify-content:flex-end"><button class="btn ink big" id="sv">放进维修舱</button></div>`;
+    box.querySelector("#sv").onclick=()=>{ createRepair({source:"photo",crop:st.crop,stem:st.rec.stem,childAnswer:st.rec.childAnswer,rightAnswer:st.rec.rightAnswer,node:D.node,misconception:D.misconception}); m.close(); renderRepair(); toast("已放进维修舱"); }; }
+  s1();
+}
+function samplePhoto(){ const c=document.createElement("canvas"); c.width=900; c.height=640; const x=c.getContext("2d");
+  x.fillStyle="#FBFAF6"; x.fillRect(0,0,900,640); x.strokeStyle="#DCE3EC"; for(let y=60;y<640;y+=36){ x.beginPath(); x.moveTo(0,y); x.lineTo(900,y); x.stroke(); }
+  x.fillStyle="#333"; x.font="26px 'Noto Sans SC', sans-serif"; x.fillText("姓名：王小宇    班级：三（2）班",40,44);
+  x.font="600 30px 'Noto Sans SC', sans-serif"; x.fillText("5. 圆被平均分成 4 份，涂色部分是这个圆的几分之几？",40,130);
+  const cx=230,cy=340,R=130; for(let i=0;i<4;i++){ x.beginPath(); x.moveTo(cx,cy); x.arc(cx,cy,R,i*Math.PI/2-Math.PI/2,(i+1)*Math.PI/2-Math.PI/2); x.closePath(); x.fillStyle=i===0?"#9DB4D3":"#FBFAF6"; x.fill(); x.strokeStyle="#333"; x.lineWidth=3; x.stroke(); }
+  x.fillStyle="#1F4FA8"; x.font="italic 64px serif"; x.fillText("1/3",520,370); x.strokeStyle="#D0342C"; x.lineWidth=7; x.beginPath(); x.moveTo(690,300); x.lineTo(770,390); x.moveTo(770,300); x.lineTo(690,390); x.stroke();
+  return c.toDataURL("image/jpeg",.9); }
+
+/* ============================================================
+   SIGNAL STATION — 问题本
+   ============================================================ */
+function addQuestion(text,node){ S.questions.unshift({id:"q"+Date.now(),text,node:node||null,at:new Date().toISOString(),answer:null}); logEvent({verb:"question_noted",node:node||undefined,result:{text}}); save(); renderExplorer(); if(current==="signal") renderSignal(); }
+function renderSignal(){
+  $("#signalPage").innerHTML=`<div class="hero" style="--hero-bg:var(--c-sci-bg)"><div><h1>信号站</h1><p>脑子里冒出的每一个「为什么」都记在这里。有的马上能回答，有的要等你探索到那颗星球。</p></div>${icon("radar","science",132,6)}</div>
+    <form id="sf" class="ask-row"><input type="text" id="si" placeholder="比如：为什么天空是蓝色的？" maxlength="80" aria-label="你的问题"><button class="btn ink big" type="submit">发出</button></form>
+    <div style="display:grid;gap:10px" id="ql"></div>`;
+  $("#sf").onsubmit=e=>{ e.preventDefault(); const t=$("#si").value.trim(); if(!t) return; addQuestion(t,null); };
+  const L=$("#ql"); if(!S.questions.length){ L.innerHTML=`<div class="empty">还没有发出过信号。</div>`; return; }
+  L.innerHTML=S.questions.map(q=>`<div class="callout q qitem"><div class="ct" style="justify-content:space-between;width:100%"><span style="color:var(--ink);font-size:16px">${esc(q.text)}</span><span class="mono" style="font-size:11px;color:var(--muted);font-weight:400">${q.at.slice(5,10)}</span></div>
+    ${q.node?`<a class="wikilink" href="#chart" data-goto="${q.node}">来自「${esc(NODE[q.node].title)}」</a>`:""}
+    ${q.answer?`<div style="background:var(--pane);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text)"><p>${esc(q.answer.answer)}</p><p style="margin-top:6px;color:var(--ink)">想一想：${esc(q.answer.followUp)}</p><p class="muted" style="font-size:11px;margin-top:6px">模拟回答 · tutor.ask</p></div>`:`<div><button class="btn" data-ans="${q.id}">请 AI 回个信号</button></div>`}</div>`).join("");
+  L.querySelectorAll("[data-ans]").forEach(b=>b.onclick=async()=>{ const q=S.questions.find(x=>x.id===b.dataset.ans); b.disabled=true; b.textContent="等回信……"; try{ q.answer=await AI.call("tutor.ask",{text:q.text,age_band:"G3-4"}); save(); }catch(err){ toast(err.message); } renderSignal(); });
+  L.querySelectorAll("[data-goto]").forEach(a=>a.onclick=e=>{ e.preventDefault(); location.hash="#chart"; setTimeout(()=>select(a.dataset.goto,true),0); });
+}
+
+/* ============================================================
+   GROUND CONTROL — parent console behind a PIN
+   ============================================================ */
+let unlocked=false, pin="";
+function renderGround(){
+  const B=$("#groundPage");
+  if(!unlocked){ B.innerHTML=`<div class="card" style="max-width:340px;margin:40px auto 0;text-align:center"><h3>家长入口</h3><p class="muted" style="font-size:13px">原型默认 PIN：1234</p><div class="pdots">${[0,1,2,3].map(i=>`<i class="${i<pin.length?"f":""}"></i>`).join("")}</div>
+      <div class="pin">${[1,2,3,4,5,6,7,8,9,"",0,"删"].map(k=>k===""?"<span></span>":`<button data-k="${k}">${k}</button>`).join("")}</div></div>`;
+    B.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ const k=b.dataset.k; if(k==="删") pin=pin.slice(0,-1); else if(pin.length<4) pin+=k; if(pin.length===4){ if(pin===S.pin){ unlocked=true; } else toast("PIN 不对，再试一次"); pin=""; } renderGround(); }); return; }
+  const R=S.rewardGoal, today=todayStr(), calls=S.ai.calls.filter(c=>c.at.slice(0,10)===today);
+  // hand-drawn chart: learning events per day, last 7 days
+  const days=[...Array(7)].map((_,i)=>{ const d=new Date(); d.setDate(d.getDate()-6+i); const k=todayStr(d); return [k,S.events.filter(e=>(e.ts||"").slice(0,10)===k&&e.node&&!e.kind).length]; });
+  const mx=Math.max(4,...days.map(d=>d[1])), pts=days.map(([k,v],i)=>[40+i*70, 130-v/mx*100]);
+  const chart=`<svg viewBox="0 0 500 170" width="100%" aria-label="近 7 天学习事件数"><path class="kq" d="${Sk.line(30,130,480,130,801,.4)}"/>`+
+    `<path d="${Sk.area([...pts,[460,130],[40,130]])}" style="fill:var(--c-sci)" opacity=".7"/><path class="k" d="${Sk.curve(pts,802,.6)}"/>`+
+    pts.map(([x,y],i)=>`<path class="k1" d="${Sk.ellipse(x,y,4,4,810+i)}" style="fill:var(--pane)"/><text x="${x}" y="152" text-anchor="middle" font-size="12" style="fill:var(--muted)" font-family="var(--f-sans)">${days[i][0].slice(8)}日</text>${days[i][1]?`<text x="${x}" y="${y-12}" text-anchor="middle" font-size="12" style="fill:var(--ink)" font-family="var(--f-mono)">${days[i][1]}</text>`:""}`).join("")+`</svg>`;
+  B.innerHTML=`<div class="hero" style="--hero-bg:var(--c-sky)"><div><h1>指挥中心</h1><p>家长才能进。孩子看不到这里的入口提示。</p><div class="actions"><button class="btn" id="lk">锁上</button></div></div>${icon("ship",null,132,7)}</div>
+    <div class="card"><h3>近 7 天的探索</h3>${chart}<p class="muted" style="font-size:12px">按学习事件计数（预测、观察、作答、反思等）</p></div>
+    <div class="grid2">
+      <div class="card"><h3>奖励</h3>${R.status==="requested"?`<div class="callout q"><span class="ct">孩子申请兑换「${esc(R.name)}」</span><div><button class="btn ink" id="rd">确认已兑换</button></div></div>`:""}
+        <div class="field"><label for="gn">下一份奖励</label><input type="text" id="gn" value="${esc(R.name)}" maxlength="18"></div><div class="field"><label for="gt">需要的点数</label><input type="number" id="gt" min="3" max="99" value="${R.target}"></div><div><button class="btn ink" id="gs">保存</button></div></div>
+      <div class="card"><h3>任务库</h3><div class="chips">${S.tasks.map((t,i)=>`<span class="chip">${esc(t)} <button data-del="${i}" aria-label="删除 ${esc(t)}" style="margin-left:4px;color:var(--muted)">×</button></span>`).join("")}</div>
+        <form id="tf" style="display:flex;gap:8px"><div class="field" style="flex:1"><input type="text" id="ti" placeholder="新任务" maxlength="6" aria-label="新任务"></div><button class="btn" type="submit">添加</button></form></div>
+      <div class="card"><h3>AI 网关 <span class="pill" style="font-weight:400">模拟模式</span></h3><dl class="kv"><dt>今日调用</dt><dd>${calls.length} / ${S.ai.dailyCap}</dd><dt>今日费用</dt><dd>¥0.00</dd><dt>月预算</dt><dd>¥50–200</dd></dl>
+        <div style="display:flex;gap:8px;align-items:flex-end"><div class="field" style="flex:1"><label for="cp">每日上限</label><input type="number" id="cp" min="1" max="200" value="${S.ai.dailyCap}"></div><button class="btn" id="cs">保存</button></div>
+        <div class="log">${S.ai.calls.slice(-20).reverse().map(c=>`<div>${c.at.slice(5,16).replace("T"," ")} · ${c.capability}</div>`).join("")||"<div>还没有调用</div>"}</div></div>
+      <div class="card"><h3>数据</h3><dl class="kv"><dt>学习事件</dt><dd>${S.events.length}</dd><dt>维修舱</dt><dd>${S.repairs.length}</dd><dt>信号</dt><dd>${S.questions.length}</dd><dt>数据版本</dt><dd>v${S.version}</dd></dl>
+        <label class="toggle"><input type="checkbox" id="dbg" ${S.debug?"checked":""}>显示黑匣子（调试学习事件流）</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ex">导出数据</button><button class="btn" id="rst">恢复示例数据</button></div><div id="eb"></div></div>
+    </div>`;
+  $("#lk").onclick=()=>{ unlocked=false; location.hash="#chart"; };
+  const rd=$("#rd"); if(rd) rd.onclick=()=>{ S.rewardPoints=Math.max(0,S.rewardPoints-R.target); S.rewardHistory.push({name:R.name,date:today}); R.status="active"; save(); renderStatus(); renderGround(); toast("已兑换"); };
+  $("#gs").onclick=()=>{ const n=$("#gn").value.trim(); if(!n) return; S.rewardGoal={name:n,target:Math.max(3,Math.min(99,+$("#gt").value||18)),status:R.status}; save(); renderGround(); toast("已保存"); };
+  B.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ S.tasks.splice(+b.dataset.del,1); save(); renderGround(); });
+  $("#tf").onsubmit=e=>{ e.preventDefault(); const t=$("#ti").value.trim(); if(t&&!S.tasks.includes(t)){ S.tasks.push(t); save(); renderGround(); } };
+  $("#cs").onclick=()=>{ S.ai.dailyCap=Math.max(1,Math.min(200,+$("#cp").value||30)); save(); renderGround(); toast("已保存"); };
+  $("#dbg").onchange=e=>{ S.debug=e.target.checked; save(); renderStatus(); };
+  $("#ex").onclick=()=>{ const json=JSON.stringify(Object.assign({},S,{repairs:S.repairs.map(r=>Object.assign({},r,{crop:r.crop?"(裁剪图略)":null}))}),null,2);
+    $("#eb").innerHTML=`<textarea id="et" readonly style="font-family:var(--f-mono);font-size:12px;min-height:150px">${esc(json)}</textarea><button class="btn" id="cpy" style="margin-top:8px">复制</button>`;
+    $("#cpy").onclick=()=>{ const ta=$("#et"); if(navigator.clipboard) navigator.clipboard.writeText(ta.value).then(()=>toast("已复制"),()=>{ ta.select(); toast("已选中，请手动复制"); }); else { ta.select(); toast("已选中，请手动复制"); } }; };
+  $("#rst").onclick=()=>{ const b=$("#rst"); if(b.dataset.arm){ S=seedState(); save(); unlocked=true; renderStatus(); renderExplorer(); renderGround(); toast("已恢复示例数据"); } else { b.dataset.arm="1"; b.textContent="再点一次确认"; b.style.color="var(--bad)"; b.style.borderColor="var(--bad)"; } };
+}
+function openBlackBox(){ const was=$(".pop.box"); closePops(); if(was) return; const p=document.createElement("div"); p.className="pop right box";
+  p.innerHTML=`<h3>黑匣子 · 学习事件流</h3><div class="log" style="max-height:52vh">${S.events.slice(-60).reverse().map(e=>`<div class="ev ${e.kind||""}"><span class="v">${esc(e.verb)}</span> <span class="muted">${esc((e.ts||"").slice(11,19))}${e.seed?" · 示例":""}</span><br><span class="muted">${esc(e.node||"")}${e.activity?" · "+esc(e.activity):""}</span>${e.result?`<br>${esc(JSON.stringify(e.result))}`:""}</div>`).join("")}</div>`;
+  document.body.appendChild(p); }
+
+/* boot */
+renderExplorer(); renderStatus(); route();
+</script>
+
+</body>
+</html>
