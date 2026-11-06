@@ -1,0 +1,14 @@
+id: act.simulation.chromosome-pack-01
+contract: activity/1.1
+type: simulation
+version: 1
+title: 把说明书收进细胞核
+targets: [biology.genetics.chromosome-intro]
+age_band: G3-4
+entry: index.html
+duration_min: 10
+pedagogy: explain
+misconceptions: [cut-into-pieces, stuffed-in, from-one-parent, same-in-boys-girls, y-from-mother]
+emits: [predicted, observed, answered]
+author: {model: claude-opus-5-5, prompt_ref: prompts/act.simulation.chromosome-pack-01.md}
+review: pending
