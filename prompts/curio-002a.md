@@ -35,7 +35,7 @@ version: v1
 ## 要交付的文件
 
 1. `schemas/activity-def.schema.json`：结构化活动（规格第 3 节），含必填的 `engine`（正整数）。误区引用的写法有两种（规格 3.3）：只针对一个知识点时写误区 id，针对多个时写 `<知识点 id>:<误区 id>`；schema 两种都放行，至于该用哪种，由 CI 按 `targets` 的个数检查，不在 schema 里做。
-2. `schemas/release.schema.json`：发布清单（规格第 6.1 节），含 `engine_min`。`release_id` 必须等于 `rel_` 加 `content_hash`，这一条 schema 表达不了，不用管，只校验各自的格式。清单里的路径按规格第 1 节的路径规则写正则（ASCII、正斜杠、不允许 `.` 和 `..` 段）。
+2. `schemas/release.schema.json`：发布清单（规格第 6.1 节），含 `engine_min`。`release_id` 必须等于 `rel_` 加 `content_hash`，这一条 schema 表达不了，不用管，只校验各自的格式。清单里的路径按规格第 1 节的路径规则写正则（ASCII、正斜杠、不允许 `.` 和 `..` 段）；含 `contracts`（字符串数组，每项形如 `activity/1.1`）。清单里节点和活动的 id 用和 knode、activity schema 相同的 ASCII 正则。
 3. `schemas/knode.schema.json`：在现有文件基础上加可选字段 `sources`（规格第 2 节）。其他内容一个字都不要动。
 4. `schemas/activity.schema.json`：在现有文件基础上加必填字段 `version`（正整数），把 `type` 改成只允许 `experiment` 和 `simulation`（规格第 4 节）。其他内容不要动。
 5. 样例内容，目录结构和规格第 1 节相同，但放在 `tools/tests/fixtures/content/` 下面：
@@ -80,7 +80,7 @@ version: v1
   12. 知识点 `sources` 的 `type` 不在三种之内
   13. 自定义实验 manifest 缺 `version`；`type` 是 `quiz`（自定义实验没有现成的合格样例，请另外写一个合格的 `tools/tests/fixtures/content/experiment-manifest.json` 作为 base）
   14. 发布清单的 `release_id` 不是 `rel_` 加 64 位小写十六进制；文件条目缺 `sha256`；`bytes` 是小数；缺 `engine_min`；路径含 `..`；路径含反斜杠
-  15. 结构化活动缺 `engine`；`engine` 为 0
+  15. 结构化活动缺 `engine`；`engine` 为 0；`id` 含汉字或大写字母
   16. 误区引用写成大写字母或含空格（两种合法写法以外的格式）
 - 可以多写，但不要少写。
 
@@ -99,7 +99,7 @@ version: v1
 - [ ] 全部合格样例通过校验；全部不合格样例被拦下，并且每个都只改了一处
 - [ ] 不合格样例覆盖上面列出的 16 类，每类至少一项
 - [ ] `schemas/knode.schema.json` 和 `schemas/activity.schema.json` 除了规定的改动，其余内容和原文完全一致
-- [ ] 挑战覆盖了知识点的全部误区；三种答案类型都有
+- [ ] 挑战覆盖了知识点的全部误区；三种答案类型都有（测试里要有断言：读出知识点的误区 id 和挑战里所有错误选项、`common_wrong` 引用的误区 id，前者是后者的子集）
 - [ ] `python -m unittest discover -s tools/tests` 全部通过
 
 ## 交付格式（必须遵守）

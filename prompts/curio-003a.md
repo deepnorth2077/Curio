@@ -54,12 +54,13 @@ version: v1
 - **按动词分派**：每个动词各有自己的 payload schema（不允许多余字段），并按规格第 3 节的「范围」一列要求或禁止 `attempt_id`、`content`，按「谁」一列限制 `actor.type`。不认识的动词必须不通过。`repair.opened` 的「看来源」规则（`item` 和 `photo` 各自要求什么、禁止什么）也要表达出来。
 - `actor`：`type` 为 `learner` 时 `id` 是 `lrn_…`，为 `caregiver` 时是 `cg_…`，为 `system` 时是 `sys:…`。
 - **事件里没有自由文字**：凡是规格写成 `text_id`、`*_text_id` 的字段，值都必须是 `txt_…`。`item.answered` 的 `response` 最多 32 个字符；`sim.adjusted`、`sim.observed` 的字符串 `value` 最多 32 个字符。
+- `repair.opened` 的 `source: photo` 带 `misconception` 时必须有 `node_id`。`question.asked` 可以带 `attempt_id` 加 `content`、只带 `content`，或者都不带；不能只带 `attempt_id`。
 - 其他：`hint.used` 的 `level` 是 1～3；`item.answered` 的 `try` 是正整数、`hints_used` 是非负整数；`plan.created` 的 `tasks` 1～5 项、`plan_date` 是 `YYYY-MM-DD`、`kind: custom` 时必须有 `title_text_id` 且 `ref` 形如 `c-…`、`kind: free` 时 `ref` 必须是 `free`；`reward.goal_set` 的 `target` 是正整数；`reward.spent` **只有** `request_event_id`；`reward.adjusted` 的 `amount` 是非零整数；各个 `reason` 只能是规格列出的枚举值。
 - 私人文字：`text` 1～500 个字（`maxLength` 按字符算）。
 - 摄入收据：`batch_id`、`clock_skew_ms` 和 `source` 的搭配按规格 5.3 节。
 - 奖励流水：`kind` 和 `amount` 的符号一致（`earn` 为正、`spend` 和 `revoke` 为负、`adjust` 非零）；只有 `revoke` 才有 `target_entry_id`，而且 `revoke` 必须有。`entry_id` 是 `rwd_` 加 32 位小写十六进制。
 
-下面这些**不要**在 schema 里做，后面的任务用代码做：大小限制；数值的小数位数和范围；同一 `ref` 在 `tasks` 里不重复（如果你能用 schema 干净地表达，可以做，并在说明里写出来）；跨记录的检查（唯一约束、尝试的合法性、`entry_id` 是否等于哈希、文字是否存在）。
+下面这些**不要**在 schema 里做，后面的任务用代码做：大小限制；数值的小数位数和范围（规格第 2 节的检查程序）；同一 `ref` 在 `tasks` 里不重复（如果你能用 schema 干净地表达，可以做，并在说明里写出来）；跨记录的检查（唯一约束、尝试的合法性、`entry_id` 是否等于哈希、文字是否存在）。
 
 ## 测试怎么写
 
@@ -90,12 +91,13 @@ version: v1
   9. `content` 缺 `content_release`；`activity_kind` 不认识
   10. `actor.type` 不允许（例如孩子发 `reward.spent`）；`actor.type` 和 `id` 前缀不配
   11. 事件里出现自由文字：`reflection.written` 的 payload 用 `text` 代替 `text_id`；`text_id` 不是 `txt_…`；`response` 超过 32 个字符
-  12. `repair.opened`：`source: photo` 却带了 `content`；`source: photo` 缺 `attachment_id`；`source: item` 缺 `item_id`；`source: item` 带了 payload 的 `node_id`
+  12. `repair.opened`：`source: photo` 却带了 `content`；`source: photo` 缺 `attachment_id`；`source: photo` 有 `misconception` 没有 `node_id`；`source: item` 缺 `item_id`；`source: item` 带了 payload 的 `node_id`；`question.asked` 只带 `attempt_id` 不带 `content`
   13. `plan.created` 的 `tasks` 为空；`custom` 缺 `title_text_id`；`free` 的 `ref` 不是 `free`
   14. `reward.spent` 带了 `amount`；`reward.adjusted` 的 `amount` 为 0；`reason` 不在枚举里
   15. 收据 `source: sync` 缺 `batch_id`；`source: local` 带了 `clock_skew_ms`；`source: import` 带了 `clock_skew_ms`
   16. 流水 `earn` 的 `amount` 为负；`revoke` 缺 `target_entry_id`；`earn` 带了 `target_entry_id`
   17. 私人文字超过 500 个字；为空字符串；`text_id` 前缀不对
+  18. `text.erased` 的 `reason` 不在枚举里（合格样例里要有 `orphan`、`lost` 各一项）
 - 可以多写，但不要少写。
 
 ## 约束
@@ -109,7 +111,7 @@ version: v1
 - [ ] 四个 schema 都通过 `check_schema`
 - [ ] 每个动词都有合格样例，测试里有对账
 - [ ] 全部合格样例通过；全部不合格样例被拦下，并且每个都只改了一处
-- [ ] 不合格样例覆盖每个动词，以及上面列出的 17 类
+- [ ] 不合格样例覆盖每个动词，以及上面列出的 18 类
 - [ ] `python -m unittest discover -s tools/tests` 全部通过
 
 ## 交付格式（必须遵守）

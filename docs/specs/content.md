@@ -1,6 +1,6 @@
 # 规格：内容格式与不可变发布（CURIO-002）
 
-- 状态：提议，第 2 轮（已按第 1 轮外部审阅修改，见 PR #21）
+- 状态：提议，第 3 稿（已按两轮外部审阅修改，见 `docs/reviews/pr-21.md`）
 - 依据：ADR-002（结构化内容优先）、ADR-003（发布不可变）、`docs/domain.md`
 - 实现任务：CURIO-002a（schema 和样例内容）、CURIO-002b（发布构建器和 CI 校验）
 
@@ -192,7 +192,7 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 | --- | --- |
 | 1 | `kind`：`explain`、`quiz`、`reflection`；答案：`choice`、`number`、`fraction`；配图：`pie`、`rect`、`rect-unequal`、`number-line`、`svg` |
 
-自定义实验不需要 `engine`，它们运行在沙箱里，只依赖契约版本（`contract`）。
+自定义实验不需要 `engine`，它们运行在沙箱里，只依赖契约版本（manifest 的 `contract`，例如 `activity/1.1`）。发布清单的 `contracts` 列出收录的实验用到的全部契约版本；设备的宿主不支持其中任何一个时，同样**不切换**到这个发布，并提示「需要更新」。
 
 ## 4. 自定义实验
 
@@ -215,7 +215,7 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 | 路径 | 第 1 节的路径规则，含大小写冲突 |
 | 引擎 | `engine` 不低于这个活动用到的能力所需的等级（按 3.8 的表） |
 | 误区覆盖 | **从数据计算**：结构化活动里，被错误选项或 `common_wrong` 引用过的误区，算作已覆盖；自定义实验以 manifest 声明为准 |
-| 发布门禁 | 知识点 `published` 时：所有活动 `approved`；至少一个 `explain` 和一个 `quiz`；每个 `quiz` 至少 5 道题；每个误区都已覆盖；**引用闭包**（6.1）成立 |
+| 发布门禁 | 只看**会被收录**的活动，也就是 `approved` 的那些；`pending`、`claude-reviewed` 的活动不收录，也不阻断发布。知识点 `published` 时，它被收录的活动里：至少一个 `explain` 和一个 `quiz`；每个 `quiz` 至少 5 道题；每个误区都被覆盖。另外**引用闭包**（6.1）要成立 |
 
 ## 6. 不可变发布（release/1）
 
@@ -230,26 +230,27 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
   "content_hash": "<64 位十六进制>",
   "source_commit": "<40 位十六进制，只作参考>",
   "engine_min": 1,
+  "contracts": ["activity/1.1"],
   "nodes": [{"id": "…", "version": 1, "path": "content/nodes/num/….yaml", "sha256": "…"}],
   "activities": [{"id": "…", "version": 1, "kind": "quiz", "files": [{"path": "…", "sha256": "…", "bytes": 1234}]}],
   "assets": [{"path": "content/assets/….svg", "sha256": "…", "bytes": 567}]
 }
 ```
 
-- **收录范围**：只收 `published` 的知识点、它们引用的活动（必须 `approved`），以及这些活动引用的配图文件。草稿不进发布。
+- **收录范围**：只收 `published` 的知识点、它们引用的活动里 `approved` 的那些，以及这些活动引用的配图文件。草稿知识点、没批准的活动都不进发布，也不影响其他内容的发布。所以给已发布的知识点新加一个还在审核的活动，不会卡住整个发布。
 - **引用闭包**：发布包里不能有指向包外的硬引用。下面任何一条不满足，构建失败（CI 的发布门禁也检查同样的规则）：
   - 已发布知识点的每个 `prerequisites` 都必须已发布；
   - 收录的每个活动，它的**全部** `targets` 都必须已发布。共享活动的某个目标还是草稿时，要么等它发布，要么把活动拆开。
 - `related` 是软引用：允许指向未发布的知识点。外壳只显示发布包里有的那些，其余的不显示。
-- `engine_min`：见 3.8。
+- `engine_min`、`contracts`：见 3.8。`contracts` 按字符串排序、不重复；没有收录自定义实验时是空列表。
 - 自定义实验的 `kind` 写成它的 `type`（`experiment` 或 `simulation`）。
 
 ### 6.2 哈希怎么算
 
 1. 每个文件：对仓库里的原始字节算 SHA-256（文件已保证是 LF）。
 2. 三个列表各自排序：`nodes`、`activities` 按 `id`，`files`、`assets` 按 `path`。
-3. 把 `{"engine_min": …, "nodes": …, "activities": …, "assets": …}` 转成**规范 JSON**：键按字母排序，不留空白（分隔符为 `,` 和 `:`），不转义非 ASCII 字符，编码为 UTF-8。用 Python 写就是 `json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`。
-   - 这样写之所以跨语言可复现，是因为清单的取值受到严格限制：只有字符串和非负整数（不超过 2^53−1），没有小数、布尔值和 null；所有键名、id、路径都是 ASCII，所以「按字母排序」在任何语言里都是同一个顺序；哈希是十六进制小写。在这些限制下，结果和 JSON 规范化方案 RFC 8785 一致。
+3. 把 `{"engine_min": …, "contracts": …, "nodes": …, "activities": …, "assets": …}` 转成**规范 JSON**：键按字母排序，不留空白（分隔符为 `,` 和 `:`），不转义非 ASCII 字符，编码为 UTF-8。用 Python 写就是 `json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`。
+   - 这样写之所以跨语言可复现，是因为清单的取值受到严格限制：只有字符串和非负整数（不超过 2^53−1），没有小数、布尔值和 null；所有键名、id、路径都是 ASCII，所以「按字母排序」在任何语言里都是同一个顺序（id 是 ASCII 由 schema 的正则保证：知识点 id 只有小写字母、数字、点、连字符，活动 id 同理；路径由第 1 节的规则保证）；哈希是十六进制小写。在这些限制下，结果和 JSON 规范化方案 RFC 8785 一致。
    - 发布哈希只由 Python 构建器计算。其他语言要验证时，按 RFC 8785 实现即可。
 4. `content_hash` = 上一步字节的 SHA-256；`release_id` = `rel_` + `content_hash`。
 
@@ -278,6 +279,7 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 
 - 原型里的「分蛋糕小挑战」改写成结构化挑战，作为第一份样例内容（CURIO-002a）。样例先放在 `tools/tests/fixtures/content/`（目录结构和 `content/` 相同），作为构建器和 CI 的测试夹具；等 CURIO-002b 合入、CI 认得结构化活动之后，真正的知识点才进 `content/`（CURIO-009a）。
 - **哪些规则写在 schema 里，哪些写在 CI 里**：单个文件内部能表达的（字段、类型、枚举、长度、个数、「恰好一个正确选项」）写在 schema 里；要跨文件或要做计算的（引用、`shaded` 不超过 `parts`、提示泄露答案、SVG 是否干净、发布门禁）写在 CI 里。
+- `tools/tests/fixtures/` 下的样例内容**只做 schema 校验和构建器测试**，不参加针对 `content/` 的 CI 规则（发布门禁、引用、地盘），CURIO-002b 要写明这一点。
 - 现有 CI 里「每个活动都要有 `index.html`」的过渡规则，在 CURIO-002b 合入时改为按形态校验（见 ADR-002「过渡期」）。
 
 ## 8. 任务拆分
