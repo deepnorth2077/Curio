@@ -1,0 +1,15 @@
+id: act.reflection.fraction-intro-01
+schema: activity-def/1
+kind: reflection
+version: 1
+title: 我的分数发现
+targets: [math.number.fraction-intro]
+age_band: G3-4
+duration_min: 3
+review: approved
+engine: 1
+body:
+  prompt: 用一句话说说，怎样分才能用分数表示其中的一份或几份？
+  starters: [我发现……, 原来……]
+  max_chars: 120
+# END OF FILE

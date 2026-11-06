@@ -1,0 +1,307 @@
+[
+  {
+    "name": "missing-id",
+    "why": "结构化活动缺 id",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "remove", "path": "/id"}]
+  },
+  {
+    "name": "missing-kind",
+    "why": "结构化活动缺 kind",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "remove", "path": "/kind"}]
+  },
+  {
+    "name": "missing-version",
+    "why": "结构化活动缺 version",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "remove", "path": "/version"}]
+  },
+  {
+    "name": "missing-targets",
+    "why": "结构化活动缺 targets",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "remove", "path": "/targets"}]
+  },
+  {
+    "name": "invalid-kind",
+    "why": "kind 不在三种之内",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/kind", "value": "experiment"}]
+  },
+  {
+    "name": "invalid-schema",
+    "why": "schema 不是 activity-def/1",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/schema", "value": "activity-def/2"}]
+  },
+  {
+    "name": "choice-no-correct",
+    "why": "选择题没有正确选项",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/answer/choices/0/correct", "value": false}]
+  },
+  {
+    "name": "choice-two-correct",
+    "why": "选择题有两个正确选项",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "add", "path": "/body/items/0/answer/choices/1/correct", "value": true}]
+  },
+  {
+    "name": "choice-one-option",
+    "why": "选择题只有 1 个选项",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/answer/choices", "value": [{"id": "a", "text": "1/4", "correct": true}]}]
+  },
+  {
+    "name": "choice-six-options",
+    "why": "选择题有 6 个选项",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/answer/choices", "value": [
+      {"id": "a", "text": "1/4", "correct": true},
+      {"id": "b", "text": "1/3"},
+      {"id": "c", "text": "4/1"},
+      {"id": "d", "text": "1/2"},
+      {"id": "e", "text": "2/4"},
+      {"id": "f", "text": "3/4"}
+    ]}]
+  },
+  {
+    "name": "number-missing-value",
+    "why": "数字题缺 value",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "remove", "path": "/body/items/2/answer/value"}]
+  },
+  {
+    "name": "fraction-zero-denominator",
+    "why": "分数题分母为 0",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/3/answer/denominator", "value": 0}]
+  },
+  {
+    "name": "hints-empty",
+    "why": "提示 0 条",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/hints", "value": []}]
+  },
+  {
+    "name": "hints-four",
+    "why": "提示 4 条",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/hints", "value": ["先看图。", "再数份数。", "分清总份数。", "分清涂色份数。"]}]
+  },
+  {
+    "name": "stem-too-long",
+    "why": "题干超过 80 个字",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/stem", "value": "题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题题"}]
+  },
+  {
+    "name": "hint-too-long",
+    "why": "提示超过 60 个字",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/hints/0", "value": "提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示提示"}]
+  },
+  {
+    "name": "title-too-long",
+    "why": "标题超过 20 个字",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/title", "value": "标题标题标题标题标题标题标题标题标题标题标题"}]
+  },
+  {
+    "name": "figure-unknown",
+    "why": "配图类型不认识",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/figure/type", "value": "triangle"}]
+  },
+  {
+    "name": "pie-parts-one",
+    "why": "pie 的 parts 为 1",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/figure/parts", "value": 1}]
+  },
+  {
+    "name": "pie-parts-thirteen",
+    "why": "pie 的 parts 为 13",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/figure/parts", "value": 13}]
+  },
+  {
+    "name": "explain-two-steps",
+    "why": "讲解只有 2 步",
+    "schema": "activity-def",
+    "base": "content/activities/act.explain.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/steps", "value": [
+      {"type": "text", "text": "一块蛋糕，平均切成 4 份，每份都一样大。"},
+      {"type": "figure", "figure": {"type": "pie", "parts": 4, "shaded": 1}, "caption": "涂色的是其中 1 份。"}
+    ]}]
+  },
+  {
+    "name": "explain-twenty-one-steps",
+    "why": "讲解有 21 步",
+    "schema": "activity-def",
+    "base": "content/activities/act.explain.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/steps", "value": [
+      {"type": "text", "text": "第一步。"},
+      {"type": "text", "text": "第二步。"},
+      {"type": "text", "text": "第三步。"},
+      {"type": "text", "text": "第四步。"},
+      {"type": "text", "text": "第五步。"},
+      {"type": "text", "text": "第六步。"},
+      {"type": "text", "text": "第七步。"},
+      {"type": "text", "text": "第八步。"},
+      {"type": "text", "text": "第九步。"},
+      {"type": "text", "text": "第十步。"},
+      {"type": "text", "text": "第十一步。"},
+      {"type": "text", "text": "第十二步。"},
+      {"type": "text", "text": "第十三步。"},
+      {"type": "text", "text": "第十四步。"},
+      {"type": "text", "text": "第十五步。"},
+      {"type": "text", "text": "第十六步。"},
+      {"type": "text", "text": "第十七步。"},
+      {"type": "text", "text": "第十八步。"},
+      {"type": "text", "text": "第十九步。"},
+      {"type": "text", "text": "第二十步。"},
+      {"type": "text", "text": "第二十一步。"}
+    ]}]
+  },
+  {
+    "name": "reflection-missing-prompt",
+    "why": "反思缺 prompt",
+    "schema": "activity-def",
+    "base": "content/activities/act.reflection.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "remove", "path": "/body/prompt"}]
+  },
+  {
+    "name": "additional-property",
+    "why": "出现规格里没有的字段",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "add", "path": "/unexpected", "value": true}]
+  },
+  {
+    "name": "node-source-type",
+    "why": "知识点 sources 的 type 不在三种之内",
+    "schema": "knode",
+    "base": "content/nodes/num/math.number.fraction-intro.yaml",
+    "patch": [{"op": "replace", "path": "/sources/0/type", "value": "website"}]
+  },
+  {
+    "name": "manifest-missing-version",
+    "why": "自定义实验 manifest 缺 version",
+    "schema": "activity",
+    "base": "content/experiment-manifest.json",
+    "patch": [{"op": "remove", "path": "/version"}]
+  },
+  {
+    "name": "manifest-quiz-type",
+    "why": "自定义实验 type 是 quiz",
+    "schema": "activity",
+    "base": "content/experiment-manifest.json",
+    "patch": [{"op": "replace", "path": "/type", "value": "quiz"}]
+  },
+  {
+    "name": "release-id-format",
+    "why": "发布清单 release_id 格式错误",
+    "schema": "release",
+    "base": "content/release.json",
+    "patch": [{"op": "replace", "path": "/release_id", "value": "rel_ABCD"}]
+  },
+  {
+    "name": "release-file-missing-sha256",
+    "why": "发布清单文件条目缺 sha256",
+    "schema": "release",
+    "base": "content/release.json",
+    "patch": [{"op": "remove", "path": "/activities/0/files/0/sha256"}]
+  },
+  {
+    "name": "release-bytes-fractional",
+    "why": "发布清单 bytes 是小数",
+    "schema": "release",
+    "base": "content/release.json",
+    "patch": [{"op": "replace", "path": "/activities/0/files/0/bytes", "value": 12.5}]
+  },
+  {
+    "name": "release-missing-engine-min",
+    "why": "发布清单缺 engine_min",
+    "schema": "release",
+    "base": "content/release.json",
+    "patch": [{"op": "remove", "path": "/engine_min"}]
+  },
+  {
+    "name": "release-path-parent",
+    "why": "发布清单路径含 ..",
+    "schema": "release",
+    "base": "content/release.json",
+    "patch": [{"op": "replace", "path": "/nodes/0/path", "value": "content/nodes/num/../math.number.fraction-intro.yaml"}]
+  },
+  {
+    "name": "release-path-backslash",
+    "why": "发布清单路径含反斜杠",
+    "schema": "release",
+    "base": "content/release.json",
+    "patch": [{"op": "replace", "path": "/nodes/0/path", "value": "content\\nodes\\num\\math.number.fraction-intro.yaml"}]
+  },
+  {
+    "name": "activity-missing-engine",
+    "why": "结构化活动缺 engine",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "remove", "path": "/engine"}]
+  },
+  {
+    "name": "activity-engine-zero",
+    "why": "结构化活动 engine 为 0",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/engine", "value": 0}]
+  },
+  {
+    "name": "activity-id-chinese",
+    "why": "结构化活动 id 含汉字",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/id", "value": "act.quiz.分数"}]
+  },
+  {
+    "name": "activity-id-uppercase",
+    "why": "结构化活动 id 含大写字母",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/id", "value": "act.quiz.Fraction-intro-01"}]
+  },
+  {
+    "name": "misconception-uppercase",
+    "why": "误区引用含大写字母",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/answer/choices/1/misconception", "value": "Part-vs-rest"}]
+  },
+  {
+    "name": "misconception-space",
+    "why": "误区引用含空格",
+    "schema": "activity-def",
+    "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+    "patch": [{"op": "replace", "path": "/body/items/0/answer/choices/1/misconception", "value": "part vs rest"}]
+  }
+]

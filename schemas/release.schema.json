@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deepnorth2077/curio/schemas/release.schema.json",
+  "title": "release/1 · 不可变发布清单",
+  "type": "object",
+  "required": ["schema", "release_id", "content_hash", "source_commit", "engine_min", "contracts", "nodes", "activities", "assets"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "release/1" },
+    "release_id": { "type": "string", "pattern": "^rel_[0-9a-f]{64}$" },
+    "content_hash": { "$ref": "#/$defs/sha256" },
+    "source_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "engine_min": { "type": "integer", "minimum": 1 },
+    "contracts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^activity/[0-9]+\\.[0-9]+$" }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "version", "path", "sha256"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/nodeId" },
+          "version": { "type": "integer", "minimum": 1 },
+          "path": { "$ref": "#/$defs/path" },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "activities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "version", "kind", "files"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "$ref": "#/$defs/activityId" },
+          "version": { "type": "integer", "minimum": 1 },
+          "kind": { "enum": ["explain", "quiz", "reflection", "experiment", "simulation"] },
+          "files": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/fileEntry" }
+          }
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fileEntry" }
+    }
+  },
+  "$defs": {
+    "nodeId": { "type": "string", "pattern": "^[a-z]+(\\.[a-z0-9-]+)+$" },
+    "activityId": { "type": "string", "pattern": "^act\\.[a-z]+\\.[a-z0-9-]+$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "path": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._-]*(/[A-Za-z0-9_-][A-Za-z0-9._-]*)*$"
+    },
+    "fileEntry": {
+      "type": "object",
+      "required": ["path", "sha256", "bytes"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }
+      }
+    }
+  }
+}
