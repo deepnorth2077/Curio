@@ -11,7 +11,7 @@
 | Luka | 告诉 Claude 学校进度并拍教材页；把提示词交给实现 AI，把交付包带回给 Claude；组织孩子试玩，告诉 Claude 结果 |
 | Claude | 选点、写知识点卡、定活动形式、写 issue 和提示词、审核、整合进仓库、合入、上线后复盘 |
 | 实现 AI | 按提示词做活动，按 `docs/submission.md` 交付：讲解、挑战、反思交 `activity.yaml` 和配图；实验、模拟交 `manifest.yaml` + `index.html`。碰不到仓库 |
-| GitHub 自动校验 | 已上线：地盘、schema、图谱、ID、文案、署名（`tools/ci_checks.py`）。P1 建设中：契约测试、断网运行、平板截图 |
+| GitHub 自动校验 | 已上线：地盘、形态、schema、引用、题目、SVG、路径、引擎等级、发布门禁、ID、文案、署名（`tools/ci_checks.py`，见 `docs/collaboration.md`「CI 检查什么」）。P1 建设中：契约测试、断网运行、平板截图 |
 
 ## 文件放在哪里
 
