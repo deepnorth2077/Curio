@@ -25,11 +25,12 @@ def node(nid, status="draft", activities=(), mis=(), prereq=(), dq="一块蛋糕
         """) + (f"misconceptions:{mis_y}\n" if mis else "")
 
 
-def activity(aid, targets, type_="quiz", review="pending", mis=(), extra=""):
+def activity(aid, targets, type_="experiment", review="pending", mis=(), extra=""):
     return textwrap.dedent(f"""\
         id: {aid}
         contract: activity/1.1
         type: {type_}
+        version: 1
         title: 测试活动
         targets: [{', '.join(targets)}]
         age_band: G3-4
@@ -105,7 +106,7 @@ class Base(unittest.TestCase):
     def add_html(self, aid, body="<p>分蛋糕</p>"):
         self.r.write(f"content/activities/{aid}/index.html", f"<!doctype html><html><body>{body}</body></html>\n")
 
-    def published_set(self, review="approved", types=("explain", "quiz"), cover=("denominator-bigger",)):
+    def published_set(self, review="approved", types=("experiment", "simulation"), cover=("denominator-bigger",)):
         acts = [f"act.{t}.frac-{i}" for i, t in enumerate(types)]
         self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, status="published", activities=acts, mis=("denominator-bigger",)))
         for i, (a, t) in enumerate(zip(acts, types)):
@@ -170,7 +171,8 @@ class TestKnowledgePointBranch(Base):
         self.r.branch(f"kp/{N2}")
         self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, status="published", activities=acts, mis=("denominator-bigger",), dq="改版后的问题？"))
         self.r.write(f"content/activities/{acts[0]}/index.html", "<!doctype html><html><body>新版</body></html>\n"); self.r.commit()
-        self.ok(self.r.check())
+        # 只看地盘：过渡期发布门禁通不过（见 TestPublishGate），这里只证明改版自己的知识点不越界
+        self.assertFalse([m for _, m in self.r.check().errors if "不能改这个文件" in m])
 
     def test_unrelated_activity_mentioning_id_in_comment_fails(self):
         self.r.write(f"{NODE_DIR}/{N1}.yaml", node(N1, activities=["act.quiz.other"]))
@@ -264,16 +266,19 @@ class TestPublishGate(Base):
     def setUp(self):
         super().setUp(); self.r.baseline(); self.r.branch("arch/publish")
 
-    def test_complete_published_node_passes(self):
+    def test_publish_waits_for_structured_activities(self):
+        # 过渡期：activity schema 只允许 experiment/simulation，讲解和挑战改为结构化活动，
+        # 而 CI 要到 CURIO-002b 才认得结构化活动。在那之前，任何知识点都发布不了。
+        # CURIO-002b 必须恢复「完整的已发布知识点通过」这个正例。
         self.published_set(); self.r.commit()
-        self.ok(self.r.check())
+        self.fails(self.r.check(), "至少有一个 explain")
 
     def test_published_with_pending_activity_fails(self):
         self.published_set(review="pending"); self.r.commit()
         self.fails(self.r.check(), "只能引用已批准")
 
     def test_published_without_quiz_fails(self):
-        self.published_set(types=("explain",)); self.r.commit()
+        self.published_set(types=("experiment",)); self.r.commit()
         self.fails(self.r.check(), "至少有一个 quiz")
 
     def test_published_with_uncovered_misconception_fails(self):

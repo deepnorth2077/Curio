@@ -33,6 +33,19 @@
       "items": { "type": "object", "required": ["id", "text"], "additionalProperties": false, "properties": { "id": { "type": "string", "pattern": "^[a-z0-9-]+$" }, "text": { "type": "string" } } },
       "description": "常见误区。id 用作学习事件和错因诊断里的标签"
     },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "ref"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "enum": ["curriculum", "textbook", "reference"] },
+          "ref": { "type": "string" },
+          "url": { "type": "string" }
+        }
+      }
+    },
     "lenses": {
       "type": "array",
       "items": { "type": "object", "required": ["band", "approach"], "additionalProperties": false, "properties": { "band": { "type": "string", "pattern": "^G\\d{1,2}(-\\d{1,2})?$" }, "approach": { "type": "string" } } },
