@@ -254,6 +254,7 @@
       "required": ["steps"],
       "additionalProperties": false,
       "properties": {
+        "style": { "enum": ["plain", "tutor"], "default": "plain" },
         "steps": {
           "type": "array",
           "minItems": 3,

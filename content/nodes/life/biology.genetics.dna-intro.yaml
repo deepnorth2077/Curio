@@ -1,0 +1,36 @@
+id: biology.genetics.dna-intro
+schema: knode/1
+title: DNA：细胞里的说明书
+subjects: [biology]
+theme: life
+grade: G8
+unit: 八下 · 生物的遗传和变异
+curriculum:
+  - textbook: 人教版初中生物学八年级下册
+    unit: 生物的遗传和变异
+prerequisites: [biology.cell.cell-intro]
+related: []
+driving_question: 为什么小狗生下来的总是小狗，不会是小猫？
+objectives:
+  - 知道细胞核里有 DNA。
+  - 知道 DNA 像一本说明书，记着身体怎么长、长成什么样。
+  - 知道身体里几乎每个细胞都带着同一套说明书。
+misconceptions:
+  - id: blood-only
+    text: DNA 只在血液里。
+  - id: different-books
+    text: 身体不同地方的细胞，带的是不同的说明书。
+sources:
+  - type: textbook
+    ref: 人教版初中生物学八年级下册「生物的遗传和变异」（具体章节待交叉核对时确认）
+  - type: curriculum
+    ref: 《义务教育生物学课程标准（2022 年版）》「遗传与进化」
+lenses:
+  - band: G3-4
+    approach: 把 DNA 比作一本用 4 种字母写成的说明书，放在每个细胞的细胞核里；不同细胞读这本书的不同几页，所以本领不一样。
+  - band: G7-8
+    approach: 认识 DNA 是主要的遗传物质，基因是有遗传效应的 DNA 片段。
+activities: []
+status: draft
+version: 1
+# END OF FILE

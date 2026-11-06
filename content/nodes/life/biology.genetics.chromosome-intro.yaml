@@ -1,0 +1,45 @@
+id: biology.genetics.chromosome-intro
+schema: knode/1
+title: 染色体：把说明书卷好收起来
+subjects: [biology]
+theme: life
+grade: G8
+unit: 八下 · 生物的遗传和变异
+curriculum:
+  - textbook: 人教版初中生物学八年级下册
+    unit: 生物的遗传和变异
+prerequisites: [biology.genetics.dna-intro]
+related: []
+driving_question: 这么长的说明书，小小的细胞是怎么装下的？
+objectives:
+  - 知道 DNA 缠绕、折叠起来，就成了染色体。
+  - 知道人的体细胞里一般有 46 条染色体，两两配成 23 对。
+  - 知道每一对染色体里，一条来自爸爸，一条来自妈妈。
+  - 知道第 23 对是性染色体：女孩一般是 XX，男孩一般是 XY。
+  - 知道不同的生物，染色体的数目不一样，和个子大小没有关系。
+misconceptions:
+  - id: bigger-more
+    text: 动物越大，染色体就越多。
+  - id: chromosome-is-gene
+    text: 染色体就是基因。
+  - id: from-one-parent
+    text: 孩子的染色体全部来自妈妈（或者全部来自爸爸）。
+  - id: same-in-boys-girls
+    text: 男孩和女孩的染色体完全一样。
+sources:
+  - type: textbook
+    ref: 人教版初中生物学八年级下册「生物的遗传和变异」（具体章节待交叉核对时确认）
+  - type: reference
+    ref: 美国国家人类基因组研究所（NHGRI）染色体知识页
+    url: https://www.genome.gov/about-genomics/fact-sheets/Chromosomes-Fact-Sheet
+  - type: curriculum
+    ref: 《义务教育生物学课程标准（2022 年版）》「遗传与进化」
+lenses:
+  - band: G3-4
+    approach: 把很长的毛线绕成线团来类比 DNA 缠成染色体；用「46 条、配成 23 对、每对一条来自爸爸一条来自妈妈」解释为什么孩子既像爸爸又像妈妈；用狗（78 条）和人（46 条）的对比说明数目和个子大小无关。
+  - band: G7-8
+    approach: 认识染色体由 DNA 和蛋白质组成，体细胞中染色体成对存在，生殖细胞中成单存在；认识性别决定。
+activities: []
+status: draft
+version: 1
+# END OF FILE
