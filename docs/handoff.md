@@ -49,6 +49,7 @@ python -m unittest discover -s tools/tests         # 全部通过再开始干活
 
 - **GraphQL 不能用**：issue、PR、标签、合入都用 `gh api` 的 REST 接口。
 - **删不了远程分支，也改不了 Pages 设置**：仓库已开启「合入后自动删除分支」；Pages 设置要请 Luka 在网页上操作。
+- **Pages 部署可能报「失败」，其实已经发布**：`deploy-pages` 有时等状态超时，Actions 里显示失败，但网站已经更新（2026-11-06 PR #50 就是这样）。这个环境打不开 github.io，以 Luka 在仓库 Settings → Pages 看到的「Last deployed」或在 iPad 上打开为准，不要去改 Pages 设置。
 - **「Unverified」的提醒可以忽略**：会话结束时，钩子可能提醒 `main` 上 GitHub 生成的合并提交「没有签名」。那是 GitHub 用自己的密钥签的，用 `gh api repos/deepnorth2077/curio/commits/<提交号> -q .commit.verification` 能看到 `verified: true`。**不要**按提示去改写 `main` 的历史。
 - **零散附件**：Luka 有时会把交付包和单独的文件一起发来。只用交付包本身收货，零散文件只用来对照。不要把大附件整个读进上下文，用工具处理。
 - **`main` 要求分支和它同步**：合入前如果 `main` 有了新提交，先把 `main` 合进分支，等 CI 重新通过。
@@ -69,16 +70,17 @@ python -m unittest discover -s tools/tests         # 全部通过再开始干活
 | Kimi | 交付稳，打回后只改要求改的地方。适合内容和工具类任务。审阅时擅长发现设计层面的大问题 |
 | GLM | 想得深，最会发现规格里没写清的地方，审阅时的系统性很强。交付格式和收尾不够细心，任务文件里要把格式要求写醒目 |
 
-## 7. 截至 2026-11-06（M1）的进行中事项
+## 7. 截至 2026-11-06（M2）的进行中事项
 
-以 issue 为准，下面只是写这份文件时的快照。上一个对话在这里收尾（里程碑 M1：PR #30 星座卡片审阅后合入；7 个内容任务派发；#17 CURIO-002b 两轮审核后合入 PR #45）。
+以 issue 为准，下面只是写这份文件时的快照。上一个对话在这里收尾（里程碑 M2：试玩页上线；7 个活动做完事实核对并改好；PR #46 审阅后合入）。
 
-- **PR #46**（CI：`kp/` 分支可以改 `content/assets/<知识点 id>/`；`prompts/content-template.md` 受保护；`docs/collaboration.md`「CI 检查什么」按现状重写）：审阅任务文件已交给 Luka 转给 GLM，等「审阅 #46」。
-- **「生命的说明书」7 个内容任务**（基于 `0f1fa27`，Kimi，2026-11-06 全部审核通过：#36 #39 #41 #43 第 1 轮，#35 #38 #42 第 2 轮）：通过那一轮的文件都已原样放在分支 `kp/biology.cell.cell-intro`、`kp/biology.genetics.dna-intro`、`kp/biology.genetics.chromosome-intro` 上（逐字节核对过，知识点卡的 `activities` 已补全，只提交、没开 PR）。主 issue #34 #37 #40 的勾选框已勾上。下一步：
-  1. 写事实交叉核对任务（`review.life-manual-content`），把 7 个活动和配图交给 GLM 核对科学事实（`docs/workflow.md` 第 2 步）；
-  2. Luka 问过「什么时候能在 https://deepnorth2077.github.io/Curio/ 上让孩子玩到」。Claude 建议先做一个**一次性试玩预览页**（放在 `/Curio/preview/`，读这 7 份内容，显示领航员对话和挑战，不记录进度），让孩子先试玩，等 Luka 回答「是」再做。正式平台要等 #24、#25 和 #9；
-  3. 试玩后，每个知识点开 PR（要等 PR #46 合入，CI 才允许 `kp/` 分支放配图），合入。
-  - 派发时漏写的一条规则，以后加进 `prompts/content-template.md`：挑战打乱题目顺序时，数字题的答案不能出现在其他题的题干、选项、提示、反馈里（#42 第 1 轮就是这个问题）。
-- **#24 竖切片 1**（分数挑战点亮一颗星）：不再被阻塞。派发前要先定的 5 件事已写在 #24 的评论里（浏览器读不了 YAML、目录、黄金向量格式、范围收窄、演示内容）。下一步：写切片规格和手算的黄金向量，改构建器输出 JSON，开 `arch/` PR 请外部审阅，合入后再写提示词、派发。
+- **试玩页**（PR #50）：https://deepnorth2077.github.io/Curio/preview/ ，单个 HTML，不保存进度，有「试玩记录」可以复制给 Claude 当反馈。生成器 `preview/build.py`：先把三个 `kp/` 分支各导出一份（`git show <分支>:<路径>` 或 `git worktree`），再运行 `python preview/build.py --root <导出 1> --root <导出 2> --root <导出 3> --out prototype/preview/index.html`，走 `feat/` 分支合入。**现在页面上的内容是事实核对修改前的版本**（994aa0a、f7a0616、3793167）。Luka 正在 iPad 上试玩，说好玩过后给建议。
+- **「生命的说明书」7 个活动**：事实核对按 Luka 的意思由独立的子 agent 做（没有交给 GLM），记录在 `docs/reviews/life-manual-content.md`：阻断 0、重要 6、建议 9。重要 6 条和建议里的 7 条已由 Claude 改在三个分支上（`kp/biology.cell.cell-intro` 2e32342、`kp/biology.genetics.dna-intro` 2fe3ae7、`kp/biology.genetics.chromosome-intro` 4fd1d31，都已合入最新的 `main`，本地 CI 通过，还没开 PR）。下一步：
+  1. 收到 Luka 的试玩反馈后，按反馈改，再用改好的分支重新生成试玩页；
+  2. 孩子玩过修改后的版本、Luka 确认后，每个知识点开 PR，CI 绿勾后合入，关闭 #34–#43；
+  3. 建议 7、8 是 `docs/constellations/life-manual.md` 的出处和配图说明，下次开 `arch/` 时改；「人的性别决定」这一节的节名要请 Luka 对照 2024 年版实体书（或拍目录页）。
+  - 以后加进 `prompts/content-template.md`：挑战打乱题目顺序时，数字题的答案不能出现在其他题的题干、选项、提示、反馈里（#42 第 1 轮就是这个问题）。
+- **PR #46 已合入**：整个 `prompts/` 受保护；`kp/` 分支只能改自己活动的 `.md`、`.task.md` 和自己 `content/assets/<知识点 id>/` 下的 `.svg`；`feat/`、`fix/`、`chore/` 只能新增 `*.task.md` 留档；`svg` 配图必须在 `content/assets/` 下。逐条答复见 `docs/reviews/pr-46.md`。
+- **#24 竖切片 1**（分数挑战点亮一颗星）：没动，仍按 #24 评论里的 5 件事做。下一步：写切片规格和手算的黄金向量，改构建器输出 JSON，开 `arch/` PR 请外部审阅，合入后再写提示词、派发。
 - **#31 AI 答疑**：没动。Luka 已定：在领航员对话里随时问；只用一个模型（DeepSeek）；没有 NAS。下一步由 Claude 写 ADR 和规格：中转服务保管密钥，要家庭口令，有次数和花费上限；同一份代码能部署到国内云函数或海外服务，用连通测试决定放哪里。同一份 ADR 里要重新考虑原来放在 NAS 上的同步和备份（ADR-006、ADR-008 第 7 条都假设了 NAS）。
 - **以后的小改进**：`tools/ci_checks.py` 的提示泄露检查，中文数字的分数写法没有前后边界（答案 1/4 时「十四分之一」会被误判），见 #17 第 1 轮审核。
