@@ -1,6 +1,6 @@
 ---
 name: 任务（Claude 写）
-about: 一件交给实现 AI 的事。Luka 只需要复制「提示词」一节的代码块，交给实现 AI。
+about: 一件交给实现 AI 的事。Claude 会在对话里把任务文件发给 Luka，Luka 原样上传给实现 AI。
 title: "[任务] "
 labels: 待派发
 ---
