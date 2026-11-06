@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 230" role="img" aria-label="女孩和男孩的第 23 对染色体">
+  <title>女孩和男孩的第 23 对染色体</title>
+  <desc>女孩两根一样长的 X 短棒，一蓝一红；男孩一根红色长 X 和一根蓝色短 Y。</desc>
+  <path d="M 86.5 59.5 C 85.8 48.0, 97.2 45.2, 100.0 46.0 C 102.0 45.5, 114.1 48.0, 113.5 59.5 L 113.4 148.5 C 114.3 160.0, 102.0 162.7, 100.0 162.0 C 98.0 162.5, 85.8 160.0, 86.5 148.5 L 86.6 59.5 Z" fill="#4F7FA8" fill-opacity="0.8"/>
+  <path d="M 86.5 59.5 C 85.8 48.0, 97.2 45.2, 100.0 46.0 C 102.0 45.5, 114.1 48.0, 113.5 59.5 L 113.4 148.5 C 114.3 160.0, 102.0 162.7, 100.0 162.0 C 98.0 162.5, 85.8 160.0, 86.5 148.5 L 86.6 59.5 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <path d="M 137.5 59.5 C 136.8 48.0, 149.8 45.2, 151.0 46.0 C 153.0 45.5, 165.1 48.0, 164.5 59.5 L 164.6 148.5 C 165.3 160.0, 153.0 162.7, 151.0 162.0 C 149.0 162.5, 136.8 160.0, 137.5 148.5 L 137.4 59.5 Z" fill="#C2603F" fill-opacity="0.8"/>
+  <path d="M 137.5 59.5 C 136.8 48.0, 149.8 45.2, 151.0 46.0 C 153.0 45.5, 165.1 48.0, 164.5 59.5 L 164.6 148.5 C 165.3 160.0, 153.0 162.7, 151.0 162.0 C 149.0 162.5, 136.8 160.0, 137.5 148.5 L 137.4 59.5 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <path d="M 307.5 59.5 C 306.8 48.0, 318.4 45.2, 321.0 46.0 C 323.0 45.5, 335.1 48.0, 334.5 59.5 L 334.4 148.5 C 335.3 160.0, 323.0 162.7, 321.0 162.0 C 319.0 162.5, 306.8 160.0, 307.5 148.5 L 307.6 59.5 Z" fill="#C2603F" fill-opacity="0.8"/>
+  <path d="M 307.5 59.5 C 306.8 48.0, 318.4 45.2, 321.0 46.0 C 323.0 45.5, 335.1 48.0, 334.5 59.5 L 334.4 148.5 C 335.3 160.0, 323.0 162.7, 321.0 162.0 C 319.0 162.5, 306.8 160.0, 307.5 148.5 L 307.6 59.5 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <path d="M 359.5 110.0 C 358.8 99.5, 370.7 96.7, 372.0 97.5 C 374.0 97.0, 385.1 99.5, 384.5 110.0 L 384.6 150.0 C 385.3 160.5, 374.0 163.2, 372.0 162.5 C 370.0 163.0, 358.8 160.5, 359.5 150.0 L 359.4 110.0 Z" fill="#4F7FA8" fill-opacity="0.8"/>
+  <path d="M 359.5 110.0 C 358.8 99.5, 370.7 96.7, 372.0 97.5 C 374.0 97.0, 385.1 99.5, 384.5 110.0 L 384.6 150.0 C 385.3 160.5, 374.0 163.2, 372.0 162.5 C 370.0 163.0, 358.8 160.5, 359.5 150.0 L 359.4 110.0 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <text x="125" y="220" fill="#1F1E1C" font-size="18" text-anchor="middle">女孩</text>
+  <text x="100" y="190" fill="#1F1E1C" font-size="18" font-weight="700" text-anchor="middle">X</text>
+  <text x="151" y="190" fill="#1F1E1C" font-size="18" font-weight="700" text-anchor="middle">X</text>
+  <text x="347" y="220" fill="#1F1E1C" font-size="18" text-anchor="middle">男孩</text>
+  <text x="321" y="190" fill="#1F1E1C" font-size="18" font-weight="700" text-anchor="middle">X</text>
+  <text x="372" y="190" fill="#1F1E1C" font-size="18" font-weight="700" text-anchor="middle">Y</text>
+  <path d="M 229 65 C 235 98, 230 136, 236 164" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 7" class="k1"/>
+</svg>
+<!-- END OF FILE -->
