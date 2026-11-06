@@ -18,6 +18,8 @@
 | 路径 | 内容 |
 | --- | --- |
 | `docs/architecture.md` | 总体架构设计：原则、决策记录（D1–D25）、分层架构、数据模型、模块契约、AI 能力层、路线图 |
+| `docs/collaboration.md` | 多个 AI 同时维护本仓库的规则：分支地盘、认领、交接、审核、CI 检查 |
+| `tools/ci_checks.py` | PR 自动检查（地盘、规格、ID、文案、署名） |
 | `docs/workflow.md` | 每个知识点从选点到上线的八步工作流、完成标准和每周节奏 |
 | `docs/activity-contract.md` | 互动模块与平台之间的消息协议 `activity/1.1`，附实现样例 |
 | `schemas/` | 三份 JSON Schema：知识点 `knode/1`、互动模块 `activity/1.1`、学习事件 `event/1` |

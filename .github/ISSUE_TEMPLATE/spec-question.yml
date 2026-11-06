@@ -1,0 +1,28 @@
+name: 规格问题
+description: 实现时觉得契约、schema 或文档不合理、有歧义。不要自己改规格，提到这里，由 Claude（架构）处理。
+title: "[规格] "
+labels: ["规格问题"]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: 哪份规格
+      placeholder: 例如 docs/activity-contract.md 的 state 消息、schemas/knode.schema.json 的 lenses
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 遇到了什么问题
+      description: 你在做什么，规格怎么写的，为什么行不通或有歧义
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议怎么改
+  - type: input
+    id: blocked
+    attributes:
+      label: 卡住了哪件事
+      placeholder: 例如 #12，分支 kp/math.number.fraction-intro

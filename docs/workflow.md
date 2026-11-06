@@ -11,7 +11,7 @@ Luka 全程不写代码，只在三个地方出手：提供教材页、看孩子
 | Luka | 告诉 Claude 学校进度并拍教材页；组织孩子试玩；写一句试玩记录；点合入 |
 | Claude | 选点、写知识点卡、定活动形式、写提示词、审核、上线后复盘 |
 | 实现模型 | 按提示词交付活动包（`manifest.yaml` + `index.html`） |
-| GitHub 自动校验 | schema、图谱检查、契约测试、断网运行、平板截图（**P1 建设中**） |
+| GitHub 自动校验 | 已上线：地盘、schema、图谱、ID、文案、署名（`tools/ci_checks.py`）。P1 建设中：契约测试、断网运行、平板截图 |
 
 ## 文件放在哪里
 
@@ -23,7 +23,8 @@ content/
 prompts/<活动 id>.md                       # 这个活动的提示词，从 prompts/module-template.md 复制
 ```
 
-- 分支名：`kp/<知识点 id>`，例如 `kp/math.number.fraction-intro`。
+- 每个知识点先建一个「任务」issue，实现模型开工前在 issue 下认领（见 `docs/collaboration.md`）。
+- 分支名：`kp/<知识点 id>`，例如 `kp/math.number.fraction-intro`。这个分支只能改这个知识点自己的文件，CI 会检查。
 - PR 标题：`知识点：<标题>（<知识点 id>）`。
 - PR 描述用仓库里的 PR 模板，完成标准就是模板里的勾选框。
 
