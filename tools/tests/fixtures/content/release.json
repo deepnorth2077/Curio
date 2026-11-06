@@ -1,0 +1,55 @@
+{
+  "schema": "release/1",
+  "release_id": "rel_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "content_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "source_commit": "a1ddb1e873b65ecabf6154c9a423b0b713fa1672",
+  "engine_min": 1,
+  "contracts": [],
+  "nodes": [
+    {
+      "id": "math.number.fraction-intro",
+      "version": 1,
+      "path": "content/nodes/num/math.number.fraction-intro.yaml",
+      "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "activities": [
+    {
+      "id": "act.explain.fraction-intro-01",
+      "version": 1,
+      "kind": "explain",
+      "files": [
+        {
+          "path": "content/activities/act.explain.fraction-intro-01/activity.yaml",
+          "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "bytes": 2480
+        }
+      ]
+    },
+    {
+      "id": "act.quiz.fraction-intro-01",
+      "version": 1,
+      "kind": "quiz",
+      "files": [
+        {
+          "path": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+          "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "bytes": 3210
+        }
+      ]
+    },
+    {
+      "id": "act.reflection.fraction-intro-01",
+      "version": 1,
+      "kind": "reflection",
+      "files": [
+        {
+          "path": "content/activities/act.reflection.fraction-intro-01/activity.yaml",
+          "sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "bytes": 460
+        }
+      ]
+    }
+  ],
+  "assets": []
+}

@@ -1,0 +1,34 @@
+{
+  "id": "act.experiment.fraction-folding-01",
+  "contract": "activity/1.1",
+  "type": "experiment",
+  "version": 1,
+  "title": "折纸条",
+  "targets": ["math.number.fraction-intro"],
+  "age_band": "G3-4",
+  "entry": "index.html",
+  "duration_min": 10,
+  "pedagogy": "POE",
+  "controls": [
+    {
+      "key": "folds",
+      "label": "对折次数",
+      "values": ["1", "2", "3"]
+    }
+  ],
+  "observables": [
+    {
+      "key": "parts",
+      "label": "纸条平均分成的份数"
+    }
+  ],
+  "predict": {
+    "prompt": "把纸条对折两次后展开，其中一份是整张纸条的几分之几？",
+    "options": ["1/2", "1/3", "1/4"],
+    "correct": 2
+  },
+  "explain": "对折两次后展开，纸条被平均分成 4 份，其中一份是 1/4。",
+  "misconceptions": ["equal-parts"],
+  "emits": ["state"],
+  "review": "approved"
+}

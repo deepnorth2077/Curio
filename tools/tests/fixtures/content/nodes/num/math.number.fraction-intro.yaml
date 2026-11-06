@@ -1,0 +1,39 @@
+id: math.number.fraction-intro
+schema: knode/1
+title: 分数的初步认识
+subjects: [math]
+theme: num
+grade: G3
+unit: 三上 · 分数的初步认识
+curriculum:
+  - textbook: 人教版三年级上册
+    unit: 分数的初步认识
+prerequisites: []
+related: []
+driving_question: 一块蛋糕怎样公平地分给大家？
+objectives:
+  - 知道平均分是认识分数的前提。
+  - 能用分数表示平均分成若干份后的一份或几份。
+  - 能说出分子和分母各表示什么。
+misconceptions:
+  - id: equal-parts
+    text: 没有平均分也当成几分之一。
+  - id: part-vs-rest
+    text: 把涂色的份数和没涂色的份数相比。
+  - id: flip
+    text: 把分子和分母写反。
+sources:
+  - type: curriculum
+    ref: 《义务教育数学课程标准（2022 年版）》第二学段“数与运算”
+  - type: textbook
+    ref: 人教版三年级上册“分数的初步认识”
+lenses:
+  - band: G3-4
+    approach: 从平均分蛋糕和纸条入手，用涂色部分认识几分之一和几分之几。
+activities:
+  - act.explain.fraction-intro-01
+  - act.quiz.fraction-intro-01
+  - act.reflection.fraction-intro-01
+status: published
+version: 1
+# END OF FILE
