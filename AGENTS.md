@@ -1,6 +1,6 @@
 # 给接手本仓库的模型
 
-开始任何改动之前先读这份文件，然后按需读 `docs/architecture.md`。
+开始任何改动之前先读这份文件，然后按需读 `docs/architecture.md`。用词以 `GLOSSARY.md` 为准；审核时对照 `docs/standards.md`；开发做法见 ADR-009。
 
 ## 这是什么
 

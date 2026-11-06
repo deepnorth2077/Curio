@@ -129,6 +129,12 @@ class TestBranches(Base):
         res = self.r.check()
         self.assertEqual(sum("不能改这个文件" in m for _, m in res.errors), 2)
 
+    def test_glossary_only_on_arch(self):
+        self.r.baseline(); self.r.branch("feat/x"); self.r.write("GLOSSARY.md", "x"); self.r.commit()
+        self.fails(self.r.check(), "不能改这个文件")
+        self.r.branch("arch/glossary"); self.r.write("GLOSSARY.md", "y"); self.r.commit()
+        self.ok(self.r.check())
+
     def test_feat_may_touch_prototype(self):
         self.r.baseline(); self.r.branch("feat/x"); self.r.write("prototype/index.html", "<html></html>"); self.r.commit()
         self.ok(self.r.check())
