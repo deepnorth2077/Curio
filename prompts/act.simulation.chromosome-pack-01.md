@@ -29,10 +29,10 @@ version: v1
 | 量 | 值 | 出处 |
 | --- | --- | --- |
 | 一个人体细胞里的 DNA 拉直的长度 | 约 2 米（约 64 亿个字母 × 0.34 纳米） | Nature Scitable「Chromatin packaging」；Wikipedia「Chromosome condensation」 |
-| 细胞核直径 | 约 6 微米（不同细胞 5～10 微米） | 剑桥 / MBInfo 等教材；Foundations of Genomics ch.9 |
+| 细胞核直径 | 约 6 微米（不同细胞 5～10 微米） | Foundations of Genomics and Proteomics ch.9；常见细胞生物学讲义 |
 | 一个小线轴（核小体）上绕着的字母 | 147 个，绕不到两圈（1.65 圈） | Luger 等 1997，Nature 389:251 |
 | 相邻小线轴之间的距离 | 平均约 200 个字母 | MBInfo「What are nucleosomes」 |
-| 一个细胞里的小线轴数 | 约 3000 万个（64 亿 ÷ 200，模型算出） | 由上两行算 |
+| 一个细胞里的小线轴数 | 约 3000 万个（64 亿 ÷ 200 ≈ 3200 万，取整到 3000 万） | 由上两行算 |
 | 绕上小线轴后，长度缩短 | 约 6～7 倍（模型用 7） | MBInfo；Foundations of Genomics ch.9 |
 | 再盘成环，长度一共缩短 | 约 1000 倍 | Foundations of Genomics ch.9 |
 | 细胞分裂前卷成小短棒，一共缩短 | 约 1 万倍 | Wikipedia「Chromosome condensation」；Nature Scitable |
