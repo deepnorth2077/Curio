@@ -27,7 +27,7 @@
 | 模块 → 平台 | `request_hint` | — | 请求下一级提示。 |
 | 平台 → 模块 | `hint` | `{level}` | 允许显示第 `level` 级提示。 |
 | 模块 → 平台 | `note_question` | `{text}` | 把孩子的疑问发到信号站。 |
-| 模块 → 平台 | `complete` | `{score, total}` 或 `{}` | 模块结束。 |
+| 模块 → 平台 | `complete` | `{score, total}` 或 `{}` | 模块结束。`score`、`total` 只用于诊断，宿主不把它们记进事件：分数一律由平台从作答事件算出（`docs/specs/events.md` 第 3.1 节）。 |
 | 模块 → 平台 | `resize` | `{h}` | 内容高度变化时发送，平台据此调整 iframe 高度。 |
 | 模块 → 平台 | `ai_request` | `{capability, input}` | **计划中**：申请调用 AI 能力，必须先在 manifest 的 `capabilities` 里声明 `ai:<能力名>`。 |
 

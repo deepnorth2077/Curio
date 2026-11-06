@@ -17,13 +17,14 @@
 | **ContentRelease** 内容发布 | 一组已发布内容的不可变清单：收录哪些知识点、活动的哪个版本，每个文件的哈希 | `rel_<完整内容哈希>`；界面上显示 `<日期> · <前 8 位>` | 构建管线 | 没有状态，生成后不再变化 | 本身不可变。相同内容永远得到同一个 ID |
 | **Deployment** 部署 | 「当前生效的是哪个发布」这个指针，以及它的变更历史 | `dep_<ULID>` | 构建管线 / 家长 | 预览 → 生效 → 被取代 / 回滚 | 每次切换记一条，指针可变，发布本身不变 |
 | **Attempt** 尝试 | 某个孩子在某台设备上，把某个活动从头做一遍 | `att_<ULID>` | Learner | 开始 → 完成 / 放弃 | 固定引用一个 ContentRelease 和活动版本 |
-| **LearningEvent** 学习事件 | 一件已经发生的事实，例如「预测选了 B」「答错第 3 题」 | `evt_<ULID>`；另外 `(device_id, device_seq)` 也唯一 | Learner | 只追加，不修改。例外只有隐私擦除和撤销错误导入，见 ADR-004 | 带 `schema_version`，旧事件靠升级器读取 |
+| **LearningEvent** 学习事件 | 一件已经发生的事实，例如「预测选了 B」「答错第 3 题」 | `evt_<ULID>`；另外 `(device_id, device_seq)` 也唯一 | Learner | 只追加，不修改。例外只有附件擦除、私人文字删除和撤销错误导入，见 ADR-004 | 带 `schema` 版本，旧事件靠升级器读取。不含自由文字 |
+| **PrivateText** 私人文字 | 孩子或家长写的一段自由文字：反思、提问、备注 | `txt_<ULID>` | Learner | 写入 → 可被删除 | 内容不可改；被事件引用；删除后事件保留，只是看不到文字。详见 `docs/specs/events.md` 第 4 节 |
 | **IngestReceipt** 摄入收据 | 服务器收到一条事件的记录：`recorded_at`、来自哪次同步、有没有时钟偏差 | 以 `event_id` 为键 | 家用后端 | 收到时写一次 | 和事件分开存，不改动设备产生的事件 |
 | **Attachment** 附件 | 错题裁剪图、语音等二进制内容，被事件引用 | `blob_<SHA-256>`（按内容寻址，相同内容只存一份） | Learner | 存入 → 可被加密擦除 | 内容不可变 |
-| **Question** 问题 | 信号站里孩子提的一个「为什么」 | `q_<ULID>` | Learner | 提出 → 已回答 → 已归档 | 状态变化都记成事件 |
+| **Question** 问题 | 信号站里孩子提的一个「为什么」 | `q_<ULID>` | Learner | 提出 → 已回答 | 状态变化都记成事件。问题的文字存为私人文字 |
 | **RepairTicket** 错题 | 维修舱里的一道题 | `rep_<ULID>` | Learner | 待修 → 复练中 → 已修好 | 状态变化都记成事件 |
-| **Plan** 航线 | 某一天选的 2 个主线和 1 个自由探索 | `plan_<ULID>`；`learner_id` 和 `plan_date` 是字段，`(learner_id, plan_date)` 唯一 | Learner | 规划 → 进行中 → 结束 / 被取代 | 状态变化都记成事件。两台设备离线时同一天各建了一个，按 ADR-004 的确定性排序保留第一个，另一个记为「被取代」 |
-| **RewardEntry** 奖励流水 | 一笔能量或补给点的变动：获得、花费、调整、撤销 | `rwd_<ULID>` | Learner | 只追加 | 「获得」由奖励规则从触发事件算出，带 `cause_event_id`、`rule_id`、`rule_version`，并有唯一约束防重复。详见 ADR-004 |
+| **Plan** 航线 | 某一天要做的几项任务。内核允许 1～5 项；「2 个主线加 1 个自由探索」是外壳的默认安排，不是内核规则 | `plan_<ULID>`；`learner_id` 和 `plan_date` 是字段，同一个孩子同一天只有一条**生效**航线 | Learner | 规划 → 进行中 → 结束 / 被取代 | 状态变化都记成事件。两台设备离线时同一天各建了一个，两个都被接收，投影按 ADR-004 的确定性排序让第一个生效，另一个算作「被取代」 |
+| **RewardEntry** 奖励流水 | 一笔能量或补给点的变动：获得、花费、调整、撤销 | `rwd_<由唯一键算出的哈希>` | Learner | 从事件算出，随时可重建 | 带 `cause_key`、`cause_event_id`、`rule_id`、`rule_version`，`(learner_id, cause_key, rule_id, currency)` 唯一。详见 ADR-004 和 `docs/specs/events.md` |
 | **Projection** 投影 | 从事件算出来的状态：掌握度、点亮、复习计划 | 无，随时可重算 | 系统 | 随时重算 | 带 `algorithm_version` |
 
 ID 的规则：
