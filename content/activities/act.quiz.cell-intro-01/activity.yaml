@@ -1,0 +1,130 @@
+id: act.quiz.cell-intro-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 细胞小房间挑战
+targets: [biology.cell.cell-intro]
+age_band: G3-4
+duration_min: 5
+review: pending
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版初中生物学七年级上册（2024 年版）第一单元第二章「认识细胞」
+  - type: textbook
+    ref: 人教版初中生物学七年级上册（2024 年版）第一单元第三章第一节「细胞通过分裂产生新细胞」
+  - type: textbook
+    ref: 人教版初中生物学（2024 年版）第四单元「人体生理与健康」讲血液的一节
+body:
+  shuffle: true
+  items:
+    - id: q1
+      stem: 舰长，下面哪种说法对？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 人、动物和植物都由细胞组成
+            correct: true
+          - id: b
+            text: 人和动物由细胞组成，植物不是
+            misconception: only-animals
+            feedback: 人和动物由细胞组成，这很容易注意到；植物也是由细胞组成的。
+          - id: c
+            text: 植物由细胞组成，人和动物不是
+            feedback: 植物确实由细胞组成；人和动物的身体也是由细胞组成的。
+      hints:
+        - 想一想，人、动物和植物是不是都要算进去。
+        - 不要只看会跑会跳的动物，也想想植物。
+    - id: q2
+      stem: 下面哪件事说明细胞是活的？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 会吃东西、长大，还会分成两个
+            correct: true
+          - id: b
+            text: 只是身体里的小零件，不是活的
+            misconception: cells-are-dead
+            feedback: 把细胞想成小零件很方便，但细胞和零件不一样，它是活的。
+          - id: c
+            text: 像积木一样，搭好以后就不再变化
+            misconception: cells-are-dead
+            feedback: 细胞搭成身体，确实有点像积木；但细胞会变化，不是搭好就不动。
+      hints:
+        - 想想活的东西会做什么，积木会不会做这些事。
+        - 回忆一下，细胞会不会吃东西、长大和变化。
+    - id: q3
+      stem: 大多数细胞很小，想看清楚它们，通常要用什么？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 显微镜
+            correct: true
+          - id: b
+            text: 眼睛
+            misconception: visible
+            feedback: 眼睛能看清许多东西，但大多数细胞太小，直接用眼睛通常看不见。
+          - id: c
+            text: 放大镜
+            misconception: visible
+            feedback: 放大镜确实能帮忙看小东西，但大多数细胞还需要放大得更多。
+      hints:
+        - 这种工具能把很小的东西放得更大。
+        - 放大镜能帮一点忙，但大多数细胞还需要更强的工具。
+    - id: q4
+      stem: 关于身体里的细胞，下面哪种说法对？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 有很多种细胞，形状和本领各不一样
+            correct: true
+          - id: b
+            text: 身体里的细胞都长得一样
+            misconception: one-kind
+            feedback: 都叫细胞，听起来像同一种；其实神经细胞和肌肉细胞的样子并不一样。
+          - id: c
+            text: 身体里的细胞只有一种
+            misconception: one-kind
+            feedback: 身体是一个整体，容易让人这样想；但不同细胞有不同的本领。
+      hints:
+        - 想想神经细胞和肌肉细胞，它们做的事情一样吗？
+        - 它们的名字已经告诉我们本领不同，再想想样子会不会也不同。
+    - id: q5
+      stem: 细胞里放说明书的小房间是什么？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 细胞核
+            correct: true
+          - id: b
+            text: 红细胞
+            feedback: 红细胞的名字里也有“细胞”，但它是一种细胞，不是放说明书的小房间。
+          - id: c
+            text: 显微镜
+            feedback: 显微镜能帮我们看细胞，但它是工具，不是细胞里面的小房间。
+      hints:
+        - 它在细胞里面，不是另一种细胞，也不是看细胞的工具。
+        - 它的名字和“中间”有关。
+    - id: q6
+      stem: 关于细胞核，下面哪种说法对？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 动物和植物的细胞一般都有细胞核
+            correct: true
+          - id: b
+            text: 所有细胞都有细胞核，人成熟的红细胞也有
+            feedback: 红细胞确实是细胞；但人成熟的红细胞没有细胞核，是一个例外。
+          - id: c
+            text: 只有动物的细胞有细胞核，植物的细胞没有
+            feedback: 动物细胞一般有细胞核，这点你想到了；植物细胞一般也有。
+      hints:
+        - 想想放说明书的小房间，大多数动物和植物的细胞里都有它。
+        - 注意“一般”不等于“所有”，人成熟的红细胞是例外。
+# END OF FILE
