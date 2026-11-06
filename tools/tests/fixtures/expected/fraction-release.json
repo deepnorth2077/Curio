@@ -1,0 +1,54 @@
+{
+  "schema": "release/1",
+  "release_id": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe",
+  "content_hash": "b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe",
+  "engine_min": 1,
+  "contracts": [],
+  "nodes": [
+    {
+      "id": "math.number.fraction-intro",
+      "version": 1,
+      "path": "content/nodes/num/math.number.fraction-intro.yaml",
+      "sha256": "21b3a1f15adeef754f5bf1844d88cc87ba43eba1d1f9efe996c7b607f4fa2271"
+    }
+  ],
+  "activities": [
+    {
+      "id": "act.explain.fraction-intro-01",
+      "version": 1,
+      "kind": "explain",
+      "files": [
+        {
+          "path": "content/activities/act.explain.fraction-intro-01/activity.yaml",
+          "sha256": "3b31d671d5a7ec3c65c2a3d1cd6cfd27fa4a427ca56e7ede64aa6f44650e8484",
+          "bytes": 2130
+        }
+      ]
+    },
+    {
+      "id": "act.quiz.fraction-intro-01",
+      "version": 1,
+      "kind": "quiz",
+      "files": [
+        {
+          "path": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+          "sha256": "a9c04f4979096edd843691b3cbb6c3e07c396a442c9a8ad60dcf872eab4ea2f8",
+          "bytes": 3689
+        }
+      ]
+    },
+    {
+      "id": "act.reflection.fraction-intro-01",
+      "version": 1,
+      "kind": "reflection",
+      "files": [
+        {
+          "path": "content/activities/act.reflection.fraction-intro-01/activity.yaml",
+          "sha256": "244225117db8b8957a9c680e5a8e78e4738f4640123872cf3aefcd204d2497cb",
+          "bytes": 380
+        }
+      ]
+    }
+  ],
+  "assets": []
+}
