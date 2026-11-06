@@ -43,7 +43,7 @@ python -m unittest discover -s tools/tests         # 全部通过再开始干活
 | --- | --- |
 | 派发一个任务 | 按模板写 `prompts/<任务 id>.md`（平台任务用 `task-template.md`，讲解、挑战、反思用 `content-template.md`，实验用 `module-template.md`），高风险规则的验收用例自己先算好；开 `arch/` 分支 PR 合入；用 `python tools/make_task.py <任务 id>` 生成任务文件，发给 Luka；在 issue 里记下提交号、文件哈希和收货命令，贴 `待派发` 标签 |
 | 收货和审核 | `python tools/intake.py <交付包> --expect-issue '#<号>' --expect-task <任务 id> --expect-commit <派发时的提交号> --expect-version v1 --write <临时目录>`；在 `main` 的临时副本（`git worktree add`）里放入文件，跑全部测试；在临时副本里故意改坏几处规则，看测试能不能发现；按 `docs/collaboration.md` 的格式写审核评论，分「规格」「规范」两条线，每条标严重程度 |
-| 整合 | 开 `arch/`（改到 `schemas/`、`docs/`、`tools/` 时）或对应前缀的分支；放入通过审核那一轮的文件，核对哈希一致；任务文件留档到 `prompts/`；提交末尾写 `Implemented-By:`、`Reviewed-By: Claude`、`Refs:`；开 PR，CI 绿勾后 squash 合入；关闭 issue |
+| 整合 | 开 `arch/`（改到 `schemas/`、`docs/`、`tools/` 时）或对应前缀的分支；放入通过审核那一轮的文件，核对哈希一致；任务文件留档到 `prompts/`（`feat/`、`fix/`、`chore/` 分支只能新增 `<任务 id>.task.md`，`kp/` 分支只能放自己活动的）；提交末尾写 `Implemented-By:`、`Reviewed-By: Claude`、`Refs:`；开 PR，CI 绿勾后 squash 合入；关闭 issue |
 
 ## 4. 这个环境里的坑
 
@@ -74,7 +74,11 @@ python -m unittest discover -s tools/tests         # 全部通过再开始干活
 以 issue 为准，下面只是写这份文件时的快照。上一个对话在这里收尾（里程碑 M1：PR #30 星座卡片审阅后合入；7 个内容任务派发；#17 CURIO-002b 两轮审核后合入 PR #45）。
 
 - **PR #46**（CI：`kp/` 分支可以改 `content/assets/<知识点 id>/`；`prompts/content-template.md` 受保护；`docs/collaboration.md`「CI 检查什么」按现状重写）：审阅任务文件已交给 Luka 转给 GLM，等「审阅 #46」。
-- **「生命的说明书」7 个内容任务**：#35 #36（细胞）、#38 #39（DNA）、#41 #42 #43（染色体），基于 `0f1fa27`，建议都用 Kimi，等「交付 #号」。主 issue：#34 #37 #40。共同约定在 `docs/constellations/life-manual.md`。配图要进 `kp/` 分支，所以整合要等 PR #46 合入。7 份都审核通过后，写一份事实交叉核对任务交给 GLM（`docs/workflow.md` 第 2 步），再组织孩子试玩。
+- **「生命的说明书」7 个内容任务**（基于 `0f1fa27`，Kimi，2026-11-06 全部审核通过：#36 #39 #41 #43 第 1 轮，#35 #38 #42 第 2 轮）：通过那一轮的文件都已原样放在分支 `kp/biology.cell.cell-intro`、`kp/biology.genetics.dna-intro`、`kp/biology.genetics.chromosome-intro` 上（逐字节核对过，知识点卡的 `activities` 已补全，只提交、没开 PR）。主 issue #34 #37 #40 的勾选框已勾上。下一步：
+  1. 写事实交叉核对任务（`review.life-manual-content`），把 7 个活动和配图交给 GLM 核对科学事实（`docs/workflow.md` 第 2 步）；
+  2. Luka 问过「什么时候能在 https://deepnorth2077.github.io/Curio/ 上让孩子玩到」。Claude 建议先做一个**一次性试玩预览页**（放在 `/Curio/preview/`，读这 7 份内容，显示领航员对话和挑战，不记录进度），让孩子先试玩，等 Luka 回答「是」再做。正式平台要等 #24、#25 和 #9；
+  3. 试玩后，每个知识点开 PR（要等 PR #46 合入，CI 才允许 `kp/` 分支放配图），合入。
+  - 派发时漏写的一条规则，以后加进 `prompts/content-template.md`：挑战打乱题目顺序时，数字题的答案不能出现在其他题的题干、选项、提示、反馈里（#42 第 1 轮就是这个问题）。
 - **#24 竖切片 1**（分数挑战点亮一颗星）：不再被阻塞。派发前要先定的 5 件事已写在 #24 的评论里（浏览器读不了 YAML、目录、黄金向量格式、范围收窄、演示内容）。下一步：写切片规格和手算的黄金向量，改构建器输出 JSON，开 `arch/` PR 请外部审阅，合入后再写提示词、派发。
 - **#31 AI 答疑**：没动。Luka 已定：在领航员对话里随时问；只用一个模型（DeepSeek）；没有 NAS。下一步由 Claude 写 ADR 和规格：中转服务保管密钥，要家庭口令，有次数和花费上限；同一份代码能部署到国内云函数或海外服务，用连通测试决定放哪里。同一份 ADR 里要重新考虑原来放在 NAS 上的同步和备份（ADR-006、ADR-008 第 7 条都假设了 NAS）。
 - **以后的小改进**：`tools/ci_checks.py` 的提示泄露检查，中文数字的分数写法没有前后边界（答案 1/4 时「十四分之一」会被误判），见 #17 第 1 轮审核。

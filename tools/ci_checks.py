@@ -17,7 +17,11 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "AGENTS.md", "CLAUDE.md", "README.md", "GLOSSARY.md", "prompts/module-template.md", "prompts/task-template.md"]
+# fnmatch 的 * 会跨过 /，所以 "prompts/*" 覆盖整个 prompts/ 目录。例外只有两条，见地盘检查：
+# kp/ 分支改自己活动的提示词和任务文件；feat/、fix/、chore/ 分支新增任务文件留档（*.task.md）。
+PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "prompts/*", "AGENTS.md", "CLAUDE.md", "README.md", "GLOSSARY.md"]
+ACT_PROMPT = re.compile(r"^prompts/(act\.[A-Za-z0-9._-]+?)(\.task)?\.md$")
+TASK_ARCHIVE = re.compile(r"^prompts/[A-Za-z0-9][A-Za-z0-9._-]*\.task\.md$")
 BRANCH_KINDS = ["kp/", "arch/", "feat/", "fix/", "chore/"]
 OVERRIDE_LABEL = "越界-已批准"
 KID_FACING_NODE = ["title", "driving_question", "lenses"]
@@ -68,7 +72,8 @@ def git(repo, *args, check=False):
 
 
 def match(path, patterns):
-    return any(fnmatch.fnmatch(path, p) for p in patterns)
+    # fnmatchcase：本地（包括 Windows）和 CI 上的结论一致，大小写不同就是不同的路径。
+    return any(fnmatch.fnmatchcase(path, p) for p in patterns)
 
 
 def load_yaml_text(text):
@@ -322,26 +327,38 @@ def run(repo, base="origin/main", branch="", labels=()):
             in_base = any(p.endswith(f"/{node_id}.yaml") for p in git(repo, "ls-tree", "-r", "--name-only", base, "content/nodes").stdout.splitlines())
             if not exists and not in_base:
                 r.err(f"分支名里的知识点「{node_id}」不存在。知识点分支一律叫 kp/<知识点 id>，改版也用同一个名字")
+        status_of = {}
+        for st, p, old in changes:
+            status_of[p] = st
+            if old:
+                status_of[old] = "D"   # 改名时旧路径相当于删除
         for p in changed:
             shared = None
+            act_prompt = ACT_PROMPT.match(p)
             if prefix == "kp/":
-                ok = (p.startswith("content/") or fnmatch.fnmatch(p, "prompts/act.*.md")) and not match(p, PROTECTED)
+                ok = (p.startswith("content/") and not match(p, PROTECTED)) or bool(act_prompt)
                 targets = None
                 if ok and p.startswith("content/nodes/"):
                     ok = Path(p).stem == node_id
                 elif ok and p.startswith("content/activities/"):
                     parts = Path(p).parts
                     targets = activity_targets("/".join(parts[:3])) if len(parts) >= 3 else None
+                elif ok and p.startswith("content/assets/"):
+                    # 知识点自己的配图放在 content/assets/<知识点 id>/ 下（docs/workflow.md）
+                    parts = Path(p).parts
+                    ok = len(parts) >= 4 and parts[2] == node_id and p.endswith(".svg")
                 elif ok and p.startswith("content/"):
                     ok = False
                 elif ok and p.startswith("prompts/"):
-                    targets = activity_targets(f"content/activities/{Path(p).stem}")
+                    targets = activity_targets(f"content/activities/{act_prompt.group(1)}")
                 if ok and (p.startswith("content/activities/") or p.startswith("prompts/")):
                     ok = isinstance(targets, list) and targets == [node_id]
                     if isinstance(targets, list) and node_id in targets and len(targets) > 1:
                         shared = targets
             else:
                 ok = not match(p, PROTECTED) and not p.startswith("content/")
+                if not ok and TASK_ARCHIVE.match(p) and status_of.get(p) == "A":
+                    ok = True   # 整合时新增任务文件留档；改动或删除已有的提示词仍然只能走 arch/
             if not ok and shared:
                 msg = (f"这是共享活动，同时影响 {'、'.join(shared)}。kp/ 分支只能改只针对 {node_id} 的活动；"
                        f"共享活动要单独开 PR，覆盖所有受影响知识点的审核和试玩，并在征得 Luka 同意后加「{OVERRIDE_LABEL}」标签")
@@ -384,7 +401,9 @@ def run(repo, base="origin/main", branch="", labels=()):
     content = repo / "content"
     case_paths = {}
     if content.exists():
-        for path in sorted(p for p in content.rglob("*") if p.is_file()):
+        for path in sorted(p for p in content.rglob("*") if p.is_symlink()):
+            r.err("content/ 下不能有符号链接，只能放普通文件", rel(repo, path).replace(os.sep, "/"))
+        for path in sorted(p for p in content.rglob("*") if p.is_file() and not p.is_symlink()):
             relative = rel(repo, path).replace(os.sep, "/")
             parts = Path(relative).parts
             if any(not PATH_SEGMENT.fullmatch(part) or part in (".", "..") for part in parts):
@@ -531,7 +550,9 @@ def run(repo, base="origin/main", branch="", labels=()):
                     r.err("rect-unequal 配图的 shaded 下标超出 widths 的范围", rel(repo, f))
             if figure_type == "svg" and isinstance(figure.get("src"), str):
                 src = figure["src"]
-                if not (repo / src).is_file():
+                if not (src.startswith("content/assets/") and src.endswith(".svg")) or ".." in src.split("/"):
+                    r.err(f"svg 配图必须是 content/assets/ 下的 .svg 文件（这样才会经过 SVG 白名单检查）：{src}", rel(repo, f))
+                elif not (repo / src).is_file():
                     r.err(f"svg 配图引用的文件不存在：{src}", rel(repo, f))
             required = ENGINE_REQUIREMENTS["figure"].get(figure_type, 1)
             if isinstance(doc.get("engine"), int) and doc["engine"] < required:
