@@ -80,7 +80,7 @@ body:
         src: content/assets/biology.cell.cell-intro/cell-kinds.svg
       caption: 神经细胞传消息，红细胞运氧气，肌肉细胞能收缩；它们的形状和本领各不一样。
     - type: text
-      text: 细胞可不像积木：它是活的，会吃东西、会长大，还会一个分成两个。
+      text: 细胞可不像积木：它是活的，会吸收养料、会长大，还会一个分成两个。
     - type: figure
       figure:
         type: svg
@@ -96,14 +96,14 @@ body:
             - id: a
               text: 会像积木一样一直不变
               misconception: cells-are-dead
-              feedback: 积木确实一直不变，但细胞会吃东西、会长大，不是不变的小零件。
+              feedback: 积木确实一直不变，但细胞会吸收养料、会长大，不是不变的小零件。
             - id: b
-              text: 会吃东西、长大，还能分成两个
+              text: 会吸收养料、长大，还能分成两个
               correct: true
             - id: c
               text: 只是身体里没有生命的小零件
               misconception: cells-are-dead
-              feedback: 看起来确实像小零件，但细胞会吃东西、会长大，还会分成两个。
+              feedback: 看起来确实像小零件，但细胞会吸收养料、会长大，还会分成两个。
         hints:
           - 回忆一下，细胞和积木最不一样的地方。
           - 活的细胞不会一直停在原来的样子。
