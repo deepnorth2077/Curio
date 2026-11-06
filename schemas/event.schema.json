@@ -1,18 +1,689 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/deepnorth2077/curio/schemas/event.schema.json",
-  "title": "event/1 · 学习事件",
-  "description": "事件流里的一条记录，只追加、不改写。掌握度、复习计划、点亮状态都从事件流计算。",
+  "title": "event/2 · 学习事件",
+  "description": "事件流里的一条记录，只追加、不改写。掌握度、星球点亮、能量和补给点余额全部从事件算出；孩子写的文字不放进事件，单独存成私人文字。依据 docs/specs/events.md（CURIO-003）第 1～3 节。信封字段一律必填校验；attempt_id、content 按「范围」列要求或禁止；payload 按动词逐一校验；import_batch 只有导入事件才有。大小上限、数值精度和跨记录检查（device_seq 连续、ref 不重复等）不在此 schema，留给摄入时的内核检查。",
   "type": "object",
-  "required": ["verb", "ts"],
+  "required": [
+    "schema",
+    "event_id",
+    "learner_id",
+    "device_id",
+    "device_seq",
+    "occurred_at",
+    "actor",
+    "verb",
+    "payload"
+  ],
   "additionalProperties": false,
   "properties": {
-    "verb": { "type": "string", "pattern": "^[a-z_]+$", "examples": ["started", "predicted", "adjusted", "observed", "answered", "hint_used", "reflected", "completed", "question_noted", "diagnosed", "repaired", "task_done", "task_undone", "ai_call", "contract_warning"] },
-    "ts": { "type": "string", "format": "date-time" },
-    "node": { "type": "string", "pattern": "^[a-z]+(\\.[a-z0-9-]+)+$" },
-    "activity": { "type": "string" },
-    "result": { "type": "object", "description": "各动词自己的结果。answered: {correct, response, misconception}；completed: {score} 或 {experiment: true}" },
-    "kind": { "enum": ["ai", "warn"], "description": "非学习事件的分类：AI 调用、契约警告" },
-    "seed": { "type": "boolean", "description": "示例数据标记" }
+    "schema": { "const": "event/2" },
+    "event_id": { "$ref": "#/$defs/evtId" },
+    "learner_id": { "$ref": "#/$defs/lrnId" },
+    "device_id": { "$ref": "#/$defs/devId" },
+    "device_seq": { "type": "integer", "minimum": 1 },
+    "occurred_at": { "$ref": "#/$defs/timestamp" },
+    "actor": { "$ref": "#/$defs/actor" },
+    "verb": {
+      "enum": [
+        "attempt.started",
+        "attempt.completed",
+        "attempt.abandoned",
+        "poe.predicted",
+        "poe.explained",
+        "sim.adjusted",
+        "sim.observed",
+        "item.answered",
+        "hint.used",
+        "reflection.written",
+        "question.asked",
+        "question.answered",
+        "repair.opened",
+        "repair.linked",
+        "repair.practiced",
+        "repair.resolved",
+        "plan.created",
+        "plan.task_done",
+        "plan.task_undone",
+        "reward.goal_set",
+        "reward.redeem_requested",
+        "reward.spent",
+        "reward.adjusted",
+        "reward.revoked",
+        "import.voided",
+        "attachment.erased",
+        "text.erased"
+      ]
+    },
+    "attempt_id": { "$ref": "#/$defs/attId" },
+    "content": { "$ref": "#/$defs/content" },
+    "import_batch": { "$ref": "#/$defs/impId" },
+    "payload": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "verb": { "const": "attempt.started" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["mode"],
+            "properties": { "mode": { "enum": ["first", "retry", "review"] } }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "attempt.completed" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["duration_ms"],
+            "properties": { "duration_ms": { "type": "integer", "minimum": 0 } }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "attempt.abandoned" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "enum": ["learner", "system"] } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["reason"],
+            "properties": { "reason": { "enum": ["left", "timeout", "error"] } }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "poe.predicted" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "choice": { "type": "string", "maxLength": 32 },
+              "text_id": { "$ref": "#/$defs/txtId" }
+            },
+            "anyOf": [
+              { "required": ["choice"] },
+              { "required": ["text_id"] }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "poe.explained" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "choice": { "type": "string", "maxLength": 32 },
+              "text_id": { "$ref": "#/$defs/txtId" }
+            },
+            "anyOf": [
+              { "required": ["choice"] },
+              { "required": ["text_id"] }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "sim.adjusted" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["control", "value"],
+            "properties": {
+              "control": { "type": "string" },
+              "value": { "$ref": "#/$defs/simValue" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "sim.observed" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["observable", "value"],
+            "properties": {
+              "observable": { "type": "string" },
+              "value": { "$ref": "#/$defs/simValue" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "item.answered" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["item_id", "response", "correct", "try", "hints_used"],
+            "properties": {
+              "item_id": { "type": "string" },
+              "response": { "type": "string", "maxLength": 32 },
+              "correct": { "type": "boolean" },
+              "try": { "type": "integer", "minimum": 1 },
+              "hints_used": { "type": "integer", "minimum": 0 },
+              "misconception": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "hint.used" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["level"],
+            "properties": {
+              "item_id": { "type": "string" },
+              "level": { "type": "integer", "minimum": 1, "maximum": 3 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "reflection.written" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["text_id"],
+            "properties": { "text_id": { "$ref": "#/$defs/txtId" } }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "question.asked" } } },
+      "then": {
+        "if": { "required": ["attempt_id"] },
+        "then": { "required": ["content"] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["question_id", "text_id"],
+            "properties": {
+              "question_id": { "$ref": "#/$defs/qId" },
+              "text_id": { "$ref": "#/$defs/txtId" },
+              "attachment_id": { "$ref": "#/$defs/blobId" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "question.answered" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "enum": ["learner", "caregiver"] } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["question_id", "text_id"],
+            "properties": {
+              "question_id": { "$ref": "#/$defs/qId" },
+              "text_id": { "$ref": "#/$defs/txtId" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "repair.opened" } } },
+      "then": {
+        "allOf": [
+          {
+            "if": { "properties": { "payload": { "properties": { "source": { "const": "item" } } } } },
+            "then": { "required": ["content"] }
+          },
+          {
+            "if": { "properties": { "payload": { "properties": { "source": { "const": "photo" } } } } },
+            "then": {
+              "not": { "anyOf": [{ "required": ["content"] }, { "required": ["attempt_id"] }] }
+            }
+          }
+        ],
+        "properties": {
+          "actor": { "properties": { "type": { "enum": ["learner", "system"] } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ticket_id", "source"],
+            "properties": {
+              "ticket_id": { "$ref": "#/$defs/repId" },
+              "source": { "enum": ["item", "photo"] },
+              "node_id": { "$ref": "#/$defs/nodeId" },
+              "item_id": { "type": "string" },
+              "misconception": { "type": "string" },
+              "attachment_id": { "$ref": "#/$defs/blobId" }
+            },
+            "allOf": [
+              {
+                "if": { "properties": { "source": { "const": "item" } } },
+                "then": {
+                  "required": ["item_id"],
+                  "not": { "required": ["node_id"] }
+                }
+              },
+              {
+                "if": { "properties": { "source": { "const": "photo" } } },
+                "then": {
+                  "required": ["attachment_id"],
+                  "if": { "required": ["misconception"] },
+                  "then": { "required": ["node_id"] }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "repair.linked" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "enum": ["learner", "caregiver", "system"] } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ticket_id", "node_id"],
+            "properties": {
+              "ticket_id": { "$ref": "#/$defs/repId" },
+              "node_id": { "$ref": "#/$defs/nodeId" },
+              "misconception": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "repair.practiced" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ticket_id", "correct"],
+            "properties": {
+              "ticket_id": { "$ref": "#/$defs/repId" },
+              "correct": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "repair.resolved" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "enum": ["learner", "caregiver"] } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["ticket_id", "reason"],
+            "properties": {
+              "ticket_id": { "$ref": "#/$defs/repId" },
+              "reason": { "enum": ["fixed", "caregiver"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "plan.created" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "enum": ["learner", "caregiver"] } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["plan_id", "plan_date", "tasks"],
+            "properties": {
+              "plan_id": { "$ref": "#/$defs/planId" },
+              "plan_date": { "$ref": "#/$defs/localDate" },
+              "tasks": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 5,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["ref", "kind"],
+                  "properties": {
+                    "ref": { "type": "string" },
+                    "kind": { "enum": ["node", "free", "custom"] },
+                    "title_text_id": { "$ref": "#/$defs/txtId" }
+                  },
+                  "allOf": [
+                    {
+                      "if": { "properties": { "kind": { "const": "node" } } },
+                      "then": { "properties": { "ref": { "$ref": "#/$defs/nodeId" } } }
+                    },
+                    {
+                      "if": { "properties": { "kind": { "const": "free" } } },
+                      "then": { "properties": { "ref": { "const": "free" } } }
+                    },
+                    {
+                      "if": { "properties": { "kind": { "const": "custom" } } },
+                      "then": {
+                        "required": ["title_text_id"],
+                        "properties": { "ref": { "type": "string", "pattern": "^c-[a-z0-9-]+$" } }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "plan.task_done" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "enum": ["learner", "system"] } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["plan_id", "ref", "via"],
+            "properties": {
+              "plan_id": { "$ref": "#/$defs/planId" },
+              "ref": { "type": "string" },
+              "via": { "enum": ["manual", "auto"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "plan.task_undone" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["plan_id", "ref"],
+            "properties": {
+              "plan_id": { "$ref": "#/$defs/planId" },
+              "ref": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "reward.goal_set" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "caregiver" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["title_text_id", "target"],
+            "properties": {
+              "title_text_id": { "$ref": "#/$defs/txtId" },
+              "target": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "reward.redeem_requested" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["goal_event_id"],
+            "properties": { "goal_event_id": { "$ref": "#/$defs/evtId" } }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "reward.spent" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "caregiver" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["request_event_id"],
+            "properties": { "request_event_id": { "$ref": "#/$defs/evtId" } }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "reward.adjusted" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "caregiver" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["currency", "amount", "reason"],
+            "properties": {
+              "currency": { "enum": ["energy", "supply"] },
+              "amount": { "type": "integer", "not": { "const": 0 } },
+              "reason": { "enum": ["bonus", "correction", "other"] },
+              "note_text_id": { "$ref": "#/$defs/txtId" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "reward.revoked" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "caregiver" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["entry_id", "reason"],
+            "properties": {
+              "entry_id": { "$ref": "#/$defs/rwdId" },
+              "reason": { "enum": ["mistake", "clock", "other"] },
+              "note_text_id": { "$ref": "#/$defs/txtId" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "import.voided" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "caregiver" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["batch_id", "reason"],
+            "properties": {
+              "batch_id": { "$ref": "#/$defs/impId" },
+              "reason": { "enum": ["wrong_learner", "duplicate", "bad_data", "other"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "attachment.erased" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "caregiver" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["attachment_id", "reason"],
+            "properties": {
+              "attachment_id": { "$ref": "#/$defs/blobId" },
+              "reason": { "enum": ["requested", "mistake", "other"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "text.erased" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "enum": ["learner", "caregiver"] } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["text_id", "reason"],
+            "properties": {
+              "text_id": { "$ref": "#/$defs/txtId" },
+              "reason": { "enum": ["requested", "mistake", "other", "orphan", "lost"] }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "ulid": { "type": "string", "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "evtId": { "type": "string", "pattern": "^evt_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "lrnId": { "type": "string", "pattern": "^lrn_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "cgId": { "type": "string", "pattern": "^cg_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "devId": { "type": "string", "pattern": "^dev_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "attId": { "type": "string", "pattern": "^att_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "planId": { "type": "string", "pattern": "^plan_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "repId": { "type": "string", "pattern": "^rep_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "qId": { "type": "string", "pattern": "^q_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "txtId": { "type": "string", "pattern": "^txt_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "impId": { "type": "string", "pattern": "^imp_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "blobId": { "type": "string", "pattern": "^blob_[0-9a-f]{64}$" },
+    "relId": { "type": "string", "pattern": "^rel_[0-9a-f]{64}$" },
+    "rwdId": { "type": "string", "pattern": "^rwd_[0-9a-f]{32}$" },
+    "nodeId": { "type": "string", "pattern": "^[a-z]+(\\.[a-z0-9-]+)+$" },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$"
+    },
+    "localDate": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+    },
+    "simValue": {
+      "anyOf": [
+        { "type": "number" },
+        { "type": "string", "maxLength": 32 },
+        { "type": "boolean" }
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "required": ["type", "id"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["learner", "caregiver", "system"] },
+        "id": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "learner" } } },
+          "then": { "properties": { "id": { "$ref": "#/$defs/lrnId" } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "caregiver" } } },
+          "then": { "properties": { "id": { "$ref": "#/$defs/cgId" } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "system" } } },
+          "then": { "properties": { "id": { "type": "string", "pattern": "^sys:[a-z0-9-]+$" } } }
+        }
+      ]
+    },
+    "content": {
+      "type": "object",
+      "required": [
+        "node_id",
+        "activity_id",
+        "activity_kind",
+        "activity_version",
+        "content_release"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "node_id": { "$ref": "#/$defs/nodeId" },
+        "activity_id": { "type": "string", "pattern": "^act\\.[a-z]+\\.[a-z0-9-]+$" },
+        "activity_kind": {
+          "enum": ["explain", "quiz", "reflection", "experiment", "simulation"]
+        },
+        "activity_version": { "type": "integer", "minimum": 1 },
+        "content_release": { "$ref": "#/$defs/relId" }
+      }
+    }
   }
 }

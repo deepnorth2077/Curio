@@ -1,0 +1,112 @@
+[
+  {
+    "name": "reflection-fraction",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_00000000000000000000000034",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-11-06T09:41:20.000Z",
+      "text": "我发现画图比硬算快多了，先把纸折一折就能看出四分之几。"
+    }
+  },
+  {
+    "name": "poe-explanation",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_00000000000000000000000035",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-11-06T09:14:28.000Z",
+      "text": "我猜木头会浮起来，因为木头比水轻。"
+    }
+  },
+  {
+    "name": "question-in-quiz",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_00000000000000000000000036",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-11-06T08:32:48.000Z",
+      "text": "为什么分数线下面的数字越大，每一块反而越小？"
+    }
+  },
+  {
+    "name": "caregiver-answer",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_00000000000000000000000037",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-11-06T20:11:55.000Z",
+      "text": "分的份数多了，每份就变小了，总数没有变。"
+    }
+  },
+  {
+    "name": "custom-task-title",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_00000000000000000000000038",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-11-05T20:00:50.000Z",
+      "text": "读二十分钟《神奇校车》"
+    }
+  },
+  {
+    "name": "goal-title",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_00000000000000000000000039",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-11-05T20:05:08.000Z",
+      "text": "周末去一次天文馆"
+    }
+  },
+  {
+    "name": "adjust-note",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_0000000000000000000000003A",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-11-07T19:34:56.000Z",
+      "text": "上周多算了 5 点，这里减回来。"
+    }
+  },
+  {
+    "name": "revoke-note",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_0000000000000000000000003B",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-11-07T19:40:40.000Z",
+      "text": "那天平板的日期设错了，这一点不算。"
+    }
+  },
+  {
+    "name": "erase-target",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_0000000000000000000000003C",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-11-06T10:00:00.000Z",
+      "text": "这道题我其实是蒙对的。"
+    }
+  },
+  {
+    "name": "orphan-note",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_0000000000000000000000003D",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-11-03T18:22:33.000Z",
+      "text": "在地铁上想到的：云那么重，为什么不会掉下来？"
+    }
+  },
+  {
+    "name": "lost-note",
+    "data": {
+      "schema": "private-text/1",
+      "text_id": "txt_0000000000000000000000003E",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "created_at": "2026-10-28T19:01:02.000Z",
+      "text": "写在了已经丢掉的那台旧平板上。"
+    }
+  }
+]

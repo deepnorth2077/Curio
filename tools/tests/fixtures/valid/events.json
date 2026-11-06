@@ -1,0 +1,1209 @@
+[
+  {
+    "name": "plan.task_done-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000017",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 10,
+      "occurred_at": "2026-10-30T19:00:00.000Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "plan.task_done",
+      "import_batch": "imp_0000000000000000000000001J",
+      "payload": {
+        "plan_id": "plan_0000000000000000000000002H",
+        "ref": "science.physical.sink-float",
+        "via": "manual"
+      }
+    }
+  },
+  {
+    "name": "import.voided",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001D",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 134,
+      "occurred_at": "2026-11-02T10:00:00.000Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "import.voided",
+      "payload": {
+        "batch_id": "imp_0000000000000000000000001K",
+        "reason": "duplicate"
+      }
+    }
+  },
+  {
+    "name": "repair.opened-photo",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000Q",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 6,
+      "occurred_at": "2026-11-05T19:22:10.000Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "repair.opened",
+      "payload": {
+        "ticket_id": "rep_0000000000000000000000002V",
+        "source": "photo",
+        "attachment_id": "blob_7c2e9d1a4b6f8e0c7c2e9d1a4b6f8e0c7c2e9d1a4b6f8e0c7c2e9d1a4b6f8e0c"
+      }
+    }
+  },
+  {
+    "name": "repair.opened-photo-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000R",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 9,
+      "occurred_at": "2026-11-05T19:40:55.640Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "repair.opened",
+      "payload": {
+        "ticket_id": "rep_0000000000000000000000002W",
+        "source": "photo",
+        "attachment_id": "blob_0f1e2d3c4b5a69780f1e2d3c4b5a69780f1e2d3c4b5a69780f1e2d3c4b5a6978",
+        "node_id": "math.number.fraction-intro",
+        "misconception": "part-vs-rest"
+      }
+    }
+  },
+  {
+    "name": "plan.created",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000N",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 7,
+      "occurred_at": "2026-11-05T20:01:33.480Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "plan.created",
+      "payload": {
+        "plan_id": "plan_0000000000000000000000002G",
+        "plan_date": "2026-11-06",
+        "tasks": [
+          {
+            "ref": "math.number.fraction-intro",
+            "kind": "node"
+          },
+          {
+            "ref": "free",
+            "kind": "free"
+          },
+          {
+            "ref": "c-read-20-min",
+            "kind": "custom",
+            "title_text_id": "txt_00000000000000000000000038"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "reward.goal_set",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000P",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 8,
+      "occurred_at": "2026-11-05T20:05:10.910Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "reward.goal_set",
+      "payload": {
+        "title_text_id": "txt_00000000000000000000000039",
+        "target": 30
+      }
+    }
+  },
+  {
+    "name": "attempt.started",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000001",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 101,
+      "occurred_at": "2026-11-06T08:30:12.345Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.started",
+      "attempt_id": "att_0000000000000000000000001W",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.quiz.fraction-intro-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "mode": "first"
+      }
+    }
+  },
+  {
+    "name": "item.answered",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000002",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 102,
+      "occurred_at": "2026-11-06T08:31:00.512Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "item.answered",
+      "attempt_id": "att_0000000000000000000000001W",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.quiz.fraction-intro-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "item_id": "q1",
+        "response": "b",
+        "correct": false,
+        "try": 1,
+        "hints_used": 0,
+        "misconception": "part-vs-rest"
+      }
+    }
+  },
+  {
+    "name": "hint.used",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000003",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 103,
+      "occurred_at": "2026-11-06T08:31:40.028Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "hint.used",
+      "attempt_id": "att_0000000000000000000000001W",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.quiz.fraction-intro-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "item_id": "q1",
+        "level": 1
+      }
+    }
+  },
+  {
+    "name": "item.answered-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000004",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 104,
+      "occurred_at": "2026-11-06T08:32:15.900Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "item.answered",
+      "attempt_id": "att_0000000000000000000000001W",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.quiz.fraction-intro-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "item_id": "q1",
+        "response": "a",
+        "correct": true,
+        "try": 2,
+        "hints_used": 1
+      }
+    }
+  },
+  {
+    "name": "repair.opened-item",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000W",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 123,
+      "occurred_at": "2026-11-06T08:32:30.460Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "repair.opened",
+      "attempt_id": "att_0000000000000000000000001W",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.quiz.fraction-intro-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "ticket_id": "rep_0000000000000000000000002T",
+        "source": "item",
+        "item_id": "q1",
+        "misconception": "part-vs-rest"
+      }
+    }
+  },
+  {
+    "name": "question.asked",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000005",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 105,
+      "occurred_at": "2026-11-06T08:32:50.210Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "question.asked",
+      "attempt_id": "att_0000000000000000000000001W",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.quiz.fraction-intro-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "question_id": "q_0000000000000000000000002N",
+        "text_id": "txt_00000000000000000000000036"
+      }
+    }
+  },
+  {
+    "name": "attempt.completed",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000006",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 106,
+      "occurred_at": "2026-11-06T08:36:02.250Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.completed",
+      "attempt_id": "att_0000000000000000000000001W",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.quiz.fraction-intro-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "duration_ms": 349905
+      }
+    }
+  },
+  {
+    "name": "plan.task_done",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000016",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 128,
+      "occurred_at": "2026-11-06T08:36:30.000Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "plan.task_done",
+      "payload": {
+        "plan_id": "plan_0000000000000000000000002G",
+        "ref": "math.number.fraction-intro",
+        "via": "auto"
+      }
+    }
+  },
+  {
+    "name": "attempt.started-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000007",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 107,
+      "occurred_at": "2026-11-06T09:10:00.100Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.started",
+      "attempt_id": "att_0000000000000000000000001X",
+      "content": {
+        "node_id": "science.physical.sink-float",
+        "activity_id": "act.experiment.sink-float-01",
+        "activity_kind": "experiment",
+        "activity_version": 2,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "mode": "first"
+      }
+    }
+  },
+  {
+    "name": "poe.predicted",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000008",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 108,
+      "occurred_at": "2026-11-06T09:10:44.380Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "poe.predicted",
+      "attempt_id": "att_0000000000000000000000001X",
+      "content": {
+        "node_id": "science.physical.sink-float",
+        "activity_id": "act.experiment.sink-float-01",
+        "activity_kind": "experiment",
+        "activity_version": 2,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "choice": "会沉到水底"
+      }
+    }
+  },
+  {
+    "name": "sim.adjusted",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000009",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 109,
+      "occurred_at": "2026-11-06T09:12:20.005Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "sim.adjusted",
+      "attempt_id": "att_0000000000000000000000001X",
+      "content": {
+        "node_id": "science.physical.sink-float",
+        "activity_id": "act.experiment.sink-float-01",
+        "activity_kind": "experiment",
+        "activity_version": 2,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "control": "水量",
+        "value": 250
+      }
+    }
+  },
+  {
+    "name": "sim.observed",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000A",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 110,
+      "occurred_at": "2026-11-06T09:13:01.662Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "sim.observed",
+      "attempt_id": "att_0000000000000000000000001X",
+      "content": {
+        "node_id": "science.physical.sink-float",
+        "activity_id": "act.experiment.sink-float-01",
+        "activity_kind": "experiment",
+        "activity_version": 2,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "observable": "木块的位置",
+        "value": "浮在水面上"
+      }
+    }
+  },
+  {
+    "name": "poe.explained",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000B",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 111,
+      "occurred_at": "2026-11-06T09:14:30.480Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "poe.explained",
+      "attempt_id": "att_0000000000000000000000001X",
+      "content": {
+        "node_id": "science.physical.sink-float",
+        "activity_id": "act.experiment.sink-float-01",
+        "activity_kind": "experiment",
+        "activity_version": 2,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "choice": "浮起来",
+        "text_id": "txt_00000000000000000000000035"
+      }
+    }
+  },
+  {
+    "name": "attempt.completed-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000C",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 112,
+      "occurred_at": "2026-11-06T09:18:12.900Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.completed",
+      "attempt_id": "att_0000000000000000000000001X",
+      "content": {
+        "node_id": "science.physical.sink-float",
+        "activity_id": "act.experiment.sink-float-01",
+        "activity_kind": "experiment",
+        "activity_version": 2,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "duration_ms": 492800
+      }
+    }
+  },
+  {
+    "name": "attempt.started-3",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000D",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 113,
+      "occurred_at": "2026-11-06T09:30:00.000Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.started",
+      "attempt_id": "att_0000000000000000000000001Y",
+      "content": {
+        "node_id": "science.physical.heat-transfer",
+        "activity_id": "act.simulation.heat-01",
+        "activity_kind": "simulation",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "mode": "first"
+      }
+    }
+  },
+  {
+    "name": "sim.adjusted-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000E",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 114,
+      "occurred_at": "2026-11-06T09:30:41.220Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "sim.adjusted",
+      "attempt_id": "att_0000000000000000000000001Y",
+      "content": {
+        "node_id": "science.physical.heat-transfer",
+        "activity_id": "act.simulation.heat-01",
+        "activity_kind": "simulation",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "control": "火力",
+        "value": "中"
+      }
+    }
+  },
+  {
+    "name": "sim.observed-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000F",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 115,
+      "occurred_at": "2026-11-06T09:32:15.810Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "sim.observed",
+      "attempt_id": "att_0000000000000000000000001Y",
+      "content": {
+        "node_id": "science.physical.heat-transfer",
+        "activity_id": "act.simulation.heat-01",
+        "activity_kind": "simulation",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "observable": "水开了吗",
+        "value": true
+      }
+    }
+  },
+  {
+    "name": "hint.used-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000G",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 116,
+      "occurred_at": "2026-11-06T09:33:02.450Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "hint.used",
+      "attempt_id": "att_0000000000000000000000001Y",
+      "content": {
+        "node_id": "science.physical.heat-transfer",
+        "activity_id": "act.simulation.heat-01",
+        "activity_kind": "simulation",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "level": 3
+      }
+    }
+  },
+  {
+    "name": "attempt.completed-3",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000H",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 117,
+      "occurred_at": "2026-11-06T09:35:40.300Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.completed",
+      "attempt_id": "att_0000000000000000000000001Y",
+      "content": {
+        "node_id": "science.physical.heat-transfer",
+        "activity_id": "act.simulation.heat-01",
+        "activity_kind": "simulation",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "duration_ms": 340300
+      }
+    }
+  },
+  {
+    "name": "attempt.started-4",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000J",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 118,
+      "occurred_at": "2026-11-06T09:40:00.000Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.started",
+      "attempt_id": "att_0000000000000000000000001Z",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.reflection.fraction-intro-01",
+        "activity_kind": "reflection",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "mode": "review"
+      }
+    }
+  },
+  {
+    "name": "reflection.written",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000K",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 119,
+      "occurred_at": "2026-11-06T09:41:22.780Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "reflection.written",
+      "attempt_id": "att_0000000000000000000000001Z",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.reflection.fraction-intro-01",
+        "activity_kind": "reflection",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "text_id": "txt_00000000000000000000000034"
+      }
+    }
+  },
+  {
+    "name": "attempt.completed-4",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000M",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 120,
+      "occurred_at": "2026-11-06T09:42:00.130Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.completed",
+      "attempt_id": "att_0000000000000000000000001Z",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.reflection.fraction-intro-01",
+        "activity_kind": "reflection",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "duration_ms": 120130
+      }
+    }
+  },
+  {
+    "name": "repair.linked",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000X",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 51,
+      "occurred_at": "2026-11-06T18:40:20.150Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "repair.linked",
+      "payload": {
+        "ticket_id": "rep_0000000000000000000000002V",
+        "node_id": "math.number.fraction-intro",
+        "misconception": "part-vs-rest"
+      }
+    }
+  },
+  {
+    "name": "question.asked-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000S",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 121,
+      "occurred_at": "2026-11-06T19:05:12.300Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "question.asked",
+      "content": {
+        "node_id": "science.space.moon-phases",
+        "activity_id": "act.explain.moon-phases-01",
+        "activity_kind": "explain",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "question_id": "q_0000000000000000000000002P",
+        "text_id": "txt_00000000000000000000000036"
+      }
+    }
+  },
+  {
+    "name": "question.asked-3",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000T",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 122,
+      "occurred_at": "2026-11-06T19:35:40.870Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "question.asked",
+      "payload": {
+        "question_id": "q_0000000000000000000000002Q",
+        "text_id": "txt_00000000000000000000000036",
+        "attachment_id": "blob_9a8b7c6d5e4f30219a8b7c6d5e4f30219a8b7c6d5e4f30219a8b7c6d5e4f3021"
+      }
+    }
+  },
+  {
+    "name": "attempt.started-6",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001C",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 133,
+      "occurred_at": "2026-11-06T19:45:00.000Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.started",
+      "attempt_id": "att_00000000000000000000000021",
+      "content": {
+        "node_id": "science.space.moon-phases",
+        "activity_id": "act.explain.moon-phases-01",
+        "activity_kind": "explain",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "mode": "first"
+      }
+    }
+  },
+  {
+    "name": "attempt.abandoned",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000019",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 130,
+      "occurred_at": "2026-11-06T19:50:00.000Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.abandoned",
+      "attempt_id": "att_00000000000000000000000021",
+      "content": {
+        "node_id": "science.space.moon-phases",
+        "activity_id": "act.explain.moon-phases-01",
+        "activity_kind": "explain",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "reason": "left"
+      }
+    }
+  },
+  {
+    "name": "question.answered",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000V",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 50,
+      "occurred_at": "2026-11-06T20:12:00.000Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "question.answered",
+      "payload": {
+        "question_id": "q_0000000000000000000000002N",
+        "text_id": "txt_00000000000000000000000037"
+      }
+    }
+  },
+  {
+    "name": "plan.task_undone",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000018",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 129,
+      "occurred_at": "2026-11-06T21:00:05.660Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "plan.task_undone",
+      "payload": {
+        "plan_id": "plan_0000000000000000000000002G",
+        "ref": "c-read-20-min"
+      }
+    }
+  },
+  {
+    "name": "attempt.started-5",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001B",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 132,
+      "occurred_at": "2026-11-06T21:10:00.000Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.started",
+      "attempt_id": "att_00000000000000000000000020",
+      "content": {
+        "node_id": "science.space.moon-phases",
+        "activity_id": "act.quiz.moon-phases-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "mode": "first"
+      }
+    }
+  },
+  {
+    "name": "attempt.abandoned-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001A",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 131,
+      "occurred_at": "2026-11-06T21:15:00.000Z",
+      "actor": {
+        "type": "system",
+        "id": "sys:host-shell"
+      },
+      "verb": "attempt.abandoned",
+      "attempt_id": "att_00000000000000000000000020",
+      "content": {
+        "node_id": "science.space.moon-phases",
+        "activity_id": "act.quiz.moon-phases-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "reason": "error"
+      }
+    }
+  },
+  {
+    "name": "repair.practiced",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000Y",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 124,
+      "occurred_at": "2026-11-07T08:15:33.720Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "repair.practiced",
+      "payload": {
+        "ticket_id": "rep_0000000000000000000000002V",
+        "correct": false
+      }
+    }
+  },
+  {
+    "name": "repair.practiced-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000000Z",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 125,
+      "occurred_at": "2026-11-07T08:21:47.005Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "repair.practiced",
+      "payload": {
+        "ticket_id": "rep_0000000000000000000000002V",
+        "correct": true
+      }
+    }
+  },
+  {
+    "name": "repair.resolved",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000010",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 126,
+      "occurred_at": "2026-11-07T08:22:18.360Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "repair.resolved",
+      "payload": {
+        "ticket_id": "rep_0000000000000000000000002V",
+        "reason": "fixed"
+      }
+    }
+  },
+  {
+    "name": "reward.redeem_requested",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000011",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 127,
+      "occurred_at": "2026-11-07T09:00:00.000Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "reward.redeem_requested",
+      "payload": {
+        "goal_event_id": "evt_0000000000000000000000000P"
+      }
+    }
+  },
+  {
+    "name": "reward.spent",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000012",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 52,
+      "occurred_at": "2026-11-07T19:30:12.540Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "reward.spent",
+      "payload": {
+        "request_event_id": "evt_00000000000000000000000011"
+      }
+    }
+  },
+  {
+    "name": "reward.adjusted",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000013",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 53,
+      "occurred_at": "2026-11-07T19:35:00.810Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "reward.adjusted",
+      "payload": {
+        "currency": "supply",
+        "amount": -5,
+        "reason": "correction",
+        "note_text_id": "txt_0000000000000000000000003A"
+      }
+    }
+  },
+  {
+    "name": "reward.adjusted-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000014",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 54,
+      "occurred_at": "2026-11-07T19:36:20.000Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "reward.adjusted",
+      "payload": {
+        "currency": "energy",
+        "amount": 2,
+        "reason": "bonus"
+      }
+    }
+  },
+  {
+    "name": "reward.revoked",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_00000000000000000000000015",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 55,
+      "occurred_at": "2026-11-07T19:40:44.290Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "reward.revoked",
+      "payload": {
+        "entry_id": "rwd_9f3c1a5e7b9d1f3a5c7e9b1d3f5a7c9e",
+        "reason": "clock",
+        "note_text_id": "txt_0000000000000000000000003B"
+      }
+    }
+  },
+  {
+    "name": "attachment.erased",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001E",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 135,
+      "occurred_at": "2026-11-07T20:00:00.000Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "attachment.erased",
+      "payload": {
+        "attachment_id": "blob_9a8b7c6d5e4f30219a8b7c6d5e4f30219a8b7c6d5e4f30219a8b7c6d5e4f3021",
+        "reason": "mistake"
+      }
+    }
+  },
+  {
+    "name": "text.erased",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001F",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 136,
+      "occurred_at": "2026-11-07T20:05:12.880Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "text.erased",
+      "payload": {
+        "text_id": "txt_0000000000000000000000003C",
+        "reason": "requested"
+      }
+    }
+  },
+  {
+    "name": "text.erased-2",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001G",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_04M9Q2W5E8R7T4V6Y0XCA3BDFK",
+      "device_seq": 137,
+      "occurred_at": "2026-11-07T20:06:00.000Z",
+      "actor": {
+        "type": "caregiver",
+        "id": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      },
+      "verb": "text.erased",
+      "payload": {
+        "text_id": "txt_0000000000000000000000003D",
+        "reason": "orphan"
+      }
+    }
+  },
+  {
+    "name": "text.erased-3",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001H",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 138,
+      "occurred_at": "2026-11-07T20:07:30.250Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "text.erased",
+      "payload": {
+        "text_id": "txt_0000000000000000000000003E",
+        "reason": "lost"
+      }
+    }
+  }
+]
