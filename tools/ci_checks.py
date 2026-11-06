@@ -17,7 +17,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "AGENTS.md", "CLAUDE.md", "README.md", "GLOSSARY.md", "prompts/module-template.md", "prompts/task-template.md"]
+PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "AGENTS.md", "CLAUDE.md", "README.md", "GLOSSARY.md", "prompts/module-template.md", "prompts/task-template.md", "prompts/content-template.md"]
 BRANCH_KINDS = ["kp/", "arch/", "feat/", "fix/", "chore/"]
 OVERRIDE_LABEL = "越界-已批准"
 KID_FACING_NODE = ["title", "driving_question", "lenses"]
@@ -332,6 +332,10 @@ def run(repo, base="origin/main", branch="", labels=()):
                 elif ok and p.startswith("content/activities/"):
                     parts = Path(p).parts
                     targets = activity_targets("/".join(parts[:3])) if len(parts) >= 3 else None
+                elif ok and p.startswith("content/assets/"):
+                    # 知识点自己的配图放在 content/assets/<知识点 id>/ 下（docs/workflow.md）
+                    parts = Path(p).parts
+                    ok = len(parts) >= 4 and parts[2] == node_id
                 elif ok and p.startswith("content/"):
                     ok = False
                 elif ok and p.startswith("prompts/"):

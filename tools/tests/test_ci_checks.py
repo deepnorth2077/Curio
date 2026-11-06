@@ -158,6 +158,7 @@ class Repo:
 
 
 N1, N2 = "math.number.division-meaning", "math.number.fraction-intro"
+SVG_OK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="#CCD6C0"/></svg>\n'
 NODE_DIR = "content/nodes/num"
 
 
@@ -211,6 +212,12 @@ class TestBranches(Base):
         self.r.baseline(); self.r.branch("feat/x"); self.r.write("GLOSSARY.md", "x"); self.r.commit()
         self.fails(self.r.check(), "不能改这个文件")
         self.r.branch("arch/glossary"); self.r.write("GLOSSARY.md", "y"); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_content_template_only_on_arch(self):
+        self.r.baseline(); self.r.branch("feat/x"); self.r.write("prompts/content-template.md", "x"); self.r.commit()
+        self.fails(self.r.check(), "不能改这个文件")
+        self.r.branch("arch/template"); self.r.write("prompts/content-template.md", "y"); self.r.commit()
         self.ok(self.r.check())
 
     def test_feat_may_touch_prototype(self):
@@ -274,6 +281,22 @@ class TestKnowledgePointBranch(Base):
         self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=["act.quiz.frac"], mis=("denominator-bigger",)))
         self.r.write("content/activities/act.quiz.frac/activity.yaml", structured("act.quiz.frac", [N2])); self.r.commit()
         self.ok(self.r.check())
+
+    def test_kp_branch_may_add_assets_under_own_node(self):
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.r.write(f"content/assets/{N2}/cake.svg", SVG_OK)
+        self.r.write(f"content/assets/{N2}/parts/half.svg", SVG_OK); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_kp_branch_may_not_touch_assets_of_other_node_or_outside_node_folder(self):
+        self.r.write(f"{NODE_DIR}/{N1}.yaml", node(N1)); self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.r.write(f"content/assets/{N1}/cake.svg", SVG_OK)
+        self.r.write("content/assets/cake.svg", SVG_OK)
+        self.r.write(f"content/assets/{N2}x/cake.svg", SVG_OK); self.r.commit()
+        result = self.r.check()
+        self.assertEqual(sum("不能改这个文件" in message for _, message in result.errors), 3)
 
     def test_prompt_of_other_activity_fails(self):
         self.r.write(f"{NODE_DIR}/{N1}.yaml", node(N1, activities=["act.quiz.other"]))
