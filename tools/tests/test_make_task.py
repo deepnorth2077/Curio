@@ -107,6 +107,10 @@ class TestMakeTask(unittest.TestCase):
             self.assertTrue((Path(out) / "curio-002a.task.md").exists())
             self.assertIn("--expect-commit", p.stdout.decode("utf-8"))
 
+    def test_escaped_braces_stay_literal(self):
+        text, full, _ = self.repo("模板写法：\\{{embed: 路径}}，提交 {{commit}}\n").build()
+        self.assertIn("模板写法：{{embed: 路径}}，提交 " + full, text)
+
     # ---- 反例 ----
     def test_unknown_directive(self):
         self.assertFails(lambda: self.repo("{{提交号}}\n").build(), "不认识的指令")

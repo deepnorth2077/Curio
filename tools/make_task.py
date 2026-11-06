@@ -17,13 +17,14 @@
         {{embed: docs/specs/content.md}}   原样嵌入整个文件
         {{embed: docs/submission.md#格式}}  只嵌入「## 格式」这一节（到下一个二级标题为止，代码块里的标题不算）
     其他 {{…}} 一律报错，防止模板占位符没填就发出去。
+    要在提示词里原样写出两个左花括号，写成 \{{（前面加反斜杠），生成时会去掉反斜杠。
 
 所有文件都从指定提交里读（git show），不读工作区。所以任务文件里的内容，就是那个提交里的内容。
 """
 import argparse, hashlib, re, subprocess, sys
 from pathlib import Path
 
-DIRECTIVE = re.compile(r"\{\{\s*(.*?)\s*\}\}")
+DIRECTIVE = re.compile(r"(?<!\\)\{\{\s*(.*?)\s*\}\}")
 EMBED = re.compile(r"embed:\s*([^#\s]+)(?:#(.+))?")
 FENCE = re.compile(r"^(`{3,}|~{3,})")
 FRONT = re.compile(r"\A---\n(.*?)\n---\n", re.S)
@@ -134,10 +135,10 @@ def build(repo, task_id, commit="HEAD", draft=False):
     # 先逐个展开，展开结果不再扫描
     out, pos = [], 0
     for mm in DIRECTIVE.finditer(body):
-        out.append(body[pos:mm.start()])
+        out.append(body[pos:mm.start()].replace("\\{{", "{{"))
         out.append(expand(mm))
         pos = mm.end()
-    out.append(body[pos:])
+    out.append(body[pos:].replace("\\{{", "{{"))
     body = "".join(out)
 
     header = (

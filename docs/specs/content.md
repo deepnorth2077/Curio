@@ -1,6 +1,6 @@
 # 规格：内容格式与不可变发布（CURIO-002）
 
-- 状态：提议，等外部审阅
+- 状态：提议，第 2 轮（已按第 1 轮外部审阅修改，见 PR #21）
 - 依据：ADR-002（结构化内容优先）、ADR-003（发布不可变）、`docs/domain.md`
 - 实现任务：CURIO-002a（schema 和样例内容）、CURIO-002b（发布构建器和 CI 校验）
 
@@ -19,6 +19,8 @@ content/
 
 - 一个活动目录里，**要么**只有 `activity.yaml`（结构化活动），**要么**是 `manifest.yaml` + `index.html`（自定义实验），不能混用。
 - 所有文本文件用 UTF-8、LF 换行。仓库的 `.gitattributes` 强制 LF；构建器遇到含 CR 的文件直接报错。这样同一份内容在任何电脑上算出的哈希都一样。
+- **路径**：只用正斜杠；每一段只含 ASCII 字母、数字、点、下划线、连字符，不以点开头；不允许 `.`、`..`。两个路径只差大小写的，构建器报错（有的电脑不区分大小写，会把它们当成同一个文件）。路径全是 ASCII，所以不存在 Unicode 规范化（NFC、NFD）的差异。
+- **正文不做 Unicode 规范化**：哈希按文件的原始字节算，构建器不改动任何文字。审核过的是什么字节，发布的就是什么字节。
 
 ## 2. 知识点卡（knode/1）
 
@@ -47,6 +49,7 @@ content/
 | `age_band` | ✅ | 例如 `G3-4` |
 | `duration_min` | ✅ | 预计分钟数，1～30 |
 | `review` | ✅ | `pending`、`claude-reviewed`、`approved` |
+| `engine` | ✅ | 显示这个活动至少需要几级引擎，正整数，见 3.8 |
 | `sources` | | 出处，格式同知识点卡 |
 | `body` | ✅ | 按 `kind` 不同，见下 |
 
@@ -80,6 +83,7 @@ answer:
 
 - 2～5 个选项，恰好一个 `correct: true`。
 - 错误选项可以带 `misconception`（误区 id）和 `feedback`。
+- 活动只针对一个知识点时，误区写它的 `id`（例如 `flip`）；针对多个知识点时，写成 `<知识点 id>:<误区 id>`，避免两个知识点的误区同名时分不清。数字题、分数题的 `common_wrong` 同理。
 
 **数字题**
 
@@ -111,7 +115,10 @@ answer:
 
 每道题 1～3 条提示，从轻到重。规则：
 
-- 最后一条也**不能直接说出答案**。CI 做一个保守的检查：选择题的最后一条提示里不能出现正确选项的原文；数字题、分数题的最后一条提示里不能出现正确答案的数字写法。
+- 最后一条也**不能直接说出答案**。CI 分两层检查：
+  - **数字题、分数题：不通过就报错。**任何一条提示里出现正确答案的数字写法（例如 `18`、`1/4`、`4分之1`、`四分之一`），CI 报错。数字按「前后不是数字」匹配，`18` 不会命中 `180`。
+  - **选择题：只提醒。**正确选项的原文出现在任何一条提示里时，CI 给出警告，由审核者判断是不是真的泄露了答案。选项很短（例如「是」「一样大」）时很容易误报，所以不拦截。
+- 两层都要有测试：「确实泄露」的样例和「含有相同字但没有泄露」的样例。
 - 提示用完以后，引擎会给出答案和解释，这一步不由提示负责。
 
 ### 3.5 三种活动的 body
@@ -159,13 +166,33 @@ body:
 | `number-line` | `from`、`to`、`step`、`marks`（`{at, label}` 列表） | 数轴 |
 | `svg` | `src`（`content/assets/` 下的 `.svg` 文件） | 以上画不了的图 |
 
-SVG 文件必须是「干净」的：不能有 `<script>`、`<foreignObject>`、`on…` 事件属性、外部链接（`href` 只能指向文件内的 `#id`）。CI 检查。
+SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
+
+- **元素**：`svg`、`g`、`defs`、`title`、`desc`、`path`、`rect`、`circle`、`ellipse`、`line`、`polyline`、`polygon`、`text`、`tspan`、`use`、`linearGradient`、`radialGradient`、`stop`、`clipPath`。
+- **属性**：几何和外观属性（`x`、`y`、`width`、`height`、`d`、`points`、`cx`、`cy`、`r`、`rx`、`ry`、`x1`、`y1`、`x2`、`y2`、`transform`、`viewBox`、`fill`、`stroke`、`stroke-width`、`stroke-linecap`、`stroke-linejoin`、`stroke-dasharray`、`opacity`、`fill-opacity`、`stroke-opacity`、`font-size`、`font-weight`、`text-anchor`、`dominant-baseline`、`offset`、`stop-color`、`stop-opacity`、`gradientUnits`、`clip-path`、`id`、`class`、`xmlns`、`aria-label`、`role`），以及 `href` / `xlink:href`。
+- `href`、`xlink:href` 只能是文件内的 `#id`；属性值里的 `url(…)` 只能是 `url(#id)`。
+- 不允许 `<style>` 元素和 `style` 属性（这样就不会有 CSS 里的 `url()`、`@import`）；不允许 XML 处理指令（第一行的 `<?xml …?>` 声明除外）、`<!DOCTYPE>` 和实体。
 
 ### 3.7 文字规则
 
 - 纯文本，不允许 HTML。分数写成 `1/4`，由引擎排成上下结构。
 - 给孩子看的字段（`title`、`stem`、`choices.text`、`feedback`、`hints`、`steps.text`、`caption`、`prompt`、`starters`）不出现「学习」二字。
 - 题干不超过 80 个字，提示和反馈不超过 60 个字。
+
+### 3.8 引擎等级
+
+共享引擎会不断增加能力（以后会有多空题、带单位的物理量、表达式、作图题）。离线的旧设备可能还在用旧引擎，拿到新内容会显示不出来。所以：
+
+- 每个结构化活动写明 `engine`：显示它至少需要几级引擎。
+- 发布清单写明 `engine_min`：收录的活动里最大的 `engine`。
+- 设备上的引擎比 `engine_min` 低时，**不切换**到这个发布，继续用当前发布，并提示「需要更新」。
+- 每增加一种 `kind`、答案 `type` 或配图 `type`，引擎等级加一，并在下表登记。现在只有第 1 级：
+
+| 等级 | 支持 |
+| --- | --- |
+| 1 | `kind`：`explain`、`quiz`、`reflection`；答案：`choice`、`number`、`fraction`；配图：`pie`、`rect`、`rect-unequal`、`number-line`、`svg` |
+
+自定义实验不需要 `engine`，它们运行在沙箱里，只依赖契约版本（`contract`）。
 
 ## 4. 自定义实验
 
@@ -182,11 +209,13 @@ SVG 文件必须是「干净」的：不能有 `<script>`、`<foreignObject>`、
 | 形态 | 活动目录要么是结构化（只有 `activity.yaml`），要么是自定义（`manifest.yaml` + `index.html`） |
 | schema | 结构化活动按 `kind` 校验 body；自定义实验按 activity/1.1 的 manifest 校验 |
 | 引用 | 知识点的 `activities` 和活动的 `targets` 双向一致；题目里引用的误区 id 必须出自目标知识点；`svg` 配图引用的文件必须存在 |
-| 题目 | 选择题恰好一个正确选项；同一活动内题目 id 唯一；提示阶梯的保守检查（3.4） |
+| 题目 | 选择题恰好一个正确选项；同一活动内题目 id 唯一；配图 `shaded` 不超过 `parts`、下标不越界；提示泄露检查（3.4：数字题和分数题报错，选择题警告） |
 | 文字 | 3.7 的字数和用词规则 |
-| SVG | 3.6 的「干净」规则 |
+| SVG | 3.6 的白名单 |
+| 路径 | 第 1 节的路径规则，含大小写冲突 |
+| 引擎 | `engine` 不低于这个活动用到的能力所需的等级（按 3.8 的表） |
 | 误区覆盖 | **从数据计算**：结构化活动里，被错误选项或 `common_wrong` 引用过的误区，算作已覆盖；自定义实验以 manifest 声明为准 |
-| 发布门禁 | 知识点 `published` 时：所有活动 `approved`；至少一个 `explain` 和一个 `quiz`；每个 `quiz` 至少 5 道题；每个误区都已覆盖 |
+| 发布门禁 | 知识点 `published` 时：所有活动 `approved`；至少一个 `explain` 和一个 `quiz`；每个 `quiz` 至少 5 道题；每个误区都已覆盖；**引用闭包**（6.1）成立 |
 
 ## 6. 不可变发布（release/1）
 
@@ -200,6 +229,7 @@ SVG 文件必须是「干净」的：不能有 `<script>`、`<foreignObject>`、
   "release_id": "rel_<64 位十六进制>",
   "content_hash": "<64 位十六进制>",
   "source_commit": "<40 位十六进制，只作参考>",
+  "engine_min": 1,
   "nodes": [{"id": "…", "version": 1, "path": "content/nodes/num/….yaml", "sha256": "…"}],
   "activities": [{"id": "…", "version": 1, "kind": "quiz", "files": [{"path": "…", "sha256": "…", "bytes": 1234}]}],
   "assets": [{"path": "content/assets/….svg", "sha256": "…", "bytes": 567}]
@@ -207,13 +237,20 @@ SVG 文件必须是「干净」的：不能有 `<script>`、`<foreignObject>`、
 ```
 
 - **收录范围**：只收 `published` 的知识点、它们引用的活动（必须 `approved`），以及这些活动引用的配图文件。草稿不进发布。
+- **引用闭包**：发布包里不能有指向包外的硬引用。下面任何一条不满足，构建失败（CI 的发布门禁也检查同样的规则）：
+  - 已发布知识点的每个 `prerequisites` 都必须已发布；
+  - 收录的每个活动，它的**全部** `targets` 都必须已发布。共享活动的某个目标还是草稿时，要么等它发布，要么把活动拆开。
+- `related` 是软引用：允许指向未发布的知识点。外壳只显示发布包里有的那些，其余的不显示。
+- `engine_min`：见 3.8。
 - 自定义实验的 `kind` 写成它的 `type`（`experiment` 或 `simulation`）。
 
 ### 6.2 哈希怎么算
 
 1. 每个文件：对仓库里的原始字节算 SHA-256（文件已保证是 LF）。
 2. 三个列表各自排序：`nodes`、`activities` 按 `id`，`files`、`assets` 按 `path`。
-3. 把 `{"nodes": …, "activities": …, "assets": …}` 转成**规范 JSON**：键按字母排序，不留空白（分隔符为 `,` 和 `:`），不转义非 ASCII 字符，编码为 UTF-8。清单里只有字符串和整数，没有小数，避免浮点数写法不一致。用 Python 写就是 `json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`。
+3. 把 `{"engine_min": …, "nodes": …, "activities": …, "assets": …}` 转成**规范 JSON**：键按字母排序，不留空白（分隔符为 `,` 和 `:`），不转义非 ASCII 字符，编码为 UTF-8。用 Python 写就是 `json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`。
+   - 这样写之所以跨语言可复现，是因为清单的取值受到严格限制：只有字符串和非负整数（不超过 2^53−1），没有小数、布尔值和 null；所有键名、id、路径都是 ASCII，所以「按字母排序」在任何语言里都是同一个顺序；哈希是十六进制小写。在这些限制下，结果和 JSON 规范化方案 RFC 8785 一致。
+   - 发布哈希只由 Python 构建器计算。其他语言要验证时，按 RFC 8785 实现即可。
 4. `content_hash` = 上一步字节的 SHA-256；`release_id` = `rel_` + `content_hash`。
 
 `source_commit` 和 `release_id` 本身都不参与哈希。所以同样的内容，不管哪天、在哪台电脑、从哪个提交构建，`release_id` 都一样。
@@ -248,4 +285,4 @@ SVG 文件必须是「干净」的：不能有 `<script>`、`<foreignObject>`、
 | 任务 | 做什么 | 交付 | 依赖 |
 | --- | --- | --- | --- |
 | **CURIO-002a** | 写 schema 和样例内容 | `schemas/activity-def.schema.json`、`schemas/release.schema.json`、更新 `schemas/activity.schema.json`（加 `version`，限制 `type`）、`schemas/knode.schema.json`（加 `sources`）；样例（放在 `tools/tests/fixtures/content/`）：「分数的初步认识」知识点卡及其讲解、挑战、反思各一个；schema 的正反测试 | 本规格合入 |
-| **CURIO-002b** | 写发布构建器，并把第 5 节的校验加进 CI | `tools/build_release.py`、`tools/ci_checks.py` 的修改、测试（含「同一内容构建两次哈希一致」「文件顺序不同哈希一致」「草稿不进发布」） | CURIO-002a 合入 |
+| **CURIO-002b** | 写发布构建器，并把第 5 节的校验加进 CI | `tools/build_release.py`、`tools/ci_checks.py` 的修改、测试（含「同一内容构建两次哈希一致」「文件顺序不同哈希一致」「草稿不进发布」「前置知识点是草稿时构建失败」「共享活动有草稿目标时构建失败」「大小写冲突的路径报错」「SVG 白名单」「提示泄露的两层检查」） | CURIO-002a 合入 |

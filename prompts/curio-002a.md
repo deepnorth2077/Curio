@@ -34,8 +34,8 @@ version: v1
 
 ## 要交付的文件
 
-1. `schemas/activity-def.schema.json`：结构化活动（规格第 3 节）。
-2. `schemas/release.schema.json`：发布清单（规格第 6.1 节）。`release_id` 必须等于 `rel_` 加 `content_hash`，这一条 schema 表达不了，不用管，只校验各自的格式。
+1. `schemas/activity-def.schema.json`：结构化活动（规格第 3 节），含必填的 `engine`（正整数）。误区引用的写法有两种（规格 3.3）：只针对一个知识点时写误区 id，针对多个时写 `<知识点 id>:<误区 id>`；schema 两种都放行，至于该用哪种，由 CI 按 `targets` 的个数检查，不在 schema 里做。
+2. `schemas/release.schema.json`：发布清单（规格第 6.1 节），含 `engine_min`。`release_id` 必须等于 `rel_` 加 `content_hash`，这一条 schema 表达不了，不用管，只校验各自的格式。清单里的路径按规格第 1 节的路径规则写正则（ASCII、正斜杠、不允许 `.` 和 `..` 段）。
 3. `schemas/knode.schema.json`：在现有文件基础上加可选字段 `sources`（规格第 2 节）。其他内容一个字都不要动。
 4. `schemas/activity.schema.json`：在现有文件基础上加必填字段 `version`（正整数），把 `type` 改成只允许 `experiment` 和 `simulation`（规格第 4 节）。其他内容不要动。
 5. 样例内容，目录结构和规格第 1 节相同，但放在 `tools/tests/fixtures/content/` 下面：
@@ -43,19 +43,20 @@ version: v1
    - `tools/tests/fixtures/content/activities/act.explain.fraction-intro-01/activity.yaml`：讲解，6～10 步，至少一个 `check` 小问题，至少用到 `pie` 和 `rect-unequal` 两种配图。
    - `tools/tests/fixtures/content/activities/act.quiz.fraction-intro-01/activity.yaml`：挑战，5～8 道题，三种答案类型（选择、数字、分数）都要有。知识点的每个误区，都要被至少一个错误选项或 `common_wrong` 引用。
    - `tools/tests/fixtures/content/activities/act.reflection.fraction-intro-01/activity.yaml`：反思。
-   - 三个活动的 `review` 都写 `approved`，`targets` 都是 `[math.number.fraction-intro]`；知识点的 `activities` 列出这三个活动 id。
-6. 不合格样例：`tools/tests/fixtures/invalid/content/<名字>.json`，格式见下面「测试怎么写」。
+   - 三个活动的 `review` 都写 `approved`，`engine` 都写 `1`，`targets` 都是 `[math.number.fraction-intro]`；知识点的 `activities` 列出这三个活动 id。最后一条提示不能说出答案（规格 3.4）。
+6. 不合格样例：全部写在**一个文件** `tools/tests/fixtures/invalid/content.json` 里，格式见下面「测试怎么写」。
 7. `tools/tests/test_content_schemas.py`：测试。
 
 ## 测试怎么写
 
 - 用 Python 3.12 标准库 `unittest`，依赖只有 `PyYAML==6.0.3` 和 `jsonschema==4.26.0`，不要加别的库。运行方式是在仓库根目录执行 `python -m unittest discover -s tools/tests`。
 - 用 `jsonschema.Draft202012Validator`。先对每个 schema 调用 `check_schema`。
-- **合格样例**：`tools/tests/fixtures/content/` 下每个 YAML 文件都按对应的 schema 校验通过（知识点用 knode，`activity.yaml` 用 activity-def）。
-- **不合格样例**用「合格样例加一个补丁」的方式写，保证它只错在你想测的那一处，而不是因为别的地方写错了才不通过。每个文件是一个 JSON 对象：
+- **合格样例**：`tools/tests/fixtures/content/` 下每个 YAML 文件都按对应的 schema 校验通过（知识点用 knode，`activity.yaml` 用 activity-def）；`release.json` 按 release、`experiment-manifest.json` 按 activity 校验通过。
+- **不合格样例**用「合格样例加一个补丁」的方式写，保证它只错在你想测的那一处，而不是因为别的地方写错了才不通过。`tools/tests/fixtures/invalid/content.json` 是一个数组，每一项是：
 
   ```json
   {
+    "name": "quiz-two-correct",
     "why": "选择题有两个正确选项",
     "schema": "activity-def",
     "base": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
@@ -63,8 +64,8 @@ version: v1
   }
   ```
 
-  `base` 是相对 `tools/tests/fixtures/` 的路径；`patch` 支持 `replace`、`add`、`remove` 三种操作，路径写法同 JSON Pointer（RFC 6901）。在测试文件里自己实现这三种操作（几十行），不要引入库。测试读出 base、应用补丁、断言校验**不通过**；同时断言补丁的每一步都真的生效了（`replace` 和 `remove` 的路径原本存在）。
-- 不合格样例至少覆盖下面每一条，每条一个文件：
+  `name` 在文件内唯一，用小写字母、数字、连字符；`schema` 是 `activity-def`、`knode`、`activity` 或 `release`；`base` 是相对 `tools/tests/fixtures/` 的路径。发布清单没有现成的合格 YAML，请另外写一个合格的 `tools/tests/fixtures/content/release.json`（数据是虚构的，格式要对）作为它的 base。`patch` 支持 `replace`、`add`、`remove` 三种操作，路径写法同 JSON Pointer（RFC 6901）。在测试文件里自己实现这三种操作（几十行），不要引入库。测试读出 base、应用补丁、断言校验**不通过**；同时断言补丁的每一步都真的生效了（`replace` 和 `remove` 的路径原本存在）。
+- 不合格样例至少覆盖下面每一条，每条一项（一条里有几种情况，就写几项）：
   1. 缺必填字段（`id`、`kind`、`version`、`targets` 各一个）
   2. `kind` 不在三种之内
   3. `schema` 不是 `activity-def/1`
@@ -77,14 +78,16 @@ version: v1
   10. 反思缺 `prompt`
   11. 出现规格里没有的字段（`additionalProperties`）
   12. 知识点 `sources` 的 `type` 不在三种之内
-  13. 自定义实验 manifest 缺 `version`；`type` 是 `quiz`
-  14. 发布清单的 `release_id` 不是 `rel_` 加 64 位小写十六进制；文件条目缺 `sha256`；出现小数
+  13. 自定义实验 manifest 缺 `version`；`type` 是 `quiz`（自定义实验没有现成的合格样例，请另外写一个合格的 `tools/tests/fixtures/content/experiment-manifest.json` 作为 base）
+  14. 发布清单的 `release_id` 不是 `rel_` 加 64 位小写十六进制；文件条目缺 `sha256`；`bytes` 是小数；缺 `engine_min`；路径含 `..`；路径含反斜杠
+  15. 结构化活动缺 `engine`；`engine` 为 0
+  16. 误区引用写成大写字母或含空格（两种合法写法以外的格式）
 - 可以多写，但不要少写。
 
 ## 约束
 
 - 规格是唯一依据。规格里没写的，不要自己加字段；觉得规格不清楚、不合理或互相矛盾，**不要自己改**，写进交付包「说明」里的「疑问」。
-- 规格第 7 节说明了哪些规则写在 schema 里、哪些留给 CI。留给 CI 的那些（`shaded` 不超过 `parts`、提示泄露答案、跨文件引用、发布门禁）**不要**在 schema 里勉强实现。
+- 规格第 7 节说明了哪些规则写在 schema 里、哪些留给 CI。留给 CI 的那些（`shaded` 不超过 `parts`、提示泄露答案、SVG 白名单、路径大小写冲突、引擎等级是否够用、跨文件引用、发布门禁、引用闭包）**不要**在 schema 里勉强实现。
 - 「恰好一个正确选项」用 2020-12 的 `contains` 加 `minContains`、`maxContains` 表达。
 - 长度限制用 `maxLength`，它按字符数算，一个汉字算一个。
 - 样例内容是真给三年级孩子看的：科学上准确，句子短，说具体的事，不出现「学习」二字。分数写成 `1/4` 这样，界面会排成上下结构。
@@ -94,7 +97,7 @@ version: v1
 
 - [ ] 四个 schema 都通过 `check_schema`
 - [ ] 全部合格样例通过校验；全部不合格样例被拦下，并且每个都只改了一处
-- [ ] 不合格样例覆盖上面列出的 14 类，每类至少一个
+- [ ] 不合格样例覆盖上面列出的 16 类，每类至少一项
 - [ ] `schemas/knode.schema.json` 和 `schemas/activity.schema.json` 除了规定的改动，其余内容和原文完全一致
 - [ ] 挑战覆盖了知识点的全部误区；三种答案类型都有
 - [ ] `python -m unittest discover -s tools/tests` 全部通过
@@ -112,11 +115,11 @@ tools/tests/fixtures/content/nodes/num/math.number.fraction-intro.yaml
 tools/tests/fixtures/content/activities/act.explain.fraction-intro-01/activity.yaml
 tools/tests/fixtures/content/activities/act.quiz.fraction-intro-01/activity.yaml
 tools/tests/fixtures/content/activities/act.reflection.fraction-intro-01/activity.yaml
-tools/tests/fixtures/invalid/content/<你的每个不合格样例>.json
+tools/tests/fixtures/content/release.json
+tools/tests/fixtures/content/experiment-manifest.json
+tools/tests/fixtures/invalid/content.json
 tools/tests/test_content_schemas.py
 ```
-
-不合格样例的文件名用小写字母、数字和连字符，例如 `quiz-two-correct.json`，并逐个写进清单。
 
 开头信息里的 issue、任务、提示词版本、基于提交，照抄本文件最开头给出的值。
 
