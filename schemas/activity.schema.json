@@ -21,6 +21,7 @@
     "observables": { "type": "array", "items": { "type": "object", "required": ["key", "label"], "properties": { "key": { "type": "string" }, "label": { "type": "string" } } }, "description": "可观测量，模块用 state 消息上报" },
     "predict": { "type": "object", "required": ["prompt", "options", "correct"], "additionalProperties": false, "properties": { "prompt": { "type": "string" }, "options": { "type": "array", "minItems": 2, "maxItems": 5, "items": { "type": "string" } }, "correct": { "type": "integer", "minimum": 0 } } },
     "explain": { "type": "string", "description": "解释一步里给孩子看的话，按 age_band 的措辞写" },
+    "misconceptions": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9-]+$" }, "description": "这个活动针对的误区 id，必须出自目标知识点的 misconceptions。知识点发布前，它的每个误区都要被至少一个活动针对" },
     "params": { "type": "object", "description": "平台传入的可配置参数，各字段用 JSON Schema 描述" },
     "emits": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z_]+$" } },
     "author": { "type": "object", "properties": { "model": { "type": "string" }, "prompt_ref": { "type": "string" } } },

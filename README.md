@@ -20,7 +20,9 @@
 | `docs/architecture.md` | 总体架构设计：原则、决策记录（D1–D25）、分层架构、数据模型、模块契约、AI 能力层、路线图 |
 | `docs/collaboration.md` | 协作工作流：Claude 维护仓库，其他 AI 按提示词实现，Luka 传话 |
 | `docs/submission.md` | 实现 AI 的交付包格式 |
-| `tools/ci_checks.py` | PR 自动检查（地盘、规格、ID、文案、署名） |
+| `tools/ci_checks.py` | PR 自动检查（地盘、规格、引用、发布门禁、ID、文案、署名） |
+| `tools/intake.py` | 收货：解析实现 AI 的交付包，检查完整性，算哈希 |
+| `tools/tests/` | 上面两个脚本的正反测试 |
 | `docs/workflow.md` | 每个知识点从选点到上线的八步工作流、完成标准和每周节奏 |
 | `docs/activity-contract.md` | 互动模块与平台之间的消息协议 `activity/1.1`，附实现样例 |
 | `schemas/` | 三份 JSON Schema：知识点 `knode/1`、互动模块 `activity/1.1`、学习事件 `event/1` |

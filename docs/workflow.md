@@ -23,7 +23,7 @@ content/
 prompts/<活动 id>.md                       # 这个活动的提示词，从 prompts/module-template.md 复制
 ```
 
-- 每个活动由 Claude 建一个「任务」issue，提示词就在 issue 里（见 `docs/collaboration.md`）。
+- 一个知识点一个主 issue；知识点下的每个活动一个子 issue，提示词就在子 issue 里（见 `docs/collaboration.md` 的「issue 怎么分」）。
 - 分支名：`kp/<知识点 id>`，例如 `kp/math.number.fraction-intro`。这个分支只能改这个知识点自己的文件，CI 会检查。
 - PR 标题：`知识点：<标题>（<知识点 id>）`。
 - PR 描述用仓库里的 PR 模板，完成标准就是模板里的勾选框。
@@ -42,8 +42,9 @@ prompts/<活动 id>.md                       # 这个活动的提示词，从 pr
    - **挑战**：每个点都做，至少 5 题，每个错误选项都对应一个误区 ID。
    - **实验**：只有能动手调、能观察的点才做（科学、几何、测量），走「预测 → 观察 → 解释」。
 4. **写 issue 和提示词**（Claude）
-   - 每个活动一个 issue，用 `prompts/module-template.md` 写出自成一体的提示词，贴进 issue，同时存为 `prompts/<活动 id>.md`。
-   - 写这个活动专属的验收清单。issue 打上 `待派发` 标签。
+   - 每个活动一个子 issue，用 `prompts/module-template.md` 写出自成一体的提示词，贴进子 issue，同时存为 `prompts/<活动 id>.md`。
+   - 在活动 manifest 的 `misconceptions` 里写明它针对哪些误区。知识点的每个误区都要被至少一个活动针对，否则 CI 不允许发布。
+   - 写这个活动专属的验收清单。子 issue 打上 `待派发` 标签，主 issue 用勾选框列出全部子 issue。
 5. **实现**（实现 AI，Luka 传话）
    - Luka 复制 issue 里的提示词交给实现 AI，拿到交付包后在对话里发「交付 #<issue 号>」。
 6. **Claude 审核**
@@ -62,6 +63,8 @@ prompts/<活动 id>.md                       # 这个活动的提示词，从 pr
 
 ## 完成标准
 
+前三条由 CI 的「发布门禁」自动检查，状态改成 `published` 的那一刻就会验证。
+
 一个知识点同时满足以下几条，才算完成：
 
 - [ ] 知识点卡通过校验，状态为 `published`
@@ -78,7 +81,7 @@ prompts/<活动 id>.md                       # 这个活动的提示词，从 pr
 - 错误选项集中在哪个误区；
 - 有多少题进了维修舱。
 
-需要修改时：开新分支 `kp/<id>-v2`，知识点卡或活动的 `version` 加一，从第 5 步走到第 8 步。旧版本留在 git 历史里，ID 不变。
+需要修改时：开一个改版的主 issue，分支仍然叫 `kp/<知识点 id>`（不加 `-v2` 之类的后缀），知识点卡或活动的 `version` 加一，从第 4 步走到第 8 步。旧版本留在 git 历史里，ID 不变。
 
 ## 节奏
 
