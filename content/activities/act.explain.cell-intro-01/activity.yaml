@@ -1,0 +1,122 @@
+id: act.explain.cell-intro-01
+schema: activity-def/1
+kind: explain
+version: 1
+title: 细胞：生命的小房间
+targets: [biology.cell.cell-intro]
+age_band: G3-4
+duration_min: 5
+review: pending
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版初中生物学七年级上册（2024 年版）第一单元第二章「认识细胞」
+  - type: textbook
+    ref: 人教版初中生物学（2024 年版）第四单元「人体生理与健康」讲血液的一节
+  - type: textbook
+    ref: 人教版初中生物学七年级上册（2024 年版）第一单元第三章第一节「细胞通过分裂产生新细胞」
+body:
+  style: tutor
+  steps:
+    - type: text
+      text: 舰长，你的身体是用什么搭起来的？先想一想，不急着回答。
+    - type: text
+      text: 房子能用一块块积木搭，身体能用一个个细胞搭。人和动物这样，大树、小草也这样。
+    - type: check
+      item:
+        id: c1
+        stem: 下面哪些是由细胞组成的？
+        answer:
+          type: choice
+          choices:
+            - id: a
+              text: 只有人和动物
+              misconception: only-animals
+              feedback: 很多人都先想到人和动物。大树、小草也是由一个个细胞组成的。
+            - id: b
+              text: 人、动物和植物
+              correct: true
+            - id: c
+              text: 只有植物
+              feedback: 植物确实由细胞组成，不过人和动物的身体也是由细胞搭成的。
+        hints:
+          - 想想积木的比方，除了身体，还有谁也能这样搭？
+          - 一片树叶、一棵小草，它们是不是也有生命？
+          - 别把范围只放在会跑会跳的生命上。
+    - type: text
+      text: 大多数细胞小得连放大镜都不够，要用显微镜才能看见。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.cell.cell-intro/cell-zoom.svg
+      caption: 从树叶到显微镜下的细胞：大多数细胞很小，要放大很多倍才看得见。
+    - type: check
+      item:
+        id: c2
+        stem: 想看看大多数细胞，用哪种工具更合适？
+        answer:
+          type: choice
+          choices:
+            - id: a
+              text: 只用眼睛
+              misconception: visible
+              feedback: 用眼睛看最方便，不过大多数细胞太小，眼睛直接看不清。
+            - id: b
+              text: 放大镜
+              misconception: visible
+              feedback: 放大镜能让东西变大，但大多数细胞还是太小，需要显微镜。
+            - id: c
+              text: 显微镜
+              correct: true
+        hints:
+          - 先想想，大多数细胞有多小。
+          - 放大镜能看清树叶上的细脉，还能看清更小的细胞吗？
+          - 要找一种比放大镜本领更大的观察工具。
+    - type: text
+      text: 神经细胞长长的，伸出许多分叉，负责传消息；红细胞圆圆扁扁，负责运氧气。肌肉细胞细细长长，能用力收缩。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.cell.cell-intro/cell-kinds.svg
+      caption: 神经细胞传消息，红细胞运氧气，肌肉细胞能收缩；它们的形状和本领各不一样。
+    - type: text
+      text: 细胞可不像积木：它是活的，会吃东西、会长大，还会一个分成两个。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.cell.cell-intro/cell-divide.svg
+      caption: 一个细胞慢慢收紧，分成两个细胞。
+    - type: check
+      item:
+        id: c3
+        stem: 下面哪件事说明细胞是活的？
+        answer:
+          type: choice
+          choices:
+            - id: a
+              text: 会像积木一样一直不变
+              misconception: cells-are-dead
+              feedback: 积木确实一直不变，但细胞会吃东西、会长大，不是不变的小零件。
+            - id: b
+              text: 会吃东西、长大，还能分成两个
+              correct: true
+            - id: c
+              text: 只是身体里没有生命的小零件
+              misconception: cells-are-dead
+              feedback: 看起来确实像小零件，但细胞会吃东西、会长大，还会分成两个。
+        hints:
+          - 回忆一下，细胞和积木最不一样的地方。
+          - 活的细胞不会一直停在原来的样子。
+          - 找找哪个选项在说细胞会变化、会增加。
+    - type: text
+      text: 细胞这个小房间里，还有一个更小的房间，叫细胞核，里面放着一份“说明书”。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.cell.cell-intro/cell-nucleus.svg
+      caption: 细胞核像小房间里的小房间，里面放着一份“说明书”。
+    - type: text
+      text: 动物和植物的细胞一般都有细胞核；人成熟的红细胞把细胞核扔掉了，是例外。
+    - type: text
+      text: 这份“说明书”上写的是什么？舰长，去下一颗星 DNA 找答案吧。
+# END OF FILE
