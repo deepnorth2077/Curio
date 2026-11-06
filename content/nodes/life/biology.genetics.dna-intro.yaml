@@ -4,30 +4,35 @@ title: DNA：细胞里的说明书
 subjects: [biology]
 theme: life
 grade: G8
-unit: 八下 · 生物的遗传和变异
+unit: 八下 · 第六单元 生命的延续和发展 · 第二章 生物的遗传与变异
 curriculum:
-  - textbook: 人教版初中生物学八年级下册
-    unit: 生物的遗传和变异
+  - textbook: 人教版初中生物学八年级下册（2024 年版）
+    unit: 第六单元 生命的延续和发展 · 第二章 生物的遗传与变异 · 第二节 基因在亲子代间的传递
 prerequisites: [biology.cell.cell-intro]
 related: []
 driving_question: 为什么小狗生下来的总是小狗，不会是小猫？
 objectives:
   - 知道细胞核里有 DNA。
   - 知道 DNA 像一本说明书，记着身体怎么长、长成什么样。
-  - 知道身体里几乎每个细胞都带着同一套说明书。
+  - 知道身体里绝大多数细胞都带着同一套说明书；人成熟的红细胞没有细胞核，也就没有带这本说明书。
+  - 知道说明书一直在用：身体每天长大、修补伤口，都要照着它做。
 misconceptions:
   - id: blood-only
     text: DNA 只在血液里。
   - id: different-books
     text: 身体不同地方的细胞，带的是不同的说明书。
+  - id: only-for-babies
+    text: 说明书只在生小宝宝的时候才有用，平时用不上。
 sources:
   - type: textbook
-    ref: 人教版初中生物学八年级下册「生物的遗传和变异」（具体章节待交叉核对时确认）
+    ref: 人教版初中生物学八年级下册（2024 年版）第六单元「生命的延续和发展」第二章「生物的遗传与变异」第二节「基因在亲子代间的传递」
+  - type: textbook
+    ref: 人教版初中生物学（2024 年版）第四单元「人体生理与健康」讲血液的一节（成熟的红细胞没有细胞核）
   - type: curriculum
     ref: 《义务教育生物学课程标准（2022 年版）》「遗传与进化」
 lenses:
   - band: G3-4
-    approach: 把 DNA 比作一本用 4 种字母写成的说明书，放在每个细胞的细胞核里；不同细胞读这本书的不同几页，所以本领不一样。
+    approach: 把 DNA 比作一本用 4 种字母写成的说明书，放在细胞核这个小房间里；不同细胞读这本书的不同几页，所以本领不一样；红细胞长好以后，把细胞核连同说明书一起扔掉了，好腾出地方装更多氧气，但它当初也是照着同一本说明书长出来的。
   - band: G7-8
     approach: 认识 DNA 是主要的遗传物质，基因是有遗传效应的 DNA 片段。
 activities: []
