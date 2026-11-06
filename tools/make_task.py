@@ -142,7 +142,9 @@ def build(repo, task_id, commit="HEAD", draft=False):
 
     header = (
         f"> 基于 Curio 仓库提交 `{full}` 生成 · 任务 `{task_id}` · issue #{meta['issue']} · 提示词版本 {meta['version']}\n"
-        f"> 交付包开头信息请照抄：`issue: #{meta['issue']}`、`任务: {task_id}`、`提示词版本: {meta['version']}`、`基于提交: {full[:12]}`\n\n"
+        + ("" if task_id.startswith("review.") else
+           f"> 交付包开头信息请照抄：`issue: #{meta['issue']}`、`任务: {task_id}`、`提示词版本: {meta['version']}`、`基于提交: {full[:12]}`\n")
+        + "\n"
     )
     table = ["", "---", "", "## 附：本任务文件嵌入的仓库文件", "", "| 文件 | 范围 | SHA-256（整个文件） |", "| --- | --- | --- |"]
     table += [f"| `{p}` | {t} | `{h}` |" for p, t, h in embeds] or ["| （无） | | |"]

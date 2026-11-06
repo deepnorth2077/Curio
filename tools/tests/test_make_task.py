@@ -136,7 +136,10 @@ class TestMakeTask(unittest.TestCase):
 
     def test_review_task_id(self):
         r = Repo({"prompts/review.specs.md": FRONT.replace("curio-002a", "review.specs") + "{{commit}}\n"}); self.repos.append(r)
-        self.assertIn("任务 `review.specs`", r.build(task="review.specs")[0])
+        text = r.build(task="review.specs")[0]
+        self.assertIn("任务 `review.specs`", text)
+        self.assertNotIn("交付包开头信息", text)  # 审阅任务不交交付包
+        self.assertIn("交付包开头信息请照抄：`issue: #16`", self.repo("x\n").build()[0])
 
     def test_bad_task_id(self):
         self.assertFails(lambda: self.repo("x\n").build(task="../etc"), "格式不对")
