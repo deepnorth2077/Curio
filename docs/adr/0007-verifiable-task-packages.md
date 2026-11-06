@@ -1,6 +1,6 @@
 # ADR-007 协作以可校验的任务包为准
 
-- 状态：提议
+- 状态：已接受（2026-11-06）
 - 日期：2026-11-06
 - 相关：CURIO-000（#2）、`docs/collaboration.md`、`docs/submission.md`
 

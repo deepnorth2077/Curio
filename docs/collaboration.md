@@ -154,4 +154,6 @@ Settings → Branches → Add rule，分支名填 `main`，勾选：
 - Require status checks to pass，搜索并选中 `检查`
 - Block force pushes
 
+再到 Settings → General → Pull Requests，勾选 **Automatically delete head branches**。PR 合入后，分支会自动删除。Claude 这边删不了远程分支，不勾的话，合入过的 `kp/<知识点 id>` 分支会一直留着，改版时就没法重用这个名字。
+
 设好之后，Claude 也必须走 PR，并且只有 CI 通过才能合入。

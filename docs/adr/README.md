@@ -14,14 +14,14 @@ ADR 一旦接受就不改写。要推翻某个决定，就写一份新的 ADR，
 
 | 编号 | 决定 | 状态 |
 | --- | --- | --- |
-| [ADR-001](0001-kernel-and-shell.md) | 平台内核与产品外壳分离 | 提议 |
-| [ADR-002](0002-structured-content-first.md) | 结构化内容优先，自定义 HTML 是例外 | 提议 |
-| [ADR-003](0003-immutable-releases.md) | 内容发布不可变，事件引用内容版本 | 提议 |
-| [ADR-004](0004-events-as-source-of-truth.md) | 事件是事实来源，状态由投影产生 | 提议 |
-| [ADR-005](0005-activity-host-boundary.md) | 活动宿主是唯一的权限边界 | 提议 |
-| [ADR-006](0006-recoverability-gate.md) | 可恢复性是发布的前提 | 提议 |
-| [ADR-007](0007-verifiable-task-packages.md) | 协作以可校验的任务包为准 | 提议 |
-| [ADR-008](0008-frontend-stack.md) | 前端不用框架、不需要构建就能运行 | 提议 |
+| [ADR-001](0001-kernel-and-shell.md) | 平台内核与产品外壳分离 | 已接受 |
+| [ADR-002](0002-structured-content-first.md) | 结构化内容优先，自定义 HTML 是例外 | 已接受 |
+| [ADR-003](0003-immutable-releases.md) | 内容发布不可变（清单与部署分开），事件引用内容版本 | 已接受 |
+| [ADR-004](0004-events-as-source-of-truth.md) | 事件是事实来源，状态由投影产生（唯一约束、奖励流水、确定性顺序） | 已接受 |
+| [ADR-005](0005-activity-host-boundary.md) | 活动宿主是唯一的权限边界（含资源配额和保证范围） | 已接受 |
+| [ADR-006](0006-recoverability-gate.md) | 可恢复性是发布的前提（可读导出与完整备份分开） | 已接受 |
+| [ADR-007](0007-verifiable-task-packages.md) | 协作以可校验的任务包为准 | 已接受 |
+| [ADR-008](0008-frontend-stack.md) | 当前不引入前端框架，浏览器运行前不要求打包 | 已接受 |
 
 ADR-001～007 来自架构审查（见 #13）。ADR-008 是 Claude 补充的。
 
@@ -31,4 +31,4 @@ ADR-001～007 来自架构审查（见 #13）。ADR-008 是 Claude 补充的。
 
 需要 Luka 决定的地方，都是产品或运维上的选择，不涉及技术细节。2026-11-06 已经拍板，答案写在 ADR-001、006、007 末尾的「拍板结果」里。
 
-另一个模型复审、意见处理完之后，所有 ADR 的状态改为「已接受」，再合入。
+外部模型复审（2026-11-06）提出 8 条意见，已全部处理，见 PR #14 的评论。处理完之后，ADR-001～008 全部接受。
