@@ -178,14 +178,14 @@ Claude 收到交付包后，先做自动检查，再沿**两条线**分别审核
 | 检查项 | 内容 |
 | --- | --- |
 | 检查脚本自测 | `tools/tests/` 里的正反测试全部通过，确保检查本身没坏 |
-| 地盘检查 | 改动的文件都在这个分支类型允许的范围内。`kp/` 分支只能改这个知识点的卡片、它自己的配图（`content/assets/<知识点 id>/` 下），以及 `targets` **只有**这个知识点的活动和它们的提示词。受保护路径（`schemas/`、`docs/`、`tools/`、`.github/`、`AGENTS.md`、`CLAUDE.md`、`README.md`、`GLOSSARY.md`、`prompts/` 下的三个模板）只有 `arch/` 分支能改 |
-| 形态和规格校验 | 活动目录要么只有 `activity.yaml`（结构化活动），要么是 `manifest.yaml` + `index.html`（自定义实验）；各自通过 schema；文件名和 id 一致；没有重复 ID；前置引用都存在且不成环 |
-| 引用 | 知识点的 `activities` 和活动的 `targets` 双向一致；题目引用的误区出自目标知识点；`svg` 配图的文件存在 |
-| 题目和文字 | 题目 id 唯一；配图参数不越界；提示不泄露答案（数字题、分数题报错，选择题提醒）；字数和用词（内容规格 3.4、3.7） |
-| SVG 和路径 | SVG 只用白名单里的元素和属性；`content/` 下的路径只用 ASCII，没有只差大小写的两个路径 |
+| 地盘检查 | 改动的文件都在这个分支类型允许的范围内（改名时新旧两个路径都算，删除也算）。`kp/` 分支只能改这个知识点的卡片、它自己的配图（`content/assets/<知识点 id>/` 下，只能是 `.svg`），以及 `targets` **只有**这个知识点的活动和它们的提示词、任务文件（`prompts/<活动 id>.md`、`prompts/<活动 id>.task.md`）。受保护路径（`schemas/`、`docs/`、`tools/`、`.github/`、整个 `prompts/`、`AGENTS.md`、`CLAUDE.md`、`README.md`、`GLOSSARY.md`）只有 `arch/` 分支能改；唯一的例外是 `feat/`、`fix/`、`chore/` 分支整合时可以**新增**任务文件留档 `prompts/<任务 id>.task.md`，不能改或删已有的。路径比较区分大小写，在 Windows 上本地跑也一样 |
+| 形态和规格校验 | 知识点卡通过 `knode.schema.json`；活动目录要么只有 `activity.yaml`（结构化活动），要么是 `manifest.yaml` + `index.html`（自定义实验），各自通过 schema；文件名和 id 一致；没有重复 ID；前置引用都存在且不成环 |
+| 引用 | 知识点的 `prerequisites`、`related` 指向的知识点都存在；知识点的 `activities` 和活动的 `targets` 双向一致；题目引用的误区出自目标知识点；`svg` 配图必须是 `content/assets/` 下存在的 `.svg` 文件（这样才会经过下面的白名单检查） |
+| 题目和文字 | 题目 id 唯一；配图参数不越界；提示不泄露答案（数字题、分数题报错，选择题提醒）。字数上限和「不出现『学习』」写在 schema 里（内容规格 3.7），随规格校验一起检查 |
+| SVG 和路径 | `content/assets/` 下的 SVG 只用白名单里的元素和属性；`content/` 下的路径只用 ASCII，没有只差大小写的两个路径，不能有符号链接 |
 | 引擎等级 | 活动的 `engine` 不低于它用到的能力所需的等级 |
 | 发布门禁 | 只看会被收录的 `approved` 活动，没批准的不收录、不阻断。`published` 的知识点：至少一个 `explain` 和一个 `quiz`；挑战至少 5 题；每个误区都被覆盖（从题目数据计算，只算错误选项和 `common_wrong`）；引用闭包成立（内容规格第 5、6 节） |
-| ID 检查 | 没有删除、改名或改动已有的 ID（解析 YAML 后比较，只改写法、比如加引号，不算改动） |
+| ID 检查 | 没有删除、改名或改动已有的 ID（解析 YAML 后比较，只改写法、比如加引号，不算改动）。带 `越界-已批准` 标签时，删除和改名只提醒、不拦截 |
 | 文案检查 | 给孩子看的文字里不出现「学习」 |
 | 署名提醒 | 提交里是否写了 `Implemented-By:`、`Agent:` 或 `Co-Authored-By:`；只提醒，不拦截 |
 

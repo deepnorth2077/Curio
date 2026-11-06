@@ -176,6 +176,10 @@ class Base(unittest.TestCase):
         messages = [message for _, message in result.errors]
         self.assertTrue(any(text in message for message in messages), f"本应报「{text}」，实际：{messages}")
 
+    def blocked(self, result):
+        """被地盘检查拦下的文件路径。"""
+        return sorted(f for f, message in result.errors if "不能改这个文件" in message)
+
     def add_html(self, aid, body="<p>分蛋糕</p>"):
         self.r.write(f"content/activities/{aid}/index.html", f"<!doctype html><html><body>{body}</body></html>\n")
 
@@ -219,6 +223,33 @@ class TestBranches(Base):
         self.fails(self.r.check(), "不能改这个文件")
         self.r.branch("arch/template"); self.r.write("prompts/content-template.md", "y"); self.r.commit()
         self.ok(self.r.check())
+
+    def test_whole_prompts_dir_is_protected(self):
+        self.r.write("prompts/review.x.md", "a"); self.r.write("prompts/act.quiz.frac.md", "a")
+        self.r.write("prompts/curio-009.task.md", "a"); self.r.baseline()
+        for kind in ("feat", "fix", "chore"):
+            with self.subTest(kind=kind):
+                self.r.git("checkout", "-q", "main"); self.r.branch(f"{kind}/p")
+                self.r.write("prompts/review.x.md", "b"); self.r.write("prompts/act.quiz.frac.md", "b")
+                self.r.write("prompts/new-prompt.md", "b"); self.r.write("prompts/curio-009.task.md", "b"); self.r.commit()
+                self.assertEqual(self.blocked(self.r.check()), ["prompts/act.quiz.frac.md", "prompts/curio-009.task.md", "prompts/new-prompt.md", "prompts/review.x.md"])
+        self.r.git("checkout", "-q", "main"); self.r.branch("arch/p")
+        self.r.write("prompts/review.x.md", "c"); self.r.write("prompts/new-prompt.md", "c"); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_feat_may_add_task_archive_but_not_delete_it(self):
+        self.r.write("prompts/curio-009.task.md", "a"); self.r.baseline()
+        self.r.branch("feat/slice"); self.r.write("prompts/curio-024.task.md", "# 任务文件"); self.r.commit()
+        self.ok(self.r.check())
+        self.r.delete("prompts/curio-009.task.md"); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), ["prompts/curio-009.task.md"])
+
+    def test_path_matching_is_case_sensitive_everywhere(self):
+        self.assertTrue(ci_checks.match("prompts/content-template.md", ci_checks.PROTECTED))
+        self.assertFalse(ci_checks.match("Prompts/content-template.md", ["prompts/*"]))
+        self.assertIsNone(ci_checks.ACT_PROMPT.match("prompts/ACT.quiz.frac.md"))
+        self.assertIsNone(ci_checks.ACT_PROMPT.match("prompts/act.quiz.frac/x.md"))
+        self.assertEqual(ci_checks.ACT_PROMPT.match("prompts/act.quiz.frac.task.md").group(1), "act.quiz.frac")
 
     def test_feat_may_touch_prototype(self):
         self.r.baseline(); self.r.branch("feat/x"); self.r.write("prototype/index.html", "<html></html>"); self.r.commit()
@@ -295,8 +326,55 @@ class TestKnowledgePointBranch(Base):
         self.r.write(f"content/assets/{N1}/cake.svg", SVG_OK)
         self.r.write("content/assets/cake.svg", SVG_OK)
         self.r.write(f"content/assets/{N2}x/cake.svg", SVG_OK); self.r.commit()
-        result = self.r.check()
-        self.assertEqual(sum("不能改这个文件" in message for _, message in result.errors), 3)
+        self.assertEqual(self.blocked(self.r.check()), sorted([f"content/assets/{N1}/cake.svg", "content/assets/cake.svg", f"content/assets/{N2}x/cake.svg"]))
+
+    def test_kp_branch_assets_must_be_svg(self):
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.r.write(f"content/assets/{N2}/notes.txt", "x"); self.r.write(f"content/assets/{N2}/page.html", "<p>x</p>")
+        self.r.write(f"content/assets/{N2}/ok.svg", SVG_OK); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), [f"content/assets/{N2}/notes.txt", f"content/assets/{N2}/page.html"])
+
+    def _two_nodes_with_asset(self):
+        self.r.write(f"{NODE_DIR}/{N1}.yaml", node(N1)); self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2))
+        self.r.write(f"content/assets/{N1}/cake.svg", SVG_OK)
+        self.r.write(f"content/assets/{N2}/mine.svg", SVG_OK.replace("r=\"4\"", "r=\"3\""))
+        self.r.baseline(); self.r.branch(f"kp/{N2}")
+
+    def test_kp_branch_may_not_rename_other_nodes_asset_into_own_folder(self):
+        self._two_nodes_with_asset()
+        self.r.git("mv", f"content/assets/{N1}/cake.svg", f"content/assets/{N2}/cake.svg"); self.r.commit()
+        self.assertIn(f"content/assets/{N1}/cake.svg", self.blocked(self.r.check()))
+
+    def test_kp_branch_may_not_move_other_nodes_asset_even_when_git_sees_delete_and_add(self):
+        self._two_nodes_with_asset()
+        self.r.delete(f"content/assets/{N1}/cake.svg")
+        self.r.write(f"content/assets/{N2}/cake.svg", '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 99 99"><rect x="1" y="1" width="50" height="20" fill="#CFDCE6"/><text x="3" y="40">完全不同的一张图</text></svg>\n')
+        self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), [f"content/assets/{N1}/cake.svg"])
+
+    def test_kp_branch_may_not_delete_other_nodes_asset(self):
+        self._two_nodes_with_asset()
+        self.r.delete(f"content/assets/{N1}/cake.svg"); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), [f"content/assets/{N1}/cake.svg"])
+
+    def test_kp_branch_may_delete_or_rename_own_assets(self):
+        self._two_nodes_with_asset()
+        self.r.git("mv", f"content/assets/{N2}/mine.svg", f"content/assets/{N2}/renamed.svg"); self.r.commit()
+        self.ok(self.r.check())
+        self.r.delete(f"content/assets/{N2}/renamed.svg"); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_own_activity_task_archive_passes_but_other_prompts_fail(self):
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=["act.quiz.frac"], mis=("denominator-bigger",)))
+        self.r.write("content/activities/act.quiz.frac/activity.yaml", structured("act.quiz.frac", [N2]))
+        self.r.write("prompts/review.x.md", "a"); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.r.write("prompts/act.quiz.frac.md", "# 提示词"); self.r.write("prompts/act.quiz.frac.task.md", "# 任务文件"); self.r.commit()
+        self.ok(self.r.check())
+        self.r.write("prompts/review.x.md", "b"); self.r.write("prompts/content-template.md", "x")
+        self.r.write("prompts/act.quiz.ghost.task.md", "# 没有这个活动"); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), ["prompts/act.quiz.ghost.task.md", "prompts/content-template.md", "prompts/review.x.md"])
 
     def test_prompt_of_other_activity_fails(self):
         self.r.write(f"{NODE_DIR}/{N1}.yaml", node(N1, activities=["act.quiz.other"]))
@@ -500,6 +578,20 @@ class TestItemsAndFigures(Base):
         self.r.write("content/assets/diagram.svg", "<svg xmlns=\"http://www.w3.org/2000/svg\"><title>图</title></svg>\n")
         self.ok(self.r.check())
 
+    def test_svg_reference_must_point_into_assets(self):
+        bad = {
+            "活动目录里": "content/activities/act.quiz.svg-out/x.svg",
+            "绕回上层": "content/assets/../activities/act.quiz.svg-out/x.svg",
+            "不是 svg": "content/assets/x.html",
+        }
+        for name, src in bad.items():
+            with self.subTest(name=name):
+                item = choice_item(); item["figure"] = {"type": "svg", "src": src}
+                self.add_structured(yaml.safe_load(structured("act.quiz.svg-out", [N2], items=[item])))
+                self.r.write("content/activities/act.quiz.svg-out/x.svg", "<svg><script>alert(1)</script></svg>")
+                self.r.write("content/assets/x.html", "<p>x</p>")
+                self.fails(self.r.check(), "必须是 content/assets/ 下的 .svg 文件")
+
 
 class TestHintLeaks(Base):
     def setUp(self):
@@ -590,6 +682,14 @@ class TestPathsAndEngine(Base):
         self.r.write("content/assets/a/Fig.svg", "<svg/>\n")
         self.r.write("content/assets/a/fig.svg", "<svg/>\n")
         self.fails(self.r.check(), "只差大小写")
+
+    @unittest.skipIf(os.name == "nt", "Windows 上创建符号链接需要额外权限")
+    def test_symlink_under_content_fails(self):
+        self.r.write("content/assets/a/real.svg", "<svg/>\n")
+        os.symlink("real.svg", self.r.dir / "content/assets/a/link.svg")
+        self.fails(self.r.check(), "不能有符号链接")
+        (self.r.dir / "content/assets/a/link.svg").unlink()
+        self.ok(self.r.check())
 
     def test_engine_requirement_table_is_enforced(self):
         aid = "act.quiz.engine"
