@@ -1,0 +1,39 @@
+[
+  {
+    "name": "local",
+    "data": {
+      "event_id": "evt_00000000000000000000000001",
+      "recorded_at": "2026-11-06T08:30:12.400Z",
+      "source": "local"
+    }
+  },
+  {
+    "name": "sync",
+    "data": {
+      "event_id": "evt_00000000000000000000000006",
+      "recorded_at": "2026-11-06T12:00:00.512Z",
+      "source": "sync",
+      "batch_id": "syn_0000000000000000000000001M",
+      "clock_skew_ms": 1520
+    }
+  },
+  {
+    "name": "sync-2",
+    "data": {
+      "event_id": "evt_0000000000000000000000000B",
+      "recorded_at": "2026-11-06T12:00:01.130Z",
+      "source": "sync",
+      "batch_id": "syn_0000000000000000000000001M",
+      "clock_skew_ms": -2100
+    }
+  },
+  {
+    "name": "import",
+    "data": {
+      "event_id": "evt_00000000000000000000000017",
+      "recorded_at": "2026-11-01T10:00:00.000Z",
+      "source": "import",
+      "batch_id": "imp_0000000000000000000000001J"
+    }
+  }
+]

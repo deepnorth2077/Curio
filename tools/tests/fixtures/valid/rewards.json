@@ -1,0 +1,73 @@
+[
+  {
+    "name": "earn",
+    "data": {
+      "entry_id": "rwd_9f3c1a5e7b9d1f3a5c7e9b1d3f5a7c9e",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "currency": "energy",
+      "kind": "earn",
+      "amount": 1,
+      "cause_key": "task:2026-11-06:math.number.fraction-intro",
+      "cause_event_id": "evt_00000000000000000000000016",
+      "rule_id": "task-done",
+      "rule_version": 1
+    }
+  },
+  {
+    "name": "earn-2",
+    "data": {
+      "entry_id": "rwd_1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "currency": "supply",
+      "kind": "earn",
+      "amount": 1,
+      "cause_key": "act:2026-11-06:act.experiment.sink-float-01",
+      "cause_event_id": "evt_0000000000000000000000000C",
+      "rule_id": "activity-done",
+      "rule_version": 1
+    }
+  },
+  {
+    "name": "spend",
+    "data": {
+      "entry_id": "rwd_0f1e2d3c4b5a69787a8b9c0d1e2f3a4b",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "currency": "supply",
+      "kind": "spend",
+      "amount": -30,
+      "cause_key": "redeem:evt_00000000000000000000000011",
+      "cause_event_id": "evt_00000000000000000000000012",
+      "rule_id": "redeem",
+      "rule_version": 1
+    }
+  },
+  {
+    "name": "adjust",
+    "data": {
+      "entry_id": "rwd_5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "currency": "supply",
+      "kind": "adjust",
+      "amount": -5,
+      "cause_key": "evt:evt_00000000000000000000000013",
+      "cause_event_id": "evt_00000000000000000000000013",
+      "rule_id": "adjust",
+      "rule_version": 1
+    }
+  },
+  {
+    "name": "revoke",
+    "data": {
+      "entry_id": "rwd_c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "currency": "energy",
+      "kind": "revoke",
+      "amount": -1,
+      "cause_key": "revoke:rwd_9f3c1a5e7b9d1f3a5c7e9b1d3f5a7c9e",
+      "cause_event_id": "evt_00000000000000000000000015",
+      "rule_id": "revoke",
+      "rule_version": 1,
+      "target_entry_id": "rwd_9f3c1a5e7b9d1f3a5c7e9b1d3f5a7c9e"
+    }
+  }
+]

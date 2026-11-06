@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deepnorth2077/curio/schemas/private-text.schema.json",
+  "title": "private-text/1 · 私人文字",
+  "description": "孩子（或家长替孩子记下）的私人文字（规格第 4.1 节）：反思、提问、答案等。text 至少 1 个、最多 500 个字符。可以整条删除（删除记 text.erased 事件），但不进事件流。",
+  "type": "object",
+  "required": ["schema", "text_id", "learner_id", "created_at", "text"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "private-text/1" },
+    "text_id": {
+      "type": "string",
+      "pattern": "^txt_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+    },
+    "learner_id": {
+      "type": "string",
+      "pattern": "^lrn_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+    },
+    "created_at": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$"
+    },
+    "text": { "type": "string", "minLength": 1, "maxLength": 500 }
+  }
+}
