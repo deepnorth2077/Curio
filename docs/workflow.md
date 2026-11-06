@@ -46,7 +46,7 @@ prompts/<活动 id>.md                       # 这个活动的提示词，从 pr
    - 在活动 manifest 的 `misconceptions` 里写明它针对哪些误区。知识点的每个误区都要被至少一个活动针对，否则 CI 不允许发布。
    - 写这个活动专属的验收清单。子 issue 打上 `待派发` 标签，主 issue 用勾选框列出全部子 issue。
 5. **实现**（实现 AI，Luka 传话）
-   - Luka 复制 issue 里的提示词交给实现 AI，拿到交付包后在对话里发「交付 #<issue 号>」。
+   - Claude 在对话里发给 Luka 任务文件，Luka 原样上传给实现 AI；拿到交付包后在对话里发「交付 #<issue 号>」。
 6. **Claude 审核**
    - 按 `docs/collaboration.md` 的审核清单检查：完整、规格、契约、验收标准、科学准确性、是否适龄、文案规则、误区覆盖。
    - 不通过：在 issue 里贴修改提示词，Luka 交回同一个实现 AI。最多两轮；仍不通过，说明提示词有问题，Claude 重写提示词，从第 4 步重来。
