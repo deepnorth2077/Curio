@@ -1,0 +1,102 @@
+id: act.quiz.dna-intro-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: DNA 说明书大挑战
+targets: [biology.genetics.dna-intro]
+age_band: G3-4
+duration_min: 5
+review: pending
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版初中生物学八年级下册（2024 年版）第六单元第二章第二节「基因在亲子代间的传递」
+  - type: textbook
+    ref: 人教版初中生物学（2024 年版）第四单元「人体生理与健康」讲血液的一节
+body:
+  shuffle: true
+  items:
+    - id: q1
+      stem: DNA 这本说明书是用几种字母写成的？
+      answer:
+        type: number
+        value: 4
+        tolerance: 0
+        unit: 种
+      hints:
+        - DNA 用的字母种类很少，不用想成一整张英文字母表。
+        - 回忆讲解里数的字母种类，只填一个数字。
+    - id: q2
+      stem: 舰长，DNA 这本说明书一般放在细胞的哪里？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 细胞核
+            correct: true
+          - id: b
+            text: 只在血液里
+            misconception: blood-only
+            feedback: 很多人都这么想；其实 DNA 不只在血液里，它一般放在细胞核里。
+          - id: c
+            text: 细胞外面
+            feedback: 说明书像是可以拿来拿去，容易让人这样想；但 DNA 一般在细胞核里，不在细胞外面。
+      hints:
+        - 想一想细胞里那个“小房间里的小房间”。
+        - 放说明书的地方，名字里有一个“核”字。
+    - id: q3
+      stem: 神经细胞和肌肉细胞带的 DNA 说明书，有什么关系？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 它们带着同一套说明书
+            correct: true
+          - id: b
+            text: 它们各自带着完全不同的说明书
+            misconception: different-books
+            feedback: 它们本领不同，看起来确实像用了不同的书；其实它们读的是同一套说明书的不同几页。
+          - id: c
+            text: 只有神经细胞带说明书，肌肉细胞不带
+            feedback: 很多人都这么想；其实肌肉细胞也带说明书，绝大多数细胞带的是同一套。
+      hints:
+        - 它们的本领不同，但本领不同不等于带着不同的书。
+        - 想想它们会不会读同一本书的不同几页。
+    - id: q4
+      stem: 人成熟的红细胞没有细胞核，它还带着 DNA 这本说明书吗？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 不带，因为它没有细胞核
+            correct: true
+          - id: b
+            text: 带着，因为 DNA 只在血液里
+            misconception: blood-only
+            feedback: 很多人都这么想；但红细胞没有细胞核，也就没有带 DNA 这本说明书。
+          - id: c
+            text: 带着，因为每种细胞都有不同的说明书
+            misconception: different-books
+            feedback: 不同细胞有不同本领，容易让人这样想；但红细胞没有细胞核，也就没有带说明书。
+      hints:
+        - 先想想，DNA 这本说明书一般放在细胞的哪里。
+        - 红细胞成熟后没有那个放说明书的小房间，再判断它带不带。
+    - id: q5
+      stem: 伤口慢慢长好时，身体还要不要用 DNA 这本说明书？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 要用，修补伤口也要照着它做
+            correct: true
+          - id: b
+            text: 不用，它只在生小宝宝时有用
+            misconception: only-for-babies
+            feedback: 说明书能传给孩子，容易让人这样想；其实身体长大、修补伤口时也在用它。
+          - id: c
+            text: 不用，说明书用完一次就不再用了
+            feedback: 用完一本书就收起来的想法很熟悉；但这本说明书一直在用，修补伤口时也要用。
+      hints:
+        - 想想这本书是不是只在生小宝宝时才打开。
+        - 身体每天长大、修补伤口，也要知道该怎么做。
+# END OF FILE
