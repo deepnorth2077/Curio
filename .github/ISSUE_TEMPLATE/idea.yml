@@ -1,0 +1,19 @@
+name: 想法或问题（Luka 写）
+description: 随手记下一个想法、孩子的反馈，或者哪里不对劲。Claude 会把它整理成正式任务。
+title: "[想法] "
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: 想法或问题
+      description: 随便写，一句话也行。截图可以直接粘贴进来。
+    validations:
+      required: true
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: 急不急
+      options:
+        - 不急，排进计划就行
+        - 这周想要
+        - 影响孩子使用了

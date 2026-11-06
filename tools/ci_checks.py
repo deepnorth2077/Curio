@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""好奇号 Curio 的 PR 检查。规则见 docs/collaboration.md。
+"""好奇号 Curio 的 PR 检查。工作流见 docs/collaboration.md。
 
 用法：python tools/ci_checks.py
 环境变量（GitHub Actions 自动提供，本地可手动设置）：
@@ -72,7 +72,7 @@ def check_territory():
             ok = not match(p, PROTECTED) and not p.startswith("content/")
         if not ok:
             if override: warn(f"越界改动（已由「{OVERRIDE_LABEL}」标签放行）：{p}", p)
-            else: err(f"分支「{branch}」不能改这个文件。确需修改，请 Luka 给 PR 加「{OVERRIDE_LABEL}」标签", p)
+            else: err(f"分支「{branch}」不能改这个文件。确需修改，先在对话里征得 Luka 同意，再给 PR 加「{OVERRIDE_LABEL}」标签并在评论里注明", p)
 
 # ---------- 2. 规格校验 ----------
 def load_yaml(path):
@@ -176,8 +176,8 @@ def check_trailers():
         block = block.strip()
         if not block: continue
         sha, subject, body = (block.split("\x00") + ["", ""])[:3]
-        if not re.search(r"^(Agent|Co-Authored-By):", body, re.M | re.I):
-            warn(f"提交 {sha}「{subject}」没有署名（Agent: 或 Co-Authored-By:）")
+        if not re.search(r"^(Implemented-By|Agent|Co-Authored-By):", body, re.M | re.I):
+            warn(f"提交 {sha}「{subject}」没有署名（Implemented-By:、Agent: 或 Co-Authored-By:）")
 
 # ---------- 运行 ----------
 print(f"分支：{branch}　对比：{base}　改动文件：{len(changed)}　标签：{', '.join(sorted(labels)) or '无'}")

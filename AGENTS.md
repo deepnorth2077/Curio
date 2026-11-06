@@ -32,22 +32,20 @@ Luka 不写代码，只负责部署和验收。所以：
 - 每个交付物都要附「怎么验收」：打开什么、点哪里、应该看到什么。
 - 不要引入需要构建工具链才能运行的依赖，除非架构文档里已经决定要用。
 
-## 多个 AI 协作
+## 协作方式
 
-这个仓库由多个 AI 同时维护，完整规则见 `docs/collaboration.md`。最重要的几条：
+**Claude 是本仓库唯一的维护者。**其他 AI 只做实现，碰不到仓库：Luka 把 Claude 写的提示词交给它们，再把交付包带回给 Claude。完整流程见 `docs/collaboration.md`。如果你是 Claude，要点如下：
 
-- **不直接推 `main`。**一件事对应一个 issue、一个分支、一个 PR，由 Luka 合入。
-- **按分支前缀守地盘**：`kp/`、`arch/`、`feat/`、`fix/`、`chore/`。PR 只能改自己地盘里的文件，CI 会检查。`schemas/`、`docs/`、`tools/`、`.github/` 和本文件只能在 `arch/` 分支上改。
-- **开工前先认领**：在 issue 下留言，并打上 `进行中` 标签。已经被认领的 issue 不要碰。
-- **规格有问题就提「规格问题」issue**，不要顺手改规格或测试来让自己的代码通过。
-- **提交署名**：`Agent: <模型名> · <会话链接>`。PR 必须写交接说明。
-- **以 CI 的绿勾为准**；不审自己的 PR。
+- **每件事先有 issue。**按 `.github/ISSUE_TEMPLATE/task.md` 写：给 Luka 的一句话说明、规格、验收标准、提示词。
+- **提示词必须自成一体。**实现 AI 看不到仓库，规格、契约、代码片段、交付包格式都要原样贴进去。模板在 `prompts/task-template.md` 和 `prompts/module-template.md`；写好的提示词同时存为 `prompts/<任务 id>.md`。
+- **交付包按 `docs/submission.md` 的格式。**缺文件、缺结束标记，一律打回。
+- **审核结果写进 issue 评论**：轮次、实现者、通过还是打回、问题列表。打回时附上修改提示词。打回两轮还不过，就重写提示词。
+- **用标签维护 issue 状态**：`待派发`、`待审核`、`打回`、`待试玩`；合入后关闭 issue。
+- **整合**：按改动类型开 `kp/`、`arch/`、`feat/`、`fix/`、`chore/` 分支。提交末尾署名 `Implemented-By:`、`Reviewed-By: Claude`、`Refs: #<issue 号>`。开 PR，CI 绿勾后用 squash 合入。知识点要等 Luka 反馈孩子试玩结果之后才能合入。
+- **不直接推 `main`**；不合入 CI 没通过的 PR。
+- **自己写的架构改动不自己审**：附一份审阅提示词，请 Luka 交给另一个模型审阅。
+- **实现 AI 的规格疑问**由你回答。不要为了让交付通过而放宽规格或测试。
 
 ## 知识点工作流
 
-每个知识点都按 `docs/workflow.md` 的八步走：一个知识点一个 PR，分支名 `kp/<知识点 id>`，PR 描述使用 `.github/pull_request_template.md`。概括如下：
-
-1. Claude 写知识点卡和提示词（`prompts/<活动 id>.md`）。
-2. 实现模型交付 `manifest.yaml` 和 `index.html`。
-3. 自动校验通过之后，Claude 审核。
-4. 孩子试玩，Luka 写试玩记录并合入。
+每个知识点都按 `docs/workflow.md` 走：一个知识点一个 issue、一个 PR，分支名 `kp/<知识点 id>`。知识点卡由 Claude 自己写；活动由实现 AI 做，走上面的协作流程。
