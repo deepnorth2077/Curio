@@ -162,6 +162,19 @@ class ContentSchemaTests(unittest.TestCase):
                 self.assertIn(case["schema"], self.validators)
                 self.assertEqual(len(case["patch"]), 1, "每个反向样例只改一处")
 
+    def test_explain_style_tutor_and_plain_are_valid(self):
+        base = load_document(FIXTURES / "content" / "activities" / "act.explain.fraction-intro-01" / "activity.yaml")
+        for style in ("plain", "tutor"):
+            with self.subTest(style=style):
+                doc = copy.deepcopy(base)
+                doc["body"]["style"] = style
+                self.assert_valid("activity-def", doc)
+
+    def test_explain_style_unknown_is_rejected(self):
+        doc = load_document(FIXTURES / "content" / "activities" / "act.explain.fraction-intro-01" / "activity.yaml")
+        doc["body"]["style"] = "comic"
+        self.assertFalse(self.validators["activity-def"].is_valid(doc))
+
     def test_quiz_covers_every_misconception_and_answer_type(self):
         node = load_document(
             FIXTURES

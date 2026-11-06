@@ -1,0 +1,49 @@
+id: biology.genetics.chromosome-intro
+schema: knode/1
+title: 染色体：把说明书卷好收起来
+subjects: [biology]
+theme: life
+grade: G8
+unit: 八下 · 第六单元 生命的延续和发展 · 第二章 生物的遗传与变异
+curriculum:
+  - textbook: 人教版初中生物学八年级下册（2024 年版）
+    unit: 第六单元 生命的延续和发展 · 第二章 生物的遗传与变异 · 第二节 基因在亲子代间的传递、第四节 人的性别决定
+prerequisites: [biology.genetics.dna-intro]
+related: []
+driving_question: 这么长的说明书，小小的细胞是怎么装下的？
+objectives:
+  - 知道 DNA 缠在蛋白质上，再折叠起来，就成了染色体。
+  - 知道人的体细胞里一般有 46 条染色体，两两配成 23 对。
+  - 知道每一对染色体里，一条来自爸爸，一条来自妈妈；说明书就在染色体上，所以孩子的说明书一半来自爸爸、一半来自妈妈。
+  - 知道第 23 对是性染色体：女孩一般是 XX，两条 X 一条来自爸爸、一条来自妈妈；男孩一般是 XY，X 来自妈妈，Y 来自爸爸。
+  - 知道不同的生物，染色体的数目不一样，和个子大小、聪不聪明都没有关系。
+misconceptions:
+  - id: bigger-more
+    text: 动物越大，染色体就越多。
+  - id: more-is-smarter
+    text: 染色体越多，这种生物就越聪明、越厉害。
+  - id: chromosome-is-gene
+    text: 染色体就是基因。
+  - id: from-one-parent
+    text: 孩子的染色体全部来自妈妈（或者全部来自爸爸）。
+  - id: y-from-mother
+    text: 男孩的 Y 染色体来自妈妈。
+  - id: same-in-boys-girls
+    text: 男孩和女孩的染色体完全一样。
+sources:
+  - type: textbook
+    ref: 人教版初中生物学八年级下册（2024 年版）第六单元「生命的延续和发展」第二章「生物的遗传与变异」第二节「基因在亲子代间的传递」、第四节「人的性别决定」
+  - type: reference
+    ref: 美国国家人类基因组研究所（NHGRI）染色体知识页
+    url: https://www.genome.gov/about-genomics/fact-sheets/Chromosomes-Fact-Sheet
+  - type: curriculum
+    ref: 《义务教育生物学课程标准（2022 年版）》「遗传与进化」
+lenses:
+  - band: G3-4
+    approach: 把很长的毛线一圈圈绕在小线轴上、再收成线团，类比 DNA 缠在蛋白质上、折叠成染色体；说明书就写在染色体上，46 条配成 23 对，每对一条来自爸爸、一条来自妈妈，所以孩子的说明书一半抄自爸爸、一半抄自妈妈，长得既像爸爸又像妈妈；男孩的 X 来自妈妈、Y 来自爸爸；用狗（78 条）和人（46 条）的对比，说明染色体数目和个子大小、聪不聪明都没有关系。
+  - band: G7-8
+    approach: 认识染色体由 DNA 和蛋白质组成，基因是有遗传效应的 DNA 片段；体细胞中染色体和基因成对存在，生殖细胞中成单存在，所以子代的基因一半来自父方、一半来自母方；认识人的性别决定。
+activities: []
+status: draft
+version: 1
+# END OF FILE
