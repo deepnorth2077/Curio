@@ -1,5 +1,5 @@
 """tools/intake.py 的正反测试。运行：python -m unittest discover -s tools/tests"""
-import hashlib, subprocess, sys, tempfile, unittest
+import hashlib, os, subprocess, sys, tempfile, unittest
 from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent.parent
@@ -114,6 +114,57 @@ class TestIntake(unittest.TestCase):
     def test_missing_metadata(self):
         s1, s2 = full_package()
         self.assertProblem(intake.intake([s1.replace("实现者: 测试模型\n", ""), s2]), "缺少「实现者:」")
+
+    def test_unsafe_paths_rejected(self):
+        for bad in ["C:/x/a.yaml", "c:a.yaml", "//server/share/a.yaml", "a\\b.yaml", "content\\activities/a.yaml",
+                    "a/./b.yaml", "a//b.yaml", "a/b/", "", ".", "a/../b.yaml", "a/b c.yaml"]:
+            self.assertFalse(intake.safe_path(bad), bad)
+        for good in [MF, HTML, "prompts/act.quiz.x.md"]:
+            self.assertTrue(intake.safe_path(good), good)
+
+    def test_windows_drive_path_in_list_fails(self):
+        s1 = seg(1, 1, block("C:/Windows/evil.yaml", YAML_BODY), first=True, last=True).replace(f"- {MF}\n- {HTML}\n- {JS}", "- C:/Windows/evil.yaml")
+        self.assertProblem(intake.intake([s1]), "不安全的路径")
+
+    def test_symlink_escape_blocked_on_write(self):
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as outside:
+            os.symlink(outside, Path(root) / "content")
+            r = intake.intake(list(full_package()))
+            self.assertEqual(r.errors, [])
+            with self.assertRaises(ValueError):
+                intake.write_files(r, root)
+            self.assertEqual(list(Path(outside).rglob("*")), [], "不应写出任何文件")
+
+    def test_zero_segments_is_an_error_not_a_crash(self):
+        bad = "=== CURIO 交付包 · 第 0/0 段 ===\nissue: #1\n=== 第 0/0 段完 ===\n"
+        self.assertProblem(intake.intake([bad]), "至少是 1")
+
+    def test_segment_number_out_of_range(self):
+        s1, s2 = full_package()
+        s3 = s2.replace("第 2/2 段", "第 3/2 段")
+        self.assertProblem(intake.intake([s1, s3]), "超出范围")
+
+    def test_tail_total_mismatch(self):
+        s1, s2 = full_package()
+        self.assertProblem(intake.intake([s1, s2.replace("=== 第 2/2 段完 ===", "=== 第 2/3 段完 ===")]), "不一致")
+
+    def test_all_metadata_required(self):
+        s1, s2 = full_package()
+        for line in ["基于提交: abc1234\n", "提示词版本: v1\n"]:
+            self.assertProblem(intake.intake([s1.replace(line, ""), s2]), "第 1 段缺少")
+
+    def test_metadata_formats(self):
+        s1, s2 = full_package()
+        for old, new, key in [("轮次: 1", "轮次: 0", "轮次"), ("轮次: 1", "轮次: 一", "轮次"),
+                              ("基于提交: abc1234", "基于提交: main", "基于提交"), ("提示词版本: v1", "提示词版本: 1", "提示词版本"),
+                              ("issue: #12", "issue: 12", "issue")]:
+            self.assertProblem(intake.intake([s1.replace(old, new), s2]), f"「{key}:")
+
+    def test_expected_commit_and_task(self):
+        s1, s2 = full_package()
+        self.assertEqual(intake.intake([s1, s2], expect={"基于提交": "abc1234def", "任务": A, "issue": "#12", "提示词版本": "v1"}).errors, [])
+        self.assertProblem(intake.intake([s1, s2], expect={"基于提交": "fff0000"}), "任务文件要求是 fff0000")
+        self.assertProblem(intake.intake([s1, s2], expect={"任务": "act.quiz.other"}), "任务文件要求是 act.quiz.other")
 
     def test_cli_write(self):
         with tempfile.TemporaryDirectory() as d:

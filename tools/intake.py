@@ -4,12 +4,14 @@
 用法：
   python tools/intake.py 交付包.md [附件 ...]              # 只检查，打印收货报告
   python tools/intake.py 交付包.md [附件 ...] --write 目录   # 检查通过后，把文件写进目录
+  可选：--expect-issue '#12' --expect-task act.x --expect-commit abc1234 --expect-version v1
+        和任务文件里的期望值对照，对不上就不通过
 
 交付包可以分成几段，几段可以放进同一个文件，也可以分别存成文件，顺序不限。
 附件的文件名必须是完整路径，把「/」换成「__」，例如 content__activities__act.x__index.html。
 """
 import hashlib, json, re, sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 END_MARKERS = {
     ".yaml": "# END OF FILE", ".yml": "# END OF FILE", ".py": "# END OF FILE",
@@ -22,6 +24,15 @@ SEG_TAIL = re.compile(r"^=== 第 (\d+)/(\d+) 段完 ===\s*$", re.M)
 FILE_HEAD = re.compile(r"^### FILE: (\S+)\s*$", re.M)
 FENCE = re.compile(r"^(`{3,})[^\n`]*\n(.*?)^\1\s*$", re.M | re.S)
 META_KEYS = ["issue", "任务", "实现者", "提示词版本", "基于提交", "轮次"]
+META_FORMATS = {
+    "issue": (r"#\d+", "#12"),
+    "任务": (r"[a-z][a-z0-9-]*(\.[a-z0-9-]+)+", "act.quiz.fraction-intro-01"),
+    "实现者": (r".+", "模型名"),
+    "提示词版本": (r"v[1-9]\d*", "v1"),
+    "基于提交": (r"[0-9a-f]{7,40}", "7 到 40 位的提交号"),
+    "轮次": (r"[1-9]\d*", "正整数"),
+}
+PATH_SEGMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 class Report:
@@ -62,11 +73,16 @@ def check_content(path, text, r):
 
 
 def safe_path(p):
-    return not (p.startswith("/") or ".." in Path(p).parts or "\\" in p)
+    """仓库内的相对路径：正斜杠分隔，每一段只含字母、数字、点、下划线、连字符，不能是 . 或 ..。
+    这样同时排除了绝对路径、Windows 盘符（C:）、UNC（//server）、反斜杠和写法不规范的路径。"""
+    if not p or p != PurePosixPath(p).as_posix() or p.startswith("/"):
+        return False
+    return all(seg not in (".", "..") and PATH_SEGMENT.match(seg) for seg in p.split("/"))
 
 
-def intake(package_texts, attachments=()):
-    """package_texts：交付包各段的文本（可以一个文本里含多段）；attachments：[(文件名, bytes)]。"""
+def intake(package_texts, attachments=(), expect=None):
+    """package_texts：交付包各段的文本（可以一个文本里含多段）；attachments：[(文件名, bytes)]；
+    expect：任务文件里的期望值，例如 {"基于提交": "abc1234"}，对不上就不通过。"""
     r = Report()
     text = "\n".join(package_texts)
 
@@ -80,6 +96,13 @@ def intake(package_texts, attachments=()):
         r.err(f"各段写的总段数不一致：{sorted(totals)}")
         return r
     n = totals.pop()
+    if n < 1:
+        r.err(f"总段数必须至少是 1，现在是 {n}")
+        return r
+    bad = sorted({k for _, k, _ in heads if not 1 <= k <= n})
+    if bad:
+        r.err(f"段号超出范围（应在 1 到 {n} 之间）：{bad}")
+        return r
     seen = {}
     segments = {}
     for i, (start, k, _) in enumerate(heads):
@@ -92,6 +115,8 @@ def intake(package_texts, attachments=()):
         tail = SEG_TAIL.search(body)
         if not tail or int(tail.group(1)) != k:
             r.err(f"第 {k} 段没有以「=== 第 {k}/{n} 段完 ===」结束，这一段可能被截断")
+        elif int(tail.group(2)) != n:
+            r.err(f"第 {k} 段的段尾写的总段数是 {tail.group(2)}，和段头的 {n} 不一致")
         segments[k] = body
     for k in range(1, n + 1):
         if k not in segments:
@@ -106,9 +131,20 @@ def intake(package_texts, attachments=()):
         m = re.search(rf"^{re.escape(key)}:\s*(.+?)\s*$", first, re.M)
         if m:
             r.meta[key] = m.group(1)
-    for key in ("issue", "任务", "实现者", "轮次"):
+    for key in META_KEYS:
         if key not in r.meta:
             r.err(f"第 1 段缺少「{key}:」")
+            continue
+        pattern, example = META_FORMATS[key]
+        if not re.fullmatch(pattern, r.meta[key]):
+            r.err(f"「{key}: {r.meta[key]}」格式不对，应该像「{example}」")
+    for key, want in (expect or {}).items():
+        got = r.meta.get(key)
+        if got is None:
+            continue
+        same = (got.startswith(want) or want.startswith(got)) if key == "基于提交" else got == want
+        if not same:
+            r.err(f"「{key}」是 {got}，但任务文件要求是 {want}。交付可能基于旧的或别的任务")
 
     # ---- 清单 ----
     m = re.search(r"^## 文件清单\s*\n(.*?)(?=^## |\Z)", first, re.M | re.S)
@@ -200,15 +236,32 @@ def render(r):
     return "\n".join(out)
 
 
+def write_files(r, write_to):
+    """把校验过的文件写进 write_to。写之前再确认目标在 write_to 之内（防止符号链接等把文件引到外面）。"""
+    root = Path(write_to).resolve()
+    plans = []
+    for f in r.files:
+        dest = (root / f["path"]).resolve()
+        if not dest.is_relative_to(root):
+            raise ValueError(f"{f['path']} 会写到 {root} 之外，已停止，一个文件都没写")
+        plans.append((dest, r.blobs[f["path"]]))
+    for dest, data in plans:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(data)
+    return len(plans)
+
+
 def main(argv):
-    write_to = None
-    if "--write" in argv:
-        i = argv.index("--write")
-        write_to = Path(argv[i + 1])
-        argv = argv[:i] + argv[i + 2:]
+    opts = {}
+    for flag in ("--write", "--expect-issue", "--expect-task", "--expect-commit", "--expect-version"):
+        if flag in argv:
+            i = argv.index(flag)
+            opts[flag] = argv[i + 1]
+            argv = argv[:i] + argv[i + 2:]
     if not argv:
         print(__doc__)
         return 2
+    expect = {k: opts[f] for f, k in (("--expect-issue", "issue"), ("--expect-task", "任务"), ("--expect-commit", "基于提交"), ("--expect-version", "提示词版本")) if f in opts}
     pkgs, atts = [], []
     for a in argv:
         p = Path(a)
@@ -217,16 +270,17 @@ def main(argv):
             pkgs.append(data.decode("utf-8"))
         else:
             atts.append((p.name, data))
-    r = intake(pkgs, atts)
+    r = intake(pkgs, atts, expect)
     print(render(r))
     if r.errors:
         return 1
-    if write_to:
-        for f in r.files:
-            dest = write_to / f["path"]
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_bytes(r.blobs[f["path"]])
-        print(f"已写入 {len(r.files)} 个文件到 {write_to}")
+    if "--write" in opts:
+        try:
+            n = write_files(r, opts["--write"])
+        except ValueError as e:
+            print(f"写入失败：{e}")
+            return 1
+        print(f"已写入 {n} 个文件到 {opts['--write']}")
     return 0
 
 

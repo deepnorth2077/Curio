@@ -193,6 +193,27 @@ class TestKnowledgePointBranch(Base):
         self.fails(self.r.check(), "不能改这个文件")
 
 
+class TestSharedActivity(Base):
+    def setUp(self):
+        super().setUp()
+        self.r.write(f"{NODE_DIR}/{N1}.yaml", node(N1, activities=["act.quiz.shared"]))
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=["act.quiz.shared"]))
+        self.r.write("content/activities/act.quiz.shared/manifest.yaml", activity("act.quiz.shared", [N1, N2]))
+        self.add_html("act.quiz.shared"); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.add_html("act.quiz.shared", body="<p>改过的共享活动</p>"); self.r.commit()
+
+    def test_kp_branch_may_not_change_shared_activity(self):
+        res = self.r.check()
+        self.fails(res, "共享活动")
+        self.assertTrue(any(N1 in m for _, m in res.errors), "错误信息应列出受影响的其他知识点")
+
+    def test_shared_activity_with_override_lists_affected_nodes(self):
+        res = self.r.check(labels={"越界-已批准"})
+        self.ok(res)
+        self.assertTrue(any("共享活动改动" in m and N1 in m and N2 in m for _, m in res.warnings))
+
+
 class TestReferences(Base):
     def setUp(self):
         super().setUp(); self.r.baseline(); self.r.branch("arch/refs")
@@ -259,6 +280,18 @@ class TestIdsCopyTrailers(Base):
         self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.baseline()
         self.r.branch("arch/rename"); self.r.write(f"{NODE_DIR}/{N2}.yaml", node("math.number.fraction-renamed")); self.r.commit()
         self.fails(self.r.check(), "ID 永不改动")
+
+    def test_quoting_id_is_not_a_change(self):
+        quoted = node(N2).replace(f"id: {N2}", f'id: "{N2}"')
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.baseline()
+        self.r.branch("arch/quote"); self.r.write(f"{NODE_DIR}/{N2}.yaml", quoted); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_unquoting_id_is_not_a_change(self):
+        quoted = node(N2).replace(f"id: {N2}", f"id: '{N2}'")
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", quoted); self.r.baseline()
+        self.r.branch("arch/unquote"); self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.commit()
+        self.ok(self.r.check())
 
     def test_deleting_node_fails(self):
         self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.baseline()

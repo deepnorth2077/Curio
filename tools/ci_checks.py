@@ -93,23 +93,34 @@ def run(repo, base="origin/main", branch="", labels=()):
             if not exists and not in_base:
                 r.err(f"分支名里的知识点「{node_id}」不存在。知识点分支一律叫 kp/<知识点 id>，改版也用同一个名字")
         for p in changed:
+            shared = None
             if prefix == "kp/":
                 ok = (p.startswith("content/") or fnmatch.fnmatch(p, "prompts/act.*.md")) and not match(p, PROTECTED)
+                targets = None
                 if ok and p.startswith("content/nodes/"):
                     ok = Path(p).stem == node_id
                 elif ok and p.startswith("content/activities/"):
                     parts = Path(p).parts
                     targets = manifest_targets("/".join(parts[:3])) if len(parts) >= 3 else None
-                    ok = isinstance(targets, list) and node_id in targets
                 elif ok and p.startswith("content/"):
                     ok = False
                 elif ok and p.startswith("prompts/"):
-                    act_id = Path(p).stem
-                    targets = manifest_targets(f"content/activities/{act_id}")
-                    ok = isinstance(targets, list) and node_id in targets
+                    targets = manifest_targets(f"content/activities/{Path(p).stem}")
+                if ok and (p.startswith("content/activities/") or p.startswith("prompts/")):
+                    # kp/ 分支只能改「只针对这一个知识点」的活动；共享活动会影响别的知识点，要单独开 PR
+                    ok = isinstance(targets, list) and targets == [node_id]
+                    if isinstance(targets, list) and node_id in targets and len(targets) > 1:
+                        shared = targets
             else:
                 ok = not match(p, PROTECTED) and not p.startswith("content/")
-            if not ok:
+            if not ok and shared:
+                msg = (f"这是共享活动，同时影响 {'、'.join(shared)}。kp/ 分支只能改只针对 {node_id} 的活动；"
+                       f"共享活动要单独开 PR，覆盖所有受影响知识点的审核和试玩，并在征得 Luka 同意后加「{OVERRIDE_LABEL}」标签")
+                if override:
+                    r.warn(f"共享活动改动（已由「{OVERRIDE_LABEL}」标签放行），受影响的知识点：{'、'.join(shared)}", p)
+                else:
+                    r.err(msg, p)
+            elif not ok:
                 if override:
                     r.warn(f"越界改动（已由「{OVERRIDE_LABEL}」标签放行）：{p}", p)
                 else:
@@ -230,11 +241,16 @@ def run(repo, base="origin/main", branch="", labels=()):
             r.warn(msg + "（已放行）", src) if override else r.err(msg, src)
             continue
         if st == "M":
-            old_text = base_text(src) or ""
-            m_old = re.search(r"^id:\s*(\S+)", old_text, re.M)
-            m_new = re.search(r"^id:\s*(\S+)", (repo / p).read_text(encoding="utf-8"), re.M)
-            if m_old and m_new and m_old.group(1) != m_new.group(1):
-                r.err(f"id 从 {m_old.group(1)} 改成了 {m_new.group(1)}。ID 永不改动", p)
+            def yaml_id(text):
+                try:
+                    d = load_yaml_text(text or "")
+                except Exception:
+                    return None
+                return d.get("id") if isinstance(d, dict) else None
+            old_id = yaml_id(base_text(src))
+            new_id = yaml_id((repo / p).read_text(encoding="utf-8"))
+            if old_id is not None and old_id != new_id:
+                r.err(f"id 从 {old_id} 改成了 {new_id}。ID 永不改动", p)
 
     # ---------- 4. 文案检查 ----------
     for nid, (f, d) in nodes.items():
