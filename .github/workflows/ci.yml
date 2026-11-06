@@ -1,0 +1,34 @@
+# PR 检查：先跑检查脚本自己的测试，再检查这个 PR。工作流见 docs/collaboration.md。
+# 在分支保护里把「检查」设为必须通过。
+name: PR 检查
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: 检查
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet -r tools/requirements.txt
+      - name: 检查脚本自测
+        run: |
+          git config --global user.email ci@example.com
+          git config --global user.name ci
+          python -m unittest discover -s tools/tests -v
+      - name: 检查这个 PR
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: python tools/ci_checks.py

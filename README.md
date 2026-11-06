@@ -18,10 +18,15 @@
 | 路径 | 内容 |
 | --- | --- |
 | `docs/architecture.md` | 总体架构设计：原则、决策记录（D1–D25）、分层架构、数据模型、模块契约、AI 能力层、路线图 |
+| `docs/collaboration.md` | 协作工作流：Claude 维护仓库，其他 AI 按提示词实现，Luka 传话 |
+| `docs/submission.md` | 实现 AI 的交付包格式 |
+| `tools/ci_checks.py` | PR 自动检查（地盘、规格、引用、发布门禁、ID、文案、署名） |
+| `tools/intake.py` | 收货：解析实现 AI 的交付包，检查完整性，算哈希 |
+| `tools/tests/` | 上面两个脚本的正反测试 |
 | `docs/workflow.md` | 每个知识点从选点到上线的八步工作流、完成标准和每周节奏 |
 | `docs/activity-contract.md` | 互动模块与平台之间的消息协议 `activity/1.1`，附实现样例 |
 | `schemas/` | 三份 JSON Schema：知识点 `knode/1`、互动模块 `activity/1.1`、学习事件 `event/1` |
-| `prompts/module-template.md` | 派发子模块时用的提示词模板 |
+| `prompts/` | 提示词模板（`task-template.md`、`module-template.md`），以及每个任务实际用过的提示词 |
 | `prototype/index.html` | 前端原型 v0.3（单文件） |
 | `AGENTS.md` | 给接手这个仓库的任何 AI 模型看的工作规则 |
 
@@ -35,6 +40,8 @@
 
 ## 分工
 
-- **Luka**：产品负责人，负责部署和验收。
-- **Claude**：架构师和总设计师，负责底层框架、数据规格，以及所有子模块的提示词。
-- **其他模型**：按 `prompts/` 里的提示词和 `docs/activity-contract.md` 实现子模块。
+- **Luka**：产品负责人。在 Claude 和实现 AI 之间传话，组织孩子试玩，拍板。
+- **Claude**：架构师、总设计师，也是唯一的仓库维护者。写 issue 和提示词，审核交付物，整合、提交、合入。
+- **其他模型**：只做实现，不碰仓库。按 issue 里的提示词做，按 `docs/submission.md` 的格式交付。
+
+想提想法或反馈问题，用 Issues 里的「想法或问题」模板，Claude 会把它整理成任务。
