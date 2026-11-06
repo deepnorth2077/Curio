@@ -175,8 +175,13 @@ function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${S
 function hint(s){ $("hint").textContent = s || ""; }
 function readout(html){ $("readout").innerHTML = html || ""; }
 function say(text, tone){ const b = $("say"); b.textContent = text; b.className = "bubble" + (tone ? " " + tone : ""); }
+// 手指还按着时换出来的新按钮，先禁用到手指抬起，免得松手时误点（按住类操作刚完成时最常见）
+let fingerDown = false;
+addEventListener("pointerdown", () => { fingerDown = true; }, true);
+for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);   // 抬起时立刻记下：随后的 click 里换出的按钮不必禁用
 function actions(list){
   const box = $("actions"); box.replaceChildren();
+  const guard = fingerDown;
   for (const a of list || []){
     const b = document.createElement("button");
     b.type = "button"; b.className = "btn " + (a.cls || ""); b.textContent = a.label;
@@ -186,7 +191,10 @@ function actions(list){
       for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => on(false));
       b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); a.step(); } });
       b.addEventListener("contextmenu", e => e.preventDefault());
-    } else b.addEventListener("click", a.go);
+    } else {
+      b.addEventListener("click", a.go);
+      if (guard){ b.disabled = true; const on = () => { setTimeout(() => { b.disabled = false; }, 120); removeEventListener("pointerup", on, true); }; addEventListener("pointerup", on, true); }
+    }
     box.append(b);
   }
   return box;
