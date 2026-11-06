@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deepnorth2077/curio/schemas/reward-entry.schema.json",
+  "title": "reward-entry/1 · 奖励流水",
+  "description": "奖励账本的一条投影记录（规格第 7.2 节），由事件算出，不手写。amount 的正负号跟 kind 走：earn 正、spend 负、revoke 负、adjust 非零；只有 revoke 才有 target_entry_id，而且 revoke 必须有。",
+  "type": "object",
+  "required": [
+    "entry_id",
+    "learner_id",
+    "currency",
+    "kind",
+    "amount",
+    "cause_key",
+    "cause_event_id",
+    "rule_id",
+    "rule_version"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "entry_id": { "type": "string", "pattern": "^rwd_[0-9a-f]{32}$" },
+    "learner_id": {
+      "type": "string",
+      "pattern": "^lrn_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+    },
+    "currency": { "enum": ["energy", "supply"] },
+    "kind": { "enum": ["earn", "spend", "adjust", "revoke"] },
+    "amount": { "type": "integer" },
+    "cause_key": { "type": "string", "minLength": 1 },
+    "cause_event_id": {
+      "type": "string",
+      "pattern": "^evt_[0-7][0-9A-HJKMNP-TV-Z]{25}$"
+    },
+    "rule_id": { "type": "string", "minLength": 1 },
+    "rule_version": { "type": "integer", "minimum": 1 },
+    "target_entry_id": { "type": "string", "pattern": "^rwd_[0-9a-f]{32}$" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "earn" } } },
+      "then": {
+        "properties": { "amount": { "exclusiveMinimum": 0 } },
+        "not": { "required": ["target_entry_id"] }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "spend" } } },
+      "then": {
+        "properties": { "amount": { "exclusiveMaximum": 0 } },
+        "not": { "required": ["target_entry_id"] }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "adjust" } } },
+      "then": {
+        "properties": { "amount": { "not": { "const": 0 } } },
+        "not": { "required": ["target_entry_id"] }
+      }
+    },
+    {
+      "if": { "properties": { "kind": { "const": "revoke" } } },
+      "then": {
+        "properties": { "amount": { "exclusiveMaximum": 0 } },
+        "required": ["target_entry_id"]
+      }
+    }
+  ]
+}

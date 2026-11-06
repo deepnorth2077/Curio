@@ -1,0 +1,1017 @@
+[
+  {
+    "name": "attempt.started-mode-enum",
+    "why": "mode 只能是 first、retry、review",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/mode",
+        "value": "again"
+      }
+    ]
+  },
+  {
+    "name": "attempt.completed-duration-negative",
+    "why": "duration_ms 必须是非负整数",
+    "base": "events.json#attempt.completed",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/duration_ms",
+        "value": -1
+      }
+    ]
+  },
+  {
+    "name": "attempt.abandoned-reason-enum",
+    "why": "reason 只能是 left、timeout、error",
+    "base": "events.json#attempt.abandoned",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/reason",
+        "value": "bored"
+      }
+    ]
+  },
+  {
+    "name": "poe.predicted-empty-payload",
+    "why": "choice 和 text_id 至少要有一个",
+    "base": "events.json#poe.predicted",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/choice"
+      }
+    ]
+  },
+  {
+    "name": "poe.predicted-choice-too-long",
+    "why": "choice 是最多 32 个字符的短作答",
+    "base": "events.json#poe.predicted",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/choice",
+        "value": "水可能会浮在水面上因为木头比水轻得多所以浮力比重量大很多很多很多很多"
+      }
+    ]
+  },
+  {
+    "name": "poe.explained-text-id-format",
+    "why": "text_id 必须是 txt_<ULID>，文字内容不进事件",
+    "base": "events.json#poe.explained",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/text_id",
+        "value": "因为木头比水轻"
+      }
+    ]
+  },
+  {
+    "name": "sim.adjusted-value-too-long",
+    "why": "value 是字符串时最多 32 个字符",
+    "base": "events.json#sim.adjusted",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/value",
+        "value": "一直加一直加一直加一直加一直加一直加一直加一直加一直加一直加一直加一直加"
+      }
+    ]
+  },
+  {
+    "name": "sim.observed-missing-observable",
+    "why": "observable 必填",
+    "base": "events.json#sim.observed",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/observable"
+      }
+    ]
+  },
+  {
+    "name": "item.answered-try-zero",
+    "why": "try 从 1 开始",
+    "base": "events.json#item.answered",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/try",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "name": "hint.used-level-range",
+    "why": "level 是 1～3",
+    "base": "events.json#hint.used",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/level",
+        "value": 4
+      }
+    ]
+  },
+  {
+    "name": "reflection.written-text-id-format",
+    "why": "text_id 必须是 txt_<ULID>",
+    "base": "events.json#reflection.written",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/text_id",
+        "value": "reflection-2026-11-06"
+      }
+    ]
+  },
+  {
+    "name": "question.asked-question-id-format",
+    "why": "question_id 必须是 q_<ULID>",
+    "base": "events.json#question.asked",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/question_id",
+        "value": "moon-question"
+      }
+    ]
+  },
+  {
+    "name": "question.answered-missing-text-id",
+    "why": "text_id 必填",
+    "base": "events.json#question.answered",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/text_id"
+      }
+    ]
+  },
+  {
+    "name": "repair.opened-item-missing-item-id",
+    "why": "source 为 item 时必须有 item_id",
+    "base": "events.json#repair.opened-item",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/item_id"
+      }
+    ]
+  },
+  {
+    "name": "repair.opened-photo-missing-attachment",
+    "why": "source 为 photo 时必须有 attachment_id",
+    "base": "events.json#repair.opened-photo",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/attachment_id"
+      }
+    ]
+  },
+  {
+    "name": "repair.opened-photo-with-attempt-id",
+    "why": "source 为 photo 时不能带 attempt_id",
+    "base": "events.json#repair.opened-photo",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/attempt_id",
+        "value": "att_0000000000000000000000001W"
+      }
+    ]
+  },
+  {
+    "name": "repair.linked-missing-node-id",
+    "why": "node_id 必填",
+    "base": "events.json#repair.linked",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/node_id"
+      }
+    ]
+  },
+  {
+    "name": "repair.practiced-correct-type",
+    "why": "correct 是布尔值",
+    "base": "events.json#repair.practiced",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/correct",
+        "value": "对"
+      }
+    ]
+  },
+  {
+    "name": "repair.resolved-reason-enum",
+    "why": "reason 只能是 fixed、caregiver",
+    "base": "events.json#repair.resolved",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/reason",
+        "value": "done"
+      }
+    ]
+  },
+  {
+    "name": "plan.created-plan-date-format",
+    "why": "plan_date 是 YYYY-MM-DD",
+    "base": "events.json#plan.created",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/plan_date",
+        "value": "2026年11月6日"
+      }
+    ]
+  },
+  {
+    "name": "plan.task-done-via-enum",
+    "why": "via 只能是 manual、auto",
+    "base": "events.json#plan.task_done",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/via",
+        "value": "voice"
+      }
+    ]
+  },
+  {
+    "name": "plan.task-undone-missing-ref",
+    "why": "ref 必填",
+    "base": "events.json#plan.task_undone",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/ref"
+      }
+    ]
+  },
+  {
+    "name": "reward.goal-set-target-zero",
+    "why": "target 是正整数",
+    "base": "events.json#reward.goal_set",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/target",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "name": "reward.redeem-requested-goal-event-format",
+    "why": "goal_event_id 必须是 evt_<ULID>",
+    "base": "events.json#reward.redeem_requested",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/goal_event_id",
+        "value": "goal-1"
+      }
+    ]
+  },
+  {
+    "name": "reward.spent-extra-amount",
+    "why": "reward.spent 的 payload 只有 request_event_id",
+    "base": "events.json#reward.spent",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/payload/amount",
+        "value": 10
+      }
+    ]
+  },
+  {
+    "name": "reward.adjusted-amount-zero",
+    "why": "amount 是非零整数",
+    "base": "events.json#reward.adjusted",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/amount",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "name": "reward.revoked-reason-enum",
+    "why": "reason 只能是 mistake、clock、other",
+    "base": "events.json#reward.revoked",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/reason",
+        "value": "oops"
+      }
+    ]
+  },
+  {
+    "name": "import.voided-reason-enum",
+    "why": "reason 只能是 wrong_learner、duplicate、bad_data、other",
+    "base": "events.json#import.voided",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/reason",
+        "value": "misclick"
+      }
+    ]
+  },
+  {
+    "name": "attachment.erased-attachment-format",
+    "why": "attachment_id 是 blob_ 加 64 位小写十六进制",
+    "base": "events.json#attachment.erased",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/attachment_id",
+        "value": "photo-001.jpg"
+      }
+    ]
+  },
+  {
+    "name": "text.erased-reason-enum",
+    "why": "reason 只能是 requested、mistake、other、orphan、lost",
+    "base": "events.json#text.erased",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/reason",
+        "value": "cleanup"
+      }
+    ]
+  },
+  {
+    "name": "envelope-missing-event-id",
+    "why": "event_id 必填",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/event_id"
+      }
+    ]
+  },
+  {
+    "name": "envelope-missing-device-seq",
+    "why": "device_seq 必填",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/device_seq"
+      }
+    ]
+  },
+  {
+    "name": "envelope-missing-occurred-at",
+    "why": "occurred_at 必填",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/occurred_at"
+      }
+    ]
+  },
+  {
+    "name": "envelope-missing-actor",
+    "why": "actor 必填",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/actor"
+      }
+    ]
+  },
+  {
+    "name": "envelope-missing-payload",
+    "why": "payload 必填",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload"
+      }
+    ]
+  },
+  {
+    "name": "envelope-extra-recorded-at",
+    "why": "信封只放规格表里的字段，收据信息另存",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/recorded_at",
+        "value": "2026-11-06T08:30:13.000Z"
+      }
+    ]
+  },
+  {
+    "name": "envelope-extra-field",
+    "why": "信封不接受多余字段",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/note",
+        "value": "随便加的"
+      }
+    ]
+  },
+  {
+    "name": "envelope-schema-v1",
+    "why": "schema 固定为 event/2",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/schema",
+        "value": "event/1"
+      }
+    ]
+  },
+  {
+    "name": "ulid-letter-i",
+    "why": "Crockford Base32 不含字母 I",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/event_id",
+        "value": "evt_01JC4Z8M7X2Q9W3E5R6T7Y8V9I"
+      }
+    ]
+  },
+  {
+    "name": "ulid-letter-l",
+    "why": "Crockford Base32 不含字母 L",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/learner_id",
+        "value": "lrn_01H8ZK6P3M9Q2W3E5R6T7Y8V9L"
+      }
+    ]
+  },
+  {
+    "name": "ulid-letter-o",
+    "why": "Crockford Base32 不含字母 O",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/device_id",
+        "value": "dev_01H8ZK6P3M9Q2W3E5R6T7Y8V9O"
+      }
+    ]
+  },
+  {
+    "name": "ulid-letter-u",
+    "why": "Crockford Base32 不含字母 U",
+    "base": "events.json#item.answered",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/attempt_id",
+        "value": "att_01JC5A2B4C6D8E0F2G4H6J8K0U"
+      }
+    ]
+  },
+  {
+    "name": "ulid-length-25",
+    "why": "ULID 是 26 个字符",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/event_id",
+        "value": "evt_01JC4Z8M7X2Q9W3E5R6T7Y8V9"
+      }
+    ]
+  },
+  {
+    "name": "ulid-first-char-8",
+    "why": "首字符是时间戳最高位，只能是 0～7",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/event_id",
+        "value": "evt_81JC4Z8M7X2Q9W3E5R6T7Y8V9K"
+      }
+    ]
+  },
+  {
+    "name": "device-seq-zero",
+    "why": "device_seq 是本设备内的递增正整数，从 1 开始",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/device_seq",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "name": "timestamp-no-millis",
+    "why": "必须是 UTC，毫数 3 位；没写毫秒不行",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/occurred_at",
+        "value": "2026-11-06T08:30:12Z"
+      }
+    ]
+  },
+  {
+    "name": "timestamp-2-digit-millis",
+    "why": "毫秒必须 3 位",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/occurred_at",
+        "value": "2026-11-06T08:30:12.34Z"
+      }
+    ]
+  },
+  {
+    "name": "timestamp-offset",
+    "why": "必须以 Z 结尾，不接受 +08:00",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/occurred_at",
+        "value": "2026-11-06T16:30:12.345+08:00"
+      }
+    ]
+  },
+  {
+    "name": "timestamp-month-13",
+    "why": "月份不存在",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/occurred_at",
+        "value": "2026-13-06T08:30:12.345Z"
+      }
+    ]
+  },
+  {
+    "name": "verb-unknown",
+    "why": "不认识的动词必须不通过",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/verb",
+        "value": "ai.called"
+      }
+    ]
+  },
+  {
+    "name": "attempt-verb-missing-attempt-id",
+    "why": "范围为「尝试」的动词缺 attempt_id",
+    "base": "events.json#item.answered",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/attempt_id"
+      }
+    ]
+  },
+  {
+    "name": "attempt-verb-missing-content",
+    "why": "范围为「尝试」的动词缺 content",
+    "base": "events.json#item.answered",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/content"
+      }
+    ]
+  },
+  {
+    "name": "no-scope-verb-with-content",
+    "why": "范围为「无」的动词带了 content",
+    "base": "events.json#plan.task_done",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/content",
+        "value": {
+          "node_id": "math.number.fraction-intro",
+          "activity_id": "act.quiz.fraction-intro-01",
+          "activity_kind": "quiz",
+          "activity_version": 1,
+          "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+        }
+      }
+    ]
+  },
+  {
+    "name": "no-scope-verb-with-attempt-id",
+    "why": "范围为「无」的动词带了 attempt_id",
+    "base": "events.json#plan.task_done",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/attempt_id",
+        "value": "att_0000000000000000000000001W"
+      }
+    ]
+  },
+  {
+    "name": "content-missing-release",
+    "why": "content 五个字段缺一不可",
+    "base": "events.json#item.answered",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/content/content_release"
+      }
+    ]
+  },
+  {
+    "name": "content-activity-kind-unknown",
+    "why": "activity_kind 只能是五种之一",
+    "base": "events.json#item.answered",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/content/activity_kind",
+        "value": "game"
+      }
+    ]
+  },
+  {
+    "name": "content-activity-id-format",
+    "why": "activity_id 是 act.<小写>.<小写数字连字符>",
+    "base": "events.json#item.answered",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/content/activity_id",
+        "value": "分数小测验一"
+      }
+    ]
+  },
+  {
+    "name": "content-node-id-format",
+    "why": "node_id 是小写点分形式",
+    "base": "events.json#item.answered",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/content/node_id",
+        "value": "数学/分数"
+      }
+    ]
+  },
+  {
+    "name": "actor-type-not-allowed",
+    "why": "reward.spent 只有 caregiver 能发",
+    "base": "events.json#reward.spent",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/actor/type",
+        "value": "learner"
+      }
+    ]
+  },
+  {
+    "name": "actor-id-prefix-mismatch",
+    "why": "actor.type 是 learner 时 id 必须是 lrn_ 前缀",
+    "base": "events.json#attempt.started",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/actor/id",
+        "value": "cg_02K9M4P7Q3R5T8V6WY0XCA1BDE"
+      }
+    ]
+  },
+  {
+    "name": "free-text-instead-of-text-id",
+    "why": "孩子写的文字不进事件，只能引用 text_id",
+    "base": "events.json#reflection.written",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/text_id"
+      },
+      {
+        "op": "add",
+        "path": "/payload/text",
+        "value": "我发现画图比硬算快多了"
+      }
+    ]
+  },
+  {
+    "name": "title-text-id-format",
+    "why": "title_text_id 必须是 txt_<ULID>",
+    "base": "events.json#reward.goal_set",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/title_text_id",
+        "value": "去天文馆"
+      }
+    ]
+  },
+  {
+    "name": "item-response-too-long",
+    "why": "response 最多 32 个字符",
+    "base": "events.json#item.answered-2",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/response",
+        "value": "我觉得应该是四分之三不过这道题的第二种情况好像也说得通所以我不太确定"
+      }
+    ]
+  },
+  {
+    "name": "repair-opened-photo-with-content",
+    "why": "photo 来源不能带 content",
+    "base": "events.json#repair.opened-photo",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/content",
+        "value": {
+          "node_id": "math.number.fraction-intro",
+          "activity_id": "act.quiz.fraction-intro-01",
+          "activity_kind": "quiz",
+          "activity_version": 1,
+          "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+        }
+      }
+    ]
+  },
+  {
+    "name": "repair-opened-item-missing-content",
+    "why": "item 来源必须带 content",
+    "base": "events.json#repair.opened-item",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/content"
+      }
+    ]
+  },
+  {
+    "name": "repair-opened-photo-misconception-no-node",
+    "why": "photo 来源带 misconception 时必须有 node_id",
+    "base": "events.json#repair.opened-photo-2",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/node_id"
+      }
+    ]
+  },
+  {
+    "name": "repair-opened-item-with-node-id",
+    "why": "item 来源的 payload 不能有 node_id",
+    "base": "events.json#repair.opened-item",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/payload/node_id",
+        "value": "math.number.fraction-intro"
+      }
+    ]
+  },
+  {
+    "name": "question-asked-attempt-without-content",
+    "why": "question.asked 带 attempt_id 时必须带 content",
+    "base": "events.json#question.asked",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/content"
+      }
+    ]
+  },
+  {
+    "name": "plan-created-tasks-empty",
+    "why": "tasks 至少一项，最多五项",
+    "base": "events.json#plan.created",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/tasks",
+        "value": []
+      }
+    ]
+  },
+  {
+    "name": "plan-created-custom-missing-title",
+    "why": "custom 任务必须有 title_text_id",
+    "base": "events.json#plan.created",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/tasks/2/title_text_id"
+      }
+    ]
+  },
+  {
+    "name": "plan-created-free-ref-not-free",
+    "why": "free 任务的 ref 只能是 free",
+    "base": "events.json#plan.created",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/tasks/1/ref",
+        "value": "随便玩"
+      }
+    ]
+  },
+  {
+    "name": "plan-created-node-ref-format",
+    "why": "node 任务的 ref 是知识点 id",
+    "base": "events.json#plan.created",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/tasks/0/ref",
+        "value": "math"
+      }
+    ]
+  },
+  {
+    "name": "plan-created-custom-ref-format",
+    "why": "custom 任务的 ref 是 c- 前缀",
+    "base": "events.json#plan.created",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/tasks/2/ref",
+        "value": "读二十分钟"
+      }
+    ]
+  },
+  {
+    "name": "reward-earn-negative",
+    "why": "earn 的 amount 必须是正数",
+    "base": "rewards.json#earn",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/amount",
+        "value": -1
+      }
+    ]
+  },
+  {
+    "name": "reward-revoke-missing-target",
+    "why": "revoke 必须有 target_entry_id",
+    "base": "rewards.json#revoke",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/target_entry_id"
+      }
+    ]
+  },
+  {
+    "name": "reward-earn-with-target",
+    "why": "只有 revoke 才有 target_entry_id",
+    "base": "rewards.json#earn",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/target_entry_id",
+        "value": "rwd_9f3c1a5e7b9d1f3a5c7e9b1d3f5a7c9e"
+      }
+    ]
+  },
+  {
+    "name": "reward-spend-positive",
+    "why": "spend 的 amount 必须是负数",
+    "base": "rewards.json#spend",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/amount",
+        "value": 30
+      }
+    ]
+  },
+  {
+    "name": "receipt-sync-missing-batch",
+    "why": "sync 必须有 batch_id",
+    "base": "receipts.json#sync",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/batch_id"
+      }
+    ]
+  },
+  {
+    "name": "receipt-local-with-clock-skew",
+    "why": "local 不能有 clock_skew_ms",
+    "base": "receipts.json#local",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/clock_skew_ms",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "name": "receipt-import-with-clock-skew",
+    "why": "import 不能有 clock_skew_ms",
+    "base": "receipts.json#import",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/clock_skew_ms",
+        "value": 100
+      }
+    ]
+  },
+  {
+    "name": "receipt-sync-batch-prefix",
+    "why": "sync 的 batch_id 是 syn_ 前缀",
+    "base": "receipts.json#sync",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/batch_id",
+        "value": "imp_0000000000000000000000001J"
+      }
+    ]
+  },
+  {
+    "name": "text-too-long",
+    "why": "text 最多 500 个字符",
+    "base": "texts.json#reflection-fraction",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/text",
+        "value": "我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折我把纸折了又折"
+      }
+    ]
+  },
+  {
+    "name": "text-empty",
+    "why": "text 至少 1 个字符",
+    "base": "texts.json#question-in-quiz",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/text",
+        "value": ""
+      }
+    ]
+  },
+  {
+    "name": "text-id-prefix",
+    "why": "text_id 必须是 txt_<ULID>",
+    "base": "texts.json#orphan-note",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/text_id",
+        "value": "note-001"
+      }
+    ]
+  },
+  {
+    "name": "text-schema-version",
+    "why": "schema 固定为 private-text/1",
+    "base": "texts.json#lost-note",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/schema",
+        "value": "private-text/2"
+      }
+    ]
+  }
+]
