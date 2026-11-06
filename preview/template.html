@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>好奇号 · 试玩版 · 生命的说明书</title>
+<style>
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6; --on-accent:#FFFFFF;
+  --c-math:#ECCDB6; --c-sci:#CCD6C0; --c-sci-2:#93A982; --c-sci-bg:#DCE3D2;
+  --c-sky:#CFDCE6; --wash:#EFE4D6; --dad:#4F7FA8; --mom:#C2603F;
+  --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --shadow:0 1px 2px rgba(31,30,28,.06),0 8px 28px rgba(31,30,28,.08);
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-hand:"ZCOOL KuaiLe","Kaiti SC","STKaiti","KaiTi","Noto Sans SC",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943; --on-accent:#15121F;
+  --c-math:#5A4536; --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
+  --c-sky:#2D3B47; --wash:#2A2738; --dad:#7FA9CF; --mom:#E0876A;
+  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased;
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+button{font:inherit;color:inherit;cursor:pointer}
+[hidden]{display:none!important}
+.wrap{max-width:760px;margin:0 auto;padding:0 18px 120px}
+.topbar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--rule)}
+.topbar .in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 18px;min-height:56px}
+.topbar .title{flex:1;font-family:var(--f-serif);font-weight:600;color:var(--ink);font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.back{border:1px solid var(--rule);background:var(--pane);border-radius:10px;padding:6px 12px;font-size:15px}
+.tag{font-size:12px;color:var(--muted);border:1px dashed var(--rule);border-radius:999px;padding:1px 9px;white-space:nowrap}
+h1,h2,h3{font-family:var(--f-serif);color:var(--ink);line-height:1.35;margin:0}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+
+/* 首页 */
+.hero{margin:22px 0 8px;padding:22px;border-radius:18px;background:var(--c-sci-bg);display:flex;gap:16px;align-items:center}
+.hero .eyebrow{font-size:13px;color:var(--muted);letter-spacing:.05em}
+.hero h1{font-size:28px;margin:4px 0 6px}
+.hero p{margin:0}
+.hero svg{flex:none;width:96px;height:96px}
+.note{font-size:14px;color:var(--muted);margin:10px 2px 18px}
+.line{position:relative;padding-left:34px}
+.line:before{content:"";position:absolute;left:13px;top:18px;bottom:18px;border-left:2px dashed var(--c-sci-2)}
+.star{position:relative;background:var(--pane);border:1px solid var(--rule);border-radius:16px;padding:16px 18px;margin:0 0 16px;box-shadow:var(--shadow)}
+.star .dot{position:absolute;left:-34px;top:16px;width:28px;height:28px;border-radius:50%;background:var(--c-sci);border:2px solid var(--ink);display:grid;place-items:center;font-size:14px;font-weight:700;color:var(--ink)}
+.star h2{font-size:20px}
+.star .dq{font-family:var(--f-hand);color:var(--ink);font-size:18px;margin:6px 0 12px}
+.acts{display:flex;flex-wrap:wrap;gap:10px}
+.act{display:flex;align-items:center;gap:8px;border:1.5px solid var(--ink);background:var(--bg);border-radius:12px;padding:9px 14px;min-height:48px;font-size:16px}
+.act:hover{background:var(--hover)}
+.act small{color:var(--muted);font-size:13px}
+.act.done{background:var(--good-soft);border-color:var(--good)}
+.act .tick{color:var(--good);font-weight:700}
+.parent{display:block;margin:26px auto 0;border:1px dashed var(--rule);background:transparent;border-radius:12px;padding:10px 16px;color:var(--muted);font-size:15px}
+
+/* 领航员对话 */
+.chat{padding:18px 0 8px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;align-items:flex-end}
+.row.me{justify-content:flex-end}
+.ava{flex:none;width:40px;height:40px}
+.bub{max-width:min(560px,82%);background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);box-shadow:var(--shadow)}
+.row.me .bub{background:var(--accent-soft);border-color:transparent;border-radius:16px 16px 4px 16px}
+.bub.hint{background:var(--c-sky);border-color:transparent}
+.bub.good{background:var(--good-soft);border-color:transparent}
+.bub.bad{background:var(--bad-soft);border-color:transparent}
+.bub .lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.bub.fig{max-width:min(620px,88%);padding:10px}
+.fig-box{background:var(--bg);border-radius:12px;padding:6px}
+.fig-box svg{display:block;width:100%;height:auto;max-height:52vh}
+.fig-box [fill="#CCD6C0" i]{fill:var(--c-sci)} .fig-box [fill="#CFDCE6" i]{fill:var(--c-sky)}
+.fig-box [fill="#ECCDB6" i]{fill:var(--c-math)} .fig-box [fill="#EFE4D6" i]{fill:var(--wash)}
+.fig-box [fill="#4F7FA8" i]{fill:var(--dad)} .fig-box [fill="#C2603F" i]{fill:var(--mom)}
+.fig-box [stroke="#4F7FA8" i]{stroke:var(--dad)} .fig-box [stroke="#C2603F" i]{stroke:var(--mom)}
+.fig-box [stroke="#1F1E1C" i]{stroke:var(--ink)} .fig-box text{fill:var(--ink)}
+.cap{font-size:15px;color:var(--text);margin:8px 4px 2px}
+.ask{margin-top:4px}
+.ask .stem{font-weight:600}
+.choices{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.choice{text-align:left;border:1.5px solid var(--ink);background:var(--bg);border-radius:12px;padding:10px 14px;min-height:48px;font-size:17px}
+.choice:hover:not(:disabled){background:var(--hover)}
+.choice:disabled{cursor:default}
+.choice.wrong{border-color:var(--bad);color:var(--muted);text-decoration:line-through;text-decoration-color:var(--bad)}
+.choice.right{border-color:var(--good);background:var(--good-soft);font-weight:600}
+.numrow{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.numrow input{width:130px;font:inherit;font-size:20px;padding:8px 12px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink)}
+.numrow .unit{font-size:18px}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600}
+.btn.ghost{background:var(--pane);color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.dock{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 26%);padding:26px 0 calc(14px + env(safe-area-inset-bottom,0))}
+.dock .in{max-width:760px;margin:0 auto;padding:0 18px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.composer{background:var(--pane);border:1px solid var(--rule);border-radius:16px;padding:12px;box-shadow:var(--shadow);margin:6px 0}
+textarea{width:100%;font:inherit;font-size:17px;padding:10px 12px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);resize:vertical;min-height:96px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{border:1px dashed var(--ink);background:var(--bg);border-radius:999px;padding:6px 14px;font-size:16px;min-height:40px}
+.row-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+.endcard{background:var(--c-sci-bg);border-radius:16px;padding:18px;margin:16px 0}
+.endcard h3{font-size:19px;margin-bottom:6px}
+.endcard .row-btns{justify-content:flex-start}
+
+/* 挑战 */
+.qcard{background:var(--pane);border:1px solid var(--rule);border-radius:18px;padding:18px;margin-top:18px;box-shadow:var(--shadow)}
+.progress{display:flex;gap:6px;margin:18px 0 0;align-items:center;color:var(--muted);font-size:14px}
+.progress i{display:inline-block;width:20px;height:8px;border-radius:4px;background:var(--rule)}
+.progress i.on{background:var(--ink)} .progress i.ok{background:var(--good)}
+.qcard .stem{font-size:19px;font-weight:600;color:var(--ink)}
+.fb{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.fb .bub{max-width:100%}
+.counter{font-size:13px;color:var(--muted);text-align:right}
+
+/* 记录 */
+.rec h2{font-size:20px;margin:22px 0 8px}
+.rec h3{font-size:17px;margin:14px 0 6px}
+.rec ul{margin:4px 0;padding-left:20px}
+.rec .muted{color:var(--muted)}
+.rec pre{white-space:pre-wrap;font:inherit;font-size:14px;background:var(--pane);border:1px solid var(--rule);border-radius:12px;padding:12px}
+
+@media (prefers-reduced-motion:no-preference){
+  .pop{animation:pop .28s ease-out both}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .draw .k,.draw .k1{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.2s ease-out forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+}
+@media (max-width:520px){
+  body{font-size:16px}
+  .hero{padding:16px} .hero h1{font-size:24px} .hero svg{width:72px;height:72px}
+  .bub{max-width:86%}
+}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="in">
+  <button class="back" id="back" hidden>← 星图</button>
+  <div class="title" id="title">好奇号</div>
+  <span class="tag">试玩版 · 不保存</span>
+</div></div>
+<main class="wrap" id="app"></main>
+<div class="dock" id="dock" hidden><div class="in" id="dockIn"></div></div>
+
+<script id="data" type="application/json">/*__DATA__*/null</script>
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById("data").textContent);
+const KIND = {explain:"讲解", quiz:"挑战", reflection:"反思"};
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $app = document.getElementById("app"), $dock = document.getElementById("dock"), $dockIn = document.getElementById("dockIn");
+
+// 这一页里的试玩记录，只放在内存里，刷新就没了
+const S = {done:{}, log:{}};
+
+const ACTS = [];   // 按顺序排好的全部活动
+for (const st of DATA.stars) for (const a of st.activities) ACTS.push({...a, star:st});
+const actById = id => ACTS.find(a => a.id === id);
+
+function el(tag, attrs, ...kids){
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs||{})){
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  return e;
+}
+function svgEl(markup){
+  const t = document.createElement("template"); t.innerHTML = markup.trim(); return t.content.firstElementChild;
+}
+
+const AVA = `<svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+  <circle cx="24" cy="27" r="16" fill="var(--c-sky)"/>
+  <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+  <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+  <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+  <path class="k1" d="M18 32 C21 35 27 35 30 32"/></svg>`;
+const SHIP = `<svg viewBox="0 0 100 100" aria-hidden="true">
+  <path d="M50 10 C64 24 68 44 64 66 L36 66 C32 44 36 24 50 10 Z" fill="var(--c-sky)"/>
+  <path class="k" d="M50 10 C64 24 68 44 64 66 L36 66 C32 44 36 24 50 10 Z"/>
+  <path class="k1" d="M44 40 C44 35 56 35 56 40 C56 45 44 45 44 40 Z"/>
+  <path class="k" d="M36 52 L24 72 L37 66 M64 52 L76 72 L63 66"/>
+  <path d="M43 70 C45 80 47 86 50 92 C53 86 55 80 57 70 Z" fill="var(--c-math)"/>
+  <path class="k1" d="M43 70 C45 80 47 86 50 92 C53 86 55 80 57 70"/></svg>`;
+
+function scrollEnd(node){ node.scrollIntoView({block:"end", behavior: reduced ? "auto" : "smooth"}); }
+
+function figureNode(fig){
+  const box = el("div", {class:"fig-box"});
+  if (fig && fig.type === "svg" && DATA.figures[fig.src]){
+    const s = svgEl(DATA.figures[fig.src]);
+    s.removeAttribute("width"); s.removeAttribute("height");
+    if (!reduced){
+      s.querySelectorAll(".k,.k1").forEach(p => { if (!p.hasAttribute("stroke-dasharray")) p.setAttribute("pathLength","1"); else p.classList.remove("k","k1"); });
+      s.classList.add("draw");
+    }
+    box.append(s);
+  } else box.append(el("p", {class:"cap"}, "（这张图还没准备好）"));
+  return box;
+}
+
+// ---------- 判分 ----------
+function normNum(s){
+  return String(s).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[．。]/g, ".").replace(/[－—]/g, "-").replace(/[，,\s]/g, "").replace(/[条对个本卷米厘次]+$/, "");
+}
+function parseNumber(s){
+  const t = normNum(s); if (!/^-?\d+(\.\d+)?$/.test(t)) return null; return Number(t);
+}
+function parseFraction(s){
+  const t = String(s).trim().replace(/／/g, "/").replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  let m = t.match(/^(\d+)\s*\/\s*(\d+)$/); if (m) return [Number(m[1]), Number(m[2])];
+  m = t.match(/^(\d+)\s*分之\s*(\d+)$/); if (m) return [Number(m[2]), Number(m[1])];
+  return null;
+}
+function grade(answer, input){
+  // 返回 {ok, misconception, feedback} 或 null（写法认不出来，不算一次作答）
+  if (answer.type === "choice"){
+    const c = answer.choices.find(x => x.id === input);
+    return {ok: !!c.correct, misconception: c.misconception || null, feedback: c.feedback || "", shown: c.text};
+  }
+  if (answer.type === "number"){
+    const x = parseNumber(input); if (x === null) return null;
+    const tol = answer.tolerance || 0, hit = v => Math.abs(x - v) <= tol + 1e-9;
+    if (hit(answer.value)) return {ok:true, feedback:"", shown:String(x)};
+    const w = (answer.common_wrong||[]).find(cw => hit(cw.value));
+    return {ok:false, misconception: w && w.misconception || null, feedback: w && w.feedback || "", shown:String(x)};
+  }
+  if (answer.type === "fraction"){
+    const f = parseFraction(input); if (!f) return null;
+    const [a,b] = f; if (b === 0) return {ok:false, feedback:"", shown:`${a}/${b}`};
+    const ok = answer.accept_equivalent ? a*answer.denominator === b*answer.numerator : (a === answer.numerator && b === answer.denominator);
+    if (ok) return {ok:true, feedback:"", shown:`${a}/${b}`};
+    const w = (answer.common_wrong||[]).find(cw => answer.accept_equivalent ? a*cw.denominator === b*cw.numerator : (a === cw.numerator && b === cw.denominator));
+    return {ok:false, misconception: w && w.misconception || null, feedback: w && w.feedback || "", shown:`${a}/${b}`};
+  }
+  return null;
+}
+function answerText(answer){
+  if (answer.type === "choice") return answer.choices.find(c => c.correct).text;
+  if (answer.type === "number") return `${answer.value}${answer.unit ? " " + answer.unit : ""}`;
+  if (answer.type === "fraction") return `${answer.numerator}/${answer.denominator}`;
+  return "";
+}
+
+// ---------- 一道题（讲解里的小问题和挑战共用） ----------
+// say(role, text)：role 是 nav / me / good / bad / hint
+function askItem(host, item, say, onDone){
+  const ans = item.answer, hints = item.hints || [];
+  const rec = {stem:item.stem, tries:[], hints:0, result:null};
+  let usedHints = 0, finished = false;
+  const ctrl = el("div", {class:"ask"});
+  let choiceBtns = [], numInput = null, okBtn = null;
+
+  function finish(result){
+    finished = true; rec.result = result;
+    choiceBtns.forEach(b => b.disabled = true);
+    if (numInput){ numInput.disabled = true; okBtn.disabled = true; }
+    hintBtn.hidden = true;
+    onDone(rec);
+  }
+  function submit(value, btn){
+    if (finished) return;
+    const g = grade(ans, value);
+    if (!g){ say("nav", "写一个数字试试，比如 12。"); return; }
+    rec.tries.push({shown:g.shown, ok:g.ok, misconception:g.misconception||null});
+    if (ans.type !== "choice") say("me", g.shown + (ans.unit ? " " + ans.unit : ""));
+    else say("me", g.shown);
+    if (g.ok){
+      if (btn) btn.classList.add("right");
+      say("good", g.feedback ? "对了。" + g.feedback : "对了。");
+      finish(rec.tries.length === 1 && usedHints === 0 ? "first" : "later");
+    } else {
+      if (btn){ btn.classList.add("wrong"); btn.disabled = true; }
+      say("bad", g.feedback || "这个想法很多人都有。再想想看，也可以要个提示。");
+      if (numInput){ numInput.select(); }
+    }
+  }
+
+  if (ans.type === "choice"){
+    const box = el("div", {class:"choices"});
+    for (const c of ans.choices){
+      const b = el("button", {class:"choice", type:"button", onclick:()=>submit(c.id, b)}, c.text);
+      choiceBtns.push(b); box.append(b);
+    }
+    ctrl.append(box);
+  } else {
+    numInput = el("input", {type:"text", inputmode: ans.type === "number" ? "decimal" : "text", "aria-label":"写答案", autocomplete:"off",
+      placeholder: ans.type === "fraction" ? "比如 1/4" : "写数字",
+      onkeydown: e => { if (e.key === "Enter") submit(numInput.value); }});
+    okBtn = el("button", {class:"btn", type:"button", onclick:()=>submit(numInput.value)}, "确定");
+    ctrl.append(el("div", {class:"numrow"}, numInput, ans.unit ? el("span", {class:"unit"}, ans.unit) : null, okBtn));
+  }
+  const hintBtn = el("button", {class:"btn ghost", type:"button", onclick: () => {
+    if (finished) return;
+    if (usedHints < hints.length){
+      say("hint", hints[usedHints]); usedHints++; rec.hints = usedHints;
+      if (usedHints >= hints.length) hintBtn.textContent = "看答案";
+    } else {
+      say("nav", "答案是：" + answerText(ans) + "。");
+      choiceBtns.forEach((b, i) => { if (ans.choices[i].correct) b.classList.add("right"); });
+      if (numInput) numInput.value = answerText(ans).split(" ")[0];
+      finish("revealed");
+    }
+  }}, hints.length ? "要个提示" : "看答案");
+  ctrl.append(el("div", {class:"row-btns"}, hintBtn));
+  host.append(ctrl);
+  return rec;
+}
+
+// ---------- 页面 ----------
+function setTop(title, showBack){
+  document.getElementById("title").textContent = title;
+  document.getElementById("back").hidden = !showBack;
+}
+function dock(...btns){ $dockIn.replaceChildren(...btns.filter(Boolean)); $dock.hidden = btns.filter(Boolean).length === 0; }
+function nextAfter(a){ const i = ACTS.indexOf(a); return ACTS[i+1] || null; }
+function endButtons(a){
+  const n = nextAfter(a);
+  return el("div", {class:"row-btns"},
+    n ? el("button", {class:"btn", type:"button", onclick:()=>go("act:" + n.id)}, `${n.star !== a.star ? "下一颗星：" : "接着做"}${KIND[n.kind]}`) : null,
+    el("button", {class:"btn ghost", type:"button", onclick:()=>go("home")}, "回星图"));
+}
+
+function viewHome(){
+  setTop("好奇号", false); dock();
+  const hero = el("div", {class:"hero"},
+    el("div", {}, el("div", {class:"eyebrow"}, "好奇号 · 星座"), el("h1", {}, DATA.constellation),
+      el("p", {}, "三颗星，按顺序飞：" + DATA.stars.map(s => s.title.split("：")[0]).join(" → ") + "。")),
+    svgEl(SHIP));
+  const line = el("div", {class:"line"});
+  DATA.stars.forEach((st, i) => {
+    const acts = el("div", {class:"acts"});
+    for (const a of st.activities){
+      const done = S.done[a.id];
+      acts.append(el("button", {class:"act" + (done ? " done" : ""), type:"button", onclick:()=>go("act:" + a.id)},
+        done ? el("span", {class:"tick"}, "✓") : null, KIND[a.kind], a.duration_min ? el("small", {}, `${a.duration_min} 分钟`) : null));
+    }
+    line.append(el("section", {class:"star"}, el("div", {class:"dot"}, i+1), el("h2", {}, st.title), el("div", {class:"dq"}, st.dq), acts));
+  });
+  $app.replaceChildren(hero, el("p", {class:"note"}, "这是试玩版：做过的不会保存，刷新页面就从头开始。"), line,
+    el("button", {class:"parent", type:"button", onclick:()=>go("record")}, "试玩记录（给家长看）"));
+}
+
+function bubbleRow(role, content){
+  const cls = {nav:"", hint:"hint", good:"good", bad:"bad"}[role];
+  if (role === "me") return el("div", {class:"row me pop"}, el("div", {class:"bub"}, content));
+  const bub = el("div", {class:"bub " + (cls||"")}, role === "hint" ? el("span", {class:"lbl"}, "提示") : null, content);
+  return el("div", {class:"row pop"}, svgEl(AVA), bub);
+}
+
+function viewExplain(a){
+  const log = S.log[a.id] = {kind:"explain", items:[], questions:[]};
+  const chat = el("div", {class:"chat"});
+  $app.replaceChildren(chat);
+  const steps = a.body.steps; let i = 0;
+  const say = (role, text) => { const r = bubbleRow(role, text); chat.append(r); scrollEnd(r); };
+  const contBtn = el("button", {class:"btn", type:"button", onclick:()=>step()}, "继续");
+  const qBtn = el("button", {class:"btn ghost", type:"button", onclick:()=>openAsk()}, "我有个问题");
+
+  function openAsk(){
+    if (chat.querySelector(".composer")) return;
+    const ta = el("textarea", {maxlength:"120", placeholder:"想问领航员什么？"});
+    const box = el("div", {class:"composer pop"}, ta, el("div", {class:"row-btns"},
+      el("button", {class:"btn ghost", type:"button", onclick:()=>box.remove()}, "算了"),
+      el("button", {class:"btn", type:"button", onclick:()=>{
+        const q = ta.value.trim(); if (!q) return; box.remove();
+        log.questions.push(q); say("me", q);
+        say("nav", "好问题。我把它记在试玩记录里了，等会儿和家长一起找答案。");
+      }}, "问领航员")));
+    chat.append(box); scrollEnd(box); ta.focus();
+  }
+  function step(){
+    if (i >= steps.length) return;
+    const s = steps[i++];
+    if (s.type === "text") say("nav", s.text);
+    else if (s.type === "figure"){
+      const r = el("div", {class:"row pop"}, svgEl(AVA), el("div", {class:"bub fig"}, figureNode(s.figure), s.caption ? el("div", {class:"cap"}, s.caption) : null));
+      chat.append(r); scrollEnd(r);
+    } else if (s.type === "check"){
+      const bub = el("div", {class:"bub"}, el("div", {class:"stem"}, s.item.stem));
+      const r = el("div", {class:"row pop"}, svgEl(AVA), bub); chat.append(r);
+      dock(qBtn);
+      const rec = askItem(bub, s.item, say, rec => { log.items.push(rec); afterStep(); });
+      scrollEnd(r);
+      return;
+    }
+    afterStep();
+  }
+  function afterStep(){
+    if (i < steps.length){ dock(qBtn, contBtn); return; }
+    S.done[a.id] = true; dock(qBtn);
+    const card = el("div", {class:"endcard pop"}, el("h3", {}, "这一段讲完了"), endButtons(a));
+    chat.append(card); scrollEnd(card);
+  }
+  step();
+}
+
+function shuffled(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function viewQuiz(a){
+  const items = a.body.shuffle ? shuffled(a.body.items) : a.body.items.slice();
+  const log = S.log[a.id] = {kind:"quiz", items:[]};
+  let k = 0;
+  function show(){
+    dock();
+    if (k >= items.length) return summary();
+    const it = items[k];
+    const prog = el("div", {class:"progress"}, ...items.map((_, j) => el("i", {class: j < k ? (log.items[j].result === "first" ? "ok" : "on") : (j === k ? "on" : "")})), el("span", {}, ` 第 ${k+1} 题，共 ${items.length} 题`));
+    const fb = el("div", {class:"fb"});
+    const card = el("div", {class:"qcard pop"}, el("div", {class:"stem"}, it.stem));
+    if (it.figure) card.append(figureNode(it.figure));
+    const say = (role, text) => {
+      if (role === "me") return;
+      const cls = {nav:"", hint:"hint", good:"good", bad:"bad"}[role];
+      if (role !== "hint") fb.querySelectorAll(".bub:not(.hint)").forEach(n => n.remove());
+      const b = el("div", {class:"bub pop " + cls}, role === "hint" ? el("span", {class:"lbl"}, "提示") : null, text);
+      fb.append(b); scrollEnd(b);
+    };
+    $app.replaceChildren(prog, card);
+    askItem(card, it, say, rec => {
+      log.items.push(rec);
+      dock(el("button", {class:"btn", type:"button", onclick:()=>{ k++; show(); window.scrollTo(0,0); }}, k + 1 < items.length ? "下一题" : "看看结果"));
+    });
+    card.append(fb);
+  }
+  function summary(){
+    S.done[a.id] = true;
+    const first = log.items.filter(r => r.result === "first").length;
+    const card = el("div", {class:"endcard pop"},
+      el("h3", {}, "挑战完成"),
+      el("p", {}, `${items.length} 道题里，一次就答对 ${first} 道。` + (first < items.length ? "想岔的地方，正好看清楚了。" : "全部一次答对。")),
+      endButtons(a));
+    $app.replaceChildren(card);
+  }
+  show();
+}
+
+function viewReflection(a){
+  const b = a.body, max = b.max_chars || 120;
+  const log = S.log[a.id] = {kind:"reflection", text:""};
+  const ta = el("textarea", {maxlength:String(max), placeholder:"想到什么就写什么。"});
+  const counter = el("div", {class:"counter"}, `0 / ${max}`);
+  const doneBtn = el("button", {class:"btn", type:"button", disabled:true}, "写好了");
+  const upd = () => { counter.textContent = `${ta.value.length} / ${max}`; doneBtn.disabled = !ta.value.trim(); };
+  ta.addEventListener("input", upd);
+  const chips = el("div", {class:"chips"}, ...(b.starters||[]).map(s => el("button", {class:"chip", type:"button", onclick:()=>{
+    const t = s.replace(/[…\.。]+$/, "");
+    ta.value = (ta.value ? ta.value.replace(/\s*$/, "") + "\n" : "") + t; ta.focus(); upd();
+  }}, s)));
+  const chat = el("div", {class:"chat"});
+  chat.append(bubbleRow("nav", b.prompt));
+  const box = el("div", {class:"composer"}, b.starters && b.starters.length ? el("div", {class:"lbl muted", style:"font-size:13px;color:var(--muted)"}, "不知道怎么开头？点一个：") : null, chips, ta, counter, el("div", {class:"row-btns"}, doneBtn));
+  doneBtn.addEventListener("click", () => {
+    log.text = ta.value.trim(); S.done[a.id] = true;
+    box.replaceWith(bubbleRow("me", log.text));
+    const end = el("div", {class:"endcard pop"}, el("h3", {}, "记下来了"), el("p", {}, "家长可以在「试玩记录」里看到你写的话。"), endButtons(a));
+    chat.append(bubbleRow("nav", "谢谢舰长。"), end); scrollEnd(end);
+  });
+  chat.append(box);
+  $app.replaceChildren(chat);
+}
+
+function recordText(){
+  const out = [`好奇号试玩记录 · ${DATA.constellation}`];
+  for (const st of DATA.stars){
+    out.push("", `【${st.title}】`);
+    for (const a of st.activities){
+      const L = S.log[a.id];
+      out.push(`${KIND[a.kind]}：${S.done[a.id] ? "做完了" : (L ? "做到一半" : "没做")}`);
+      if (!L) continue;
+      (L.items||[]).forEach(r => {
+        const res = r.result === "first" ? "一次答对" : r.result === "revealed" ? "看了答案" : `答错 ${r.tries.filter(t => !t.ok).length} 次后答对`;
+        out.push(`  · ${r.stem}　${res}${r.hints ? `，用了 ${r.hints} 条提示` : ""}`);
+        r.tries.filter(t => !t.ok).forEach(t => out.push(`      选了/写了「${t.shown}」${t.misconception ? `（误区：${st.misconceptions[t.misconception] || t.misconception}）` : ""}`));
+      });
+      (L.questions||[]).forEach(q => out.push(`  · 问了领航员：${q}`));
+      if (L.text) out.push(`  · 写下：${L.text}`);
+    }
+  }
+  return out.join("\n");
+}
+function viewRecord(){
+  setTop("试玩记录", true); dock();
+  const txt = recordText();
+  const pre = el("pre", {}, txt);
+  const msg = el("span", {class:"muted", style:"font-size:14px;color:var(--muted)"});
+  const copy = el("button", {class:"btn", type:"button", onclick: async () => {
+    try { await navigator.clipboard.writeText(txt); msg.textContent = "复制好了，可以粘贴发出去。"; }
+    catch(e){ const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); msg.textContent = "已经选中，长按或按 Ctrl+C 复制。"; }
+  }}, "复制成文字");
+  $app.replaceChildren(el("div", {class:"rec"},
+    el("h2", {}, "这次试玩做了什么"),
+    el("p", {class:"muted"}, "只记在这一页里，刷新就没了。试玩完可以复制下来，发给 Claude 当作试玩反馈。"),
+    el("div", {class:"row-btns", style:"justify-content:flex-start"}, copy, msg), pre));
+}
+
+// 页面内切换，不用地址栏（托管网页里地址栏的 # 不一定传得进来）
+let VIEW = "home";
+function go(v){ VIEW = v; route(); }
+function route(){
+  window.scrollTo(0,0);
+  const m = VIEW.match(/^act:(.+)$/);
+  if (m){
+    const a = actById(m[1]);
+    if (a){
+      setTop(`${KIND[a.kind]} · ${a.title}`, true);
+      ({explain:viewExplain, quiz:viewQuiz, reflection:viewReflection})[a.kind](a);
+      return;
+    }
+  }
+  if (VIEW === "record") return viewRecord();
+  viewHome();
+}
+document.getElementById("back").addEventListener("click", () => go("home"));
+route();
+</script>
+</body>
+</html>
