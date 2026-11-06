@@ -11,7 +11,7 @@
 import fnmatch, json, os, re, subprocess, sys
 from pathlib import Path
 
-PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "AGENTS.md", "CLAUDE.md", "README.md", "prompts/module-template.md", "prompts/task-template.md"]
+PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "AGENTS.md", "CLAUDE.md", "README.md", "GLOSSARY.md", "prompts/module-template.md", "prompts/task-template.md"]
 BRANCH_KINDS = ["kp/", "arch/", "feat/", "fix/", "chore/"]
 OVERRIDE_LABEL = "越界-已批准"
 KID_FACING_NODE = ["title", "driving_question", "lenses"]
