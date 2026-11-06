@@ -1,0 +1,5 @@
+# 所有文本文件统一用 LF 换行，保证同一份内容在任何电脑上算出的哈希都一样（docs/specs/content.md 第 1 节）
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.woff2 binary

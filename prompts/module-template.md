@@ -1,12 +1,16 @@
 # 活动模块提示词模板
 
-Claude 用这个模板写活动模块（讲解、挑战、实验）的提示词。复制本文件，把 `{{…}}` 换成具体内容，存为 `prompts/<活动 id>.md`，同时贴进 issue 的「提示词」一节。
+Claude 用这个模板写活动模块（讲解、挑战、实验）的提示词。
 
-提示词必须**自成一体**：实现 AI 看不到仓库。下面所有写着「原样贴入」的地方，都要把文件全文贴进来，不能只写文件名。
+生成方法：
+- 复制本文件「---」以下的部分，存为 `prompts/<任务 id>.md`，开头加一段 YAML 头：`task: <任务 id>`、`issue: <issue 号，只写数字>`、`version: v1`，用 `---` 上下包起来。
+- 把 `{{…}}` 占位符换成具体内容。需要原样贴入的仓库文件，写 `{{embed: 路径}}`（整个文件）或 `{{embed: 路径#二级标题}}`（一节）；需要提交号的地方写 `{{commit}}`。
+- 规格合入 `main` 之后，运行 `python tools/make_task.py <任务 id>` 生成任务文件 `<任务 id>.task.md`：它从已合入的提交里读文件、展开指令、在开头写明「基于提交」，末尾列出嵌入文件的 SHA-256。任何没换掉的 `{{…}}` 都会报错，不会被发出去。
+- 提示词必须**自成一体**：实现 AI 看不到仓库。需要的规格、已有代码、接口，都用 `{{embed: …}}` 嵌进来，不要写「见某某文件」。
 
 ---
 
-> 基于 Curio 仓库提交 `{{提交号}}` 生成 · 提示词版本 {{v1}} · 契约 activity/1.1
+> 契约 activity/1.1
 
 # 任务：为知识点「{{node.title}}」做一个{{类型：讲解 / 挑战 / 实验}}
 
@@ -32,12 +36,10 @@ Claude 用这个模板写活动模块（讲解、挑战、实验）的提示词�
 - 文字给三年级孩子看：句子短，说具体的事，不出现「学习」二字。
 
 ## 技术契约 activity/1.1（必须遵守，原样贴入）
-{{docs/activity-contract.md 全文}}
+{{embed: docs/activity-contract.md}}
 
 ## manifest 格式（原样贴入）
-```json
-{{schemas/activity.schema.json 全文}}
-```
+{{embed: schemas/activity.schema.json}}
 
 ## 视觉
 - 手绘风：墨线带轻微抖动，配淡彩色块，留白多。下面是平台的手绘线条库，原样内联进你的 `index.html` 使用：
@@ -63,4 +65,8 @@ Claude 用这个模板写活动模块（讲解、挑战、实验）的提示词�
 - `content/activities/{{活动 id}}/manifest.yaml`
 - `content/activities/{{活动 id}}/index.html`
 
-{{把 docs/submission.md 的「格式」和「规则」两节原样贴在这里，并把 issue 号和任务 id 改成本任务的}}
+开头信息里的 issue、任务、提示词版本、基于提交，照抄本文件最开头给出的值。
+
+{{embed: docs/submission.md#格式}}
+
+{{embed: docs/submission.md#规则}}

@@ -26,7 +26,7 @@ FENCE = re.compile(r"^(`{3,})[^\n`]*\n(.*?)^\1\s*$", re.M | re.S)
 META_KEYS = ["issue", "任务", "实现者", "提示词版本", "基于提交", "轮次"]
 META_FORMATS = {
     "issue": (r"#\d+", "#12"),
-    "任务": (r"[a-z][a-z0-9-]*(\.[a-z0-9-]+)+", "act.quiz.fraction-intro-01"),
+    "任务": (r"[a-z][a-z0-9-]*(\.[a-z0-9-]+)+|curio-\d{3}[a-z]?", "act.quiz.fraction-intro-01 或 curio-002a"),
     "实现者": (r".+", "模型名"),
     "提示词版本": (r"v[1-9]\d*", "v1"),
     "基于提交": (r"[0-9a-f]{7,40}", "7 到 40 位的提交号"),

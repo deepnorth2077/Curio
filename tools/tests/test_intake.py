@@ -160,6 +160,14 @@ class TestIntake(unittest.TestCase):
                               ("issue: #12", "issue: 12", "issue")]:
             self.assertProblem(intake.intake([s1.replace(old, new), s2]), f"「{key}:")
 
+    def test_platform_task_id(self):
+        s1, s2 = full_package()
+        for good in ("curio-002a", "curio-003"):
+            r = intake.intake([s1.replace(f"任务: {A}", f"任务: {good}"), s2])
+            self.assertFalse([e for e in r.errors if "「任务:" in e], r.errors)
+        for bad in ("curio-2a", "CURIO-002a", "curio-002ab", "task"):
+            self.assertProblem(intake.intake([s1.replace(f"任务: {A}", f"任务: {bad}"), s2]), "「任务:")
+
     def test_expected_commit_and_task(self):
         s1, s2 = full_package()
         self.assertEqual(intake.intake([s1, s2], expect={"基于提交": "abc1234def", "任务": A, "issue": "#12", "提示词版本": "v1"}).errors, [])

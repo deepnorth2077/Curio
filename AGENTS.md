@@ -38,7 +38,7 @@ Luka 不写代码，只负责部署和验收。所以：
 **Claude 是本仓库唯一的维护者。**其他 AI 只做实现，碰不到仓库：Luka 把 Claude 写的提示词交给它们，再把交付包带回给 Claude。完整流程见 `docs/collaboration.md`。如果你是 Claude，要点如下：
 
 - **每件事先有 issue。**按 `.github/ISSUE_TEMPLATE/task.md` 写：给 Luka 的一句话说明、规格、验收标准、提示词。知识点一个主 issue，下面每个活动一个子 issue。
-- **规格的原件只在仓库里。**提示词里贴的是快照，开头必须写「基于提交 `<提交号>`」；规格改了就重新生成提示词。
+- **规格的原件只在仓库里。**提示词里贴的是快照，开头必须写「基于提交 `<提交号>`」；规格改了就重新生成提示词。任务文件一律用 `tools/make_task.py` 从已合入 `main` 的提交生成，不手工拼。
 - **提示词必须自成一体。**实现 AI 看不到仓库，规格、契约、代码片段、交付包格式都要原样贴进去。模板在 `prompts/task-template.md` 和 `prompts/module-template.md`；写好的提示词同时存为 `prompts/<任务 id>.md`。
 - **交付包按 `docs/submission.md` 的格式。**缺文件、缺结束标记，一律打回。
 - **收货用 `tools/intake.py`**：检查分段、清单、截断，算出每个文件的字节数和 SHA-256。不通过就整包打回，不做部分整合。
