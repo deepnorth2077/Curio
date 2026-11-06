@@ -39,7 +39,11 @@ Claude 用这个模板写活动模块（讲解、挑战、实验）的提示词�
 {{embed: docs/standards.md#给孩子看的内容}}
 
 ## 术语表（界面文字、注释都用这里的词）
-{{embed: GLOSSARY.md}}
+{{embed: GLOSSARY.md#给孩子看的世界}}
+
+{{embed: GLOSSARY.md#内容}}
+
+{{embed: GLOSSARY.md#协作}}
 
 ## 技术契约 activity/1.1（必须遵守，原样贴入）
 {{embed: docs/activity-contract.md}}
