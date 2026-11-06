@@ -146,14 +146,23 @@ Claude 收到交付包后逐条检查，结果作为一条评论写进 issue：
 
 契约测试台、断网运行检查、平板截图在 P1 阶段加入。
 
-## 一次性设置（Luka 在 GitHub 网页上做）
+## 一次性设置（Luka 在 GitHub 网页上做，2026-11-06 已完成）
 
-Settings → Branches → Add rule，分支名填 `main`，勾选：
+**规则集**：Settings → Rulesets → New branch ruleset。现有的规则集叫「Protect Main」，内容如下：
 
-- Require a pull request before merging（**不要**勾选 Require approvals：所有提交都来自同一个账号，没人能「批准」）
-- Require status checks to pass，搜索并选中 `检查`
-- Block force pushes
+| 项目 | 设置 | 原因 |
+| --- | --- | --- |
+| Enforcement status | Active | 不改成 Active，规则不生效 |
+| Bypass list | 空 | 谁都绕不过，包括 Luka 的账号（也就是 Claude 在用的账号） |
+| Target branches | Include default branch（`main`） | |
+| Restrict deletions、Block force pushes | 勾选 | `main` 不能被删除，历史不能被改写 |
+| Require a pull request before merging | 勾选；Required approvals 为 **0**；Allowed merge methods 只留 **Squash** | 所有提交都来自同一个账号，GitHub 不允许自己批准自己，审批数设成 1 就什么都合不进去 |
+| 同上，additional settings 里关于 **unattributed changes** 的那一项 | **不勾** | 这是 GitHub 还在预览中的功能，规则集接口里默认开启。开着的话，由应用开出的 PR（Claude 开的就是）即使审批数为 0，也要等真人批准，而 Luka 批准不了自己账号下的 PR |
+| Require status checks to pass | 勾选；Require branches to be up to date 勾选；只保留 `检查`（来源 **GitHub Actions**） | 来源设为 Any source 的话，任何应用都能报告「检查通过」，等于开了后门 |
+| Require linear history | 勾选 | 和只允许 Squash 配套 |
 
-再到 Settings → General → Pull Requests，勾选 **Automatically delete head branches**。PR 合入后，分支会自动删除。Claude 这边删不了远程分支，不勾的话，合入过的 `kp/<知识点 id>` 分支会一直留着，改版时就没法重用这个名字。
+**自动删除分支**：Settings → General → Pull Requests，勾选 **Automatically delete head branches**。Claude 这边删不了远程分支，不勾的话，合入过的 `kp/<知识点 id>` 分支会一直留着，改版时就没法重用这个名字。
+
+**检查设置有没有被改动**：Claude 可以随时读出规则集的实际配置（`gh api repos/deepnorth2077/curio/rulesets`），和上表对照。
 
 设好之后，Claude 也必须走 PR，并且只有 CI 通过才能合入。
