@@ -1,4 +1,4 @@
-"""把 prompts/<任务 id>.md 展开成可以直接派发的任务文件 <任务 id>.task.md。
+r"""把 prompts/<任务 id>.md 展开成可以直接派发的任务文件 <任务 id>.task.md。
 
 用法：
     python tools/make_task.py curio-002a                 # 用 HEAD，并要求它已经合入 origin/main
