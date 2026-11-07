@@ -12,4 +12,4 @@ capabilities: [pointer, keyboard]
 misconceptions: [different-books, blood-only, only-for-babies]
 emits: [predicted, observed]
 author: {model: claude-opus-5-5, prompt_ref: prompts/act.simulation.dna-book-01.md}
-review: pending
+review: approved

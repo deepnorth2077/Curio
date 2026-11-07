@@ -6,7 +6,7 @@ title: DNA：细胞里的说明书
 targets: [biology.genetics.dna-intro]
 age_band: G3-4
 duration_min: 5
-review: pending
+review: approved
 engine: 1
 sources:
   - type: textbook
@@ -48,9 +48,6 @@ body:
         answer:
           type: choice
           choices:
-            - id: a
-              text: 它们读的是同一本书的不同几页
-              correct: true
             - id: b
               text: 它们的说明书本来就不同
               misconception: different-books
@@ -59,6 +56,9 @@ body:
               text: 它们带的说明书页数不一样多
               misconception: different-books
               feedback: 看起来确实像书有厚薄，其实绝大多数细胞带的是同一套，只是用的页不同。
+            - id: a
+              text: 它们读的是同一本书的不同几页
+              correct: true
         hints:
           - 想一想，刚才说的“同一套”是什么意思。
           - 本领不同，不一定是书不同，也可能是翻开的地方不同。
@@ -101,13 +101,13 @@ body:
         answer:
           type: choice
           choices:
-            - id: a
-              text: 长个子、修补伤口时都会用
-              correct: true
             - id: b
               text: 只在生小宝宝时用
               misconception: only-for-babies
               feedback: 这个想法有道理，因为说明书会传给孩子；但长个子、修补伤口时也要用它。
+            - id: a
+              text: 长个子、修补伤口时都会用
+              correct: true
             - id: c
               text: 只有传给孩子时才用
               misconception: only-for-babies
