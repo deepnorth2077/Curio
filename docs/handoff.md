@@ -8,7 +8,9 @@ Luka 在「学习台」项目里开新对话，第一句发：
 
 > 接手好奇号。先读仓库里的 `docs/handoff.md`，再按它说的去看 issue。然后告诉我：现在卡在哪里、下一步你打算做什么。
 
-新对话里的 Claude 应该：准备环境（第 2 节）→ 读第 1 节列的东西 → 用一两句话回答「卡在哪里、下一步做什么」→ 等 Luka 发「交付 #<号>」「审阅 #<号>」或新的要求。收货审核、派发任务、架构改动这三件事各有一个技能（`curio-intake-review`、`curio-dispatch-task`、`curio-arch-change`），照着做就行；如果对话里没有这些技能，就按第 3 节和 `docs/collaboration.md` 做。
+新对话里的 Claude 应该：准备环境（第 2 节）→ 读第 1 节列的东西 → 用一两句话回答「卡在哪里、下一步做什么」→ 等 Luka 发「交付 #<号>」「审阅 #<号>」或新的要求。
+
+**2026-11-08 起的做法**（ADR-009 增补 1、ADR-007 增补 1）：实现默认走**本地通道**（Claude 自己开子 agent 做、另一个子 agent 审查），不再让 Luka 传话；只有需要跨模型时（长期契约的审阅、触发条件下的事实核对、里程碑抽查）才走外部通道。每件改动开工前勾选 A、B、C，检查取并集；都不沾才走 D。收货审核、派发任务、架构改动这三件事各有一个技能（`curio-intake-review`、`curio-dispatch-task`、`curio-arch-change`），照着做就行；如果对话里没有这些技能，就按第 3 节和 `docs/collaboration.md` 做。
 
 每个对话结束前，Claude 要做一个**收尾里程碑**：把第 7 节的快照更新到当天，在 #13 留一条评论写明「这一轮做完了什么、还在等什么」，再告诉 Luka 可以开新对话了。
 
@@ -17,7 +19,7 @@ Luka 在「学习台」项目里开新对话，第一句发：
 1. `AGENTS.md`：不能破坏的原则、产品规则、协作方式。
 2. 本文件。
 3. issue #13（路线图总览）：做到哪一步、哪些任务被谁卡着。
-4. 正在流转的 issue：按标签查。`待派发` 表示任务文件已交给 Luka，等实现 AI；`待审核` 表示交付已带回，等 Claude 审核；`打回` 表示修改提示词已发出，等重交；`待试玩` 表示等孩子试玩。
+4. 正在流转的 issue：按标签查。`待派发`：外部通道是任务文件已交给 Luka、等外部模型，本地通道是等 Claude 开子 agent；`待审核`：交付已带回或子 agent 已交出产物，等 Claude 审核；`打回`：修改意见已发出，等重交；`待试玩`：等 Luka 验收或孩子试玩。issue 里写明走哪条通道。
 5. 用到哪部分，再读哪部分：`docs/collaboration.md`（流程）、`docs/specs/`（规格）、`docs/adr/`（决定）、`GLOSSARY.md`（用词）、`docs/standards.md`（审核标准）、`docs/reviews/`（外部审阅记录）。
 
 查 issue 和 PR 的命令（这个环境里 GraphQL 不能用，`gh issue list` 之类会失败，一律用 REST）：
@@ -41,8 +43,8 @@ python -m unittest discover -s tools/tests         # 全部通过再开始干活
 
 | 要做的事 | 怎么做 |
 | --- | --- |
-| 派发一个任务 | 按模板写 `prompts/<任务 id>.md`（平台任务用 `task-template.md`，讲解、挑战、反思用 `content-template.md`，实验用 `module-template.md`），高风险规则的验收用例自己先算好；开 `arch/` 分支 PR 合入；用 `python tools/make_task.py <任务 id>` 生成任务文件，发给 Luka；在 issue 里记下提交号、文件哈希和收货命令，贴 `待派发` 标签 |
-| 收货和审核 | `python tools/intake.py <交付包> --expect-issue '#<号>' --expect-task <任务 id> --expect-commit <派发时的提交号> --expect-version v1 --write <临时目录>`；在 `main` 的临时副本（`git worktree add`）里放入文件，跑全部测试；在临时副本里故意改坏几处规则，看测试能不能发现；按 `docs/collaboration.md` 的格式写审核评论，分「规格」「规范」两条线，每条标严重程度 |
+| 派发一个任务 | **本地通道（默认）**：写任务说明（基准提交、要读的规格路径；新设计才写设计说明），给子 agent 一个隔离的输出目录，另开一个子 agent 只读冻结的产物做审查。**外部通道**：按模板写 `prompts/<任务 id>.md`（平台任务用 `task-template.md`，讲解、挑战、反思用 `content-template.md`，实验用 `module-template.md`），高风险规则的验收用例自己先算好；开 `arch/` 分支 PR 合入；用 `python tools/make_task.py <任务 id>` 生成任务文件，发给 Luka；在 issue 里记下提交号、文件哈希和收货命令，贴 `待派发` 标签 |
+| 收货和审核 | 本地通道不收货，用提交号绑定被审的版本，按勾选的项做检查，结论写进 PR 的审查记录。外部通道：`python tools/intake.py <交付包> --expect-issue '#<号>' --expect-task <任务 id> --expect-commit <派发时的提交号> --expect-version v1 --write <临时目录>`；在 `main` 的临时副本（`git worktree add`）里放入文件，跑全部测试；在临时副本里故意改坏几处规则，看测试能不能发现；按 `docs/collaboration.md` 的格式写审核评论，分「规格」「规范」两条线，每条标严重程度 |
 | 整合 | 开 `arch/`（改到 `schemas/`、`docs/`、`tools/` 时）或对应前缀的分支；放入通过审核那一轮的文件，核对哈希一致；任务文件留档到 `prompts/`（`feat/`、`fix/`、`chore/` 分支只能新增 `<任务 id>.task.md`，`kp/` 分支只能放自己活动的）；提交末尾写 `Implemented-By:`、`Reviewed-By: Claude`、`Refs:`；开 PR，CI 绿勾后 squash 合入；关闭 issue |
 
 ## 4. 这个环境里的坑
@@ -58,7 +60,7 @@ python -m unittest discover -s tools/tests         # 全部通过再开始干活
 ## 5. 和 Luka 相处
 
 - Luka 不写代码，只负责部署、传话和验收。用简体中文，说具体的事，少用术语。
-- 需要他拍板时，一轮把问题问完，每个附上推荐答案，措辞成「回答『是』就采纳推荐」（ADR-009 第 1 条）。
+- 需要他拍板时，一轮把问题问完，每个附上推荐答案，措辞成「回答『是』就采纳推荐」（ADR-009 原文第 1 条）。
 - 每个交付都要附「怎么验收」：打开什么、点哪里、应该看到什么。
 - 他会在对话里发「交付 #<号>」「审阅 #<号>」，附上实现 AI 或审阅模型的回复。
 - 不要问孩子或家人在哪里使用。需要按地区做的技术选择，用「连通测试」让 Luka 自己选（见 #31）。
