@@ -18,7 +18,7 @@
   --c-math:#ECCDB6; --c-math-2:#D59E7A; --c-math-bg:#F2E1D3;
   --c-sci:#CCD6C0; --c-sci-2:#93A982; --c-sci-bg:#DCE3D2;
   --c-sky:#CFDCE6; --wash:#EFE4D6;
-  --good:#3B7A56; --bad:#B4432E;
+  --good:#3B7A56; --bad:#B4432E; --good-soft:#DCEBDF; --bad-soft:#F5DFD8; --dad:#4F7FA8; --mom:#C2603F;
   --l1:#C2603F; --l2:#C9962A; --l3:#4F7FA8; --l4:#8E5B8A; --l5:#3E8C86; --l6:#D07A2E; --l7:#6E9A4E; --l8:#5D6B8A;
   --shadow:0 1px 2px rgba(31,30,28,.06),0 8px 28px rgba(31,30,28,.08);
   --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
@@ -32,7 +32,7 @@
   --accent:#A797F7; --accent-soft:#2D2943; --on-accent:#15121F;
   --c-math:#5A4536; --c-math-2:#9A7558; --c-math-bg:#33291F;
   --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
-  --c-sky:#2D3B47; --wash:#2A2738; --good:#7CC79A; --bad:#EF8A72;
+  --c-sky:#2D3B47; --wash:#2A2738; --good:#7CC79A; --bad:#EF8A72; --good-soft:#203528; --bad-soft:#3A2420; --dad:#7FA9CF; --mom:#E0876A;
   --l1:#E08A6C; --l2:#E0B65A; --l3:#7FA8D0; --l4:#B98AB5; --l5:#6CB8B1; --l6:#E9A05F; --l7:#97C277; --l8:#93A0C2;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark}}
 :root[data-theme="dark"]{
@@ -41,7 +41,7 @@
   --accent:#A797F7; --accent-soft:#2D2943; --on-accent:#15121F;
   --c-math:#5A4536; --c-math-2:#9A7558; --c-math-bg:#33291F;
   --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
-  --c-sky:#2D3B47; --wash:#2A2738; --good:#7CC79A; --bad:#EF8A72;
+  --c-sky:#2D3B47; --wash:#2A2738; --good:#7CC79A; --bad:#EF8A72; --good-soft:#203528; --bad-soft:#3A2420; --dad:#7FA9CF; --mom:#E0876A;
   --l1:#E08A6C; --l2:#E0B65A; --l3:#7FA8D0; --l4:#B98AB5; --l5:#6CB8B1; --l6:#E9A05F; --l7:#97C277; --l8:#93A0C2;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark}
 
@@ -366,6 +366,67 @@ textarea{min-height:84px;resize:vertical}
 @media (min-width:560px){.setgrid{grid-template-columns:1fr 1fr}}
 .setgrid .pair{display:flex;gap:8px}
 .toggle input{width:18px;height:18px;accent-color:var(--ink)}
+
+/* 内容包里的活动（动手探索、讲解、挑战、反思）：和试玩页同一套样子，类名都带 pl- */
+.pl .labbody{display:block}
+.pl-main{max-width:760px;margin:0 auto;width:100%;font-size:17px;line-height:1.7;color:var(--text)}
+.pl-main .btn.big{min-height:48px;font-size:16px}
+.pl .frame iframe{min-height:600px}
+.pl-dock{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;background:var(--side);border-top:1px solid var(--rule);padding-block:10px calc(10px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.pl-chat{padding:4px 0 8px;display:flex;flex-direction:column;gap:12px}
+.pl-row{display:flex;gap:10px;align-items:flex-end}
+.pl-row.me{justify-content:flex-end}
+.pl-ava{flex:none;width:40px;height:40px}
+.pl-bub{max-width:min(560px,82%);background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);box-shadow:var(--shadow)}
+.pl-row.me .pl-bub{background:var(--accent-soft);border-color:transparent;border-radius:16px 16px 4px 16px}
+.pl-bub.hint{background:var(--c-sky);border-color:transparent}
+.pl-bub.good{background:var(--good-soft);border-color:transparent}
+.pl-bub.bad{background:var(--bad-soft);border-color:transparent}
+.pl-bub .pl-tag{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.pl-bub.fig{max-width:min(620px,88%);padding:10px}
+.pl-fig{background:var(--bg);border-radius:12px;padding:6px}
+.pl-fig svg{display:block;width:100%;height:auto;max-height:52vh}
+.pl-fig .k,.pl-fig .k1{vector-effect:none}
+.pl-fig [fill="#CCD6C0" i]{fill:var(--c-sci)} .pl-fig [fill="#CFDCE6" i]{fill:var(--c-sky)}
+.pl-fig [fill="#ECCDB6" i]{fill:var(--c-math)} .pl-fig [fill="#EFE4D6" i]{fill:var(--wash)}
+.pl-fig [fill="#4F7FA8" i]{fill:var(--dad)} .pl-fig [fill="#C2603F" i]{fill:var(--mom)}
+.pl-fig [stroke="#4F7FA8" i]{stroke:var(--dad)} .pl-fig [stroke="#C2603F" i]{stroke:var(--mom)}
+.pl-fig [stroke="#1F1E1C" i]{stroke:var(--ink)} .pl-fig text{fill:var(--ink)}
+.pl-cap{font-size:15px;color:var(--text);margin:8px 4px 2px}
+.pl-stem{font-weight:600}
+.pl-choices{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.pl-choice{text-align:left;border:1.5px solid var(--ink);background:var(--bg);color:var(--ink);border-radius:12px;padding:10px 14px;min-height:48px;font-size:17px}
+.pl-choice:hover:not(:disabled){background:var(--hover)}
+.pl-choice:disabled{cursor:default}
+.pl-choice.wrong{border-color:var(--bad);color:var(--muted);text-decoration:line-through;text-decoration-color:var(--bad)}
+.pl-choice.right{border-color:var(--good);background:var(--good-soft);font-weight:600}
+.pl-numrow{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.pl-numrow input{width:130px;font-size:20px;padding:8px 12px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink)}
+.pl-numrow .unit{font-size:18px}
+.pl-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+.pl-composer{background:var(--pane);border:1px solid var(--rule);border-radius:16px;padding:12px;box-shadow:var(--shadow);margin:6px 0}
+.pl-ta{width:100%;font-size:17px;padding:10px 12px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);resize:vertical;min-height:96px}
+.pl-chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.pl-chip{border:1px dashed var(--ink);background:var(--bg);color:var(--ink);border-radius:999px;padding:6px 14px;font-size:16px;min-height:40px}
+.pl-hint{font-size:13px;color:var(--muted)}
+.pl-counter{font-size:13px;color:var(--muted);text-align:right}
+.pl-end{background:var(--c-sci-bg);border-radius:16px;padding:18px;margin:16px 0}
+.pl-end h3{font-family:var(--f-serif);color:var(--ink);font-size:19px;margin:0 0 6px}
+.pl-end p{margin:0}
+.pl-end .pl-btns{justify-content:flex-start}
+.pl-q{background:var(--pane);border:1px solid var(--rule);border-radius:18px;padding:18px;margin-top:14px;box-shadow:var(--shadow)}
+.pl-q .pl-stem{font-size:19px;color:var(--ink)}
+.pl-prog{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:14px}
+.pl-prog i{display:inline-block;width:20px;height:8px;border-radius:4px;background:var(--rule)}
+.pl-prog i.on{background:var(--ink)} .pl-prog i.ok{background:var(--good)}
+.pl-fb{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.pl-fb .pl-bub{max-width:100%}
+.taskrow .tick{color:var(--good);font-weight:700}
+@media (prefers-reduced-motion:no-preference){
+  .pl-in{animation:plin .28s ease-out both}@keyframes plin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .pl-draw .k,.pl-draw .k1{stroke-dasharray:1;stroke-dashoffset:1;animation:pldraw 1.2s ease-out forwards}@keyframes pldraw{to{stroke-dashoffset:0}}
+}
+@media (max-width:520px){.pl-main{font-size:16px}.pl-bub{max-width:86%}}
 </style>
 </head>
 <body>
@@ -414,6 +475,8 @@ textarea{min-height:84px;resize:vertical}
   </nav>
 </div>
 
+<!-- 内容包：python preview/build.py --root . --bundle prototype/content.js 生成；没有它原型照常打开 -->
+<script src="content.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -515,8 +578,9 @@ const RAW=[
  ["s.g6.change","物质的变化","G6","mat","物质的变化",["s.g3.melt"]],
  ["p.g8.reflect","光的反射","G8","ene","物理 · 光现象",["science.light.straight-line"]],["p.g8.force","力","G8","ene","物理 · 力"],["p.g9.current","电流和电路","G9","ene","物理 · 电流",["s.g4.circuit"]],
  ["c.g9.atom","分子和原子","G9","mat","化学 · 物质构成",["s.g6.change"]],["c.g9.equation","化学方程式","G9","mat","化学 · 化学方程式",["c.g9.atom","m.g6.ratio"]],
- ["b.g7.cell","细胞","G7","life","生物 · 细胞"],["b.g7.photo","光合作用","G7","life","生物 · 绿色植物",["s.g3.plant","b.g7.cell"]],["e.g7.earth","地球的运动","G7","earth","地理 · 地球",["s.g5.daynight"]],
- ["p.g10.newton","牛顿运动定律","G10","ene","物理 · 必修一",["p.g8.force"]],["c.g11.equil","化学平衡","G11","mat","化学 · 选择性必修",["c.g9.equation"]],["b.g11.gene","遗传与进化","G11","life","生物 · 必修二",["b.g7.cell"]]
+ ["biology.cell.cell-intro","细胞","G7","life","生物 · 细胞"],["b.g7.photo","光合作用","G7","life","生物 · 绿色植物",["s.g3.plant","biology.cell.cell-intro"]],["e.g7.earth","地球的运动","G7","earth","地理 · 地球",["s.g5.daynight"]],
+ ["p.g10.newton","牛顿运动定律","G10","ene","物理 · 必修一",["p.g8.force"]],["c.g11.equil","化学平衡","G11","mat","化学 · 选择性必修",["c.g9.equation"]],["b.g11.gene","遗传与进化","G11","life","生物 · 必修二",["biology.genetics.chromosome-intro"]],
+ ["biology.genetics.dna-intro","DNA","G8","life","生物 · 遗传",["biology.cell.cell-intro"]],["biology.genetics.chromosome-intro","染色体","G8","life","生物 · 遗传",["biology.genetics.dna-intro"]]
 ];
 const DETAIL={
   "math.number.division-meaning":{icon:"candy",dq:"12 颗糖平均分给 3 个人，每人几颗？怎样分才公平？",objectives:["理解平均分","会用除法表示平均分"],misconceptions:["以为分了就是平均分"],lenses:[["G1-2","用实物一个一个分"],["G3-4","用除法算式表示"]]},
@@ -529,13 +593,19 @@ const DETAIL={
   "science.light.straight-line":{icon:"torch",dq:"为什么手电筒的光是一条直直的光柱？",objectives:["知道光在同一种物质里沿直线走"],misconceptions:["光会自己拐弯绕过障碍"],lenses:[["G3-4","手电筒与小孔卡片"],["G8","光的直线传播与影子"]]},
   "science.light.pinhole":{icon:"pinhole",dq:"为什么墙上会出现一幅倒过来的窗外风景？",objectives:["观察到小孔成倒立的像","知道孔越大越亮但越模糊"],misconceptions:["像只是上下颠倒","孔越大像越清楚"],lenses:[["G3-4","更亮/更暗、清楚/模糊"],["G8","像高 = 物高 × 像距 ÷ 物距"]],acts:["act.experiment.pinhole-g3"]}
 };
+// 内容包里已发布的知识点：覆盖 RAW 里同 id 的占位（原型里的 RAW、DETAIL 只是示例），RAW 里没有的追加在末尾
+const CONTENT=window.CURIO_CONTENT||{nodes:[],activities:{},figures:{}};
+CONTENT.nodes.forEach(c=>{ if(!THEMES[c.theme]) return; const row=[c.id,c.title,c.grade,c.theme,c.unit,c.prerequisites], i=RAW.findIndex(r=>r[0]===c.id);
+  if(i>=0) RAW[i]=row; else RAW.push(row);
+  DETAIL[c.id]=Object.assign({},DETAIL[c.id],{dq:c.driving_question||null,objectives:c.objectives||[],misconceptions:(c.misconceptions||[]).map(m=>m.text),lenses:(c.lenses||[]).map(l=>[l.band,l.approach]),acts:c.activities}); });
+const RAW_IDS=new Set(RAW.map(r=>r[0]));
 const GRADES=["G1","G2","G3","G4","G5","G6","G7","G8","G9","G10","G11","G12"];
 const GRADE={G1:"一年级",G2:"二年级",G3:"三年级",G4:"四年级",G5:"五年级",G6:"六年级",G7:"初一",G8:"初二",G9:"初三",G10:"高一",G11:"高二",G12:"高三"};
 const BAND_OF=g=>({G1:0,G2:0,G3:1,G4:1,G5:2,G6:2,G7:3,G8:3,G9:3})[g]??4;
 const BAND_NAME=["一二年级","三四年级","五六年级","初中","高中"];
 let CURRENT_BAND=1, CURRENT_GRADE="G3";   // 由「设置」里的年级算出来，见 applyProfile()
 const NODES=RAW.map(([id,title,grade,theme,unit,prereq],i)=>{ const t=THEMES[theme], d=DETAIL[id]||{};
-  return {id,title,grade,theme,unit,prereq:prereq||[],galaxy:t.g,band:BAND_OF(grade),icon:d.icon||t.icon,dq:d.dq||null,objectives:d.objectives||[],misconceptions:d.misconceptions||[],lenses:d.lenses||[],acts:d.acts||[],seed:11+i*7,no:i+1}; });
+  return {id,title,short:title.split("：")[0],grade,theme,unit,prereq:(prereq||[]).filter(p=>RAW_IDS.has(p)),galaxy:t.g,band:BAND_OF(grade),icon:d.icon||t.icon,dq:d.dq||null,objectives:d.objectives||[],misconceptions:d.misconceptions||[],lenses:d.lenses||[],acts:d.acts||[],seed:11+i*7,no:i+1}; });
 const NODE=Object.fromEntries(NODES.map(n=>[n.id,n]));
 const GALAXY={math:"数学",science:"科学"};
 const consId=n=>n.theme+"|"+n.band;
@@ -549,6 +619,10 @@ const ACTIVITIES={
     emits:["started","adjusted","observed","question_noted"],entry:"pinholeModule"},
   "act.quiz.fraction-intro-01":{id:"act.quiz.fraction-intro-01",contract:"activity/1.1",type:"quiz",title:"分蛋糕小挑战",targets:["math.number.fraction-intro"],age_band:"G3-4",duration_min:5,pedagogy:"hint-ladder",emits:["started","answered","hint_used"],entry:"quizModule"}
 };
+Object.values(CONTENT.activities).forEach(a=>{ ACTIVITIES[a.id]=Object.assign({},a,{type:a.kind,content:true}); });
+const PLAYED=new Set();   // 这次打开页面以后玩完的内容活动，只在内存里，刷新就没了（这一版先不记进度）
+const ACT_KIND={experiment:"实验",quiz:"挑战",simulation:"动手探索",explain:"讲解",reflection:"反思"};
+const actKind=(a,n)=>a.type==="explain"&&n.acts.some(x=>ACTIVITIES[x]&&ACTIVITIES[x].type==="simulation")?"旧版讲解":(ACT_KIND[a.type]||"任务");
 const TASK_LIB_DEFAULT=["数学","科学","阅读","运动","下棋","弹琴"];
 
 /* ============================================================
@@ -768,9 +842,11 @@ function renderOverview(){
     c.nodes.forEach((n,i)=>n.prereq.forEach(p=>{ if(p in idx){ const A=geo.pts[idx[p]], B=geo.pts[i]; fig+=`<path class="${geo.cur?"k1":"kq"}" d="${Sk.line(A[0],A[1],B[0],B[1],ci*31+i,.25)}" opacity="${geo.cur?.55:.6}"/>`; } }));
     c.nodes.forEach((n,i)=>{ const st=nodeState(n), [x,y]=geo.pts[i], r=geo.cur?4.4:2.6;
       fig+= st==="lit"?`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="var(--ink)"/>`:`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="var(--pane)" stroke="${st==="landed"?"var(--ink)":"var(--muted)"}" stroke-width="1.2" ${st==="ahead"?'stroke-dasharray="1.5 1.5"':""}/>`;
-      if(n.acts.length&&geo.cur) fig+=`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(x+4,y-4,x+9,y-9,n.seed)+Sk.line(x+5,y-10,x+9,y-4,n.seed+1)}"/>`; });
+      if(n.acts.length) fig+=geo.cur?`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(x+4,y-4,x+9,y-9,n.seed)+Sk.line(x+5,y-10,x+9,y-4,n.seed+1)}"/>`:`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(x+3,y-3,x+7,y-7,n.seed)+Sk.line(x+3,y-7,x+7,y-3,n.seed+1)}"/>`; });
     const hasRep=c.nodes.some(n=>repairsFor(n.id).length);
-    const label = (c.band===1||c.band===2) ? `<text class="cname ${geo.cur?"":"small"}" x="0" y="${geo.rr+(geo.cur?20:15)}" text-anchor="middle">${esc(t.name)}</text>${geo.cur?`<text class="ccount" x="0" y="${geo.rr+36}" text-anchor="middle">${litN}/${c.nodes.length}</text>`:""}` : "";
+    // 一二年级、初中、高中这几圈一般不写名字；有能玩的任务的星座例外，免得找不到
+    const playable=c.band!==1&&c.band!==2&&c.nodes.some(n=>n.acts.length);
+    const label = playable ? `<text class="cname small" x="0" y="${geo.rr+15}" text-anchor="middle">${esc(consName(c))}</text>` : (c.band===1||c.band===2) ? `<text class="cname ${geo.cur?"":"small"}" x="0" y="${geo.rr+(geo.cur?20:15)}" text-anchor="middle">${esc(t.name)}</text>${geo.cur?`<text class="ccount" x="0" y="${geo.rr+36}" text-anchor="middle">${litN}/${c.nodes.length}</text>`:""}` : "";
     h+=`<g class="cons" data-id="${c.id}" tabindex="0" role="button" aria-label="${esc(consName(c))}，${BAND_NAME[c.band]}，${c.nodes.length} 颗星球，点亮 ${litN}" transform="translate(${geo.x.toFixed(1)} ${geo.y.toFixed(1)})">
       <circle class="hit" r="${geo.rr+(geo.cur?16:10)}"/>${c.id===recC?`<circle class="ping" r="${geo.rr+6}"/>`:""}
       ${geo.cur?`<path d="${Sk.blob(0,0,geo.rr+8,geo.rr+8,ci+3)}" style="fill:var(${t.c})" opacity=".1"/>`:""}${fig}${hasRep?`<circle cx="${geo.rr*.8}" cy="${-geo.rr*.8}" r="4" fill="var(--bad)"/>`:""}${label}</g>`;
@@ -808,7 +884,7 @@ function renderConstellation(c){
     <div class="legend"><a class="wikilink" href="#metro" data-metroline="${c.theme}">在地铁上看这条线</a></div></div>
     <div class="graph scroll" id="graph"><svg id="gsvg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(consName(c))}座的星球"></svg></div>`;
   let h=`<path d="${Sk.blob(W/2,H/2,W/2-20,H/2-10,c.band+7)}" style="fill:var(${t.c})" opacity=".05"/>`;
-  rows.forEach((r,ri)=>{ const y=70+ri*RH; if(r.name) h+=`<text class="unit-lbl" x="28" y="${y+6}">${esc(r.name)}</text>`; });
+  rows.forEach((r,ri)=>{ const y=70+ri*RH; if(r.name) h+=`<text class="unit-lbl" x="28" y="${y+6}">${esc(r.name.split(" · ").slice(0,2).join(" · "))}</text>`; });
   // edges inside the constellation
   let ei=0; c.nodes.forEach(n=>n.prereq.forEach(p=>{ if(!pos[p]) return; const [ax,ay]=pos[p], [bx,by]=pos[n.id]; const lit=mastery(p)>=.8;
     if(ay===by){ h+=`<path class="${lit?"k1":"kq"}" ${lit?"":'stroke-dasharray="4 5"'} d="${Sk.line(ax+20,ay,bx-22,by,700+ei)+Sk.line(bx-22,by,bx-29,by-5,720+ei,.3)+Sk.line(bx-22,by,bx-29,by+5,740+ei,.3)}"/>`; }
@@ -824,7 +900,7 @@ function renderConstellation(c){
     const ext=n.prereq.filter(p=>!pos[p]).length;
     h+=`<g class="node" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.title)}，${STATE_WORD[st]}" transform="translate(${x} ${y})"><circle class="hit" r="30"/>
       ${n.id===rec.id?`<circle class="ping" r="${r+6}"/>`:""}${n.id===selected?`<path class="sel-ring" d="${Sk.ellipse(0,0,r+9,r+9,n.seed+9,.8)}"/>`:""}${body}${task}${rep}
-      <text class="lbl" y="${r+22}" text-anchor="middle">${esc(n.title)}</text></g>`; });
+      <text class="lbl" y="${r+22}" text-anchor="middle">${esc(n.short)}</text></g>`; });
   const svg=$("#gsvg"); svg.innerHTML=h;
   svg.querySelectorAll(".node").forEach(el=>{ el.onclick=()=>select(el.dataset.id,true); el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); select(el.dataset.id,true);} }; });
   wrap.querySelector("[data-zout]").onclick=zoomOut;
@@ -878,7 +954,7 @@ function renderMetro(){
     h+=`<g class="station" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.title)} · ${GRADE[n.grade]} · ${STATE_WORD[st]}" transform="translate(${x.toFixed(1)} ${y})" opacity="${dim?.3:1}"><circle class="hit" r="16"/>
       ${n.id===selected?`<circle r="13" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`:""}${ring}${core}
       ${n.acts.length?`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(7,-8,12,-13,n.seed)+Sk.line(8,-14,12,-8,n.seed+1)}"/>`:""}${repairsFor(n.id).length?`<circle cx="-8" cy="-8" r="3.5" fill="var(--bad)"/>`:""}
-      <text class="slbl ${st==="lit"||st==="landed"||n.id===rec.id?"":"dim"}" transform="translate(6 -14) rotate(-36)" ${n.id===rec.id?'style="fill:var(--accent);font-weight:700"':""}>${esc(n.title)}${n.id===rec.id?" · 你在这里":""}</text></g>`; });
+      <text class="slbl ${st==="lit"||st==="landed"||n.id===rec.id?"":"dim"}" transform="translate(6 -14) rotate(-36)" ${n.id===rec.id?'style="fill:var(--accent);font-weight:700"':""}>${esc(n.short)}${n.id===rec.id?" · 你在这里":""}</text></g>`; });
   // you are here
   // sticky line labels
   let lbl=`<rect x="0" y="0" width="${LBLW}" height="${H}" style="fill:var(--pane)"/><path class="kq" d="M${LBLW} 0V${H}"/>`;
@@ -887,7 +963,9 @@ function renderMetro(){
   const sc=$("#mscroll");
   sc.innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="知识地铁线路图">${h}<g id="mlabels">${lbl}</g></svg>`;
   const ml=sc.querySelector("#mlabels"); sc.onscroll=()=>ml.setAttribute("transform",`translate(${sc.scrollLeft} 0)`);
-  sc.scrollLeft=Math.max(0,zoneX[CURRENT_GRADE]-LBLW-80);
+  // 默认停在「你在这里」；选中的站在视野外时（比如刚从初中的活动回来），停到那一站
+  const home=Math.max(0,zoneX[CURRENT_GRADE]-LBLW-80), sp=selected&&pos[selected];
+  sc.scrollLeft=sp&&(sp[0]<home+LBLW+20||sp[0]>home+sc.clientWidth-40)?Math.max(0,sp[0]-LBLW-(sc.clientWidth-LBLW)/2):home;
   sc.querySelectorAll(".station").forEach(el=>{ el.onclick=()=>select(el.dataset.id,true); el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); select(el.dataset.id,true);} }; });
   sc.querySelectorAll(".lline").forEach(el=>el.onclick=()=>{ metroFocusLine=metroFocusLine===el.dataset.line?null:el.dataset.line; const keep=sc.scrollLeft; renderMetro(); $("#mscroll").scrollLeft=keep; });
 }
@@ -895,7 +973,7 @@ function renderCards(){
   const sc=$("#mscroll"); let h=`<div class="cards">`;
   THEME_ORDER.forEach(k=>{ const t=THEMES[k], list=NODES.filter(n=>n.theme===k), got=list.filter(n=>nodeState(n)==="lit").length;
     h+=`<section><h2><i style="background:var(${t.c})"></i>${t.line}<small>${got}/${list.length}</small></h2><div class="cardgrid">`+
-      list.map(n=>{ const lit=nodeState(n)==="lit"; return `<button class="spec ${lit?"":"locked"}" data-id="${n.id}"><span class="no">No.${String(n.no).padStart(3,"0")}</span>${lit?`<span class="stamp">已收集</span>`:""}${icon(n.icon,n.galaxy,64,n.seed)}<b>${lit?esc(n.title):(n.band<=CURRENT_BAND?esc(n.title):"？？？")}</b><small>${GRADE[n.grade]}</small></button>`; }).join("")+`</div></section>`; });
+      list.map(n=>{ const lit=nodeState(n)==="lit"; return `<button class="spec ${lit?"":"locked"}" data-id="${n.id}"><span class="no">No.${String(n.no).padStart(3,"0")}</span>${lit?`<span class="stamp">已收集</span>`:""}${icon(n.icon,n.galaxy,64,n.seed)}<b>${lit?esc(n.short):(n.band<=CURRENT_BAND?esc(n.short):"？？？")}</b><small>${GRADE[n.grade]}</small></button>`; }).join("")+`</div></section>`; });
   sc.innerHTML=h+`</div>`;
   sc.querySelectorAll(".spec").forEach(b=>b.onclick=()=>select(b.dataset.id,true));
 }
@@ -915,7 +993,7 @@ function select(id,user){
 }
 function noteHTML(n,animate){
   const st=nodeState(n), m=mastery(n.id), rec=recommend(), isRec=rec.id===n.id, t=THEMES[n.theme], c=CONS[consId(n)];
-  const nextOnes=NODES.filter(x=>x.prereq.includes(n.id)), acts=n.acts.map(a=>ACTIVITIES[a]), lit=st==="lit";
+  const nextOnes=NODES.filter(x=>x.prereq.includes(n.id)), acts=n.acts.map(a=>ACTIVITIES[a]).filter(Boolean), lit=st==="lit";
   const cardBg=n.galaxy==="math"?"var(--c-math-bg)":"var(--c-sci-bg)";
   return `<div class="note">
     <div class="crumbs"><span>${GALAXY[n.galaxy]}</span><span>${esc(consName(c))}座</span><span>${GRADE[n.grade]}</span></div>
@@ -930,7 +1008,7 @@ function noteHTML(n,animate){
     ${n.dq?`<div class="signal-card" style="--card-bg:${cardBg}"><div><div class="eyebrow">${isRec?"今日信号":"来自这颗星球的信号"}</div><p class="q">${esc(n.dq)}</p></div>${icon(n.icon,n.galaxy,100,n.seed,animate?"drawin":"")}</div>`
       :`<div class="callout"><span class="ct">这颗星球的信号还在路上</span><span class="muted" style="font-size:13px">它的讲解、实验和挑战还没造好。示例数据里只有少数星球是完整的。</span></div>`}
     <h2>任务</h2>
-    <div class="tasklist">${acts.length?acts.map(a=>`<div class="taskrow">${icon(a.type==="experiment"?"pinhole":"cake",n.galaxy,48,a.id.length)}<div><b>${esc(a.title)}</b><small>${a.type==="experiment"?"实验":"挑战"} · 约 ${a.duration_min} 分钟</small></div><button class="btn ink" data-start="${a.id}">开始</button></div>`).join("")
+    <div class="tasklist">${acts.length?acts.map(a=>{ const done=PLAYED.has(a.id); return `<div class="taskrow">${a.content?icon(n.icon,n.galaxy,48,n.seed+a.id.length):icon(a.type==="experiment"?"pinhole":"cake",n.galaxy,48,a.id.length)}<div><b>${done?`<span class="tick" aria-label="玩过了">✓</span> `:""}${esc(a.title)}</b><small>${actKind(a,n)}${a.duration_min?` · 约 ${a.duration_min} 分钟`:""}</small></div><button class="btn ink" data-start="${a.id}">${done?"再玩":"开始"}</button></div>`; }).join("")
       :`<p class="muted" style="font-size:13px">还没有任务。</p>`}</div>
     <div class="minispec ${lit?"":"locked"}">${icon(n.icon,n.galaxy,40,n.seed)}<div><b style="font-size:13px;color:var(--ink)">图鉴 No.${String(n.no).padStart(3,"0")}</b><div class="muted" style="font-size:12px">${lit?"已收集，可以在地铁的「图鉴」里翻到它":"点亮之后，这张标本卡会收进图鉴"}</div></div></div>
     ${repairsFor(n.id).length?`<div class="callout q"><span class="ct">维修舱里有 ${repairsFor(n.id).length} 道这颗星球的题</span><a class="wikilink" href="#repair">去修一修</a></div>`:""}
@@ -941,7 +1019,7 @@ function noteHTML(n,animate){
   </div>`;
 }
 function bindNote(root){
-  root.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>{ closePops(); openLab(b.dataset.start); });
+  root.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>{ closePops(); const A=ACTIVITIES[b.dataset.start]; if(A&&A.content) Player.open(A.id,selected); else openLab(b.dataset.start); });
   root.querySelectorAll("[data-goto]").forEach(a=>a.onclick=e=>{ e.preventDefault(); closePops(); if(current!=="chart"&&current!=="metro") location.hash="#chart"; setTimeout(()=>select(a.dataset.goto,true),0); });
   root.querySelectorAll("[data-line]").forEach(a=>a.onclick=e=>{ e.preventDefault(); closePops(); metroMode="lines"; metroFocusLine=a.dataset.line; if(current==="metro") renderMetro(); else location.hash="#metro"; });
   const f=root.querySelector("[data-capture]"); if(f) f.onsubmit=e=>{ e.preventDefault(); const i=f.querySelector("input"); const t=i.value.trim(); if(!t) return; addQuestion(t,selected); i.value=""; toast("已发到信号站"); };
@@ -1075,6 +1153,250 @@ function openLab(actId){
     lab.querySelector("#after").innerHTML=`<div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div style="display:flex;gap:10px;align-items:center"><svg class="drawn-check" width="28" height="28" viewBox="0 0 28 28" style="color:var(--good)"><path d="M5 15l6 6L23 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><div><b style="color:var(--ink)">挑战完成 · ${r.score} / ${r.total}</b><p class="muted" style="font-size:13px">能量 +1${wrong.length?`；${wrong.length} 道题掉进了常见陷阱`:""}</p></div></div>${wrong.length?`<button class="btn ink" id="toRep">送进维修舱</button>`:""}</div></div>`;
     const tr=lab.querySelector("#toRep"); if(tr) tr.onclick=()=>{ wrong.forEach(w=>createRepair({source:"quiz",stem:w.stem,childAnswer:w.response,rightAnswer:w.right,node:node.id,misconception:w.misconceptionText})); close(); location.hash="#repair"; toast(`${wrong.length} 道题已送进维修舱`); }; }
 }
+
+/* ============================================================
+   CONTENT PLAYER — 内容包里的活动。动手探索走沙箱 iframe 和 activity/1.1 契约；讲解、挑战、反思由平台按活动数据画出来，
+   玩法和试玩页（preview/template.html）一样。这一版先不记进度：不写学习事件、不加能量、不改星球状态、答错不进维修舱
+   （竖切片 1、4 再接）。问领航员的问题照常发到信号站，但不挂在星球上，免得星球变成「登陆过」。
+   ============================================================ */
+const Player=(()=>{
+  const reduced=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function el(tag,attrs,...kids){
+    const e=document.createElement(tag);
+    for(const [k,v] of Object.entries(attrs||{})){
+      if(v==null||v===false) continue;
+      if(k==="class") e.className=v; else if(k.startsWith("on")) e.addEventListener(k.slice(2),v); else e.setAttribute(k,v===true?"":v);
+    }
+    for(const kid of kids.flat()) if(kid!=null&&kid!==false) e.append(kid.nodeType?kid:document.createTextNode(String(kid)));
+    return e;
+  }
+  const svgEl=markup=>{ const t=document.createElement("template"); t.innerHTML=markup.trim(); return t.content.firstElementChild; };
+  const AVA=`<svg class="pl-ava" viewBox="0 0 48 48" aria-hidden="true">
+    <circle cx="24" cy="27" r="16" fill="var(--c-sky)"/>
+    <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+    <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+    <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+    <path class="k1" d="M18 32 C21 35 27 35 30 32"/></svg>`;
+  const scrollEnd=n=>n.scrollIntoView({block:"end",behavior:reduced()?"auto":"smooth"});
+  function figureNode(fig){
+    const box=el("div",{class:"pl-fig"});
+    if(fig&&fig.type==="svg"&&CONTENT.figures[fig.src]){
+      const s=svgEl(CONTENT.figures[fig.src]); s.removeAttribute("width"); s.removeAttribute("height");
+      if(!reduced()){ s.querySelectorAll(".k,.k1").forEach(p=>{ if(!p.hasAttribute("stroke-dasharray")) p.setAttribute("pathLength","1"); else p.classList.remove("k","k1"); }); s.classList.add("pl-draw"); }
+      box.append(s);
+    } else box.append(el("p",{class:"pl-cap"},"（这张图还没准备好）"));
+    return box;
+  }
+  function bubble(role,content){
+    if(role==="me") return el("div",{class:"pl-row me pl-in"},el("div",{class:"pl-bub"},content));
+    const cls={nav:"",hint:"hint",good:"good",bad:"bad"}[role]||"";
+    return el("div",{class:"pl-row pl-in"},svgEl(AVA),el("div",{class:"pl-bub "+cls},role==="hint"?el("span",{class:"pl-tag"},"提示"):null,content));
+  }
+  const shuffled=arr=>{ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+  // ---------- 判分（和试玩页一样） ----------
+  const normNum=s=>String(s).replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[．。]/g,".").replace(/[－—]/g,"-").replace(/[，,\s]/g,"").replace(/[条对个本卷米厘次]+$/,"");
+  const parseNumber=s=>{ const t=normNum(s); return /^-?\d+(\.\d+)?$/.test(t)?Number(t):null; };
+  function parseFraction(s){
+    const t=String(s).trim().replace(/／/g,"/").replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+    let m=t.match(/^(\d+)\s*\/\s*(\d+)$/); if(m) return [Number(m[1]),Number(m[2])];
+    m=t.match(/^(\d+)\s*分之\s*(\d+)$/); if(m) return [Number(m[2]),Number(m[1])];
+    return null;
+  }
+  function grade(answer,input){   // {ok, misconception, feedback, shown}；写法认不出来返回 null，不算一次作答
+    if(answer.type==="choice"){ const c=answer.choices.find(x=>x.id===input); return {ok:!!c.correct,misconception:c.misconception||null,feedback:c.feedback||"",shown:c.text}; }
+    if(answer.type==="number"){
+      const x=parseNumber(input); if(x===null) return null;
+      const tol=answer.tolerance||0, hit=v=>Math.abs(x-v)<=tol+1e-9;
+      if(hit(answer.value)) return {ok:true,feedback:"",shown:String(x)};
+      const w=(answer.common_wrong||[]).find(cw=>hit(cw.value));
+      return {ok:false,misconception:w&&w.misconception||null,feedback:w&&w.feedback||"",shown:String(x)};
+    }
+    if(answer.type==="fraction"){
+      const f=parseFraction(input); if(!f) return null;
+      const [a,b]=f; if(b===0) return {ok:false,feedback:"",shown:`${a}/${b}`};
+      const same=(n,d)=>answer.accept_equivalent?a*d===b*n:(a===n&&b===d);
+      if(same(answer.numerator,answer.denominator)) return {ok:true,feedback:"",shown:`${a}/${b}`};
+      const w=(answer.common_wrong||[]).find(cw=>same(cw.numerator,cw.denominator));
+      return {ok:false,misconception:w&&w.misconception||null,feedback:w&&w.feedback||"",shown:`${a}/${b}`};
+    }
+    return null;
+  }
+  function answerText(answer){
+    if(answer.type==="choice") return answer.choices.find(c=>c.correct).text;
+    if(answer.type==="number") return `${answer.value}${answer.unit?" "+answer.unit:""}`;
+    if(answer.type==="fraction") return `${answer.numerator}/${answer.denominator}`;
+    return "";
+  }
+  // 一道题（讲解里的小问题和挑战共用）。say(role, text)：role 是 nav / me / good / bad / hint
+  function askItem(host,item,say,onDone){
+    const ans=item.answer, hints=item.hints||[];
+    const rec={tries:[],hints:0,result:null};
+    let used=0, finished=false, choiceBtns=[], numInput=null, okBtn=null;
+    function finish(result){ finished=true; rec.result=result; choiceBtns.forEach(b=>b.disabled=true); if(numInput){ numInput.disabled=true; okBtn.disabled=true; } hintBtn.hidden=true; onDone(rec); }
+    function submit(value,btn){
+      if(finished) return;
+      const g=grade(ans,value);
+      if(!g){ say("nav","写一个数字试试，比如 12。"); return; }
+      rec.tries.push({ok:g.ok});
+      say("me",g.shown+(ans.type!=="choice"&&ans.unit?" "+ans.unit:""));
+      if(g.ok){ if(btn) btn.classList.add("right"); say("good",g.feedback?"对了。"+g.feedback:"对了。"); finish(rec.tries.length===1&&used===0?"first":"later"); }
+      else { if(btn){ btn.classList.add("wrong"); btn.disabled=true; } say("bad",g.feedback||"这个想法很多人都有。再想想看，也可以要个提示。"); if(numInput) numInput.select(); }
+    }
+    if(ans.type==="choice"){
+      const box=el("div",{class:"pl-choices"});
+      for(const c of ans.choices){ const b=el("button",{class:"pl-choice",type:"button",onclick:()=>submit(c.id,b)},c.text); choiceBtns.push(b); box.append(b); }
+      host.append(box);
+    } else {
+      numInput=el("input",{type:"text",inputmode:ans.type==="number"?"decimal":"text","aria-label":"写答案",autocomplete:"off",placeholder:ans.type==="fraction"?"比如 1/4":"写数字",onkeydown:e=>{ if(e.key==="Enter") submit(numInput.value); }});
+      okBtn=el("button",{class:"btn ink big",type:"button",onclick:()=>submit(numInput.value)},"确定");
+      host.append(el("div",{class:"pl-numrow"},numInput,ans.unit?el("span",{class:"unit"},ans.unit):null,okBtn));
+    }
+    const hintBtn=el("button",{class:"btn big",type:"button",onclick:()=>{
+      if(finished) return;
+      if(used<hints.length){ say("hint",hints[used]); used++; rec.hints=used; if(used>=hints.length) hintBtn.textContent="看答案"; }
+      else { say("nav","答案是："+answerText(ans)+"。"); choiceBtns.forEach((b,i)=>{ if(ans.choices[i].correct) b.classList.add("right"); }); if(numInput) numInput.value=answerText(ans).split(" ")[0]; finish("revealed"); }
+    }},hints.length?"要个提示":"看答案");
+    host.append(el("div",{class:"pl-btns"},hintBtn));
+  }
+
+  // ---------- 打开一个活动 ----------
+  let openNow=null;   // 同一时间只开一个
+  function open(actId,nodeId){
+    const A=ACTIVITIES[actId]; if(!A) return;
+    const node=NODE[nodeId]&&NODE[nodeId].acts.includes(actId)?NODE[nodeId]:NODE[(A.targets||[])[0]]; if(!node) return;
+    if(openNow) openNow.teardown();
+    const list=node.acts.filter(id=>ACTIVITIES[id]&&ACTIVITIES[id].content), idx=list.indexOf(actId);
+    const lab=document.createElement("div"); lab.className="lab pl"; lab.setAttribute("role","dialog"); lab.setAttribute("aria-label",A.title);
+    lab.innerHTML=`<div class="labhead">${icon(node.icon,node.galaxy,40,node.seed)}<div class="t"><small>${esc(node.short)} · ${actKind(A,node)}</small><h2>${esc(A.title)}</h2></div><button class="close" aria-label="关闭">${X_ICON}</button></div>
+      <div class="labbody"><div class="pl-main"></div></div><div class="pl-dock" hidden></div>`;
+    document.body.appendChild(lab);
+    const $main=lab.querySelector(".pl-main"), $dock=lab.querySelector(".pl-dock"), $body=lab.querySelector(".labbody");
+    const offs=[];
+    const teardown=()=>{ offs.forEach(f=>f()); lab.remove(); openNow=null; };
+    const close=()=>{ teardown(); rerender(); select(node.id,true); };
+    const onKey=e=>{ if(e.key==="Escape"&&!document.querySelector(".scrim")) close(); };
+    document.addEventListener("keydown",onKey); offs.push(()=>document.removeEventListener("keydown",onKey));
+    lab.querySelector(".close").onclick=close;
+    openNow={teardown};
+    const dock=(...btns)=>{ btns=btns.filter(Boolean); $dock.replaceChildren(...btns); $dock.hidden=!btns.length; };
+    const btn=(label,onclick,ghost)=>el("button",{class:"btn big"+(ghost?"":" ink"),type:"button",onclick},label);
+    function endButtons(){
+      const nextId=list[idx+1], next=nextId&&ACTIVITIES[nextId];
+      const star=!next&&NODES.find(x=>x.prereq.includes(node.id)&&x.acts.some(id=>ACTIVITIES[id]&&ACTIVITIES[id].content));
+      return el("div",{class:"pl-btns"},
+        next?btn("接着做："+actKind(next,node),()=>open(nextId,node.id)):null,
+        star?btn("去下一颗星："+star.short,()=>{ teardown(); rerender(); select(star.id,true); }):null,
+        btn("回到星球",close,true));
+    }
+    const done=()=>PLAYED.add(A.id);
+    ({simulation:runSim,explain:runExplain,quiz:runQuiz,reflection:runReflection})[A.kind]();
+    $body.scrollTop=0;
+
+    function runSim(){
+      dock();
+      const frame=el("iframe",{sandbox:"allow-scripts",title:A.title}), end=el("div",{});
+      const post=(type,payload)=>frame.contentWindow&&frame.contentWindow.postMessage({contract:"activity/1.1",type,payload},"*");
+      const cs=getComputedStyle(document.documentElement), pal={}; ["bg","pane","rule","hover","ink","text","muted"].forEach(k=>pal[k]=cs.getPropertyValue("--"+k).trim());
+      const onMsg=e=>{
+        if(e.source!==frame.contentWindow) return;
+        const m=e.data; if(!m||m.contract!=="activity/1.1") return;
+        const p=m.payload||{};
+        if(m.type==="ready") post("init",{age_band:A.age_band||ageBand(),lang:"zh-CN",phase:"observe",palette:pal,mastery:null});
+        else if(m.type==="resize"&&p.h) frame.style.height=Math.max(600,Math.ceil(p.h)+8)+"px";
+        else if(m.type==="note_question"&&p.text){ addQuestion(String(p.text).slice(0,80),null); toast("问题已发到信号站"); }
+        else if(m.type==="complete"){ done(); end.replaceChildren(el("div",{class:"pl-end pl-in"},el("h3",{},"这一段做完了"),endButtons())); }
+        // 其他消息（event、state）这一版不记
+      };
+      addEventListener("message",onMsg); offs.push(()=>removeEventListener("message",onMsg));
+      frame.srcdoc=A.html;
+      $main.replaceChildren(el("div",{class:"frame"},frame),end);
+    }
+
+    function runExplain(){
+      const chat=el("div",{class:"pl-chat"}); $main.replaceChildren(chat);
+      const steps=A.body.steps||[]; let i=0;
+      const say=(role,text)=>{ const r=bubble(role,text); chat.append(r); scrollEnd(r); };
+      const contBtn=btn("继续",()=>step()), qBtn=btn("我有个问题",()=>openAsk(),true);
+      function openAsk(){
+        if(chat.querySelector(".pl-composer")) return;
+        const ta=el("textarea",{class:"pl-ta",maxlength:"80",placeholder:"想问领航员什么？"});
+        const box=el("div",{class:"pl-composer pl-in"},ta,el("div",{class:"pl-btns"},
+          btn("算了",()=>box.remove(),true),
+          btn("问领航员",()=>{ const q=ta.value.trim(); if(!q) return; box.remove(); addQuestion(q,null); say("me",q); say("nav","好问题。我把它发到信号站了，等会儿和家长一起找答案。"); })));
+        chat.append(box); scrollEnd(box); ta.focus();
+      }
+      function step(){
+        if(i>=steps.length) return;
+        const s=steps[i++];
+        if(s.type==="text") say("nav",s.text);
+        else if(s.type==="figure"){ const r=el("div",{class:"pl-row pl-in"},svgEl(AVA),el("div",{class:"pl-bub fig"},figureNode(s.figure),s.caption?el("div",{class:"pl-cap"},s.caption):null)); chat.append(r); scrollEnd(r); }
+        else if(s.type==="check"){
+          const bub=el("div",{class:"pl-bub"},el("div",{class:"pl-stem"},s.item.stem));
+          const r=el("div",{class:"pl-row pl-in"},svgEl(AVA),bub); chat.append(r);
+          dock(qBtn); askItem(bub,s.item,say,()=>afterStep()); scrollEnd(r);
+          return;
+        }
+        afterStep();
+      }
+      function afterStep(){
+        if(i<steps.length){ dock(qBtn,contBtn); return; }
+        done(); dock(qBtn);
+        const card=el("div",{class:"pl-end pl-in"},el("h3",{},"这一段讲完了"),endButtons()); chat.append(card); scrollEnd(card);
+      }
+      step();
+    }
+
+    function runQuiz(){
+      const items=A.body.shuffle?shuffled(A.body.items):A.body.items.slice(), res=[]; let k=0;
+      function show(){
+        dock();
+        if(k>=items.length) return summary();
+        const it=items[k];
+        const prog=el("div",{class:"pl-prog"},...items.map((_,j)=>el("i",{class:j<k?(res[j]==="first"?"ok":"on"):(j===k?"on":"")})),el("span",{},` 第 ${k+1} 题，共 ${items.length} 题`));
+        const fb=el("div",{class:"pl-fb"}), card=el("div",{class:"pl-q pl-in"},el("div",{class:"pl-stem"},it.stem));
+        if(it.figure) card.append(figureNode(it.figure));
+        const say=(role,text)=>{
+          if(role==="me") return;
+          if(role!=="hint") fb.querySelectorAll(".pl-bub:not(.hint)").forEach(n=>n.remove());
+          const b=el("div",{class:"pl-bub pl-in "+({nav:"",hint:"hint",good:"good",bad:"bad"}[role]||"")},role==="hint"?el("span",{class:"pl-tag"},"提示"):null,text);
+          fb.append(b); scrollEnd(b);
+        };
+        $main.replaceChildren(prog,card);
+        askItem(card,it,say,rec=>{ res.push(rec.result); dock(btn(k+1<items.length?"下一题":"看看结果",()=>{ k++; show(); $body.scrollTop=0; })); });
+        card.append(fb);
+      }
+      function summary(){
+        done();
+        const first=res.filter(r=>r==="first").length;
+        $main.replaceChildren(el("div",{class:"pl-end pl-in"},el("h3",{},"挑战完成"),
+          el("p",{},`${items.length} 道题里，一次就答对 ${first} 道。`+(first<items.length?"想岔的地方，正好看清楚了。":"全部一次答对。")),endButtons()));
+      }
+      show();
+    }
+
+    function runReflection(){
+      dock();
+      const b=A.body, max=b.max_chars||120;
+      const ta=el("textarea",{class:"pl-ta",maxlength:String(max),placeholder:"想到什么就写什么。"});
+      const counter=el("div",{class:"pl-counter"},`0 / ${max}`);
+      const doneBtn=el("button",{class:"btn ink big",type:"button",disabled:true},"写好了");
+      const upd=()=>{ counter.textContent=`${ta.value.length} / ${max}`; doneBtn.disabled=!ta.value.trim(); };
+      ta.addEventListener("input",upd);
+      const chips=el("div",{class:"pl-chips"},...(b.starters||[]).map(s=>el("button",{class:"pl-chip",type:"button",onclick:()=>{ const t=s.replace(/[…\.。]+$/,""); ta.value=(ta.value?ta.value.replace(/\s*$/,"")+"\n":"")+t; ta.focus(); upd(); }},s)));
+      const chat=el("div",{class:"pl-chat"}); chat.append(bubble("nav",b.prompt));
+      const box=el("div",{class:"pl-composer"},b.starters&&b.starters.length?el("div",{class:"pl-hint"},"不知道怎么开头？点一个："):null,chips,ta,counter,el("div",{class:"pl-btns"},doneBtn));
+      doneBtn.addEventListener("click",()=>{
+        const text=ta.value.trim(); if(!text) return; done();
+        box.replaceWith(bubble("me",text));
+        const end=el("div",{class:"pl-end pl-in"},el("h3",{},"写好了"),endButtons());
+        chat.append(bubble("nav","谢谢舰长。"),end); scrollEnd(end);
+      });
+      chat.append(box); $main.replaceChildren(chat);
+    }
+  }
+  return {open};
+})();
 
 /* ---------- modules (each runs isolated in its own sandbox) ---------- */
 const MOD_BASE_CSS=`*{box-sizing:border-box}:root{--bg:#F5F4EE;--pane:#FBFAF6;--hover:#E7E4D9;--rule:#E0DCD0;--ink:#1F1E1C;--text:#3B3833;--muted:#7A766D;--accent:#C2603F;--accentSoft:#F3E0D6;--sci:#CCD6C0;--sci2:#93A982;--sciBg:#DCE3D2;--math:#ECCDB6;--math2:#D59E7A;--mathBg:#F2E1D3;--good:#3B7A56;--bad:#B4432E}
