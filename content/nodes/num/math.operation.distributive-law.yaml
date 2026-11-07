@@ -45,7 +45,7 @@ lenses:
     approach: 用字母表示 (a+b)×c = a×c + b×c，正着用、反着用都做简便计算（102×25、38×99、25×37 + 75×37），并和乘法结合律区分开。
   - band: G7-9
     approach: 用面积模型解释去括号和合并同类项，推出 (a+b)(c+d) = ac + ad + bc + bd，说清 12×13 为什么不等于 10×10 + 2×3。
-activities: []
+activities: [act.simulation.chocolate-split-01]
 status: draft
 version: 1
 # END OF FILE
