@@ -91,16 +91,19 @@ p{margin:0}
 button.sitem:hover{background:var(--hover);color:var(--ink)}
 .ribbon .sep{width:22px;height:1px;background:var(--rule);margin:6px 0}
 @media (min-width:760px){
-  .app{grid-template-columns:48px minmax(300px,1fr) minmax(400px,1.35fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"ribbon center note" "status status status"}
+  .app{grid-template-columns:48px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"ribbon center" "status status"}
+  .app.note-open{grid-template-columns:48px minmax(300px,1fr) minmax(400px,1.35fr);grid-template-areas:"ribbon center note" "status status status"}
   .topbar,.bottomnav{display:none}
   .ribbon{grid-area:ribbon;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0;background:var(--side);border-right:1px solid var(--rule);padding-left:env(safe-area-inset-left,0px)}
   .ribbon .sp{flex:1}
-  .notepane{grid-area:note;display:block;background:var(--pane);border-left:1px solid var(--rule);overflow:auto;padding-right:env(safe-area-inset-right,0px)}
+  .app.note-open .notepane{display:block}
+  .notepane{grid-area:note;position:relative;background:var(--pane);border-left:1px solid var(--rule);overflow:auto;padding-right:env(safe-area-inset-right,0px)}
   .statusbar{display:flex}
 }
 @media (min-width:1280px){
   .tree-btn{display:none!important}
-  .app{grid-template-columns:48px 232px minmax(320px,1fr) minmax(460px,1.4fr);grid-template-areas:"ribbon explorer center note" "status status status status"}
+  .app{grid-template-columns:48px 232px minmax(0,1fr);grid-template-areas:"ribbon explorer center" "status status status"}
+  .app.note-open{grid-template-columns:48px 232px minmax(320px,1fr) minmax(460px,1.4fr);grid-template-areas:"ribbon explorer center note" "status status status status"}
   .explorer{grid-area:explorer;display:flex;flex-direction:column;background:var(--side);border-right:1px solid var(--rule);overflow:auto}
 }
 
@@ -201,6 +204,8 @@ button.sitem:hover{background:var(--hover);color:var(--ink)}
 .spec .stamp{position:absolute;top:8px;right:8px;font-family:var(--f-hand);font-size:12px;color:var(--accent);transform:rotate(8deg)}
 
 /* ---------- note pane ---------- */
+.note-x{position:sticky;top:10px;float:right;margin:10px 10px 0 0;z-index:2;background:var(--pane)}
+@media (prefers-reduced-motion:no-preference){.app.note-open .notepane{animation:notein .22s cubic-bezier(.2,.8,.2,1)}@keyframes notein{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}}
 .note{padding-block:18px 40px;padding-left:22px;padding-right:22px;display:grid;gap:16px;max-width:760px;margin:0 auto}
 @media (min-width:760px){.note{padding-inline:32px;padding-block:26px 48px;gap:18px}.note h1{font-size:30px}.signal-card{padding:20px 20px 20px 24px;grid-template-columns:1fr 128px}.signal-card svg{width:128px;height:128px}.signal-card p.q{font-size:21px}.taskrow{padding:12px 14px}}
 .crumbs{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap}
@@ -669,17 +674,22 @@ function renderNav(){
    ROUTER
    ============================================================ */
 const VIEWS=["chart","metro","repair","signal","ground"];
-let current="chart", selected=null, chartZoom=null, metroMode="lines";
+let current="chart", selected=null, chartZoom=null, metroMode="lines", noteOpen=false;
+// 右栏（星球笔记）一开始不显示；点了星图上的星球、地铁站或索引里的知识点才弹出。只在星图和地铁页显示。
+function applyNote(){ $("#app").classList.toggle("note-open",noteOpen&&(current==="chart"||current==="metro")); }
+function closeNote(){ if(!noteOpen) return; noteOpen=false; applyNote(); if(current==="chart") renderChart(); }
 function route(){
   current=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"chart";
   VIEWS.forEach(v=>$("#v-"+v).hidden=v!==current);
   document.querySelectorAll("[data-view]").forEach(a=>a.setAttribute("aria-current",a.dataset.view===current?"page":"false"));
   closePops();
+  applyNote();
   rerender();
 }
 function rerender(){ ({chart:renderChart,metro:renderMetro,repair:renderRepair,signal:renderSignal,ground:renderGround})[current](); renderNav();
-  if(!$("#notepane").innerHTML.trim()) select(selected||recommend().id,false); }   // 右栏是主内容，不留空
+ }
 window.addEventListener("hashchange",route);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&noteOpen&&!document.querySelector(".scrim,.lab")) closeNote(); });
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); if(!b) return;
   const a=b.dataset.act; if(a==="tree") openTree(); else if(a==="route") openRoute(b); else if(a==="switcher") openSwitcher(); else if(a==="ask") openAsk(); });
 
@@ -895,11 +905,12 @@ function renderCards(){
    ============================================================ */
 function select(id,user){
   const n=NODE[id]; if(!n) return; selected=id;
+  if(user&&innerWidth>=760&&!noteOpen){ noteOpen=true; applyNote(); if(current==="chart"&&chartZoom===consId(n)) renderChart(); }
   if(current==="chart"&&user&&chartZoom!==consId(n)){ chartZoom=consId(n); openCons[consId(n)]=true; renderChart(); }
   else if(current==="chart"&&chartZoom){ const svg=$("#gsvg"); svg&&svg.querySelectorAll(".sel-ring").forEach(e=>e.remove()); const el=svg&&svg.querySelector(`.node[data-id="${CSS.escape(id)}"]`); if(el){ const r=n.acts.length?14:12; el.insertAdjacentHTML("afterbegin",`<path class="sel-ring" d="${Sk.ellipse(0,0,r+9,r+9,n.seed+9,.8)}"/>`); } }
   if(current==="metro"&&metroMode==="lines"){ const sc=$("#mscroll"); if(sc){ sc.querySelectorAll(".station .selr").forEach(e=>e.remove()); const el=sc.querySelector(`.station[data-id="${CSS.escape(id)}"]`); if(el) el.insertAdjacentHTML("afterbegin",`<circle class="selr" r="13" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`); } }
   renderExplorer();
-  const html=noteHTML(n,user); const pane=$("#notepane"); pane.innerHTML=html; bindNote(pane); if(user) pane.scrollTop=0;
+  const html=noteHTML(n,user); const pane=$("#notepane"); pane.innerHTML=`<button class="close note-x" aria-label="收起">${X_ICON}</button>`+html; bindNote(pane); pane.querySelector(".note-x").onclick=closeNote; if(user) pane.scrollTop=0;
   if(user&&innerWidth<760){ closePops(); const sh=document.createElement("div"); sh.className="sheet-note"; sh.innerHTML=`<div class="grab"></div><div style="display:flex;justify-content:flex-end;padding:0 10px"><button class="close" aria-label="关闭">${X_ICON}</button></div>`+html; document.body.appendChild(sh); sh.querySelector(".close").onclick=closePops; bindNote(sh); }
 }
 function noteHTML(n,animate){
