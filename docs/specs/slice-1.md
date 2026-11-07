@@ -317,7 +317,7 @@ committer.nextSeq                               // 下一条本机事件该用�
 
 **派发前 Claude 还要写好**：`engine/test/quiz.test.js`（6.1）、`app/test/commit.test.js`（6.2）、`app/test/resume.test.js`（6.3），以及 1a 的演示夹具 `tools/tests/fixtures/slice-1a/content/`（一个知识点、一个挑战、五道选择题、`shuffle: false`）。这些和向量一起放进任务文件。
 
-期望值全部由 Claude 按本规格手算，写在 `worked` 和 `why` 里（ADR-009 第 6 条、事件规格第 9 节）。`tools/tests/test_vectors.py` 在 CI 里检查向量本身：格式对不对；标成接收、重复的事件能不能通过 `schemas/event.schema.json`；另外用一份独立写的 Python 对照实现复核每个期望值，两边对不上就是向量或对照实现有错，要查清楚。这份对照实现**不是**被测代码，也不交给实现 AI。
+期望值全部由 Claude 按本规格手算，写在 `worked` 和 `why` 里（ADR-009 原文第 6 条、事件规格第 9 节）。`tools/tests/test_vectors.py` 在 CI 里检查向量本身：格式对不对；标成接收、重复的事件能不能通过 `schemas/event.schema.json`；另外用一份独立写的 Python 对照实现复核每个期望值，两边对不上就是向量或对照实现有错，要查清楚。这份对照实现**不是**被测代码，也不交给实现 AI。
 
 整合时先确认向量在空实现上失败，再确认在交付的实现上通过。`app/test/commit.test.js`（6.2）也一样。
 
