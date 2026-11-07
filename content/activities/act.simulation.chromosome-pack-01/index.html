@@ -78,6 +78,7 @@ svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
     <header><span class="station" id="station">第 1 站 · 共 4 站</span><h1 id="title">绕线轴</h1></header>
     <svg id="stage" viewBox="0 0 800 610" tabindex="0" role="application" aria-label="动手区">
       <g id="static"></g><g id="dyn"></g>
+      <rect id="touch" x="-400" y="-400" width="1600" height="1410" fill="transparent"/><!-- 永不重画的触摸层：重画 dyn 时不会删掉手指按着的元素 -->
     </svg>
     <footer><span class="hint" id="hint"></span><span class="readout" id="readout"></span></footer>
   </div>
