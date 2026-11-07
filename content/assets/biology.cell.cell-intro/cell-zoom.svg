@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" role="img" aria-label="从树叶、放大镜到显微镜下的细胞">
+  <title>从树叶到显微镜下的细胞</title>
+  <desc>一片树叶经过放大镜仍然看不清细胞，显微镜的圆形视野里出现一格一格挨着的细胞。</desc>
+  <g>
+    <path d="M63 184 C53 128 88 72 174 63 C180 137 143 195 74 202 Z" fill="#CCD6C0" fill-opacity="0.8"/>
+    <path d="M63 184 C53 128 88 72 174 63 C180 137 143 195 74 202 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M72 215 C93 172 119 132 162 80" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M99 164 C88 151 83 139 82 126 M114 145 C133 144 148 139 160 129 M128 123 C117 112 113 101 112 91" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+    <text x="120" y="264" font-size="17" text-anchor="middle" fill="#1F1E1C">树叶</text>
+  </g>
+  <g>
+    <path d="M216 151 C232 150 244 150 257 150 M248 141 L258 150 L248 159" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M296 92 C321 69 363 72 383 101 C405 132 391 174 357 187 C322 201 286 177 282 143 C279 123 283 105 296 92 Z" fill="#CFDCE6" fill-opacity="0.65"/>
+    <path d="M296 92 C321 69 363 72 383 101 C405 132 391 174 357 187 C322 201 286 177 282 143 C279 123 283 105 296 92 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M367 181 C381 199 397 217 412 235 C419 244 408 254 400 245 C382 226 365 208 351 190" fill="#ECCDB6" fill-opacity="0.75"/>
+    <path d="M367 181 C381 199 397 217 412 235 C419 244 408 254 400 245 C382 226 365 208 351 190" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M305 103 C316 91 329 87 343 88" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" class="k1"/>
+    <text x="342" y="284" font-size="17" text-anchor="middle" fill="#1F1E1C">放大镜</text>
+  </g>
+  <g>
+    <path d="M444 151 C458 150 470 150 483 150 M474 141 L484 150 L474 159" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M514 70 C551 42 612 43 650 75 C690 109 691 169 656 205 C621 241 559 244 519 211 C478 177 475 111 514 70 Z" fill="#CFDCE6" fill-opacity="0.55"/>
+    <path d="M514 70 C551 42 612 43 650 75 C690 109 691 169 656 205 C621 241 559 244 519 211 C478 177 475 111 514 70 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M508 104 C549 99 603 103 669 99 M495 139 C548 135 611 139 682 135 M497 176 C548 172 610 178 678 172 M518 208 C563 204 611 210 655 204" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" class="k1"/>
+    <path d="M535 76 C531 101 536 118 532 138 C528 160 535 184 531 218 M578 55 C574 80 580 111 575 137 C571 162 578 191 574 229 M622 58 C618 82 625 108 620 136 C616 162 623 185 619 225 M656 78 C652 98 659 118 654 136 C650 157 657 180 652 207" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" class="k1"/>
+    <path d="M554 101 C552 115 555 125 553 137 M598 102 C595 114 600 125 597 138 M641 100 C638 113 642 124 639 136 M554 174 C552 187 555 197 553 210 M598 176 C596 188 600 199 597 211 M640 174 C637 187 642 196 639 207" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" class="k1"/>
+    <text x="582" y="275" font-size="17" text-anchor="middle" fill="#1F1E1C">显微镜下</text>
+  </g>
+</svg>
+<!-- END OF FILE -->
