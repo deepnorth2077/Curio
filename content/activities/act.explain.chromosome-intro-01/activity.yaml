@@ -1,0 +1,153 @@
+id: act.explain.chromosome-intro-01
+schema: activity-def/1
+kind: explain
+version: 1
+title: 染色体：把说明书卷好收起来
+targets: [biology.genetics.chromosome-intro]
+age_band: G3-4
+duration_min: 5
+review: approved
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版初中生物学八年级下册（2024 年版）第六单元第二章第二节「基因在亲子代间的传递」
+  - type: textbook
+    ref: 人教版初中生物学八年级下册（2024 年版）第六单元第二章第四节「人的性别决定」
+  - type: reference
+    ref: NHGRI「Chromosome」词条
+    url: https://www.genome.gov/genetics-glossary/Chromosome
+  - type: reference
+    ref: NHGRI 染色体知识页
+    url: https://www.genome.gov/about-genomics/fact-sheets/Chromosomes-Fact-Sheet
+body:
+  style: tutor
+  steps:
+    - type: text
+      text: 舰长，这么长的说明书，小小的细胞是怎么装下的？先猜猜看。
+    - type: text
+      text: 一个人体细胞里的 DNA 拉直了大约有 2 米长，细胞核却小得要用显微镜才能看见。
+    - type: text
+      text: 就像一大堆毛线，先绕在小线轴上，再收成一团。DNA 缠在蛋白质上，再折叠成染色体。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.genetics.chromosome-intro/chr-wind.svg
+      caption: 长长的 DNA 缠在像小线轴一样的蛋白质上，再折叠成染色体。
+    - type: text
+      text: 人的体细胞里一般有 46 条染色体，两两配成 23 对。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.genetics.chromosome-intro/chr-pairs.svg
+      caption: 蓝色来自爸爸，红色来自妈妈。虚线框是第 23 对，等会儿再打开看。
+    - type: text
+      text: 每一对里，一条来自爸爸，一条来自妈妈。
+    - type: text
+      text: 说明书在染色体上，一半来自爸爸、一半来自妈妈。所以你身上可能有像爸爸的地方，也可能有像妈妈的地方。
+    - type: check
+      item:
+        id: c1
+        stem: 你的染色体和说明书，是从哪里来的？
+        answer:
+          type: choice
+          choices:
+            - id: a
+              text: 全部来自妈妈
+              misconception: from-one-parent
+              feedback: 妈妈确实给了你很多，但每一对染色体里，还有一条来自爸爸。
+            - id: b
+              text: 一半来自爸爸，一半来自妈妈
+              correct: true
+            - id: c
+              text: 全部来自爸爸
+              misconception: from-one-parent
+              feedback: 爸爸确实给了你一半，但另一半来自妈妈，不是全部来自爸爸。
+        hints:
+          - 想想每一对染色体里，两条分别是谁给的。
+          - 你的说明书写在染色体上，也跟着染色体一起传来。
+    - type: text
+      text: 说明书里管一件事的一小段，叫基因。一条染色体上有很多个基因，所以染色体不是基因。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.genetics.chromosome-intro/chr-genes.svg
+      caption: 一条染色体像一整卷说明书，上面排着许多小段，其中一段就是一个基因。
+    - type: check
+      item:
+        id: c2
+        stem: 一条染色体和很多个基因，是什么关系？
+        answer:
+          type: choice
+          choices:
+            - id: b
+              text: 一条染色体上有很多个基因
+              correct: true
+            - id: a
+              text: 染色体就是基因
+              misconception: chromosome-is-gene
+              feedback: 它们都和说明书有关，但基因只是说明书里的一段，不是整卷。
+            - id: c
+              text: 一个基因上有很多条染色体
+              misconception: chromosome-is-gene
+              feedback: 看起来像是把名字换了位置；其实基因是染色体这卷说明书里的一段。
+        hints:
+          - 把染色体想成一整卷说明书。
+          - 基因只是说明书里的一段，想想谁装着谁。
+    - type: text
+      text: 第 23 对叫性染色体。女孩一般是 XX，男孩一般是 XY，Y 短一些。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.genetics.chromosome-intro/chr-xy.svg
+      caption: 蓝色来自爸爸，红色来自妈妈。女孩一般是 XX，男孩一般是 XY。
+    - type: text
+      text: 男孩的 X 来自妈妈，Y 来自爸爸。女孩的两条 X，一条来自爸爸，一条来自妈妈。
+    - type: check
+      item:
+        id: c3
+        stem: 男孩的 X 染色体和 Y 染色体分别来自谁？
+        answer:
+          type: choice
+          choices:
+            - id: a
+              text: X 来自爸爸，Y 来自妈妈
+              misconception: y-from-mother
+              feedback: 妈妈有 X 染色体，但男孩的 Y 染色体只能来自爸爸。
+            - id: c
+              text: X 和 Y 都来自爸爸
+              misconception: from-one-parent
+              feedback: 爸爸给了男孩 Y 染色体，但男孩也从妈妈那里得到一条 X。
+            - id: b
+              text: X 来自妈妈，Y 来自爸爸
+              correct: true
+        hints:
+          - 妈妈一般只有 X 染色体，爸爸一般有 X 和 Y。
+          - 先看看男孩那条短短的 Y，可能是谁给的？
+    - type: text
+      text: 狗有 78 条，小小的果蝇只有 8 条。染色体的多少，和个子大小、聪不聪明都没有关系。
+    - type: check
+      item:
+        id: c4
+        stem: 狗的染色体比人多，这说明狗一定怎样？
+        answer:
+          type: choice
+          choices:
+            - id: a
+              text: 个子一定比人大
+              misconception: bigger-more
+              feedback: 看起来好像有道理，但染色体多少和个子大小没有关系。
+            - id: c
+              text: 不能说明谁更大、谁更聪明
+              correct: true
+            - id: b
+              text: 一定比人聪明
+              misconception: more-is-smarter
+              feedback: 很多人都会这样猜，但染色体多少和聪不聪明没有关系。
+        hints:
+          - 再比比小小的果蝇和狗，它们的染色体数目很不一样。
+          - 染色体的多少，只是在说说明书分成了多少卷。
+    - type: text
+      text: 身体由细胞搭成，细胞核里放着说明书 DNA；DNA 缠在蛋白质上卷好收起来，就是染色体。
+    - type: text
+      text: 舰长，去写一句反思吧；还有想知道的，可以点「我有个问题」告诉我。
+# END OF FILE
