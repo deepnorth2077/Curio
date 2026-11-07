@@ -16,6 +16,7 @@ import yaml
 from ci_checks import check_publish_gate
 
 PATH_SEGMENT = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
+MAX_SAFE_INTEGER = 2**53 - 1
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 
 
@@ -60,6 +61,42 @@ def load_document(path, display_path):
     if not isinstance(document, dict):
         raise BuildError(f"{display_path}：内容文件必须是一个 YAML 对象")
     return document
+
+
+def _check_json_value(value, display_path, where):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise BuildError(f"{display_path}：{where} 的键 {key!r} 不是字符串，不能转成 JSON")
+            _check_json_value(item, display_path, f"{where}.{key}")
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            _check_json_value(item, display_path, f"{where}[{index}]")
+    elif isinstance(value, bool) or value is None or isinstance(value, str):
+        return
+    elif isinstance(value, int):
+        if abs(value) > MAX_SAFE_INTEGER:
+            raise BuildError(f"{display_path}：{where} 的整数超出 ±(2^53−1)，浏览器读不准")
+    elif isinstance(value, float):
+        if value != value or value in (float("inf"), float("-inf")):
+            raise BuildError(f"{display_path}：{where} 是 NaN 或无穷大，不能转成 JSON")
+    else:
+        raise BuildError(f"{display_path}：{where} 的值 {value!r} 不能转成 JSON（日期之类请加引号写成字符串）")
+
+
+def json_sidecar(data, display_path):
+    """把一个 YAML 文件的原始字节转成同名 .json 的字节（内容规格 6.3）。
+
+    键按字母排序、不留空白、不转义非 ASCII、UTF-8 编码，末尾一个 LF。
+    YAML 里有 JSON 表示不了的值（日期、NaN、非字符串键、超出 2^53−1 的整数）时抛出 BuildError。
+    """
+    try:
+        document = yaml.safe_load(data.decode("utf-8"))
+    except Exception as exc:
+        raise BuildError(f"{display_path}：YAML 解析失败：{exc}") from exc
+    _check_json_value(document, display_path, "$")
+    text = json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False)
+    return (text + "\n").encode("utf-8")
 
 
 def file_entry(path, display_path):
@@ -171,6 +208,13 @@ def build(content_root, source_commit):
             "files": entries,
         })
 
+    for entry in node_entries:
+        json_sidecar(by_path[entry["path"]][1], entry["path"])
+    for activity in activity_entries:
+        for entry in activity["files"]:
+            if entry["path"].endswith(".yaml"):
+                json_sidecar(by_path[entry["path"]][1], entry["path"])
+
     assets = []
     for display_path in sorted(asset_paths):
         source_path, _ = by_path[display_path]
@@ -214,7 +258,11 @@ def write_release(manifest, content_root, out_dir):
         source = content_root.joinpath(*parts[1:])
         destination = out_dir.joinpath(*parts)
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(source.read_bytes())
+        data = source.read_bytes()
+        destination.write_bytes(data)
+        if display_path.endswith(".yaml"):
+            # 浏览器没有 YAML 解析器：旁边多写一份解析好的 JSON。它由 YAML 确定性算出，不进清单、不参与哈希。
+            destination.with_name(destination.name + ".json").write_bytes(json_sidecar(data, display_path))
 
 
 def main(argv=None):
