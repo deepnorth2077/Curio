@@ -1,0 +1,158 @@
+id: act.quiz.chromosome-intro-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: "染色体收纳大挑战"
+targets: [biology.genetics.chromosome-intro]
+age_band: G3-4
+duration_min: 5
+review: approved
+engine: 1
+sources:
+  - type: reference
+    ref: "NHGRI「Chromosome」词条"
+    url: https://www.genome.gov/genetics-glossary/Chromosome
+  - type: textbook
+    ref: "人教版八年级下册（2024 年版）第六单元第二章第二节"
+  - type: textbook
+    ref: "人教版八年级下册（2024 年版）第六单元第二章第四节「人的性别决定」"
+body:
+  shuffle: true
+  items:
+    - id: q1
+      stem: "卷好收起来的说明书——染色体，是怎么形成的？"
+      answer:
+        type: choice
+        choices:
+          - id: b
+            text: "蛋白质缠在 DNA 上，再折叠起来"
+            feedback: "小线轴确实很重要，不过被缠住、卷好的是 DNA 说明书。"
+          - id: c
+            text: "说明书拉直后直接放进细胞核"
+            feedback: "直接放长说明书听起来很方便，不过它还要缠在蛋白质上，再折叠收好。"
+          - id: a
+            text: "DNA 缠在蛋白质上，再折叠起来"
+            correct: true
+      hints:
+        - "想想长长的说明书怎样卷好收起来。"
+        - "先找缠说明书的小线轴，再想怎样折叠。"
+    - id: q2
+      stem: "人的体细胞里一般有多少条染色体？"
+      answer:
+        type: number
+        value: 46
+        tolerance: 0
+        unit: 条
+        common_wrong:
+          - value: 23
+            feedback: "你想到的是对数；题目问的是一条一条数，共有多少条。"
+      hints:
+        - "要一条一条地数，不要把两两配对后的对数当答案。"
+        - "每一对里有两条，要把所有对里的染色体都数进去。"
+    - id: q3
+      stem: "这些染色体配成多少对？"
+      answer:
+        type: number
+        value: 23
+        tolerance: 0
+        unit: 对
+        common_wrong:
+          - value: 46
+            feedback: "你数的是一条一条的总数；两两配好以后，要数有多少对。"
+      hints:
+        - "先让染色体两两配对，再数一数。"
+        - "每一对算一份，不要把一对里的两条分开数。"
+    - id: q4
+      stem: "人的体细胞里，每一对染色体分别来自哪里？"
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: "一条来自爸爸，一条来自妈妈"
+            correct: true
+          - id: b
+            text: "两条都来自妈妈"
+            misconception: from-one-parent
+            feedback: "妈妈确实给了孩子说明书，不过每一对里还有一条来自爸爸。"
+          - id: c
+            text: "两条都来自爸爸"
+            misconception: from-one-parent
+            feedback: "爸爸确实给了孩子说明书，不过每一对里还有一条来自妈妈。"
+      hints:
+        - "每一对有两条，想想爸爸妈妈各给了什么。"
+        - "不要把一对想成同一个人给的两条。"
+    - id: q5
+      stem: "关于基因和染色体，哪种说法对？"
+      answer:
+        type: choice
+        choices:
+          - id: b
+            text: "染色体就是基因"
+            misconception: chromosome-is-gene
+            feedback: "它们都和说明书有关，不过染色体是卷好的说明书，里面有很多段基因。"
+          - id: a
+            text: "基因是说明书里的一段，一条染色体上有很多个基因"
+            correct: true
+          - id: c
+            text: "一条染色体上只有一个基因"
+            feedback: "说明书只有一段听起来很省事，不过一条染色体上的说明书有很多段。"
+      hints:
+        - "把染色体想成卷好的整份说明书，再想想基因是其中多大的一段。"
+        - "一条染色体里的说明书，可以分成许多段。"
+    - id: q6
+      stem: "人有一对染色体叫性染色体。女孩和男孩一般分别是什么？"
+      answer:
+        type: choice
+        choices:
+          - id: b
+            text: "女孩一般是 XY，男孩一般是 XX"
+            feedback: "这两种字母确实容易记混，不过女孩一般没有 Y，男孩一般有一条 Y。"
+          - id: a
+            text: "女孩一般是 XX，男孩一般是 XY"
+            correct: true
+          - id: c
+            text: "女孩和男孩一般都是 XX"
+            misconception: same-in-boys-girls
+            feedback: "看起来都是一对性染色体，不过女孩和男孩的这一对一般不一样。"
+      hints:
+        - "分别想女孩和男孩的性染色体，不要当成完全一样。"
+        - "看看哪一对里有一条不同的 Y 染色体。"
+    - id: q7
+      stem: "男孩的性染色体一般是 XY。X 和 Y 分别来自谁？"
+      answer:
+        type: choice
+        choices:
+          - id: b
+            text: "X 来自爸爸，Y 来自妈妈"
+            misconception: y-from-mother
+            feedback: "妈妈确实能给孩子 X，不过妈妈一般没有 Y 可以传给孩子。"
+          - id: c
+            text: "X 和 Y 都来自爸爸"
+            misconception: from-one-parent
+            feedback: "男孩一般从爸爸那里得到一条性染色体，另一条来自妈妈。"
+          - id: a
+            text: "X 来自妈妈，Y 来自爸爸"
+            correct: true
+      hints:
+        - "分别看两条性染色体，不要把它们想成来自同一个人。"
+        - "妈妈一般是 XX，想想她能给出哪一种。"
+    - id: q8
+      stem: "狗有 78 条染色体，比人还多。由此能知道什么？"
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: "不同生物的染色体数目可以不同，和个子大小、聪不聪明无关"
+            correct: true
+          - id: b
+            text: "动物的个子越大，染色体就一定越多"
+            misconception: bigger-more
+            feedback: "看起来好像个子大就该多装些说明书，其实染色体数目和个子大小无关。"
+          - id: c
+            text: "狗比人聪明，因为染色体更多"
+            misconception: more-is-smarter
+            feedback: "染色体多看起来很厉害，不过数目多少不能说明聪不聪明。"
+      hints:
+        - "先只比较数目，不急着给数目加上别的意思。"
+        - "数目更多，就能说明个子大小或聪不聪明吗？"
+# END OF FILE

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 260" role="img" aria-label="红细胞失去细胞核的三个阶段">
+  <title>红细胞腾出地方装氧气</title>
+  <desc>年轻红细胞带着细胞核，随后细胞核被推出，成熟红细胞是中间凹下去的圆饼形，没有细胞核。</desc>
+  <path d="M195 38 C192 86 198 142 194 199 M395 38 C392 86 398 142 394 199" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3 8" stroke-opacity="0.45" class="k1"/>
+  <path d="M44 116 C45 75 72 55 106 57 C144 56 162 88 157 124 C153 160 127 180 94 176 C58 174 42 149 44 116 Z" fill="#ECCDB6" fill-opacity="0.8"/>
+  <path d="M44 116 C45 75 72 55 106 57 C144 56 162 88 157 124 C153 160 127 180 94 176 C58 174 42 149 44 116 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <path d="M78 114 C77 94 91 84 107 87 C126 89 132 107 125 124 C117 141 96 144 84 132 C79 127 78 120 78 114 Z" fill="#CFDCE6" fill-opacity="0.85"/>
+  <path d="M78 114 C77 94 91 84 107 87 C126 89 132 107 125 124 C117 141 96 144 84 132 C79 127 78 120 78 114 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+  <path d="M224 119 C223 79 250 60 282 61 C314 61 335 82 337 111 C329 108 320 109 311 114 C306 127 309 141 319 151 C303 174 273 183 246 168 C229 157 223 139 224 119 Z" fill="#ECCDB6" fill-opacity="0.8"/>
+  <path d="M224 119 C223 79 250 60 282 61 C314 61 335 82 337 111 C329 108 320 109 311 114 C306 127 309 141 319 151 C303 174 273 183 246 168 C229 157 223 139 224 119 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <path d="M326 86 C328 68 343 60 358 66 C374 73 378 91 367 105 C356 119 337 117 329 103 C326 98 325 92 326 86 Z" fill="#CFDCE6" fill-opacity="0.85"/>
+  <path d="M326 86 C328 68 343 60 358 66 C374 73 378 91 367 105 C356 119 337 117 329 103 C326 98 325 92 326 86 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+  <path d="M309 86 Q318 78 327 77 M323 72 L328 77 L324 83" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+  <path d="M432 118 C431 84 458 60 491 60 C524 60 549 86 548 119 C547 151 521 177 489 176 C457 175 433 151 432 118 Z" fill="#ECCDB6" fill-opacity="0.8"/>
+  <path d="M432 118 C431 84 458 60 491 60 C524 60 549 86 548 119 C547 151 521 177 489 176 C457 175 433 151 432 118 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <path d="M466 118 C466 104 477 96 490 96 C504 96 514 105 514 118 C514 132 503 141 490 141 C476 141 466 131 466 118 Z" fill="#EFE4D6" fill-opacity="0.85"/>
+  <path d="M466 118 C466 104 477 96 490 96 C504 96 514 105 514 118 C514 132 503 141 490 141 C476 141 466 131 466 118 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+  <path d="M166 115 C177 112 188 114 204 115 M196 108 L204 115 L196 122 M374 115 C384 112 394 114 410 115 M402 108 L410 115 L402 122" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <text x="100" y="222" font-size="14" text-anchor="middle" fill="#1F1E1C">年轻红细胞</text>
+  <text x="285" y="222" font-size="14" text-anchor="middle" fill="#1F1E1C">推出细胞核</text>
+  <text x="490" y="222" font-size="14" text-anchor="middle" fill="#1F1E1C">成熟红细胞</text>
+</svg>
+<!-- END OF FILE -->

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" role="img" aria-label="神经细胞、红细胞和肌肉细胞">
+  <title>形状和本领不同的三种细胞</title>
+  <desc>神经细胞有分叉和长尾巴，红细胞是中间凹的扁圆饼且没有细胞核，肌肉细胞细长两头尖。</desc>
+  <g>
+    <path d="M133 110 C112 86 99 68 88 46 M109 91 C87 87 67 74 54 57 M116 99 C97 108 74 110 48 104 M151 101 C153 77 166 57 181 43 M162 115 C184 97 204 89 226 89 M167 132 C193 131 211 139 229 154 M134 145 C117 164 101 176 79 181 M154 151 C162 174 177 188 194 201" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M89 48 L75 39 M89 48 L91 31 M55 58 L39 54 M55 58 L48 42 M49 104 L31 111 M181 43 L185 28 M181 43 L198 37 M226 89 L241 78 M226 89 L244 94 M229 154 L244 165 M79 181 L63 194 M194 201 L206 216" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+    <path d="M120 105 C133 91 158 94 169 111 C182 130 171 153 149 158 C127 163 107 148 108 127 C108 118 112 111 120 105 Z" fill="#CCD6C0" fill-opacity="0.8"/>
+    <path d="M120 105 C133 91 158 94 169 111 C182 130 171 153 149 158 C127 163 107 148 108 127 C108 118 112 111 120 105 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M139 117 C146 112 156 117 156 126 C156 135 146 140 139 134 C133 130 133 122 139 117 Z" fill="#CFDCE6" fill-opacity="0.85"/>
+    <path d="M139 117 C146 112 156 117 156 126 C156 135 146 140 139 134 C133 130 133 122 139 117 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+    <path d="M168 143 C198 160 212 184 227 209 C238 228 252 231 265 224" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" class="k"/>
+    <path d="M252 225 L259 237 M255 225 L270 230" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" class="k1"/>
+    <text x="140" y="286" font-size="17" text-anchor="middle" fill="#1F1E1C">神经细胞</text>
+  </g>
+  <g>
+  <g transform="translate(386 136) scale(0.62) translate(-386 -136)">
+    <path d="M307 113 C320 79 370 62 415 76 C460 90 477 127 459 161 C441 196 391 210 346 194 C304 179 290 148 307 113 Z" fill="#ECCDB6" fill-opacity="0.85"/>
+    <path d="M307 113 C320 79 370 62 415 76 C460 90 477 127 459 161 C441 196 391 210 346 194 C304 179 290 148 307 113 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M350 128 C368 118 398 117 416 125 M356 150 C374 158 400 157 416 147" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" class="k1"/>
+  </g>
+    <text x="386" y="286" font-size="17" text-anchor="middle" fill="#1F1E1C">红细胞</text>
+  </g>
+  <g>
+    <path d="M511 139 C541 97 620 78 682 112 C656 160 579 197 519 177 C504 172 500 155 511 139 Z" fill="#CCD6C0" fill-opacity="0.8"/>
+    <path d="M511 139 C541 97 620 78 682 112 C656 160 579 197 519 177 C504 172 500 155 511 139 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M531 143 C566 119 610 106 652 110 M536 159 C576 145 615 128 647 120 M559 174 C589 161 616 148 636 136" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" class="k1"/>
+    <path d="M582 130 C591 121 607 121 613 130 C618 139 607 149 594 149 C581 149 574 140 582 130 Z" fill="#CFDCE6" fill-opacity="0.85"/>
+    <path d="M582 130 C591 121 607 121 613 130 C618 139 607 149 594 149 C581 149 574 140 582 130 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+    <text x="594" y="286" font-size="17" text-anchor="middle" fill="#1F1E1C">肌肉细胞</text>
+  </g>
+</svg>
+<!-- END OF FILE -->

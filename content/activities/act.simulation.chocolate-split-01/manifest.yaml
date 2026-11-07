@@ -1,0 +1,16 @@
+id: act.simulation.chocolate-split-01
+contract: activity/1.1
+type: simulation
+version: 1
+title: 掰巧克力
+targets: [math.operation.distributive-law]
+age_band: G3-4
+entry: index.html
+duration_min: 8
+pedagogy: explain
+capabilities: [pointer, keyboard]
+misconceptions: [multiply-one-part, add-instead-of-multiply, merge-unlike, drop-small-part]
+emits: [predicted, observed]
+author: {model: Claude Opus 5.5 (claude-opus-5-5), prompt_ref: prompts/act.simulation.chocolate-split-01.md}
+review: claude-reviewed
+# END OF FILE

@@ -1,0 +1,15 @@
+id: act.simulation.dna-book-01
+contract: activity/1.1
+type: simulation
+version: 1
+title: 翻开细胞里的说明书
+targets: [biology.genetics.dna-intro]
+age_band: G3-4
+entry: index.html
+duration_min: 10
+pedagogy: explain
+capabilities: [pointer, keyboard]
+misconceptions: [different-books, blood-only, only-for-babies]
+emits: [predicted, observed]
+author: {model: claude-opus-5-5, prompt_ref: prompts/act.simulation.dna-book-01.md}
+review: approved
