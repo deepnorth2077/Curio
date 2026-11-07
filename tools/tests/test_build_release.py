@@ -9,7 +9,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import hashlib
+
 import yaml
+from jsonschema import Draft202012Validator
 
 TOOLS = Path(__file__).resolve().parent.parent
 REPO = TOOLS.parent
@@ -19,7 +22,7 @@ sys.path.insert(0, str(TOOLS))
 import build_release  # noqa: E402
 
 COMMIT = "0000000000000000000000000000000000000000"
-EXPECTED_ID = "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"
+EXPECTED_ID = "rel_efb556635ad02d686802bc3e2bf4a3faefe6219204f49eb629579651064a9554"
 NODE_ID = "math.number.fraction-intro"
 NODE_PATH = "nodes/num/math.number.fraction-intro.yaml"
 EXPLAIN_PATH = "activities/act.explain.fraction-intro-01/activity.yaml"
@@ -211,9 +214,9 @@ class TestImmutableRelease(BuildCase):
         self.assertEqual(manifest["contracts"], ["activity/1.1"])
 
     def test_write_release_copies_exact_bytes_and_manifest(self):
-        manifest = self.build()
+        manifest, files = build_release.build_package(self.content, COMMIT)
         out = self.temp / "out"
-        build_release.write_release(manifest, self.content, out)
+        build_release.write_release(manifest, files, out)
         written = json.loads((out / "release.json").read_text(encoding="utf-8"))
         self.assertEqual(written, manifest)
         for node in manifest["nodes"]:
@@ -226,12 +229,12 @@ class TestImmutableRelease(BuildCase):
 
 
 class TestJsonSidecar(BuildCase):
-    """内容规格 6.3：每个 YAML 旁边多写一份同名 .json，不进清单、不参与哈希。"""
+    """内容规格 6.3：每个 YAML 旁边多写一份同名 .json，清单登记它的哈希，参与 content_hash。"""
 
     def written(self):
-        manifest = self.build()
+        manifest, files = build_release.build_package(self.content, COMMIT)
         out = self.temp / "out"
-        build_release.write_release(manifest, self.content, out)
+        build_release.write_release(manifest, files, out)
         return manifest, out
 
     def test_every_yaml_gets_sorted_compact_json_and_nothing_else_does(self):
@@ -252,11 +255,99 @@ class TestJsonSidecar(BuildCase):
         # 手写的期望：键按字母排序，中文不转义
         self.assertTrue(data.startswith('{"age_band":"G3-4","body":{"items":[{"answer":{"choices":[{"correct":true,"id":"a","text":"1/4"}'.encode("utf-8")), data[:120])
 
-    def test_sidecars_do_not_change_manifest_or_release_id(self):
+    def test_every_yaml_entry_binds_the_json_the_browser_reads(self):
         manifest, out = self.written()
         self.assertEqual(manifest["release_id"], EXPECTED_ID)
-        listed = {f["path"] for a in manifest["activities"] for f in a["files"]} | {n["path"] for n in manifest["nodes"]}
-        self.assertFalse(any(path.endswith(".json") for path in listed))
+        entries = list(manifest["nodes"]) + [f for a in manifest["activities"] for f in a["files"]]
+        self.assertEqual(len(entries), 4)
+        for entry in entries:
+            data = (out / entry["json"]["path"]).read_bytes()
+            self.assertEqual(entry["json"]["path"], entry["path"] + ".json")
+            self.assertEqual(entry["json"]["sha256"], hashlib.sha256(data).hexdigest())
+            self.assertEqual(entry["json"]["bytes"], len(data))
+
+    def test_written_release_matches_the_release_schema(self):
+        manifest, _ = self.written()
+        schema = json.loads((REPO / "schemas/release.schema.json").read_text(encoding="utf-8"))
+        Draft202012Validator(schema).validate(manifest)
+        broken = copy.deepcopy(manifest)
+        del broken["activities"][0]["files"][0]["json"]
+        self.assertFalse(Draft202012Validator(schema).is_valid(broken))
+
+
+class TestWriteFromSnapshot(BuildCase):
+    """第 2 轮审阅第 4 条：写出只用构建时的字节快照，先写临时目录，全部核对通过再改名。"""
+
+    def leftovers(self):
+        return sorted(p.name for p in self.temp.iterdir() if ".tmp-" in p.name)
+
+    def test_source_edited_after_build_does_not_leak_into_package(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        original = (self.content / NODE_PATH).read_bytes()
+        self.change(NODE_PATH, lambda node: node.update(title="构建以后才改的标题"))
+        out = self.temp / "out"
+        build_release.write_release(manifest, files, out)
+        self.assertEqual((out / "content" / NODE_PATH).read_bytes(), original)
+        self.assertNotIn("构建以后才改的标题", (out / "content" / (NODE_PATH + ".json")).read_text(encoding="utf-8"))
+
+    def test_bytes_that_do_not_match_the_manifest_are_refused(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        files["content/" + QUIZ_PATH + ".json"] += b" "
+        out = self.temp / "out"
+        with self.assertRaises(build_release.BuildError) as caught:
+            build_release.write_release(manifest, files, out)
+        self.assertIn(QUIZ_PATH, str(caught.exception))
+        self.assertFalse(out.exists())
+        self.assertEqual(self.leftovers(), [])
+
+    def test_missing_or_extra_files_are_refused(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        for change in ("missing", "extra"):
+            with self.subTest(change=change):
+                broken = dict(files)
+                if change == "missing":
+                    del broken["content/" + NODE_PATH + ".json"]
+                else:
+                    broken["content/extra.txt"] = b"x"
+                with self.assertRaises(build_release.BuildError):
+                    build_release.write_release(manifest, broken, self.temp / "out")
+                self.assertFalse((self.temp / "out").exists())
+
+    def test_non_empty_output_directory_is_left_alone(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        out = self.temp / "out"
+        out.mkdir()
+        (out / "keep.txt").write_text("别动", encoding="utf-8")
+        with self.assertRaises(build_release.BuildError):
+            build_release.write_release(manifest, files, out)
+        self.assertEqual(sorted(p.name for p in out.iterdir()), ["keep.txt"])
+
+    def test_empty_output_directory_is_accepted(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        out = self.temp / "out"
+        out.mkdir()
+        build_release.write_release(manifest, files, out)
+        self.assertTrue((out / "release.json").is_file())
+
+    def test_failure_while_writing_leaves_no_package_and_no_temp(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        out = self.temp / "out"
+        real = Path.write_bytes
+        calls = []
+
+        def flaky(path, data):
+            calls.append(path)
+            if len(calls) == 3:
+                raise OSError("磁盘满了（测试）")
+            return real(path, data)
+        Path.write_bytes = flaky
+        try:
+            with self.assertRaises(OSError):
+                build_release.write_release(manifest, files, out)
+        finally:
+            Path.write_bytes = real
+        self.assertFalse(out.exists())
+        self.assertEqual(self.leftovers(), [])
 
     def test_unquoted_date_fails_the_build_with_path(self):
         path = self.content / NODE_PATH
