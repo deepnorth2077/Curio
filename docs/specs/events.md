@@ -284,10 +284,12 @@ payload 里以 `_text_id` 结尾或叫 `text_id` 的字段，值是 `txt_<ULID>`
 1. 来自同一台设备、同一个孩子（`device_id`、`learner_id` 都相同）；
 2. `actor` 是这个孩子本人；只有 `attempt.abandoned` 允许 `system`；
 3. 所有事件的 `content` 完全相同；
-4. 第一条是 `attempt.started`；最多一条结束事件（`completed` 或 `abandoned`），而且它是最后一条；
+4. 第一条是 `attempt.started`，而且只有这一条 `attempt.started`；最多一条结束事件（`completed` 或 `abandoned`），而且它是最后一条；
 5. 同一道题（同一 `item_id`）的 `item.answered`，`try` 恰好是 1、2、3……，按 `device_seq` 递增，不重复、不跳号。
 
-任何一条不满足，这次尝试标为「不一致」：事件保留，但不计入掌握度和奖励，列进 `conflicts`。
+任何一条不满足，这次尝试标为「不一致」：事件保留，但不计入掌握度和奖励，列进 `conflicts`，并记下不满足的规则里**编号最小**的那条（例如同时违反第 1、3、5 条，只记 1）。
+
+（「只有一条 `attempt.started`」和「记编号最小的规则」是 2026-11-07 竖切片 1 补全的，见 `docs/reviews/pr-60.md`。）
 
 ### 6.4 第一版的投影
 

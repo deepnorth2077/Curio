@@ -245,8 +245,8 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
   "source_commit": "<40 位十六进制，只作参考>",
   "engine_min": 1,
   "contracts": ["activity/1.1"],
-  "nodes": [{"id": "…", "version": 1, "path": "content/nodes/num/….yaml", "sha256": "…"}],
-  "activities": [{"id": "…", "version": 1, "kind": "quiz", "files": [{"path": "…", "sha256": "…", "bytes": 1234}]}],
+  "nodes": [{"id": "…", "version": 1, "path": "content/nodes/num/….yaml", "sha256": "…", "json": {"path": "content/nodes/num/….yaml.json", "sha256": "…", "bytes": 789}}],
+  "activities": [{"id": "…", "version": 1, "kind": "quiz", "files": [{"path": "…/activity.yaml", "sha256": "…", "bytes": 1234, "json": {"path": "…/activity.yaml.json", "sha256": "…", "bytes": 1100}}]}],
   "assets": [{"path": "content/assets/….svg", "sha256": "…", "bytes": 567}]
 }
 ```
@@ -261,10 +261,10 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 
 ### 6.2 哈希怎么算
 
-1. 每个文件：对仓库里的原始字节算 SHA-256（文件已保证是 LF）。
+1. 每个文件：对仓库里的原始字节算 SHA-256（文件已保证是 LF）。每个 `.yaml` 条目带一个 `json` 对象，是 6.3 那份 `.json` 的路径、SHA-256、字节数；它在条目里，所以也参与下一步的哈希。
 2. 三个列表各自排序：`nodes`、`activities` 按 `id`，`files`、`assets` 按 `path`。
 3. 把 `{"engine_min": …, "contracts": …, "nodes": …, "activities": …, "assets": …}` 转成**规范 JSON**：键按字母排序，不留空白（分隔符为 `,` 和 `:`），不转义非 ASCII 字符，编码为 UTF-8。用 Python 写就是 `json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`。
-   - 这样写之所以跨语言可复现，是因为清单的取值受到严格限制：只有字符串和非负整数（不超过 2^53−1），没有小数、布尔值和 null；所有键名、id、路径都是 ASCII，所以「按字母排序」在任何语言里都是同一个顺序（id 是 ASCII 由 schema 的正则保证：知识点 id 只有小写字母、数字、点、连字符，活动 id 同理；路径由第 1 节的规则保证）；哈希是十六进制小写。在这些限制下，结果和 JSON 规范化方案 RFC 8785 一致。
+   - 这样写之所以跨语言可复现，是因为清单的取值受到严格限制：只有字符串和非负整数（不超过 2^53−1；构建器把 `version: 1.0` 这类整数值的小数写法统一转成整数，否则 Python 写成 `1.0`、JavaScript 写成 `1`，哈希会不同），没有小数、布尔值和 null；所有键名、id、路径都是 ASCII，所以「按字母排序」在任何语言里都是同一个顺序（id 是 ASCII 由 schema 的正则保证：知识点 id 只有小写字母、数字、点、连字符，活动 id 同理；路径由第 1 节的规则保证）；哈希是十六进制小写。在这些限制下，结果和 JSON 规范化方案 RFC 8785 一致。
    - 发布哈希只由 Python 构建器计算。其他语言要验证时，按 RFC 8785 实现即可。
 4. `content_hash` = 上一步字节的 SHA-256；`release_id` = `rel_` + `content_hash`。
 
@@ -273,6 +273,13 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 ### 6.3 构建产物
 
 构建器输出一个目录：`release.json`，加上清单里每个文件（按原路径存放）。怎么托管、怎么缓存，属于 CURIO-007。
+
+浏览器没有现成的 YAML 解析器，又不引入依赖（ADR-008），所以构建器在每个 `.yaml` 文件旁边多写一份同名加 `.json` 的文件（例如 `activity.yaml.json`），外壳读它（2026-11-07 加入，竖切片 1）：
+
+- 内容是这个 YAML 解析后的值，写成 JSON：键按字母排序，不留空白，不转义非 ASCII 字符，UTF-8 编码，末尾一个 LF。用 Python 写就是 `json.dumps(值, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False) + "\n"`。
+- 它由 YAML 确定性地算出。审核的对象仍然是 YAML 的原始字节；清单里同时登记 YAML 和这份 JSON 的哈希，**两者都参与 `content_hash`**（6.2）。这样外壳不用解析 YAML，也能用 `release_id` 核对自己实际读到的 JSON 是不是这个发布的那一份：读到的字节数或 SHA-256 和清单对不上，就不能用。（2026-11-07 第 2 轮修订：第 1 稿说 JSON 不进清单，外部审阅指出那样 `release_id` 绑定不了浏览器读的内容，见 `docs/reviews/pr-60.md`。`release/1` 当时还没有发布过任何一份，所以直接改定义。）
+- **构建只读一次文件**：审核、算哈希、转 JSON、写出都用同一份字节快照，写出前逐个核对哈希。先写进输出目录旁边的临时目录，全部写好、核对通过后再改名成输出目录；输出目录已经存在并且不是空目录时，构建失败，不覆盖。所以构建中途失败不会留下半个发布包。
+- YAML 里有 JSON 表示不了的值时构建失败：没加引号的日期（YAML 会把 `2026-11-07` 读成日期）、`.inf`、`.nan`、不是字符串的键、绝对值超过 2^53−1 的整数。
 
 ### 6.4 部署记录（deploy/1）
 

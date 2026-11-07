@@ -1,0 +1,50 @@
+{
+  "name": "attempt-multi-rule",
+  "about": "A1 同时违反第 1、3、5 条，只报编号最小的 1；A2 某题第一条作答就是 try=2，报 5；A3 的事件分属两个知识点，报 3，这两个知识点只被这次不合法尝试涉及，也要列出、都是 untouched（第 1 轮审阅第 6 条）。",
+  "order_free": true,
+  "base": {"schema": "event/2", "learner_id": "lrn_01JC00000000000000000000K1", "device_id": "dev_01JC00000000000000000000D1", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K1"}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}},
+  "inputs": [
+    {"event": {"event_id": "evt_01JC00000000000000000000E1", "device_seq": 1, "occurred_at": "2026-11-08T03:00:01.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E2", "device_seq": 2, "occurred_at": "2026-11-08T03:00:02.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "b", "correct": false, "try": 1, "hints_used": 0}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E3", "device_seq": 3, "occurred_at": "2026-11-08T03:00:03.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 2, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E4", "device_seq": 4, "occurred_at": "2026-11-08T03:00:04.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"duration_ms": 1000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E5", "device_seq": 5, "occurred_at": "2026-11-08T03:00:05.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"mode": "retry"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E6", "device_seq": 6, "occurred_at": "2026-11-08T03:00:06.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 2, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E7", "device_seq": 7, "occurred_at": "2026-11-08T03:00:07.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"duration_ms": 1000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E8", "device_seq": 8, "occurred_at": "2026-11-08T03:00:08.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"mode": "first"}, "content": {"node_id": "math.geometry.perimeter", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E9", "device_seq": 9, "occurred_at": "2026-11-08T03:00:09.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}, "content": {"node_id": "math.measure.time-units", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E10", "device_seq": 10, "occurred_at": "2026-11-08T03:00:10.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"duration_ms": 1000}, "content": {"node_id": "math.geometry.perimeter", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}}, "expect": "accepted"}
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {
+      "math.number.fraction-intro": {
+        "state": "untouched",
+        "best": null
+      },
+      "math.geometry.perimeter": {
+        "state": "untouched",
+        "best": null
+      },
+      "math.measure.time-units": {
+        "state": "untouched",
+        "best": null
+      }
+    },
+    "conflicts": [
+      {
+        "attempt_id": "att_01JC00000000000000000000A1",
+        "rule": 1
+      },
+      {
+        "attempt_id": "att_01JC00000000000000000000A2",
+        "rule": 5
+      },
+      {
+        "attempt_id": "att_01JC00000000000000000000A3",
+        "rule": 3
+      }
+    ]
+  },
+  "worked": "A1 按 device_seq：1 started（D1）、2 q1 try1（D2）、3 q1 try1（D1，activity_version 2）、4 completed。规则 1：device_id 有 D1、D2 → 不满足；规则 2 满足；规则 3：第 3 条 content 不同 → 不满足；规则 4 满足；规则 5：q1 的 try 是 1、1 → 不满足。取最小 → 1。A2：started、q1 try2、completed，规则 1～4 满足，规则 5：q1 的 try 是 [2]，不是从 1 开始 → 5。A3：content.node_id 先是 perimeter、再是 time-units → 规则 3（规则 1、2 满足）。三次都不一致，没有已完成的合法尝试 → 三个节点都是 untouched、best null。conflicts 按 attempt_id 排序：A1、A2、A3。"
+}
