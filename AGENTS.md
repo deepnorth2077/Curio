@@ -52,3 +52,5 @@ Luka 不写代码，只负责部署和验收。所以：
 ## 知识点工作流
 
 每个知识点都按 `docs/workflow.md` 走：一个知识点一个主 issue、一个 PR，分支名 `kp/<知识点 id>`（改版也用这个名字，不加后缀）。知识点卡由 Claude 自己写；每个活动一个子 issue，由实现 AI 做，走上面的协作流程。
+
+**设计或审核任何活动之前，先用 `.claude/skills/curio-anatomy/` 拆解知识点**：实物就是解释，孩子亲手摆弄的东西的运转本身就是这个知识。三个标杆是 `content/activities/act.simulation.*-01/`（「生命的说明书」星座）；`references/lessons.md` 是一路踩过的坑，写提示词和审查都要逐条对照；新模块从 `references/starter.html` 起步，画风和手感才能一致。
