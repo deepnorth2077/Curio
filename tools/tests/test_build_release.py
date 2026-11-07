@@ -9,7 +9,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import hashlib
+
 import yaml
+from jsonschema import Draft202012Validator
 
 TOOLS = Path(__file__).resolve().parent.parent
 REPO = TOOLS.parent
@@ -19,7 +22,7 @@ sys.path.insert(0, str(TOOLS))
 import build_release  # noqa: E402
 
 COMMIT = "0000000000000000000000000000000000000000"
-EXPECTED_ID = "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"
+EXPECTED_ID = "rel_efb556635ad02d686802bc3e2bf4a3faefe6219204f49eb629579651064a9554"
 NODE_ID = "math.number.fraction-intro"
 NODE_PATH = "nodes/num/math.number.fraction-intro.yaml"
 EXPLAIN_PATH = "activities/act.explain.fraction-intro-01/activity.yaml"
@@ -211,9 +214,9 @@ class TestImmutableRelease(BuildCase):
         self.assertEqual(manifest["contracts"], ["activity/1.1"])
 
     def test_write_release_copies_exact_bytes_and_manifest(self):
-        manifest = self.build()
+        manifest, files = build_release.build_package(self.content, COMMIT)
         out = self.temp / "out"
-        build_release.write_release(manifest, self.content, out)
+        build_release.write_release(manifest, files, out)
         written = json.loads((out / "release.json").read_text(encoding="utf-8"))
         self.assertEqual(written, manifest)
         for node in manifest["nodes"]:
@@ -223,6 +226,221 @@ class TestImmutableRelease(BuildCase):
             for entry in activity["files"]:
                 relative = entry["path"].removeprefix("content/")
                 self.assertEqual((out / entry["path"]).read_bytes(), (self.content / relative).read_bytes())
+
+
+class TestJsonSidecar(BuildCase):
+    """内容规格 6.3：每个 YAML 旁边多写一份同名 .json，清单登记它的哈希，参与 content_hash。"""
+
+    def written(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        out = self.temp / "out"
+        build_release.write_release(manifest, files, out)
+        return manifest, out
+
+    def test_every_yaml_gets_sorted_compact_json_and_nothing_else_does(self):
+        manifest, out = self.written()
+        yamls = sorted(p.relative_to(out).as_posix() for p in out.rglob("*.yaml"))
+        jsons = sorted(p.relative_to(out).as_posix() for p in out.rglob("*.json") if p.name != "release.json")
+        self.assertEqual(jsons, [y + ".json" for y in yamls])
+        self.assertEqual(len(yamls), 4)  # 1 个知识点 + 讲解、挑战、反思
+        for y in yamls:
+            sidecar = (out / (y + ".json")).read_bytes()
+            self.assertTrue(sidecar.endswith(b"}\n") and not sidecar.endswith(b"\n\n"))
+            self.assertNotIn(b": ", sidecar[:200])
+            self.assertEqual(json.loads(sidecar), yaml.safe_load((out / y).read_text(encoding="utf-8")))
+
+    def test_quiz_sidecar_starts_with_hand_written_bytes(self):
+        _, out = self.written()
+        data = (out / "content" / QUIZ_PATH.replace("activity.yaml", "activity.yaml.json")).read_bytes()
+        # 手写的期望：键按字母排序，中文不转义
+        self.assertTrue(data.startswith('{"age_band":"G3-4","body":{"items":[{"answer":{"choices":[{"correct":true,"id":"a","text":"1/4"}'.encode("utf-8")), data[:120])
+
+    def test_every_yaml_entry_binds_the_json_the_browser_reads(self):
+        manifest, out = self.written()
+        self.assertEqual(manifest["release_id"], EXPECTED_ID)
+        entries = list(manifest["nodes"]) + [f for a in manifest["activities"] for f in a["files"]]
+        self.assertEqual(len(entries), 4)
+        for entry in entries:
+            data = (out / entry["json"]["path"]).read_bytes()
+            self.assertEqual(entry["json"]["path"], entry["path"] + ".json")
+            self.assertEqual(entry["json"]["sha256"], hashlib.sha256(data).hexdigest())
+            self.assertEqual(entry["json"]["bytes"], len(data))
+
+    def test_written_release_matches_the_release_schema(self):
+        manifest, _ = self.written()
+        schema = json.loads((REPO / "schemas/release.schema.json").read_text(encoding="utf-8"))
+        Draft202012Validator(schema).validate(manifest)
+        broken = copy.deepcopy(manifest)
+        del broken["activities"][0]["files"][0]["json"]
+        self.assertFalse(Draft202012Validator(schema).is_valid(broken))
+
+
+NODE_CANONICAL = r"""
+// 浏览器外壳核对清单的写法（切片规格 6.3 第 2 步），在 Node 里跑：递归排序对象键，数组保持顺序，不留空白。
+const fs = require("fs"), crypto = require("crypto");
+const m = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]"
+  : v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}"
+  : JSON.stringify(v);
+const input = {engine_min: m.engine_min, contracts: m.contracts, nodes: m.nodes, activities: m.activities, assets: m.assets};
+const hash = crypto.createHash("sha256").update(Buffer.from(canon(input), "utf8")).digest("hex");
+process.stdout.write(hash === m.content_hash && m.release_id === "rel_" + hash ? "ok" : "mismatch " + hash);
+"""
+
+
+class TestManifestIntegers(BuildCase):
+    """第 2 轮审阅第 1 条：清单里的整数一律写成整数，Python 和浏览器算出同一个 content_hash。"""
+
+    def test_float_version_with_integer_value_is_written_as_integer(self):
+        self.change(QUIZ_PATH, lambda act: act.update(version=1.0, engine=1.0))
+        text = (self.content / QUIZ_PATH).read_text(encoding="utf-8")
+        self.assertIn("version: 1.0", text)
+        manifest = self.build()
+        quiz = [a for a in manifest["activities"] if a["id"] == "act.quiz.fraction-intro-01"][0]
+        self.assertIs(type(quiz["version"]), int)
+        self.assertIs(type(manifest["engine_min"]), int)
+        canonical = json.dumps({k: manifest[k] for k in ("engine_min", "contracts", "nodes", "activities", "assets")},
+                               sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        self.assertNotIn('"version":1.0', canonical)
+
+    def test_non_integer_or_out_of_range_versions_fail(self):
+        for bad, word in [(1.5, "必须是整数"), (True, "必须是整数"), (0, "1～2^53−1"), (9007199254740992, "2^53")]:
+            with self.subTest(version=bad):
+                self.change(QUIZ_PATH, lambda act: act.update(version=bad))
+                with self.assertRaises(build_release.BuildError) as caught:
+                    self.build()
+                self.assertIn(word, str(caught.exception))
+                shutil.rmtree(self.content)
+                shutil.copytree(FIXTURE, self.content)
+
+    @unittest.skipUnless(shutil.which("node"), "需要 Node.js 才能核对浏览器的写法")
+    def test_browser_canonical_json_reproduces_the_release_id(self):
+        """Python 构建、JavaScript 核对：含 version: 1.0、非 ASCII 内容、嵌套的 json 条目。"""
+        script = self.temp / "canon.js"
+        script.write_text(NODE_CANONICAL, encoding="utf-8")
+        for name in ("fixture", "float-version"):
+            if name == "float-version":
+                self.change(QUIZ_PATH, lambda act: act.update(version=1.0))
+            with self.subTest(case=name):
+                manifest, files = build_release.build_package(self.content, COMMIT)
+                out = self.temp / ("out-" + name)
+                build_release.write_release(manifest, files, out)
+                process = subprocess.run(["node", str(script), str(out / "release.json")], capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(process.stdout, "ok", process.stderr)
+        expected = json.loads(EXPECTED.read_text(encoding="utf-8"))
+        fixture = self.temp / "expected.json"
+        fixture.write_text(json.dumps(dict(expected, source_commit=COMMIT), ensure_ascii=False), encoding="utf-8")
+        process = subprocess.run(["node", str(script), str(fixture)], capture_output=True, text=True, encoding="utf-8")
+        self.assertEqual(process.stdout, "ok", "手写的期望清单在浏览器写法下也要对得上")
+
+
+class TestSlice1aFixture(unittest.TestCase):
+    """切片规格第 7、8 节：1a 的演示夹具能构建，挑战是五道选择题、固定题序。"""
+
+    def test_fixture_builds_with_five_choice_items_in_fixed_order(self):
+        root = TOOLS / "tests/fixtures/slice-1a/content"
+        manifest = build_release.build(root, COMMIT)
+        self.assertEqual([a["id"] for a in manifest["activities"]], ["act.explain.fraction-intro-01", "act.quiz.fraction-intro-01"])
+        quiz = yaml.safe_load((root / QUIZ_PATH).read_text(encoding="utf-8"))
+        self.assertIs(quiz["body"]["shuffle"], False)
+        items = quiz["body"]["items"]
+        self.assertEqual(len(items), 5)
+        self.assertTrue(all(item["answer"]["type"] == "choice" for item in items))
+        positions = [next(i for i, c in enumerate(item["answer"]["choices"]) if c.get("correct")) for item in items]
+        self.assertTrue(all(sum(1 for c in item["answer"]["choices"] if c.get("correct")) == 1 for item in items))
+        self.assertGreater(len(set(positions)), 1, "正确选项的位置要分散")
+
+
+class TestWriteFromSnapshot(BuildCase):
+    """第 2 轮审阅第 4 条：写出只用构建时的字节快照，先写临时目录，全部核对通过再改名。"""
+
+    def leftovers(self):
+        return sorted(p.name for p in self.temp.iterdir() if ".tmp-" in p.name)
+
+    def test_source_edited_after_build_does_not_leak_into_package(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        original = (self.content / NODE_PATH).read_bytes()
+        self.change(NODE_PATH, lambda node: node.update(title="构建以后才改的标题"))
+        out = self.temp / "out"
+        build_release.write_release(manifest, files, out)
+        self.assertEqual((out / "content" / NODE_PATH).read_bytes(), original)
+        self.assertNotIn("构建以后才改的标题", (out / "content" / (NODE_PATH + ".json")).read_text(encoding="utf-8"))
+
+    def test_bytes_that_do_not_match_the_manifest_are_refused(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        files["content/" + QUIZ_PATH + ".json"] += b" "
+        out = self.temp / "out"
+        with self.assertRaises(build_release.BuildError) as caught:
+            build_release.write_release(manifest, files, out)
+        self.assertIn(QUIZ_PATH, str(caught.exception))
+        self.assertFalse(out.exists())
+        self.assertEqual(self.leftovers(), [])
+
+    def test_missing_or_extra_files_are_refused(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        for change in ("missing", "extra"):
+            with self.subTest(change=change):
+                broken = dict(files)
+                if change == "missing":
+                    del broken["content/" + NODE_PATH + ".json"]
+                else:
+                    broken["content/extra.txt"] = b"x"
+                with self.assertRaises(build_release.BuildError):
+                    build_release.write_release(manifest, broken, self.temp / "out")
+                self.assertFalse((self.temp / "out").exists())
+
+    def test_non_empty_output_directory_is_left_alone(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        out = self.temp / "out"
+        out.mkdir()
+        (out / "keep.txt").write_text("别动", encoding="utf-8")
+        with self.assertRaises(build_release.BuildError):
+            build_release.write_release(manifest, files, out)
+        self.assertEqual(sorted(p.name for p in out.iterdir()), ["keep.txt"])
+
+    def test_empty_output_directory_is_accepted(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        out = self.temp / "out"
+        out.mkdir()
+        build_release.write_release(manifest, files, out)
+        self.assertTrue((out / "release.json").is_file())
+
+    def test_failure_while_writing_leaves_no_package_and_no_temp(self):
+        manifest, files = build_release.build_package(self.content, COMMIT)
+        out = self.temp / "out"
+        real = Path.write_bytes
+        calls = []
+
+        def flaky(path, data):
+            calls.append(path)
+            if len(calls) == 3:
+                raise OSError("磁盘满了（测试）")
+            return real(path, data)
+        Path.write_bytes = flaky
+        try:
+            with self.assertRaises(OSError):
+                build_release.write_release(manifest, files, out)
+        finally:
+            Path.write_bytes = real
+        self.assertFalse(out.exists())
+        self.assertEqual(self.leftovers(), [])
+
+    def test_unquoted_date_fails_the_build_with_path(self):
+        path = self.content / NODE_PATH
+        path.write_text(path.read_text(encoding="utf-8").replace("unit: 三上 · 分数的初步认识", "unit: 2026-11-07"), encoding="utf-8", newline="\n")
+        message = self.assertBuildFails("content/" + NODE_PATH, "不能转成 JSON")
+        self.assertIn("unit", message)
+
+    def test_values_json_cannot_hold_are_rejected(self):
+        for text, word in [("a: .inf\n", "无穷大"), ("a: .nan\n", "NaN"), ("1: x\n", "不是字符串"), ("a: 9007199254740992\n", "2^53"), ("a: 2026-01-01\n", "日期")]:
+            with self.subTest(text=text):
+                with self.assertRaises(build_release.BuildError) as caught:
+                    build_release.json_sidecar(text.encode("utf-8"), "content/x.yaml")
+                self.assertIn(word, str(caught.exception))
+
+    def test_largest_safe_integer_and_quoted_date_are_accepted(self):
+        data = build_release.json_sidecar("b: '2026-01-01'\na: 9007199254740991\n".encode("utf-8"), "content/x.yaml")
+        self.assertEqual(data, b'{"a":9007199254740991,"b":"2026-01-01"}\n')
 
 
 class TestCommandLine(BuildCase):

@@ -1,0 +1,33 @@
+{
+  "name": "mastery-not-lit",
+  "about": "首答 3/5，不到 0.8：只算 explored。",
+  "order_free": true,
+  "base": {"schema": "event/2", "learner_id": "lrn_01JC00000000000000000000K1", "device_id": "dev_01JC00000000000000000000D1", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K1"}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}},
+  "inputs": [
+    {"event": {"event_id": "evt_01JC00000000000000000000E1", "device_seq": 1, "occurred_at": "2026-11-08T02:00:01.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E2", "device_seq": 2, "occurred_at": "2026-11-08T02:00:02.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E3", "device_seq": 3, "occurred_at": "2026-11-08T02:00:03.000Z", "verb": "hint.used", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "level": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E4", "device_seq": 4, "occurred_at": "2026-11-08T02:00:04.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 2, "hints_used": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E5", "device_seq": 5, "occurred_at": "2026-11-08T02:00:05.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E6", "device_seq": 6, "occurred_at": "2026-11-08T02:00:06.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E7", "device_seq": 7, "occurred_at": "2026-11-08T02:00:07.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q4", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E8", "device_seq": 8, "occurred_at": "2026-11-08T02:00:08.000Z", "verb": "hint.used", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q4", "level": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E9", "device_seq": 9, "occurred_at": "2026-11-08T02:00:09.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 2, "hints_used": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E10", "device_seq": 10, "occurred_at": "2026-11-08T02:00:10.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E11", "device_seq": 11, "occurred_at": "2026-11-08T02:00:11.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"duration_ms": 60000}}, "expect": "accepted"}
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {
+      "math.number.fraction-intro": {
+        "state": "explored",
+        "best": {
+          "correct": 3,
+          "answered": 5
+        }
+      }
+    },
+    "conflicts": []
+  },
+  "worked": "A1 合法、已完成。try=1：q1 错、q2 对、q3 对、q4 错、q5 对 → 3/5。3×5=15 < 5×4=20 → 不是 lit；有已完成的合法尝试 → explored。"
+}
