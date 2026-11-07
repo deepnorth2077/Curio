@@ -28,7 +28,7 @@ ADR 一旦接受，原文就不改写。这样十年后还能查到当初为什�
 | [ADR-006](0006-recoverability-gate.md) | 可恢复性是发布的前提（可读导出与完整备份分开） | 已接受 |
 | [ADR-007](0007-verifiable-task-packages.md) | 协作以可校验的任务包为准 | 已接受 |
 | [ADR-008](0008-frontend-stack.md) | 当前不引入前端框架，浏览器运行前不要求打包 | 已接受 |
-| [ADR-009](0009-engineering-practices.md) | 开发实践：借鉴 Matt Pocock 的工程技能 | 已接受 |
+| [ADR-009](0009-engineering-practices.md) | 开发实践：借鉴 Matt Pocock 的工程技能（增补 1：按风险分四档审） | 已接受（增补 1 等外部审阅） |
 
 ADR-001～007 来自架构审查（见 #13）。ADR-008 是 Claude 补充的。
 
