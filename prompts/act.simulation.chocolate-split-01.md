@@ -1,7 +1,7 @@
 ---
 task: act.simulation.chocolate-split-01
 issue: 55
-version: v1
+version: v2
 ---
 
 > 契约 activity/1.1 · 基于提交 `{{commit}}`
@@ -212,14 +212,64 @@ review: pending
 # END OF FILE
 ```
 
-## 交付格式（必须遵守，格式不对整包打回）
+## 交付格式（必须照做，格式不对整包打回）
 
-文件清单（只交这两个文件，路径一字不差）：
-- `content/activities/act.simulation.chocolate-split-01/manifest.yaml`
-- `content/activities/act.simulation.chocolate-split-01/index.html`
+**交 2 个 Markdown 文件，文件名固定。**`<模型>` 换成你的模型名，只用小写字母、数字和连字符，例如 `gpt-5-1`、`kimi-k2`。
 
-开头信息照抄：`issue: #55`、`任务: act.simulation.chocolate-split-01`、`提示词版本: v1`、`基于提交: {{commit}}`、`轮次: 1`；`实现者` 写你自己的模型名和版本。`index.html` 很长时，可以分成两段交付（manifest 在第 1 段，index.html 在第 2 段），或者按第 6 条做成附件；一个文件不能拆到两段里。
+| 文件名 | 里面放什么 |
+| --- | --- |
+| `chocolate-split-01.<模型>.1.md` | 开头信息、文件清单、manifest.yaml |
+| `chocolate-split-01.<模型>.2.md` | index.html、自查、说明 |
 
-{{embed: docs/submission.md#格式}}
+能生成可下载的文件，就交这两个文件。不能的话，分两次回复：第 1 次回复只有第 1 个文件的内容，等用户说「继续」，第 2 次回复只有第 2 个文件的内容。
 
-{{embed: docs/submission.md#规则}}
+**第 1 个文件**，照抄下面的样子，只换 `<模型名和版本>` 和（括号里的说明）：
+
+````
+=== CURIO 交付包 · 第 1/2 段 ===
+issue: #55
+任务: act.simulation.chocolate-split-01
+实现者: <模型名和版本>
+提示词版本: v2
+基于提交: {{commit}}
+轮次: 1
+
+## 文件清单
+- content/activities/act.simulation.chocolate-split-01/manifest.yaml
+- content/activities/act.simulation.chocolate-split-01/index.html
+
+## 文件
+
+### FILE: content/activities/act.simulation.chocolate-split-01/manifest.yaml
+```yaml
+（这里放 manifest 全文，最后一行是 # END OF FILE）
+```
+
+=== 第 1/2 段完 ===
+````
+
+**第 2 个文件**：
+
+````
+=== CURIO 交付包 · 第 2/2 段 ===
+
+### FILE: content/activities/act.simulation.chocolate-split-01/index.html
+```html
+（这里放完整的 index.html，最后两行是 </html> 和 <!-- END OF FILE -->）
+```
+
+## 自查
+（按第 10 节验收清单逐条写：确认过的写 [x] 和怎么确认的；没确认的写 [ ] 未验证）
+
+## 说明
+（做了哪些决定、没做什么、疑问：规格不清楚或不合理的地方）
+
+=== END ===
+=== 第 2/2 段完 ===
+````
+
+**规则**：
+1. 只交这两个文件，开头信息六行一字不改（`实现者` 除外）。
+2. 文件给全文：不省略，不写「其余不变」，`index.html` 整个放在第 2 个文件里，不拆开。
+3. 两个 `=== … ===` 标记之外不写别的话。
+4. 有疑问写进「说明」，不要为了跑通去改规格、字段或消息格式。
