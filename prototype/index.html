@@ -738,7 +738,7 @@ function renderOverview(){
   let h=`<circle class="band-now" cx="${C}" cy="${C}" r="${(BANDS[1][0]+BANDS[1][1])/2}" stroke-width="${BANDS[1][1]-BANDS[1][0]}"/>`;
   BANDS.forEach(([a,b],i)=>{ h+=`<path class="kq" d="${Sk.ellipse(C,C,b,b,200+i,.6)}" ${i>=3?'stroke-dasharray="3 6"':""}/>`; });
   h+=`<path class="kq" d="${Sk.ellipse(C,C,40,40,190,.6)}"/>`;
-  BANDS.forEach(([a,b],i)=>{ h+=`<text class="${i===CURRENT_BAND?"anno":"ring-lbl"}" x="${C}" y="${C+(a+b)/2+6}" text-anchor="middle">${BAND_NAME[i]}${i===CURRENT_BAND?" · 你在这一圈":""}</text>`; });
+  BANDS.forEach(([a,b],i)=>{ h+=`<text class="${i===CURRENT_BAND?"anno":"ring-lbl"}" x="${C}" y="${C+(a+b)/2+6}" text-anchor="middle">${i===CURRENT_BAND?"你在这一圈":BAND_NAME[i]}</text>`; });
   // sector dividers (between themes) and the math | science split
   THEME_ORDER.forEach((k,i)=>{ const a0=THEMES[k].sec[0]; const p=polar(a0,44), q=polar(a0,350); h+=`<path class="kq" stroke-dasharray="1 7" d="${Sk.line(p[0],p[1],q[0],q[1],330+i,.3)}" opacity=".7"/>`; });
   h+=`<path class="kq" stroke-dasharray="2 6" d="${Sk.line(C,C-44,C,C-352,301,.4)}"/><path class="kq" stroke-dasharray="2 6" d="${Sk.line(C,C+44,C,C+352,302,.4)}"/>`;
@@ -846,7 +846,7 @@ function renderMetro(){
   // zones
   GRADES.forEach((g,i)=>{ const x=zoneX[g], w=colW[g], cur=g===CURRENT_GRADE;
     if(cur) h+=`<rect x="${x}" y="70" width="${w}" height="${H-80}" rx="14" style="fill:var(--wash)"/>`;
-    h+=`<text class="zone-lbl" x="${x+w/2}" y="44" text-anchor="middle" ${cur?'style="fill:var(--accent)"':""}>${GRADE[g]}</text>`;
+    h+=`<text class="zone-lbl" x="${x+w/2}" y="44" text-anchor="middle" ${cur?'style="fill:var(--accent)"':""}>${cur?"你在这里":GRADE[g]}</text>`;
     if(i>0) h+=`<path class="kq" stroke-dasharray="${g==="G7"||g==="G10"?"6 4":"1 6"}" d="${Sk.line(x,58,x,H-10,900+i,.3)}" ${g==="G7"||g==="G10"?'style="stroke-width:1.6"':""}/>`; });
   h+=`<text class="zone-sub" x="${zoneX.G1+4}" y="62">小学</text><text class="zone-sub" x="${zoneX.G7+6}" y="62">初中 · 理科分科</text><text class="zone-sub" x="${zoneX.G10+6}" y="62">高中</text>`;
   // lines
