@@ -1,0 +1,14 @@
+id: act.simulation.cell-zoom-01
+contract: activity/1.1
+type: simulation
+version: 1
+title: 显微镜下的小房间
+targets: [biology.cell.cell-intro]
+age_band: G3-4
+entry: index.html
+duration_min: 12
+pedagogy: explain
+misconceptions: [visible, only-animals, one-kind, cells-are-dead]
+emits: [predicted, observed]
+author: {model: claude-opus-5-5, prompt_ref: prompts/act.simulation.cell-zoom-01.md}
+review: pending

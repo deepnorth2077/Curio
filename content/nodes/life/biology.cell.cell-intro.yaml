@@ -36,7 +36,7 @@ lenses:
     approach: 从「用积木搭房子」类比细胞搭成身体，再说清细胞和积木不一样的地方：细胞是活的，会吸收养料、会长大、会分成两个；用放大镜和显微镜下的照片说明细胞很小；比较几种细胞的样子；认识细胞核这个放「说明书」的小房间，为下一颗星 DNA 铺路。
   - band: G7-8
     approach: 用显微镜观察洋葱表皮和口腔上皮细胞，认识细胞膜、细胞质、细胞核等结构；知道人成熟的红细胞没有细胞核。
-activities: [act.explain.cell-intro-01, act.quiz.cell-intro-01]
+activities: [act.simulation.cell-zoom-01, act.explain.cell-intro-01, act.quiz.cell-intro-01]
 status: draft
 version: 1
 # END OF FILE
