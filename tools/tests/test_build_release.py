@@ -225,6 +225,57 @@ class TestImmutableRelease(BuildCase):
                 self.assertEqual((out / entry["path"]).read_bytes(), (self.content / relative).read_bytes())
 
 
+class TestJsonSidecar(BuildCase):
+    """内容规格 6.3：每个 YAML 旁边多写一份同名 .json，不进清单、不参与哈希。"""
+
+    def written(self):
+        manifest = self.build()
+        out = self.temp / "out"
+        build_release.write_release(manifest, self.content, out)
+        return manifest, out
+
+    def test_every_yaml_gets_sorted_compact_json_and_nothing_else_does(self):
+        manifest, out = self.written()
+        yamls = sorted(p.relative_to(out).as_posix() for p in out.rglob("*.yaml"))
+        jsons = sorted(p.relative_to(out).as_posix() for p in out.rglob("*.json") if p.name != "release.json")
+        self.assertEqual(jsons, [y + ".json" for y in yamls])
+        self.assertEqual(len(yamls), 4)  # 1 个知识点 + 讲解、挑战、反思
+        for y in yamls:
+            sidecar = (out / (y + ".json")).read_bytes()
+            self.assertTrue(sidecar.endswith(b"}\n") and not sidecar.endswith(b"\n\n"))
+            self.assertNotIn(b": ", sidecar[:200])
+            self.assertEqual(json.loads(sidecar), yaml.safe_load((out / y).read_text(encoding="utf-8")))
+
+    def test_quiz_sidecar_starts_with_hand_written_bytes(self):
+        _, out = self.written()
+        data = (out / "content" / QUIZ_PATH.replace("activity.yaml", "activity.yaml.json")).read_bytes()
+        # 手写的期望：键按字母排序，中文不转义
+        self.assertTrue(data.startswith('{"age_band":"G3-4","body":{"items":[{"answer":{"choices":[{"correct":true,"id":"a","text":"1/4"}'.encode("utf-8")), data[:120])
+
+    def test_sidecars_do_not_change_manifest_or_release_id(self):
+        manifest, out = self.written()
+        self.assertEqual(manifest["release_id"], EXPECTED_ID)
+        listed = {f["path"] for a in manifest["activities"] for f in a["files"]} | {n["path"] for n in manifest["nodes"]}
+        self.assertFalse(any(path.endswith(".json") for path in listed))
+
+    def test_unquoted_date_fails_the_build_with_path(self):
+        path = self.content / NODE_PATH
+        path.write_text(path.read_text(encoding="utf-8").replace("unit: 三上 · 分数的初步认识", "unit: 2026-11-07"), encoding="utf-8", newline="\n")
+        message = self.assertBuildFails("content/" + NODE_PATH, "不能转成 JSON")
+        self.assertIn("unit", message)
+
+    def test_values_json_cannot_hold_are_rejected(self):
+        for text, word in [("a: .inf\n", "无穷大"), ("a: .nan\n", "NaN"), ("1: x\n", "不是字符串"), ("a: 9007199254740992\n", "2^53"), ("a: 2026-01-01\n", "日期")]:
+            with self.subTest(text=text):
+                with self.assertRaises(build_release.BuildError) as caught:
+                    build_release.json_sidecar(text.encode("utf-8"), "content/x.yaml")
+                self.assertIn(word, str(caught.exception))
+
+    def test_largest_safe_integer_and_quoted_date_are_accepted(self):
+        data = build_release.json_sidecar("b: '2026-01-01'\na: 9007199254740991\n".encode("utf-8"), "content/x.yaml")
+        self.assertEqual(data, b'{"a":9007199254740991,"b":"2026-01-01"}\n')
+
+
 class TestCommandLine(BuildCase):
     def test_cli_writes_package_and_prints_expected_id(self):
         out = self.temp / "cli-out"
