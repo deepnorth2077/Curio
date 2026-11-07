@@ -70,20 +70,16 @@ python -m unittest discover -s tools/tests         # 全部通过再开始干活
 | Kimi | 交付稳，打回后只改要求改的地方。适合内容和工具类任务。审阅时擅长发现设计层面的大问题 |
 | GLM | 想得深，最会发现规格里没写清的地方，审阅时的系统性很强。交付格式和收尾不够细心，任务文件里要把格式要求写醒目 |
 
-## 7. 截至 2026-11-07（M3）的进行中事项
+## 7. 截至 2026-11-07（M4）的进行中事项
 
-以 issue 为准，下面只是写这份文件时的快照。上一个对话在这里收尾（里程碑 M3：Luka 试玩旧版讲解后觉得没意思；按 anatomy 的方法重做了三个讲解，做成能动手的模拟模块，技能 `curio-anatomy` 存进仓库）。
+以 issue 为准，下面只是写这份文件时的快照。上一个对话在这里收尾（里程碑 M4：原型加设置、首页比例调整；#24 和 #31 的规格写完，送外部审阅）。
 
-- **三个「动手探索」模块**（都在各自的 `kp/` 分支上，没开 PR）：
-  - `act.simulation.cell-zoom-01`（细胞，`kp/biology.cell.cell-intro` 5da3c33）、`act.simulation.dna-book-01`（DNA，`kp/biology.genetics.dna-intro` 636b21c）：设计说明 Claude 写，Opus 子 agent 实现，Sonnet 子 agent 审查 1 轮，Opus 子 agent 按审查改完。
-  - `act.simulation.chromosome-pack-01`（染色体，`kp/biology.genetics.chromosome-intro` dbae6fa）：Claude 自己设计和实现的标杆，Sonnet 审查 1 轮后改完。
-  - 审查记录：`docs/reviews/act.simulation.*.md`。知识点卡已登记新活动；染色体卡新增误区 `stuffed-in`、`cut-into-pieces`。
-  - 原来的讲解还在，试玩页上标「旧版讲解」。孩子试玩后决定：旧版讲解是删掉（ID 不复用，状态改掉）还是保留。
-- **试玩页**（PR #52）：https://deepnorth2077.github.io/Curio/preview/ ，三颗星最前面是「动手探索」。下一步：等 Luka 和孩子试玩反馈；按反馈改；孩子玩过、Luka 确认后，三个知识点各开 PR 合入，关闭 #34–#43。
-- **技能 `curio-anatomy`**（`.claude/skills/curio-anatomy/`）：方法、`references/lessons.md`（30 条经验）、`starter.html` 骨架、`brief-template.md`、`review-template.md`、`walk.py`。以后每个知识点都按它的「一个模块的完整流程」做：Claude 写设计说明 → Opus 实现 → Sonnet 审查 → 改 → 新坑补进 lessons。
+- **等外部审阅（Luka 转交）**：
+  - **PR #60 竖切片 1**（#24）：`docs/specs/slice-1.md`、内容规格 6.3（构建器给每个 YAML 写 `.json`，已实现）、手算黄金向量 `kernel/vectors/`（9 个）和 `engine/vectors/grading.json`（60 条）、`tools/tests/test_vectors.py`（独立的 Python 对照实现复核手算值）。审阅任务 `review.slice-1` 给 GLM，基于 `471d45a`。回来后：逐条答复存 `docs/reviews/pr-60.md`，改完合入；把切片规格里对事件规格 6.3 的两处补充（只有一条 started；`rule` 取编号最小的）补回事件规格；然后写实现任务、派发。
+  - **PR #62 ADR-010 和中转服务规格**（#31）：家里没有 NAS，后端改为云上的无服务器函数加对象存储（腾讯云云函数 / Cloudflare Workers，连通测试决定）；ADR-006、ADR-008 增补 1；`docs/specs/relay.md`（#31 第一段：中转服务、连通测试、用量、部署手册）。审阅任务 `review.relay` 给 Kimi，基于 `9c025ef`。回来后处理意见，再向 Luka 问这几件事（推荐都是「是」）：云上同步端到端加密、恢复密钥打印一份放家里；DeepSeek 先充 50 元，中转服务每月上限 20 元、每天 30 次；第二份备份每月下载到自己的电脑或网盘；#31 拆成两段（先做中转服务，不等 #25）。确认后合入，更新 #11 的描述（Python 参考内核改作交叉验证用）。
+- **#55 掰巧克力多模型对比**（父任务 #54，「乘法的秘密」星座，PR #56 合入）：任务文件已交给 Luka，基于 `6af4bcb`。等各模型交付，Luka 会发「交付 #55 · <模型名>」。按 `docs/reviews/bench.chocolate-split-01.md` 评分（只评第一轮，审美盲评）。
+- **原型**（PR #58、#61，#57 已关闭）：指挥中心有了「设置」（名字、年级、生日、教材、家长 PIN、AI 中转地址和家庭口令；年级存入学学年，每年 9 月自动升级；数据格式 v2 带迁移）；首页右栏变主栏；左上角、星图、地铁都不再写年级（Luka 不希望给孩子贴年级标签）。密钥不进页面，只填中转地址和口令。
+- **「生命的说明书」三个动手探索模块**（`kp/` 分支 5da3c33、636b21c、dbae6fa，没开 PR）：仍等孩子试玩反馈；之后各开 PR 合入，关闭 #34–#43，决定旧版讲解删还是留。
 - **事实核对剩下的建议 7、8**：`docs/constellations/life-manual.md` 的出处和配图说明，下次开 `arch/` 时改；「人的性别决定」的节名要对照 2024 年版实体书。
 - 以后加进 `prompts/content-template.md`：挑战打乱题目顺序时，数字题的答案不能出现在其他题的题干、选项、提示、反馈里（#42 第 1 轮）。DNA 第 1 题「几种字母」的两个错误选项还没有对应的误区 id，要先加进知识点卡。
-- **PR #46 已合入**：整个 `prompts/` 受保护；`kp/` 分支只能改自己活动的 `.md`、`.task.md` 和自己 `content/assets/<知识点 id>/` 下的 `.svg`；`feat/`、`fix/`、`chore/` 只能新增 `*.task.md` 留档；`svg` 配图必须在 `content/assets/` 下。逐条答复见 `docs/reviews/pr-46.md`。
-- **#24 竖切片 1**（分数挑战点亮一颗星）：没动，仍按 #24 评论里的 5 件事做。下一步：写切片规格和手算的黄金向量，改构建器输出 JSON，开 `arch/` PR 请外部审阅，合入后再写提示词、派发。
-- **#31 AI 答疑**：没动。Luka 已定：在领航员对话里随时问；只用一个模型（DeepSeek）；没有 NAS。下一步由 Claude 写 ADR 和规格：中转服务保管密钥，要家庭口令，有次数和花费上限；同一份代码能部署到国内云函数或海外服务，用连通测试决定放哪里。同一份 ADR 里要重新考虑原来放在 NAS 上的同步和备份（ADR-006、ADR-008 第 7 条都假设了 NAS）。
 - **以后的小改进**：`tools/ci_checks.py` 的提示泄露检查，中文数字的分数写法没有前后边界（答案 1/4 时「十四分之一」会被误判），见 #17 第 1 轮审核。
