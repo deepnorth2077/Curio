@@ -63,6 +63,9 @@ h1,h2,h3{font-family:var(--f-serif);color:var(--ink);line-height:1.35;margin:0}
 .act small{color:var(--muted);font-size:13px}
 .act.done{background:var(--good-soft);border-color:var(--good)}
 .act .tick{color:var(--good);font-weight:700}
+.act small.new{color:var(--accent);font-weight:700}
+.act.sim{border-color:var(--accent);border-width:2px}
+.simframe{display:block;width:100%;border:0;min-height:600px;background:transparent;margin-top:8px}
 .parent{display:block;margin:26px auto 0;border:1px dashed var(--rule);background:transparent;border-radius:12px;padding:10px 16px;color:var(--muted);font-size:15px}
 
 /* 领航员对话 */
@@ -153,7 +156,9 @@ textarea{width:100%;font:inherit;font-size:17px;padding:10px 12px;border:1.5px s
 <script>
 "use strict";
 const DATA = JSON.parse(document.getElementById("data").textContent);
-const KIND = {explain:"讲解", quiz:"挑战", reflection:"反思"};
+const KIND = {simulation:"动手探索", explain:"讲解", quiz:"挑战", reflection:"反思"};
+const hasSim = st => st.activities.some(a => a.kind === "simulation");
+const kindLabel = (a, st) => a.kind === "explain" && hasSim(st) ? "旧版讲解" : KIND[a.kind];
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $app = document.getElementById("app"), $dock = document.getElementById("dock"), $dockIn = document.getElementById("dockIn");
 
@@ -328,7 +333,7 @@ function nextAfter(a){ const i = ACTS.indexOf(a); return ACTS[i+1] || null; }
 function endButtons(a){
   const n = nextAfter(a);
   return el("div", {class:"row-btns"},
-    n ? el("button", {class:"btn", type:"button", onclick:()=>go("act:" + n.id)}, `${n.star !== a.star ? "下一颗星：" : "接着做"}${KIND[n.kind]}`) : null,
+    n ? el("button", {class:"btn", type:"button", onclick:()=>go("act:" + n.id)}, `${n.star !== a.star ? "下一颗星：" : "接着做"}${kindLabel(n, n.star)}`) : null,
     el("button", {class:"btn ghost", type:"button", onclick:()=>go("home")}, "回星图"));
 }
 
@@ -343,8 +348,8 @@ function viewHome(){
     const acts = el("div", {class:"acts"});
     for (const a of st.activities){
       const done = S.done[a.id];
-      acts.append(el("button", {class:"act" + (done ? " done" : ""), type:"button", onclick:()=>go("act:" + a.id)},
-        done ? el("span", {class:"tick"}, "✓") : null, KIND[a.kind], a.duration_min ? el("small", {}, `${a.duration_min} 分钟`) : null));
+      acts.append(el("button", {class:"act" + (done ? " done" : "") + (a.kind === "simulation" ? " sim" : ""), type:"button", onclick:()=>go("act:" + a.id)},
+        done ? el("span", {class:"tick"}, "✓") : null, kindLabel(a, st), a.kind === "simulation" ? el("small", {class:"new"}, "新") : null, a.duration_min ? el("small", {}, `${a.duration_min} 分钟`) : null));
     }
     line.append(el("section", {class:"star"}, el("div", {class:"dot"}, i+1), el("h2", {}, st.title), el("div", {class:"dq"}, st.dq), acts));
   });
@@ -474,19 +479,50 @@ function viewReflection(a){
   $app.replaceChildren(chat);
 }
 
+// 动手探索：沙箱 iframe + activity/1.1 契约
+let simListener = null;
+function viewSim(a){
+  const log = S.log[a.id] = {kind:"simulation", events:[], questions:[]};
+  dock();
+  const frame = el("iframe", {class:"simframe", sandbox:"allow-scripts", title:a.title});
+  frame.srcdoc = a.html;
+  const end = el("div", {});
+  if (simListener) removeEventListener("message", simListener);
+  simListener = e => {
+    if (e.source !== frame.contentWindow) return;
+    const m = e.data; if (!m || m.contract !== "activity/1.1") return;
+    const p = m.payload || {};
+    const post = (type, payload) => frame.contentWindow.postMessage({contract:"activity/1.1", type, payload}, "*");
+    if (m.type === "ready") post("init", {age_band:a.age_band || "G3-4", lang:"zh-CN", phase:"observe", palette:{}, mastery:null});
+    else if (m.type === "resize" && p.h) frame.style.height = Math.max(600, Math.ceil(p.h) + 8) + "px";
+    else if (m.type === "event") log.events.push(p);
+    else if (m.type === "note_question" && p.text) log.questions.push(p.text);
+    else if (m.type === "complete"){ S.done[a.id] = true; end.replaceChildren(el("div", {class:"endcard pop"}, el("h3", {}, "这一段做完了"), endButtons(a))); }
+  };
+  addEventListener("message", simListener);
+  $app.replaceChildren(frame, end);
+}
+
 function recordText(){
   const out = [`好奇号试玩记录 · ${DATA.constellation}`];
   for (const st of DATA.stars){
     out.push("", `【${st.title}】`);
     for (const a of st.activities){
       const L = S.log[a.id];
-      out.push(`${KIND[a.kind]}：${S.done[a.id] ? "做完了" : (L ? "做到一半" : "没做")}`);
+      out.push(`${kindLabel(a, st)}：${S.done[a.id] ? "做完了" : (L ? "做到一半" : "没做")}`);
       if (!L) continue;
       (L.items||[]).forEach(r => {
         const res = r.result === "first" ? "一次答对" : r.result === "revealed" ? "看了答案" : `答错 ${r.tries.filter(t => !t.ok).length} 次后答对`;
         out.push(`  · ${r.stem}　${res}${r.hints ? `，用了 ${r.hints} 条提示` : ""}`);
         r.tries.filter(t => !t.ok).forEach(t => out.push(`      选了/写了「${t.shown}」${t.misconception ? `（误区：${st.misconceptions[t.misconception] || t.misconception}）` : ""}`));
       });
+      (L.events||[]).filter(ev => ev.verb === "predicted" || ev.verb === "answered").forEach(ev => {
+        const r = ev.result || {};
+        if (r.item === "pair-try" || (r.item || "").startsWith("pair-")) return;
+        out.push(`  · 第 ${r.station || "?"} 站${ev.verb === "predicted" ? "猜测" : "回答"}：${r.correct ? "对" : "错"}${r.misconception ? `（误区：${st.misconceptions[r.misconception] || r.misconception}）` : ""}`);
+      });
+      const tries = (L.events||[]).filter(ev => ev.verb === "answered" && (ev.result || {}).item === "pair-try").length;
+      if (tries) out.push(`  · 配对时配错 ${tries} 次`);
       (L.questions||[]).forEach(q => out.push(`  · 问了领航员：${q}`));
       if (L.text) out.push(`  · 写下：${L.text}`);
     }
@@ -517,8 +553,9 @@ function route(){
   if (m){
     const a = actById(m[1]);
     if (a){
-      setTop(`${KIND[a.kind]} · ${a.title}`, true);
-      ({explain:viewExplain, quiz:viewQuiz, reflection:viewReflection})[a.kind](a);
+      setTop(`${kindLabel(a, a.star)} · ${a.title}`, true);
+      if (simListener && a.kind !== "simulation"){ removeEventListener("message", simListener); simListener = null; }
+      ({simulation:viewSim, explain:viewExplain, quiz:viewQuiz, reflection:viewReflection})[a.kind](a);
       return;
     }
   }
