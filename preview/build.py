@@ -16,10 +16,12 @@ import yaml
 
 CONSTELLATION = "生命的说明书"
 # 星座里的星，按顺序；每颗星下面的活动也按这个顺序显示。
+# 动手探索的模块（manifest.yaml + index.html）排在最前面；找不到的活动会跳过。
 STARS = [
-    ("biology.cell.cell-intro", ["act.explain.cell-intro-01", "act.quiz.cell-intro-01"]),
-    ("biology.genetics.dna-intro", ["act.explain.dna-intro-01", "act.quiz.dna-intro-01"]),
+    ("biology.cell.cell-intro", ["act.simulation.cell-zoom-01", "act.explain.cell-intro-01", "act.quiz.cell-intro-01"]),
+    ("biology.genetics.dna-intro", ["act.simulation.dna-book-01", "act.explain.dna-intro-01", "act.quiz.dna-intro-01"]),
     ("biology.genetics.chromosome-intro", [
+        "act.simulation.chromosome-pack-01",
         "act.explain.chromosome-intro-01",
         "act.quiz.chromosome-intro-01",
         "act.reflection.chromosome-intro-01",
@@ -29,12 +31,14 @@ STARS = [
 TEMPLATE = Path(__file__).with_name("template.html")
 
 
-def find(roots, rel):
+def find(roots, rel, required=True):
     for r in roots:
         p = r / rel
         if p.is_file():
             return p
-    raise SystemExit(f"找不到文件：{rel}")
+    if required:
+        raise SystemExit(f"找不到文件：{rel}")
+    return None
 
 
 def find_node(roots, node_id):
@@ -72,7 +76,18 @@ def build(roots):
         node = yaml.safe_load(find_node(roots, node_id).read_text(encoding="utf-8"))
         acts = []
         for aid in act_ids:
-            act = yaml.safe_load(find(roots, f"content/activities/{aid}/activity.yaml").read_text(encoding="utf-8"))
+            manifest = find(roots, f"content/activities/{aid}/manifest.yaml", required=False)
+            if manifest:
+                m = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+                page = find(roots, f"content/activities/{aid}/index.html").read_text(encoding="utf-8")
+                acts.append({"id": m["id"], "kind": "simulation", "title": m["title"], "duration_min": m.get("duration_min"),
+                             "age_band": m.get("age_band", "G3-4"), "html": page})
+                continue
+            path = find(roots, f"content/activities/{aid}/activity.yaml", required=False)
+            if not path:
+                print(f"跳过（还没有）：{aid}")
+                continue
+            act = yaml.safe_load(path.read_text(encoding="utf-8"))
             srcs = []
             collect_srcs(act.get("body"), srcs)
             for src in srcs:
