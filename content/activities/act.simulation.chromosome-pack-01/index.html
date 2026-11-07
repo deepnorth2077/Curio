@@ -180,9 +180,16 @@ function say(text, tone){ const b = $("say"); b.textContent = text; b.className 
 let fingerDown = false;
 addEventListener("pointerdown", () => { fingerDown = true; }, true);
 for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);   // 抬起时立刻记下：随后的 click 里换出的按钮不必禁用
+// 键盘版：按住空格或回车时换出来的新按钮会拿到焦点，松键就会点到它。按键在按钮出现前就按下了，这次点击不算
+let keysDown = 0;
+addEventListener("keydown", e => { if (!e.repeat) keysDown++; }, true);
+addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true);
+addEventListener("blur", () => { keysDown = 0; });
 function actions(list){
   const box = $("actions"); box.replaceChildren();
   const guard = fingerDown, born = performance.now();
+  let keyGuard = keysDown > 0;
+  if (keyGuard){ const off = () => { if (keysDown === 0){ setTimeout(() => { keyGuard = false; }, 0); removeEventListener("keyup", off, true); } }; addEventListener("keyup", off, true); }
   for (const a of list || []){
     const b = document.createElement("button");
     b.type = "button"; b.className = "btn " + (a.cls || ""); b.textContent = a.label;
@@ -194,7 +201,7 @@ function actions(list){
       b.addEventListener("contextmenu", e => e.preventDefault());
     } else {
       // 刚出现的 0.4 秒内不响应，免得双击「继续」时第二下替孩子选了答案
-      b.addEventListener("click", e => { if (performance.now() - born < 400) return; a.go(e); });
+      b.addEventListener("click", e => { if (performance.now() - born < 400 || (keyGuard && e.detail === 0)) return; a.go(e); });
       if (guard){ b.disabled = true; const on = () => { setTimeout(() => { b.disabled = false; }, 120); removeEventListener("pointerup", on, true); }; addEventListener("pointerup", on, true); }
     }
     box.append(b);
