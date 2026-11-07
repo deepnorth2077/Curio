@@ -1,0 +1,30 @@
+{
+  "name": "mastery-seq-order",
+  "about": "同一次尝试里，occurred_at、event_id、到达次序都和 device_seq 相反。合法性只按 device_seq 判断，所以仍是合法的 4/5。按时间或 ID 排序的实现会看到 completed 在最前、q1 的 try 是 2、1（第 1 轮审阅第 6 条）。",
+  "order_free": true,
+  "base": {"schema": "event/2", "learner_id": "lrn_01JC00000000000000000000K1", "device_id": "dev_01JC00000000000000000000D1", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K1"}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}},
+  "inputs": [
+    {"event": {"event_id": "evt_01JC00000000000000000000E1", "device_seq": 8, "occurred_at": "2026-11-08T04:00:52.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E2", "device_seq": 7, "occurred_at": "2026-11-08T04:00:53.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E3", "device_seq": 6, "occurred_at": "2026-11-08T04:00:54.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E4", "device_seq": 5, "occurred_at": "2026-11-08T04:00:55.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E5", "device_seq": 4, "occurred_at": "2026-11-08T04:00:56.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E6", "device_seq": 3, "occurred_at": "2026-11-08T04:00:57.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 2, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E7", "device_seq": 2, "occurred_at": "2026-11-08T04:00:58.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "b", "correct": false, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E8", "device_seq": 1, "occurred_at": "2026-11-08T04:00:59.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"mode": "first"}}, "expect": "accepted"}
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {
+      "math.number.fraction-intro": {
+        "state": "lit",
+        "best": {
+          "correct": 4,
+          "answered": 5
+        }
+      }
+    },
+    "conflicts": []
+  },
+  "worked": "按 device_seq 排：1 started、2 q1 try1 错、3 q1 try2 对、4～7 q2～q5 try1 对、8 completed。5 条规则都满足。首答：q1 错，其余对 → 4/5，lit。输入按 device_seq 倒序到达；event_id 和 occurred_at 也随 device_seq 递减。"
+}

@@ -1,7 +1,7 @@
 ---
 task: review.slice-1
 issue: 24
-version: v1
+version: v2
 ---
 
 # 审阅任务：「好奇号」竖切片 1 的规格和手算黄金向量
@@ -19,27 +19,30 @@ version: v1
 
 Claude 写的架构改动不能自己审，所以请你来审。
 
+**这是第 2 轮。**第 1 轮由另一个模型审阅，提了 2 条阻断、5 条重要、2 条建议，向量的期望值复算全部一致。Claude 的逐条答复和第 1 轮原文在 `docs/reviews/pr-60.md`（下面资料里有）。这一轮请重点看**改过的地方**是否真的解决了问题、有没有引入新问题；没改的部分不必重新逐条复算，除非你发现了新疑点。
+
 ## 你的角色
 
 资深后端和测试工程师，熟悉事件溯源、幂等、JSON 在不同语言之间的差异。请挑刺，不要客气。**请亲手复算向量**，不要只看说明。
 
 ## 请重点看这些问题
 
-1. **向量的期望值对不对**。每个向量都有 `worked`（手算过程），每个特殊输入有 `why`。请逐个复算：
-   - 摄入：每一项的 `expect` 是否符合规格第 3 节的判断顺序（尤其是「不合格」在「重复、冲突」之前判断这一点带来的结果）；
-   - 掌握度：每次尝试合法不合法、违反的是第几条规则（取编号最小的）、首答成绩、`best` 的选法、`state`；
-   - 判分：每一条 `expect`。
-   哪条算错了，请写明向量文件、第几项、你算出的结果和理由。
-2. **规格有没有没写清、写错的地方**：实现 AI 只看得到任务文件，照着规格写代码时，哪里可能写出两种都「符合规格」但结果不同的实现？特别是：数值规则（事件规格第 2 节）在 JavaScript 里怎么判断小数位数；「整数」的意思（`1.0`）；语义相同的比较；合法性第 4 条「只有一条 started」的补充；`best` 在正确率相同时取题数多的；`nodes` 列出哪些知识点。
-3. **和事件规格的一致性**：切片规格对事件规格 5.2、6.3、6.4 的收窄和补充（见切片规格最后一节）合不合理？有没有和事件规格冲突的地方？
-4. **向量覆盖得够不够**：对照事件规格第 9 节和切片规格，还缺哪些能发现实现错误的场景？有没有向量其实测不出它声称要测的东西？
-5. **`.json` 旁路文件**：不进清单、不参与哈希，外壳却直接读它，这样做的风险是什么？（例如：怎么保证读到的 JSON 和审核过的 YAML 一致。）值得为此改清单格式吗？
-6. **「1/1 会点亮」**：内核不读发布包，首答正确率的分母是「作答过的题数」，所以只答一道就完成会被算成 1/1 点亮。规格把责任交给外壳（等每道题都有结果才写 completed）。这样处理可以吗？还是应该在事件或投影里防住？
-7. **任务大小**：这份规格会变成一个任务交给一个实现 AI，一次交付包含内核、引擎、页面和测试。会不会太大？如果太大，按 ADR-009「缩窄行为、不按层切」应该怎么缩？
+1. **两条阻断改得对不对**：
+   - 「看答案让五题挑战算成 1/1」：1a 去掉提示和看答案，由 `quiz.js` 状态机保证「每道题都有存好的作答」才产出 `attempt.completed`（切片规格 6.1）。这条规则能用状态机的测试验收吗？1b 的「看答案要先有一次存好的作答」够不够？
+   - 「写库失败后重试被判成重复」：改成 `log.check` 不改状态，`commitEvent` 在 IndexedDB 事务提交完成后才 `ingest`（6.2）；重试用同一条原始文字；收件表存接收的和隔离的原始文字，启动时按到达顺序重放。还有哪种失败顺序会留下多余或缺失的事实？（例如事务提交了、但页面在 `ingest` 之前关掉；`check` 和 `ingest` 之间日志被别的东西改了。）`app/test/commit.test.js` 的三种失败场景够不够？
+2. **单窗口锁**（6.3）：用 `navigator.locks` 的 `ifAvailable` 拿锁，拿不到就只读。iPad 上的 Safari、页面进入后台、锁被浏览器回收时会怎样？有没有更简单可靠的做法？
+3. **清单绑定 JSON**（内容规格 6.2、6.3，`schemas/release.schema.json`，`tools/build_release.py`）：每个 YAML 条目带 `json: {path, sha256, bytes}` 并参与 `content_hash`，外壳重算 `content_hash`、逐个核对 JSON 的哈希。`release/1` 还没发布过，所以直接改定义、不升版本，这样处理可以吗？外壳用 JavaScript 重算规范 JSON 时有没有坑？构建器「只读一次、先写临时目录再改名、非空目录拒绝」写得对吗，测试（`TestWriteFromSnapshot`）测得到吗？
+4. **新加的向量**：`numbers.json`、`ingest-code-points`、`mastery-best-ratio`、`mastery-best-tie-order`、`mastery-zero-score`、`mastery-seq-order`、`mastery-batches`、`attempt-multi-rule`，以及 `grading.json` 新加的 11 条。请**亲手复算**这些新向量的期望值，并看它们是否真能分辨出第 1 轮列的那些错误算法（`tools/tests/test_vectors.py` 里的 `TestVectorsCatchWrongAlgorithms` 是 Claude 的自证，请你独立判断）。
+5. **执行器的新规则**（切片规格第 7 节）：先 `check` 再 `ingest` 两个结果都比；`mastery_after` 在批次边界投影；`log.raw()` 必须正好等于标成接收的原始文字。有没有写得让实现 AI 理解出两种做法的地方？
+6. **字符串规则**（第 5 节和第 1 节）：长度按码点数；判分只去 7 种空白。这两条在 JavaScript 和 Python 里能写出一样的结果吗？还缺什么边界？
+7. **任务拆分**：1a 只做选择题、但 `grade.js` 三种题型都在 1a 里（理由见 `docs/reviews/pr-60.md` 最后几行）。这个部分采纳合理吗？1a 还是太大吗？
+8. **文档之间有没有矛盾**：切片规格、事件规格 6.3 的补充、内容规格 6.2/6.3、release schema 之间，还有没有说法不一致的地方？
 
 ## 资料
 
 以下文件全部取自本 PR 的提交，原样贴入。
+
+{{embed: docs/reviews/pr-60.md}}
 
 {{embed: docs/specs/slice-1.md}}
 
@@ -57,23 +60,23 @@ Claude 写的架构改动不能自己审，所以请你来审。
 
 {{embed: schemas/event.schema.json}}
 
-{{embed: kernel/vectors/mastery-lit-basic.json}}
+{{embed: schemas/release.schema.json}}
 
-{{embed: kernel/vectors/mastery-not-lit.json}}
+{{embed: kernel/vectors/numbers.json}}
 
-{{embed: kernel/vectors/mastery-order-free.json}}
+{{embed: kernel/vectors/ingest-code-points.json}}
 
-{{embed: kernel/vectors/mastery-two-devices.json}}
+{{embed: kernel/vectors/mastery-best-ratio.json}}
 
-{{embed: kernel/vectors/mastery-best-of-many.json}}
+{{embed: kernel/vectors/mastery-best-tie-order.json}}
 
-{{embed: kernel/vectors/mastery-kinds-and-nodes.json}}
+{{embed: kernel/vectors/mastery-zero-score.json}}
 
-{{embed: kernel/vectors/attempt-inconsistent.json}}
+{{embed: kernel/vectors/mastery-seq-order.json}}
 
-{{embed: kernel/vectors/ingest-duplicates-conflicts.json}}
+{{embed: kernel/vectors/mastery-batches.json}}
 
-{{embed: kernel/vectors/ingest-invalid.json}}
+{{embed: kernel/vectors/attempt-multi-rule.json}}
 
 {{embed: engine/vectors/grading.json}}
 
@@ -81,18 +84,22 @@ Claude 写的架构改动不能自己审，所以请你来审。
 
 {{embed: tools/build_release.py}}
 
+{{embed: tools/tests/test_build_release.py}}
+
+{{embed: tools/tests/test_vectors.py}}
+
 ## 输出格式
 
 用简体中文，按下面的格式输出，不要写补丁，说清楚问题和建议即可：
 
 ```
-# 审阅意见 · 竖切片 1 · 审阅者：<模型名和版本>
+# 审阅意见 · 竖切片 1 · 第 2 轮 · 审阅者：<模型名和版本>
 
 ## 结论
 可以合入 / 改完再合入 / 需要大改（一句话说明）
 
 ## 向量复算
-<逐个向量写：复算结果一致，或者哪一项不一致、你的结果和理由>
+<新加的向量逐个写：复算结果一致，或者哪一项不一致、你的结果和理由>
 
 ## 问题
 ### 1. <一句话标题>

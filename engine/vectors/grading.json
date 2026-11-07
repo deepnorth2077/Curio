@@ -6,7 +6,8 @@
     "number-tol": {"type": "number", "value": 2.5, "tolerance": 0.5, "unit": "厘米", "common_wrong": [{"value": 25, "misconception": "shift"}, {"value": 25.5, "misconception": "shift-b"}]},
     "number-no-tol": {"type": "number", "value": 12},
     "fraction-eq-q4": {"type": "fraction", "numerator": 2, "denominator": 8, "accept_equivalent": true, "common_wrong": [{"numerator": 2, "denominator": 6, "misconception": "part-vs-rest"}, {"numerator": 8, "denominator": 2, "misconception": "flip"}]},
-    "fraction-strict-q5": {"type": "fraction", "numerator": 1, "denominator": 6, "accept_equivalent": false, "common_wrong": [{"numerator": 1, "denominator": 5, "misconception": "part-vs-rest"}]}
+    "fraction-strict-q5": {"type": "fraction", "numerator": 1, "denominator": 6, "accept_equivalent": false, "common_wrong": [{"numerator": 1, "denominator": 5, "misconception": "part-vs-rest"}]},
+    "number-overlap": {"type": "number", "value": 2, "tolerance": 0.5, "common_wrong": [{"value": 3, "misconception": "plus-one"}]}
   },
   "cases": [
     {"answer": "choice-q1", "response": "a", "expect": {"correct": true, "misconception": null}, "why": "正确选项"},
@@ -68,6 +69,17 @@
     {"answer": "fraction-strict-q5", "response": "2/12", "expect": {"correct": false, "misconception": null}, "why": "不接受等值；common_wrong 也按严格比，2/12 不是 1/5"},
     {"answer": "fraction-strict-q5", "response": "1/5", "expect": {"correct": false, "misconception": "part-vs-rest"}, "why": "严格等于 common_wrong 的 1/5"},
     {"answer": "fraction-strict-q5", "response": "5分之1", "expect": {"correct": false, "misconception": "part-vs-rest"}, "why": "a=1，b=5"},
-    {"answer": "fraction-strict-q5", "response": "2/10", "expect": {"correct": false, "misconception": null}, "why": "等值于 1/5，但严格比较不匹配"}
+    {"answer": "fraction-strict-q5", "response": "2/10", "expect": {"correct": false, "misconception": null}, "why": "等值于 1/5，但严格比较不匹配"},
+    {"answer": "number-tol", "response": "２．５", "expect": {"correct": true, "misconception": null}, "why": "全角数字和全角小数点换成半角得 2.5，等于 value（第 2 轮补）"},
+    {"answer": "choice-q1", "response": "　a　", "expect": {"correct": true, "misconception": null}, "why": "首尾的全角空格 U+3000 在 7 种空白里，去掉后是 a（第 2 轮补）"},
+    {"answer": "choice-q1", "response": "\ta\r\n", "expect": {"correct": true, "misconception": null}, "why": "制表符、回车、换行在 7 种空白里，去掉后是 a"},
+    {"answer": "choice-q1", "response": " a", "expect": {"correct": false, "misconception": null}, "why": "不换行空格 U+00A0 不在 7 种空白里，不去掉，不是任何选项 id。用语言自带的 strip 会误判成对"},
+    {"answer": "fraction-eq-q4", "response": "100000/400000", "expect": {"correct": true, "misconception": null}, "why": "分子分母都是 6 位，在范围内；100000×8=800000=2×400000，等值"},
+    {"answer": "fraction-eq-q4", "response": "1/4000000", "expect": {"correct": false, "misconception": null}, "why": "分母 7 位，超过 1～6 位，写法认不出"},
+    {"answer": "fraction-eq-q4", "response": "1000000/4", "expect": {"correct": false, "misconception": null}, "why": "分子 7 位，超过 1～6 位，写法认不出"},
+    {"answer": "number-overlap", "response": "2.5", "expect": {"correct": true, "misconception": null}, "why": "|2.5−2|=0.5≤0.5 对；它同时落在 common_wrong 3 的范围（|2.5−3|=0.5）里，先比正确答案，判对"},
+    {"answer": "number-overlap", "response": "1.5", "expect": {"correct": true, "misconception": null}, "why": "|1.5−2|=0.5，包含容差边界"},
+    {"answer": "number-overlap", "response": "3", "expect": {"correct": false, "misconception": "plus-one"}, "why": "|3−2|=1>0.5 不对；|3−3|=0≤0.5 命中 plus-one"},
+    {"answer": "number-overlap", "response": "2.75", "expect": {"correct": false, "misconception": "plus-one"}, "why": "|2.75−2|=0.75>0.5；|2.75−3|=0.25≤0.5 命中 plus-one"}
   ]
 }

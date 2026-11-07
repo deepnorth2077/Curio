@@ -1,0 +1,29 @@
+{
+  "about": "数值规则单独测（事件规格第 2 节「数值」；切片规格第 7 节）。每条：json 是一个数的 JSON 写法，执行器 JSON.parse 后调用 numberOk，和 expect 比较。本切片的事件字段都要求整数，只看摄入结果会盖住小数规则的错误，所以单独列（第 1 轮审阅第 5 条）。",
+  "cases": [
+    {"json": "0", "expect": true, "why": "整数 0"},
+    {"json": "-0", "expect": true, "why": "-0 的值是整数 0"},
+    {"json": "1.0", "expect": true, "why": "解析后是整数 1"},
+    {"json": "1e0", "expect": true, "why": "解析后是整数 1"},
+    {"json": "1e2", "expect": true, "why": "解析后是整数 100"},
+    {"json": "9007199254740991", "expect": true, "why": "2^53−1，整数上界"},
+    {"json": "-9007199254740991", "expect": true, "why": "−(2^53−1)，整数下界"},
+    {"json": "9007199254740992", "expect": false, "why": "2^53，超出"},
+    {"json": "-9007199254740992", "expect": false, "why": "−2^53，超出"},
+    {"json": "1e21", "expect": false, "why": "整数值 10^21，超出 2^53−1"},
+    {"json": "0.000001", "expect": true, "why": "最短表示 1e-06：尾数 0 位小数，指数 −6 → 6 位"},
+    {"json": "1e-6", "expect": true, "why": "同上，6 位"},
+    {"json": "1e-7", "expect": false, "why": "尾数 0 位，指数 −7 → 7 位"},
+    {"json": "1.5e-7", "expect": false, "why": "尾数 1 位，指数 −7 → 8 位"},
+    {"json": "-1.5e-7", "expect": false, "why": "负数同样按绝对值算位数：8 位"},
+    {"json": "0.0000015", "expect": false, "why": "最短表示 1.5e-06：1+6=7 位"},
+    {"json": "0.123456", "expect": true, "why": "普通写法 6 位小数"},
+    {"json": "0.1234567", "expect": false, "why": "普通写法 7 位小数"},
+    {"json": "123456.123456", "expect": true, "why": "整数部分 6 位、小数 6 位，最短表示就是它本身"},
+    {"json": "0.1", "expect": true, "why": "最短表示 0.1，1 位（二进制里不精确，但按最短十进制表示算）"},
+    {"json": "999999999.5", "expect": true, "why": "非整数，绝对值小于 10^9，1 位小数"},
+    {"json": "-999999999.5", "expect": true, "why": "负数，绝对值小于 10^9"},
+    {"json": "1000000000.5", "expect": false, "why": "非整数，绝对值不小于 10^9"},
+    {"json": "2.5", "expect": true, "why": "1 位小数"}
+  ]
+}

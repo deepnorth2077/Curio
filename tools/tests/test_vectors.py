@@ -77,7 +77,7 @@ def same(a, b):
 
 class RefLog:
     def __init__(self):
-        self.by_id, self.by_seq, self.accepted = {}, {}, []
+        self.by_id, self.by_seq, self.accepted, self.raws = {}, {}, [], []
 
     def ingest(self, raw):
         if len(raw.encode("utf-8")) > 16384:
@@ -100,6 +100,7 @@ class RefLog:
         self.by_id[event["event_id"]] = event
         self.by_seq[(event["device_id"], event["device_seq"])] = event["event_id"]
         self.accepted.append(event)
+        self.raws.append(raw)
         return "accepted"
 
 
@@ -107,30 +108,49 @@ class RefLog:
 END = {"attempt.completed", "attempt.abandoned"}
 
 
+# 下面几个开关只给「向量能不能区分错误算法」的测试用（TestVectorsCatchWrongAlgorithms），默认值就是规格的写法
+VARIANT = {"sort": "device_seq", "pick": "min", "best": "ratio", "zero_best": True}
+
+
+def _order(events):
+    if VARIANT["sort"] == "device_seq":
+        return sorted(events, key=lambda e: e["device_seq"])
+    return sorted(events, key=lambda e: e[VARIANT["sort"]])
+
+
 def violated_rule(events):
-    evs = sorted(events, key=lambda e: e["device_seq"])
-    if len({e["device_id"] for e in evs}) > 1 or len({e["learner_id"] for e in evs}) > 1:
-        return 1
-    for e in evs:
-        actor = e["actor"]
-        if not (actor["type"] == "learner" and actor["id"] == e["learner_id"]):
-            if not (e["verb"] == "attempt.abandoned" and actor["type"] == "system"):
-                return 2
-    if any(not same(e["content"], evs[0]["content"]) for e in evs):
-        return 3
-    starts = [i for i, e in enumerate(evs) if e["verb"] == "attempt.started"]
-    ends = [i for i, e in enumerate(evs) if e["verb"] in END]
-    if starts != [0] or len(ends) > 1 or (ends and ends[0] != len(evs) - 1):
-        return 4
+    if VARIANT["pick"] == "max":
+        broken = [r for r in range(1, 6) if _check_rule(events, r)]
+        return broken[-1] if broken else None
+    for rule in range(1, 6):
+        if _check_rule(events, rule):
+            return rule
+    return None
+
+
+def _check_rule(events, rule):
+    """这次尝试是否违反第 rule 条（事件规格 6.3）。"""
+    evs = _order(events)
+    if rule == 1:
+        return len({e["device_id"] for e in evs}) > 1 or len({e["learner_id"] for e in evs}) > 1
+    if rule == 2:
+        for e in evs:
+            actor = e["actor"]
+            if not (actor["type"] == "learner" and actor["id"] == e["learner_id"]):
+                if not (e["verb"] == "attempt.abandoned" and actor["type"] == "system"):
+                    return True
+        return False
+    if rule == 3:
+        return any(not same(e["content"], evs[0]["content"]) for e in evs)
+    if rule == 4:
+        starts = [i for i, e in enumerate(evs) if e["verb"] == "attempt.started"]
+        ends = [i for i, e in enumerate(evs) if e["verb"] in END]
+        return starts != [0] or len(ends) > 1 or bool(ends and ends[0] != len(evs) - 1)
     tries = {}
     for e in evs:
         if e["verb"] == "item.answered":
-            item = e["payload"]["item_id"]
-            tries.setdefault(item, []).append(e["payload"]["try"])
-    for seq in tries.values():
-        if [float(t) for t in seq] != [float(i) for i in range(1, len(seq) + 1)]:
-            return 5
-    return None
+            tries.setdefault(e["payload"]["item_id"], []).append(e["payload"]["try"])
+    return any([float(t) for t in seq] != [float(i) for i in range(1, len(seq) + 1)] for seq in tries.values())
 
 
 def ref_mastery(events):
@@ -144,7 +164,7 @@ def ref_mastery(events):
         if rule is not None:
             conflicts.append({"attempt_id": attempt_id, "rule": rule})
             continue
-        evs = sorted(evs, key=lambda e: e["device_seq"])
+        evs = _order(evs)
         if evs[-1]["verb"] != "attempt.completed":
             continue
         node = nodes[evs[0]["content"]["node_id"]]
@@ -154,11 +174,17 @@ def ref_mastery(events):
         answered = {e["payload"]["item_id"] for e in evs if e["verb"] == "item.answered"}
         correct = {e["payload"]["item_id"] for e in evs
                    if e["verb"] == "item.answered" and float(e["payload"]["try"]) == 1 and e["payload"]["correct"] is True}
-        if not answered:
+        if not answered or (not VARIANT["zero_best"] and not correct):
             continue
         cand = (len(correct), len(answered))
         best = node["best"]
-        if best is None or cand[0] * best[1] > best[0] * cand[1] or (cand[0] * best[1] == best[0] * cand[1] and cand[1] > best[1]):
+        if VARIANT["best"] == "count":
+            better = best is None or cand > best
+        elif VARIANT["best"] == "tie-keep-last":
+            better = best is None or cand[0] * best[1] >= best[0] * cand[1]
+        else:
+            better = best is None or cand[0] * best[1] > best[0] * cand[1] or (cand[0] * best[1] == best[0] * cand[1] and cand[1] > best[1])
+        if better:
             node["best"] = cand
     out = {}
     for node_id, n in nodes.items():
@@ -180,8 +206,11 @@ FRACTION_SLASH = re.compile(r"([0-9]{1,6}) */ *([0-9]{1,6})")
 FRACTION_ZH = re.compile(r"([0-9]{1,6}) *分之 *([0-9]{1,6})")
 
 
+SPACES = "\t\n\x0b\x0c\r \u3000"   # 切片规格第 5 节：只去这 7 种，不用 str.strip() 的默认集合
+
+
 def ref_grade(answer, response):
-    r = response.strip().translate(FULLWIDTH)
+    r = response.strip(SPACES).translate(FULLWIDTH)
     kind = answer["type"]
     if kind == "choice":
         for choice in answer["choices"]:
@@ -231,8 +260,22 @@ def raw_of(vector, item):
     return json.dumps(dict(vector["base"], **item["event"]), ensure_ascii=False)
 
 
+NUMBERS = KERNEL_VECTORS / "numbers.json"
+
+
 def vectors():
-    return [(p.name, json.loads(p.read_text(encoding="utf-8"))) for p in sorted(KERNEL_VECTORS.glob("*.json"))]
+    """摄入和掌握度向量。numbers.json 格式不同，单独测。"""
+    return [(p.name, json.loads(p.read_text(encoding="utf-8"))) for p in sorted(KERNEL_VECTORS.glob("*.json")) if p != NUMBERS]
+
+
+def run(v):
+    """按执行器的规则跑一遍（切片规格第 7 节）：逐项摄入；有 mastery_after 的项当场投影。"""
+    log, results, checkpoints = RefLog(), [], []
+    for item in v["inputs"]:
+        results.append(log.ingest(raw_of(v, item)))
+        if "mastery_after" in item:
+            checkpoints.append((item["mastery_after"], ref_mastery(log.accepted)))
+    return log, results, checkpoints
 
 
 class TestKernelVectors(unittest.TestCase):
@@ -248,7 +291,7 @@ class TestKernelVectors(unittest.TestCase):
                 for item in v["inputs"]:
                     self.assertIn(item["expect"], EXPECTS)
                     self.assertEqual(len({"event", "raw"} & set(item)), 1)
-                    self.assertTrue(set(item) <= {"event", "raw", "pad_to_bytes", "expect", "why"})
+                    self.assertTrue(set(item) <= {"event", "raw", "pad_to_bytes", "expect", "why", "mastery_after"})
                     if "pad_to_bytes" in item:
                         self.assertIn("raw", item)
                     if item["expect"].startswith("quarantined") or "raw" in item:
@@ -272,11 +315,19 @@ class TestKernelVectors(unittest.TestCase):
 
     def test_hand_written_mastery_matches_reference(self):
         for name, v in vectors():
-            log = RefLog()
-            for item in v["inputs"]:
-                log.ingest(raw_of(v, item))
+            log, _, checkpoints = run(v)
             with self.subTest(vector=name):
                 self.assertEqual(ref_mastery(log.accepted), v["mastery"])
+                for i, (expected, actual) in enumerate(checkpoints):
+                    with self.subTest(checkpoint=i):
+                        self.assertEqual(actual, expected)
+
+    def test_log_keeps_exactly_the_first_accepted_raw_texts(self):
+        """执行器的通用断言：log.raw() 正好是标成 accepted 的原始文字，按顺序；重复和冲突不替换原文。"""
+        for name, v in vectors():
+            log, _, _ = run(v)
+            with self.subTest(vector=name):
+                self.assertEqual(log.raws, [raw_of(v, item) for item in v["inputs"] if item["expect"] == "accepted"])
 
     def test_order_free_vectors_survive_shuffles_and_repeats(self):
         for name, v in vectors():
@@ -306,6 +357,63 @@ class TestKernelVectors(unittest.TestCase):
             self.assertNotEqual(ref_mastery(log.accepted), v["mastery"])
         finally:
             violated_rule = original
+
+
+class TestNumberVectors(unittest.TestCase):
+    def test_format_and_reference(self):
+        doc = json.loads(NUMBERS.read_text(encoding="utf-8"))
+        self.assertEqual(set(doc), {"about", "cases"})
+        self.assertGreaterEqual(len(doc["cases"]), 20)
+        for case in doc["cases"]:
+            with self.subTest(json=case["json"]):
+                self.assertEqual(set(case), {"json", "expect", "why"})
+                value = json.loads(case["json"], parse_constant=_reject_constant)
+                self.assertIsInstance(value, (int, float))
+                self.assertEqual(_number_ok(value), case["expect"], case["why"])
+
+    def test_vectors_catch_counting_raw_text_digits(self):
+        """「按原始文字数小数位」是错误做法：0.000001 写成文字有 6 位，1e-6 写成文字没有小数点，两条期望相同才说明没用文字。"""
+        cases = {c["json"]: c["expect"] for c in json.loads(NUMBERS.read_text(encoding="utf-8"))["cases"]}
+        self.assertEqual(cases["0.000001"], cases["1e-6"])
+        self.assertFalse(cases["1e-7"])
+
+
+class TestVectorsCatchWrongAlgorithms(unittest.TestCase):
+    """第 1 轮审阅第 6 条：新加的向量要能把常见的错误算法分辨出来。每个变体至少让一份向量对不上。"""
+
+    def mismatches(self, **variant):
+        saved = dict(VARIANT)
+        VARIANT.update(variant)
+        try:
+            bad = []
+            for name, v in vectors():
+                log, _, checkpoints = run(v)
+                if ref_mastery(log.accepted) != v["mastery"] or any(a != e for e, a in checkpoints):
+                    bad.append(name)
+            return bad
+        finally:
+            VARIANT.clear()
+            VARIANT.update(saved)
+
+    def test_spec_algorithm_matches_everything(self):
+        self.assertEqual(self.mismatches(), [])
+
+    def test_best_by_correct_count_is_caught(self):
+        self.assertIn("mastery-best-ratio.json", self.mismatches(best="count"))
+
+    def test_keeping_the_later_one_on_ties_is_caught(self):
+        self.assertIn("mastery-best-tie-order.json", self.mismatches(best="tie-keep-last"))
+
+    def test_zero_score_without_best_is_caught(self):
+        self.assertEqual(self.mismatches(zero_best=False), ["mastery-zero-score.json"])
+
+    def test_sorting_by_time_or_id_is_caught(self):
+        for key in ("occurred_at", "event_id"):
+            with self.subTest(key=key):
+                self.assertIn("mastery-seq-order.json", self.mismatches(sort=key))
+
+    def test_reporting_the_largest_rule_is_caught(self):
+        self.assertIn("attempt-multi-rule.json", self.mismatches(pick="max"))
 
 
 class TestGradingVectors(unittest.TestCase):

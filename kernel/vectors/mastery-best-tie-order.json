@@ -1,0 +1,44 @@
+{
+  "name": "mastery-best-tie-order",
+  "about": "正确率相同取题数多：8/10 先完成、先到达，4/5 后到，结果仍是 8/10。和 mastery-best-of-many 的次序相反，能抓住「相同时保留后来的」或「保留先来的」任何一种偷懒写法（第 1 轮审阅第 6 条）。",
+  "order_free": true,
+  "base": {"schema": "event/2", "learner_id": "lrn_01JC00000000000000000000K1", "device_id": "dev_01JC00000000000000000000D1", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K1"}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}},
+  "inputs": [
+    {"event": {"event_id": "evt_01JC00000000000000000000E1", "device_seq": 1, "occurred_at": "2026-11-08T03:00:01.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E2", "device_seq": 2, "occurred_at": "2026-11-08T03:00:02.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E3", "device_seq": 3, "occurred_at": "2026-11-08T03:00:03.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E4", "device_seq": 4, "occurred_at": "2026-11-08T03:00:04.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E5", "device_seq": 5, "occurred_at": "2026-11-08T03:00:05.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q4", "response": "b", "correct": false, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E6", "device_seq": 6, "occurred_at": "2026-11-08T03:00:06.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 2, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E7", "device_seq": 7, "occurred_at": "2026-11-08T03:00:07.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E8", "device_seq": 8, "occurred_at": "2026-11-08T03:00:08.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q6", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E9", "device_seq": 9, "occurred_at": "2026-11-08T03:00:09.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q7", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E10", "device_seq": 10, "occurred_at": "2026-11-08T03:00:10.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q8", "response": "b", "correct": false, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E11", "device_seq": 11, "occurred_at": "2026-11-08T03:00:11.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q8", "response": "a", "correct": true, "try": 2, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E12", "device_seq": 12, "occurred_at": "2026-11-08T03:00:12.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q9", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E13", "device_seq": 13, "occurred_at": "2026-11-08T03:00:13.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q10", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E14", "device_seq": 14, "occurred_at": "2026-11-08T03:00:14.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E15", "device_seq": 15, "occurred_at": "2026-11-08T03:00:15.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E16", "device_seq": 16, "occurred_at": "2026-11-08T03:00:16.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E17", "device_seq": 17, "occurred_at": "2026-11-08T03:00:17.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E18", "device_seq": 18, "occurred_at": "2026-11-08T03:00:18.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q3", "response": "b", "correct": false, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E19", "device_seq": 19, "occurred_at": "2026-11-08T03:00:19.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 2, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E20", "device_seq": 20, "occurred_at": "2026-11-08T03:00:20.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E21", "device_seq": 21, "occurred_at": "2026-11-08T03:00:21.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E22", "device_seq": 22, "occurred_at": "2026-11-08T03:00:22.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"duration_ms": 60000}}, "expect": "accepted"}
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {
+      "math.number.fraction-intro": {
+        "state": "lit",
+        "best": {
+          "correct": 8,
+          "answered": 10
+        }
+      }
+    },
+    "conflicts": []
+  },
+  "worked": "A1（device_seq 1～14：started、12 次作答、completed）：q4、q8 首答错 → 8/10。A2（15～22）：q3 首答错 → 4/5。交叉相乘 8×5=40 = 4×10=40，正确率相同，取 answered 大的 8/10。8×5=40 ≥ 10×4=40 → lit。"
+}
