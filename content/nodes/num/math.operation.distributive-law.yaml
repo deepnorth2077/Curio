@@ -1,0 +1,51 @@
+id: math.operation.distributive-law
+schema: knode/1
+title: 乘法分配律：掰开来算
+subjects: [math]
+theme: num
+grade: G4
+unit: 四年级 · 运算律（旧版人教版在四下第三单元「运算定律」；2026 年秋起的新版放在哪一册，待对照实体书）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第二学段「数与运算」：探索并理解运算律，包括乘法对加法的分配律
+  - textbook: 人教版小学数学四年级下册（旧版）
+    unit: 第三单元 运算定律
+prerequisites: []
+related: []
+driving_question: 一块巧克力掰成两块，怎么算才一块都不会少？
+objectives:
+  - 知道每排一样多的一整块东西，掰成两块以后，两块加起来还是那么多：(3+4)×5 = 3×5 + 4×5。
+  - 知道掰开以后两块都还有原来那么多排，所以括号里的两个数都要乘 5，不能只乘一个。
+  - 知道反过来也成立：排数一样的两块能拼成一整块，3×5 + 4×5 = (3+4)×5；排数不一样就拼不成一整块，不能这样合起来。
+  - 会把难算的乘法拆成好算的两道：12×3 = 10×3 + 2×3，37×101 = 37×100 + 37×1。
+  - 知道这个规律叫乘法分配律，换成别的数也一样成立。
+misconceptions:
+  - id: multiply-one-part
+    text: 拆开以后只有一部分乘了外面的数，例如把 (3+4)×5 写成 3×5 + 4，把 37×101 算成 37×100 + 1。
+  - id: add-instead-of-multiply
+    text: 数一整块排好的东西时，把每排几块和有几排加起来，例如每排 4 块、5 排，说成 9 块。
+  - id: drop-small-part
+    text: 把接近整百的数当成整百来乘，忘了补上多出来的那一点，例如把 37×101 算成 3700。
+  - id: merge-unlike
+    text: 两个乘法里没有一样的数，也硬合并，例如把 3×5 + 4×6 写成 (3+4)×5。
+  - id: split-both
+    text: 两个因数都拆开以后只把对应的部分相乘，例如把 12×13 算成 10×10 + 2×3。
+sources:
+  - type: curriculum
+    ref: 《义务教育数学课程标准（2022 年版）》第二学段「数与运算」
+  - type: textbook
+    ref: 人教版小学数学四年级下册（旧版）第三单元「运算定律」；人教版小学数学三年级上册（旧版）「多位数乘一位数」口算乘法 12×3
+  - type: reference
+    ref: NCETM「Connecting multiplication and division, and the distributive law」（Year 4：把一个因数拆开，由已知的乘法推出新的乘法）
+    url: https://ncetm.org.uk/classroom-resources/primm-210-connecting-multiplication-and-division-and-the-distributive-law
+lenses:
+  - band: G3-4
+    approach: 不用字母，用一块排得整整齐齐的巧克力：每排 7 块、5 排，沿着缝掰成每排 3 块和每排 4 块的两块，两块都还是 5 排，所以 (3+4)×5 = 3×5 + 4×5；反过来，排数一样的两块能拼回一整块；再用它口算 12×3 和变「乘 101」的魔术。
+  - band: G4-6
+    approach: 用字母表示 (a+b)×c = a×c + b×c，正着用、反着用都做简便计算（102×25、38×99、25×37 + 75×37），并和乘法结合律区分开。
+  - band: G7-9
+    approach: 用面积模型解释去括号和合并同类项，推出 (a+b)(c+d) = ac + ad + bc + bd，说清 12×13 为什么不等于 10×10 + 2×3。
+activities: []
+status: draft
+version: 1
+# END OF FILE
