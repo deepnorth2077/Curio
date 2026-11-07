@@ -6,7 +6,7 @@ title: 细胞小房间挑战
 targets: [biology.cell.cell-intro]
 age_band: G3-4
 duration_min: 5
-review: pending
+review: approved
 engine: 1
 sources:
   - type: textbook
@@ -23,13 +23,13 @@ body:
       answer:
         type: choice
         choices:
-          - id: a
-            text: 人、动物和植物都由细胞组成
-            correct: true
           - id: b
             text: 人和动物由细胞组成，植物不是
             misconception: only-animals
             feedback: 人和动物由细胞组成，这很容易注意到；植物也是由细胞组成的。
+          - id: a
+            text: 人、动物和植物都由细胞组成
+            correct: true
           - id: c
             text: 植物由细胞组成，人和动物不是
             feedback: 植物确实由细胞组成；人和动物的身体也是由细胞组成的。
@@ -41,9 +41,6 @@ body:
       answer:
         type: choice
         choices:
-          - id: a
-            text: 会吸收养料、长大，还会分成两个
-            correct: true
           - id: b
             text: 只是身体里的小零件，不是活的
             misconception: cells-are-dead
@@ -52,6 +49,9 @@ body:
             text: 像积木一样，搭好以后就不再变化
             misconception: cells-are-dead
             feedback: 细胞搭成身体，确实有点像积木；但细胞会变化，不是搭好就不动。
+          - id: a
+            text: 会吸收养料、长大，还会分成两个
+            correct: true
       hints:
         - 想想活的东西会做什么，积木会不会做这些事。
         - 回忆一下，细胞会不会吸收养料、长大和变化。
@@ -79,9 +79,6 @@ body:
       answer:
         type: choice
         choices:
-          - id: a
-            text: 有很多种细胞，形状和本领各不一样
-            correct: true
           - id: b
             text: 身体里的细胞都长得一样
             misconception: one-kind
@@ -90,6 +87,9 @@ body:
             text: 身体里的细胞只有一种
             misconception: one-kind
             feedback: 身体是一个整体，容易让人这样想；但不同细胞有不同的本领。
+          - id: a
+            text: 有很多种细胞，形状和本领各不一样
+            correct: true
       hints:
         - 想想神经细胞和肌肉细胞，它们做的事情一样吗？
         - 它们的名字已经告诉我们本领不同，再想想样子会不会也不同。
@@ -115,12 +115,12 @@ body:
       answer:
         type: choice
         choices:
-          - id: a
-            text: 动物和植物的细胞一般都有细胞核
-            correct: true
           - id: b
             text: 所有细胞都有细胞核，人成熟的红细胞也有
             feedback: 红细胞确实是细胞；但人成熟的红细胞没有细胞核，是一个例外。
+          - id: a
+            text: 动物和植物的细胞一般都有细胞核
+            correct: true
           - id: c
             text: 只有动物的细胞有细胞核，植物的细胞没有
             feedback: 动物细胞一般有细胞核，这点你想到了；植物细胞一般也有。

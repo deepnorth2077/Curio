@@ -6,7 +6,7 @@ title: 细胞：生命的小房间
 targets: [biology.cell.cell-intro]
 age_band: G3-4
 duration_min: 5
-review: pending
+review: approved
 engine: 1
 sources:
   - type: textbook

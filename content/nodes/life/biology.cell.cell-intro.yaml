@@ -37,6 +37,6 @@ lenses:
   - band: G7-8
     approach: 用显微镜观察洋葱表皮和口腔上皮细胞，认识细胞膜、细胞质、细胞核等结构；知道人成熟的红细胞没有细胞核。
 activities: [act.simulation.cell-zoom-01, act.explain.cell-intro-01, act.quiz.cell-intro-01]
-status: draft
+status: published
 version: 1
 # END OF FILE
