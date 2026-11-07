@@ -6,7 +6,7 @@ title: 染色体：把说明书卷好收起来
 targets: [biology.genetics.chromosome-intro]
 age_band: G3-4
 duration_min: 5
-review: pending
+review: approved
 engine: 1
 sources:
   - type: textbook
@@ -79,13 +79,13 @@ body:
         answer:
           type: choice
           choices:
+            - id: b
+              text: 一条染色体上有很多个基因
+              correct: true
             - id: a
               text: 染色体就是基因
               misconception: chromosome-is-gene
               feedback: 它们都和说明书有关，但基因只是说明书里的一段，不是整卷。
-            - id: b
-              text: 一条染色体上有很多个基因
-              correct: true
             - id: c
               text: 一个基因上有很多条染色体
               misconception: chromosome-is-gene
@@ -113,13 +113,13 @@ body:
               text: X 来自爸爸，Y 来自妈妈
               misconception: y-from-mother
               feedback: 妈妈有 X 染色体，但男孩的 Y 染色体只能来自爸爸。
-            - id: b
-              text: X 来自妈妈，Y 来自爸爸
-              correct: true
             - id: c
               text: X 和 Y 都来自爸爸
               misconception: from-one-parent
               feedback: 爸爸给了男孩 Y 染色体，但男孩也从妈妈那里得到一条 X。
+            - id: b
+              text: X 来自妈妈，Y 来自爸爸
+              correct: true
         hints:
           - 妈妈一般只有 X 染色体，爸爸一般有 X 和 Y。
           - 先看看男孩那条短短的 Y，可能是谁给的？
@@ -136,13 +136,13 @@ body:
               text: 个子一定比人大
               misconception: bigger-more
               feedback: 看起来好像有道理，但染色体多少和个子大小没有关系。
+            - id: c
+              text: 不能说明谁更大、谁更聪明
+              correct: true
             - id: b
               text: 一定比人聪明
               misconception: more-is-smarter
               feedback: 很多人都会这样猜，但染色体多少和聪不聪明没有关系。
-            - id: c
-              text: 不能说明谁更大、谁更聪明
-              correct: true
         hints:
           - 再比比小小的果蝇和狗，它们的染色体数目很不一样。
           - 染色体的多少，只是在说说明书分成了多少卷。

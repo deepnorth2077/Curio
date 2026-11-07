@@ -11,4 +11,4 @@ pedagogy: explain
 misconceptions: [cut-into-pieces, stuffed-in, from-one-parent, same-in-boys-girls, y-from-mother]
 emits: [predicted, observed, answered]
 author: {model: claude-opus-5-5, prompt_ref: prompts/act.simulation.chromosome-pack-01.md}
-review: pending
+review: approved

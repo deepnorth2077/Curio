@@ -6,7 +6,7 @@ title: "染色体收纳大挑战"
 targets: [biology.genetics.chromosome-intro]
 age_band: G3-4
 duration_min: 5
-review: pending
+review: approved
 engine: 1
 sources:
   - type: reference
@@ -24,15 +24,15 @@ body:
       answer:
         type: choice
         choices:
-          - id: a
-            text: "DNA 缠在蛋白质上，再折叠起来"
-            correct: true
           - id: b
             text: "蛋白质缠在 DNA 上，再折叠起来"
             feedback: "小线轴确实很重要，不过被缠住、卷好的是 DNA 说明书。"
           - id: c
             text: "说明书拉直后直接放进细胞核"
             feedback: "直接放长说明书听起来很方便，不过它还要缠在蛋白质上，再折叠收好。"
+          - id: a
+            text: "DNA 缠在蛋白质上，再折叠起来"
+            correct: true
       hints:
         - "想想长长的说明书怎样卷好收起来。"
         - "先找缠说明书的小线轴，再想怎样折叠。"
@@ -86,13 +86,13 @@ body:
       answer:
         type: choice
         choices:
-          - id: a
-            text: "基因是说明书里的一段，一条染色体上有很多个基因"
-            correct: true
           - id: b
             text: "染色体就是基因"
             misconception: chromosome-is-gene
             feedback: "它们都和说明书有关，不过染色体是卷好的说明书，里面有很多段基因。"
+          - id: a
+            text: "基因是说明书里的一段，一条染色体上有很多个基因"
+            correct: true
           - id: c
             text: "一条染色体上只有一个基因"
             feedback: "说明书只有一段听起来很省事，不过一条染色体上的说明书有很多段。"
@@ -104,12 +104,12 @@ body:
       answer:
         type: choice
         choices:
-          - id: a
-            text: "女孩一般是 XX，男孩一般是 XY"
-            correct: true
           - id: b
             text: "女孩一般是 XY，男孩一般是 XX"
             feedback: "这两种字母确实容易记混，不过女孩一般没有 Y，男孩一般有一条 Y。"
+          - id: a
+            text: "女孩一般是 XX，男孩一般是 XY"
+            correct: true
           - id: c
             text: "女孩和男孩一般都是 XX"
             misconception: same-in-boys-girls
@@ -122,9 +122,6 @@ body:
       answer:
         type: choice
         choices:
-          - id: a
-            text: "X 来自妈妈，Y 来自爸爸"
-            correct: true
           - id: b
             text: "X 来自爸爸，Y 来自妈妈"
             misconception: y-from-mother
@@ -133,6 +130,9 @@ body:
             text: "X 和 Y 都来自爸爸"
             misconception: from-one-parent
             feedback: "男孩一般从爸爸那里得到一条性染色体，另一条来自妈妈。"
+          - id: a
+            text: "X 来自妈妈，Y 来自爸爸"
+            correct: true
       hints:
         - "分别看两条性染色体，不要把它们想成来自同一个人。"
         - "妈妈一般是 XX，想想她能给出哪一种。"
