@@ -22,6 +22,9 @@ from pathlib import Path
 PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "prompts/*", "AGENTS.md", "CLAUDE.md", "README.md", "GLOSSARY.md"]
 ACT_PROMPT = re.compile(r"^prompts/(act\.[A-Za-z0-9._-]+?)(\.task)?\.md$")
 TASK_ARCHIVE = re.compile(r"^prompts/[A-Za-z0-9][A-Za-z0-9._-]*\.task\.md$")
+# kp/ 分支可以新增、修改本知识点活动的审查记录，以及本知识点自己的审查记录（ADR-009 增补 1）；不能删除
+ACT_REVIEW = re.compile(r"^docs/reviews/(act\.[A-Za-z0-9._-]+?)\.md$")
+NODE_REVIEW = re.compile(r"^docs/reviews/([a-z]+(?:\.[a-z0-9-]+)+)\.md$")
 BRANCH_KINDS = ["kp/", "arch/", "feat/", "fix/", "chore/"]
 OVERRIDE_LABEL = "越界-已批准"
 KID_FACING_NODE = ["title", "driving_question", "lenses"]
@@ -334,10 +337,15 @@ def run(repo, base="origin/main", branch="", labels=()):
                 status_of[old] = "D"   # 改名时旧路径相当于删除
         for p in changed:
             shared = None
-            act_prompt = ACT_PROMPT.match(p)
+            act_prompt = ACT_PROMPT.match(p) or ACT_REVIEW.match(p)
+            node_review = NODE_REVIEW.match(p) if not act_prompt else None
             if prefix == "kp/":
                 ok = (p.startswith("content/") and not match(p, PROTECTED)) or bool(act_prompt)
                 targets = None
+                if node_review:
+                    ok = node_review.group(1) == node_id and status_of.get(p) != "D"
+                elif p.startswith("docs/reviews/") and status_of.get(p) == "D":
+                    ok = False   # 审查记录是证据，不能在知识点分支里删
                 if ok and p.startswith("content/nodes/"):
                     ok = Path(p).stem == node_id
                 elif ok and p.startswith("content/activities/"):
@@ -349,9 +357,9 @@ def run(repo, base="origin/main", branch="", labels=()):
                     ok = len(parts) >= 4 and parts[2] == node_id and p.endswith(".svg")
                 elif ok and p.startswith("content/"):
                     ok = False
-                elif ok and p.startswith("prompts/"):
+                elif ok and act_prompt:
                     targets = activity_targets(f"content/activities/{act_prompt.group(1)}")
-                if ok and (p.startswith("content/activities/") or p.startswith("prompts/")):
+                if ok and (p.startswith("content/activities/") or act_prompt):
                     ok = isinstance(targets, list) and targets == [node_id]
                     if isinstance(targets, list) and node_id in targets and len(targets) > 1:
                         shared = targets
