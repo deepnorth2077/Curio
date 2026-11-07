@@ -102,6 +102,22 @@ def json_sidecar(data, display_path):
     return (text + "\n").encode("utf-8")
 
 
+def manifest_int(value, display_path, field):
+    """清单里的整数（version、engine）一律写成真正的整数。
+
+    YAML 的 `version: 1.0` 读出来是 Python float，Python 会写成 1.0，JavaScript 会写成 1，两边的 content_hash 就对不上
+    （第 2 轮审阅第 1 条）。整数值的 float 转成 int；不是整数值、超出 1～2^53−1、或者是布尔值，构建失败。
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise BuildError(f"{display_path}：{field} 必须是整数，现在是 {value!r}")
+    if isinstance(value, float) and (value != value or value in (float("inf"), float("-inf")) or not value.is_integer()):
+        raise BuildError(f"{display_path}：{field} 必须是整数，现在是 {value!r}")
+    value = int(value)
+    if not 1 <= value <= MAX_SAFE_INTEGER:
+        raise BuildError(f"{display_path}：{field} 必须在 1～2^53−1 之间，现在是 {value}")
+    return value
+
+
 def digest(path, data):
     return {"path": path, "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)}
 
@@ -141,28 +157,24 @@ def build_package(content_root, source_commit):
     files = scan_files(content_root)
     by_path = {display_path: (path, data) for path, display_path, data in files}
 
+    # 下面所有的文件名单都从同一份快照派生，不再枚举目录（第 2 轮审阅：构建期间目录增删也不会混进来）
     nodes = {}
-    node_root = content_root / "nodes"
-    node_files = sorted(node_root.rglob("*.yaml")) if node_root.exists() else []
-    for path in node_files:
-        display_path = manifest_path(content_root, path)
+    for display_path in sorted(p for p in by_path if p.startswith("content/nodes/") and p.endswith(".yaml")):
+        path = by_path[display_path][0]
         document = load_document(by_path[display_path][1], display_path)
         node_id = document.get("id")
         if isinstance(node_id, str):
             nodes[node_id] = (path, document)
 
     acts = {}
-    activity_root = content_root / "activities"
-    activity_dirs = sorted(path for path in activity_root.iterdir() if path.is_dir()) if activity_root.exists() else []
+    activity_dirs = sorted({p.split("/")[2] for p in by_path if p.startswith("content/activities/") and p.count("/") == 3})
     for directory in activity_dirs:
-        path = directory / "activity.yaml"
-        if not path.exists():
-            path = directory / "manifest.yaml"
-        if not path.exists():
-            continue
-        display_path = manifest_path(content_root, path)
+        display_path = f"content/activities/{directory}/activity.yaml"
+        if display_path not in by_path:
+            display_path = f"content/activities/{directory}/manifest.yaml"
         if display_path not in by_path:
             continue
+        path = by_path[display_path][0]
         document = load_document(by_path[display_path][1], display_path)
         activity_id = document.get("id")
         if isinstance(activity_id, str):
@@ -191,7 +203,7 @@ def build_package(content_root, source_commit):
         entry = file_entry(display_path, by_path[display_path][1], outputs)
         node_entries.append({
             "id": node_id,
-            "version": document["version"],
+            "version": manifest_int(document["version"], display_path, "version"),
             "path": display_path,
             "sha256": entry["sha256"],
             "json": entry["json"],
@@ -206,7 +218,7 @@ def build_package(content_root, source_commit):
         if "kind" in document:
             kind = document["kind"]
             activity_files = [primary]
-            engine_min = max(engine_min, document["engine"])
+            engine_min = max(engine_min, manifest_int(document["engine"], manifest_path(content_root, primary), "engine"))
             for src in referenced_assets(document):
                 if src not in by_path:
                     raise BuildError(f"{manifest_path(content_root, primary)}：svg 配图引用的文件不存在：{src}")
@@ -224,7 +236,7 @@ def build_package(content_root, source_commit):
         entries.sort(key=lambda entry: entry["path"])
         activity_entries.append({
             "id": activity_id,
-            "version": document["version"],
+            "version": manifest_int(document["version"], manifest_path(content_root, primary), "version"),
             "kind": kind,
             "files": entries,
         })

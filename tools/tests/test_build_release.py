@@ -275,6 +275,82 @@ class TestJsonSidecar(BuildCase):
         self.assertFalse(Draft202012Validator(schema).is_valid(broken))
 
 
+NODE_CANONICAL = r"""
+// 浏览器外壳核对清单的写法（切片规格 6.3 第 2 步），在 Node 里跑：递归排序对象键，数组保持顺序，不留空白。
+const fs = require("fs"), crypto = require("crypto");
+const m = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
+const canon = v => Array.isArray(v) ? "[" + v.map(canon).join(",") + "]"
+  : v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + canon(v[k])).join(",") + "}"
+  : JSON.stringify(v);
+const input = {engine_min: m.engine_min, contracts: m.contracts, nodes: m.nodes, activities: m.activities, assets: m.assets};
+const hash = crypto.createHash("sha256").update(Buffer.from(canon(input), "utf8")).digest("hex");
+process.stdout.write(hash === m.content_hash && m.release_id === "rel_" + hash ? "ok" : "mismatch " + hash);
+"""
+
+
+class TestManifestIntegers(BuildCase):
+    """第 2 轮审阅第 1 条：清单里的整数一律写成整数，Python 和浏览器算出同一个 content_hash。"""
+
+    def test_float_version_with_integer_value_is_written_as_integer(self):
+        self.change(QUIZ_PATH, lambda act: act.update(version=1.0, engine=1.0))
+        text = (self.content / QUIZ_PATH).read_text(encoding="utf-8")
+        self.assertIn("version: 1.0", text)
+        manifest = self.build()
+        quiz = [a for a in manifest["activities"] if a["id"] == "act.quiz.fraction-intro-01"][0]
+        self.assertIs(type(quiz["version"]), int)
+        self.assertIs(type(manifest["engine_min"]), int)
+        canonical = json.dumps({k: manifest[k] for k in ("engine_min", "contracts", "nodes", "activities", "assets")},
+                               sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        self.assertNotIn('"version":1.0', canonical)
+
+    def test_non_integer_or_out_of_range_versions_fail(self):
+        for bad, word in [(1.5, "必须是整数"), (True, "必须是整数"), (0, "1～2^53−1"), (9007199254740992, "2^53")]:
+            with self.subTest(version=bad):
+                self.change(QUIZ_PATH, lambda act: act.update(version=bad))
+                with self.assertRaises(build_release.BuildError) as caught:
+                    self.build()
+                self.assertIn(word, str(caught.exception))
+                shutil.rmtree(self.content)
+                shutil.copytree(FIXTURE, self.content)
+
+    @unittest.skipUnless(shutil.which("node"), "需要 Node.js 才能核对浏览器的写法")
+    def test_browser_canonical_json_reproduces_the_release_id(self):
+        """Python 构建、JavaScript 核对：含 version: 1.0、非 ASCII 内容、嵌套的 json 条目。"""
+        script = self.temp / "canon.js"
+        script.write_text(NODE_CANONICAL, encoding="utf-8")
+        for name in ("fixture", "float-version"):
+            if name == "float-version":
+                self.change(QUIZ_PATH, lambda act: act.update(version=1.0))
+            with self.subTest(case=name):
+                manifest, files = build_release.build_package(self.content, COMMIT)
+                out = self.temp / ("out-" + name)
+                build_release.write_release(manifest, files, out)
+                process = subprocess.run(["node", str(script), str(out / "release.json")], capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(process.stdout, "ok", process.stderr)
+        expected = json.loads(EXPECTED.read_text(encoding="utf-8"))
+        fixture = self.temp / "expected.json"
+        fixture.write_text(json.dumps(dict(expected, source_commit=COMMIT), ensure_ascii=False), encoding="utf-8")
+        process = subprocess.run(["node", str(script), str(fixture)], capture_output=True, text=True, encoding="utf-8")
+        self.assertEqual(process.stdout, "ok", "手写的期望清单在浏览器写法下也要对得上")
+
+
+class TestSlice1aFixture(unittest.TestCase):
+    """切片规格第 7、8 节：1a 的演示夹具能构建，挑战是五道选择题、固定题序。"""
+
+    def test_fixture_builds_with_five_choice_items_in_fixed_order(self):
+        root = TOOLS / "tests/fixtures/slice-1a/content"
+        manifest = build_release.build(root, COMMIT)
+        self.assertEqual([a["id"] for a in manifest["activities"]], ["act.explain.fraction-intro-01", "act.quiz.fraction-intro-01"])
+        quiz = yaml.safe_load((root / QUIZ_PATH).read_text(encoding="utf-8"))
+        self.assertIs(quiz["body"]["shuffle"], False)
+        items = quiz["body"]["items"]
+        self.assertEqual(len(items), 5)
+        self.assertTrue(all(item["answer"]["type"] == "choice" for item in items))
+        positions = [next(i for i, c in enumerate(item["answer"]["choices"]) if c.get("correct")) for item in items]
+        self.assertTrue(all(sum(1 for c in item["answer"]["choices"] if c.get("correct")) == 1 for item in items))
+        self.assertGreater(len(set(positions)), 1, "正确选项的位置要分散")
+
+
 class TestWriteFromSnapshot(BuildCase):
     """第 2 轮审阅第 4 条：写出只用构建时的字节快照，先写临时目录，全部核对通过再改名。"""
 

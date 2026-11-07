@@ -1,5 +1,5 @@
 {
-  "about": "判分向量（切片规格第 5 节）。每条：用 answers 里的哪个 answer、孩子的作答、期望结果、手算依据。数字都选二进制里能精确表示的，边界上不受浮点误差影响。",
+  "about": "判分向量（切片规格第 5 节）。每条：用 answers 里的哪个 answer、孩子的作答、期望结果、手算依据。数字题按十进制精确比较（切片规格第 5 节），number-decimal 一组专门用二进制里不能精确表示的 0.3、0.1 测边界。",
   "answers": {
     "choice-q1": {"type": "choice", "choices": [{"id": "a", "text": "1/4", "correct": true}, {"id": "b", "text": "1/3", "misconception": "part-vs-rest", "feedback": "涂色部分要和整个圆的总份数相比。"}, {"id": "c", "text": "4/1", "misconception": "flip"}, {"id": "d", "text": "2/4"}]},
     "number-q3": {"type": "number", "value": 3, "tolerance": 0, "common_wrong": [{"value": 4, "misconception": "flip"}]},
@@ -7,7 +7,8 @@
     "number-no-tol": {"type": "number", "value": 12},
     "fraction-eq-q4": {"type": "fraction", "numerator": 2, "denominator": 8, "accept_equivalent": true, "common_wrong": [{"numerator": 2, "denominator": 6, "misconception": "part-vs-rest"}, {"numerator": 8, "denominator": 2, "misconception": "flip"}]},
     "fraction-strict-q5": {"type": "fraction", "numerator": 1, "denominator": 6, "accept_equivalent": false, "common_wrong": [{"numerator": 1, "denominator": 5, "misconception": "part-vs-rest"}]},
-    "number-overlap": {"type": "number", "value": 2, "tolerance": 0.5, "common_wrong": [{"value": 3, "misconception": "plus-one"}]}
+    "number-overlap": {"type": "number", "value": 2, "tolerance": 0.5, "common_wrong": [{"value": 3, "misconception": "plus-one"}]},
+    "number-decimal": {"type": "number", "value": 0.3, "tolerance": 0.1, "common_wrong": [{"value": 0.5, "misconception": "half"}]}
   },
   "cases": [
     {"answer": "choice-q1", "response": "a", "expect": {"correct": true, "misconception": null}, "why": "正确选项"},
@@ -80,6 +81,22 @@
     {"answer": "number-overlap", "response": "2.5", "expect": {"correct": true, "misconception": null}, "why": "|2.5−2|=0.5≤0.5 对；它同时落在 common_wrong 3 的范围（|2.5−3|=0.5）里，先比正确答案，判对"},
     {"answer": "number-overlap", "response": "1.5", "expect": {"correct": true, "misconception": null}, "why": "|1.5−2|=0.5，包含容差边界"},
     {"answer": "number-overlap", "response": "3", "expect": {"correct": false, "misconception": "plus-one"}, "why": "|3−2|=1>0.5 不对；|3−3|=0≤0.5 命中 plus-one"},
-    {"answer": "number-overlap", "response": "2.75", "expect": {"correct": false, "misconception": "plus-one"}, "why": "|2.75−2|=0.75>0.5；|2.75−3|=0.25≤0.5 命中 plus-one"}
+    {"answer": "number-overlap", "response": "2.75", "expect": {"correct": false, "misconception": "plus-one"}, "why": "|2.75−2|=0.75>0.5；|2.75−3|=0.25≤0.5 命中 plus-one"},
+    {"answer": "number-decimal", "response": "0.4", "expect": {"correct": true, "misconception": null}, "why": "按十进制精确算 |0.4−0.3|=0.1≤0.1，正好在边界上，对。用二进制浮点算会得到 0.10000000000000003 而判错（第 2 轮审阅第 7 条）"},
+    {"answer": "number-decimal", "response": "0.2", "expect": {"correct": true, "misconception": null}, "why": "|0.2−0.3|=0.1，下边界，对"},
+    {"answer": "number-decimal", "response": "0.41", "expect": {"correct": false, "misconception": "half"}, "why": "|0.41−0.3|=0.11>0.1；|0.41−0.5|=0.09≤0.1 命中 half"},
+    {"answer": "number-decimal", "response": "0.400001", "expect": {"correct": false, "misconception": "half"}, "why": "略超上边界：0.100001>0.1；|0.400001−0.5|=0.099999 命中 half"},
+    {"answer": "number-decimal", "response": "0.199999", "expect": {"correct": false, "misconception": null}, "why": "略超下边界：0.100001>0.1；离 0.5 是 0.300001，不命中"},
+    {"answer": "number-decimal", "response": "0.6", "expect": {"correct": false, "misconception": "half"}, "why": "|0.6−0.3|=0.3；|0.6−0.5|=0.1，边界上，命中 half"},
+    {"answer": "number-decimal", "response": "0.1999999", "expect": {"correct": false, "misconception": null}, "why": "小数 7 位，超过 6 位，写法认不出"},
+    {"answer": "number-decimal", "response": "1234567890", "expect": {"correct": false, "misconception": null}, "why": "整数部分 10 位，超过 9 位，写法认不出"},
+    {"answer": "fraction-eq-q4", "response": "0000001/4", "expect": {"correct": false, "misconception": null}, "why": "分子 7 位（含前导零），写法认不出。不查位数的实现会当成 1/4 判对（第 2 轮审阅第 5 条）"},
+    {"answer": "fraction-eq-q4", "response": "1/0000004", "expect": {"correct": false, "misconception": null}, "why": "分母 7 位，写法认不出；不查位数会判对"},
+    {"answer": "fraction-eq-q4", "response": "250000/1000000", "expect": {"correct": false, "misconception": null}, "why": "分母 7 位，写法认不出；不查位数会因等值于 1/4 判对"},
+    {"answer": "fraction-eq-q4", "response": "1\t/4", "expect": {"correct": false, "misconception": null}, "why": "斜杠两边只允许普通空格 U+0020，制表符不行"},
+    {"answer": "fraction-eq-q4", "response": "1　/4", "expect": {"correct": false, "misconception": null}, "why": "斜杠两边的全角空格 U+3000 不行（首尾的可以去掉，中间的不行）"},
+    {"answer": "choice-q1", "response": "\u000ba\u000c", "expect": {"correct": true, "misconception": null}, "why": "U+000B、U+000C 在 7 种空白里，去掉后是 a"},
+    {"answer": "choice-q1", "response": "﻿a", "expect": {"correct": false, "misconception": null}, "why": "U+FEFF 不在 7 种空白里；JavaScript 的 trim 会去掉它而误判成对"},
+    {"answer": "choice-q1", "response": "\u0085a", "expect": {"correct": false, "misconception": null}, "why": "U+0085 不在 7 种空白里；Python 的 strip 会去掉它而误判成对"}
   ]
 }

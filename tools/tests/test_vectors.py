@@ -9,6 +9,7 @@
 """
 import json
 import math
+from decimal import Decimal
 import random
 import re
 import unittest
@@ -52,6 +53,8 @@ def _number_ok(x):
         return abs(x) <= MAX_SAFE
     if abs(x) >= 1e9:
         return False
+    if GRADE_VARIANT.get("micro_float"):
+        return (x * 1e6).is_integer()
     text = repr(x)
     mantissa, _, exponent = text.partition("e")
     decimals = len(mantissa.partition(".")[2])
@@ -201,16 +204,21 @@ def ref_mastery(events):
 
 # ---------------------------------------------------------------- 对照实现：判分
 FULLWIDTH = str.maketrans("０１２３４５６７８９／．", "0123456789/.")
-NUMBER = re.compile(r"-?[0-9]+(\.[0-9]+)?")
+NUMBER = re.compile(r"-?([0-9]{1,9})(\.([0-9]{1,6}))?")
 FRACTION_SLASH = re.compile(r"([0-9]{1,6}) */ *([0-9]{1,6})")
 FRACTION_ZH = re.compile(r"([0-9]{1,6}) *分之 *([0-9]{1,6})")
-
-
 SPACES = "\t\n\x0b\x0c\r \u3000"   # 切片规格第 5 节：只去这 7 种，不用 str.strip() 的默认集合
+# 下面几个开关只给「向量能不能分辨错误实现」的测试用，默认就是规格的写法
+GRADE_VARIANT = {}
+
+
+def _micro(x):
+    """把一个数换成「百万分之一」的整数，十进制精确。活动里的数用最短十进制表示（repr），作答用原文。"""
+    return int(Decimal(x if isinstance(x, str) else repr(float(x))) * 1_000_000)
 
 
 def ref_grade(answer, response):
-    r = response.strip(SPACES).translate(FULLWIDTH)
+    r = (response.strip() if GRADE_VARIANT.get("default_strip") else response.strip(SPACES)).translate(FULLWIDTH)
     kind = answer["type"]
     if kind == "choice":
         for choice in answer["choices"]:
@@ -218,20 +226,30 @@ def ref_grade(answer, response):
                 return (True, None) if choice.get("correct") else (False, choice.get("misconception"))
         return False, None
     if kind == "number":
-        if not NUMBER.fullmatch(r):
-            return False, None
-        x, tol = float(r), answer.get("tolerance", 0)
-        if abs(x - answer["value"]) <= tol:
+        if GRADE_VARIANT.get("float"):
+            if not re.fullmatch(r"-?[0-9]+(\.[0-9]+)?", r):
+                return False, None
+            x, tol = float(r), answer.get("tolerance", 0)
+            hit = lambda v: abs(x - v) <= tol   # noqa: E731
+        else:
+            if not NUMBER.fullmatch(r):
+                return False, None
+            x, tol = _micro(r), _micro(answer.get("tolerance", 0))
+            hit = lambda v: abs(x - _micro(v)) <= tol   # noqa: E731
+        if hit(answer["value"]):
             return True, None
         for cw in answer.get("common_wrong", []):
-            if abs(x - cw["value"]) <= tol:
+            if hit(cw["value"]):
                 return False, cw["misconception"]
         return False, None
-    m = FRACTION_SLASH.fullmatch(r)
+    slash, zh = FRACTION_SLASH, FRACTION_ZH
+    if GRADE_VARIANT.get("any_digits"):
+        slash, zh = re.compile(r"([0-9]+) */ *([0-9]+)"), re.compile(r"([0-9]+) *分之 *([0-9]+)")
+    m = slash.fullmatch(r)
     if m:
         a, b = int(m.group(1)), int(m.group(2))
     else:
-        m = FRACTION_ZH.fullmatch(r)
+        m = zh.fullmatch(r)
         if not m:
             return False, None
         b, a = int(m.group(1)), int(m.group(2))
@@ -371,11 +389,15 @@ class TestNumberVectors(unittest.TestCase):
                 self.assertIsInstance(value, (int, float))
                 self.assertEqual(_number_ok(value), case["expect"], case["why"])
 
-    def test_vectors_catch_counting_raw_text_digits(self):
-        """「按原始文字数小数位」是错误做法：0.000001 写成文字有 6 位，1e-6 写成文字没有小数点，两条期望相同才说明没用文字。"""
-        cases = {c["json"]: c["expect"] for c in json.loads(NUMBERS.read_text(encoding="utf-8"))["cases"]}
-        self.assertEqual(cases["0.000001"], cases["1e-6"])
-        self.assertFalse(cases["1e-7"])
+    def test_vectors_catch_the_times_a_million_shortcut(self):
+        """第 2 轮审阅第 5 条：用「x×10^6 是不是整数」判断小数位数是错的，要有向量对不上。"""
+        GRADE_VARIANT["micro_float"] = True
+        try:
+            bad = [c["json"] for c in json.loads(NUMBERS.read_text(encoding="utf-8"))["cases"]
+                   if _number_ok(json.loads(c["json"])) != c["expect"]]
+        finally:
+            GRADE_VARIANT.clear()
+        self.assertIn("0.000249", bad)
 
 
 class TestVectorsCatchWrongAlgorithms(unittest.TestCase):
@@ -414,6 +436,31 @@ class TestVectorsCatchWrongAlgorithms(unittest.TestCase):
 
     def test_reporting_the_largest_rule_is_caught(self):
         self.assertIn("attempt-multi-rule.json", self.mismatches(pick="max"))
+
+
+class TestGradingVectorsCatchWrongImplementations(unittest.TestCase):
+    """第 2 轮审阅第 5、7 条和第 1 轮第 9 条：每种常见的错误判分写法都要有用例对不上。"""
+
+    def mismatches(self, **variant):
+        doc = json.loads(GRADING.read_text(encoding="utf-8"))
+        GRADE_VARIANT.update(variant)
+        try:
+            return [c["response"] for c in doc["cases"]
+                    if dict(zip(("correct", "misconception"), ref_grade(doc["answers"][c["answer"]], c["response"]))) != c["expect"]]
+        finally:
+            GRADE_VARIANT.clear()
+
+    def test_spec_implementation_matches_everything(self):
+        self.assertEqual(self.mismatches(), [])
+
+    def test_binary_float_comparison_is_caught(self):
+        self.assertIn("0.4", self.mismatches(float=True))
+
+    def test_missing_digit_limits_are_caught(self):
+        self.assertTrue({"0000001/4", "250000/1000000"} <= set(self.mismatches(any_digits=True)))
+
+    def test_language_default_trim_is_caught(self):
+        self.assertTrue({"\u00a0a", "\u0085a"} <= set(self.mismatches(default_strip=True)))
 
 
 class TestGradingVectors(unittest.TestCase):

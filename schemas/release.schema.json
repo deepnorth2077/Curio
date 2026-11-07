@@ -10,7 +10,7 @@
     "release_id": { "type": "string", "pattern": "^rel_[0-9a-f]{64}$" },
     "content_hash": { "$ref": "#/$defs/sha256" },
     "source_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-    "engine_min": { "type": "integer", "minimum": 1 },
+    "engine_min": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
     "contracts": {
       "type": "array",
       "uniqueItems": true,
@@ -24,7 +24,7 @@
         "additionalProperties": false,
         "properties": {
           "id": { "$ref": "#/$defs/nodeId" },
-          "version": { "type": "integer", "minimum": 1 },
+          "version": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
           "path": { "$ref": "#/$defs/path" },
           "sha256": { "$ref": "#/$defs/sha256" },
           "json": { "$ref": "#/$defs/jsonEntry" }
@@ -39,7 +39,7 @@
         "additionalProperties": false,
         "properties": {
           "id": { "$ref": "#/$defs/activityId" },
-          "version": { "type": "integer", "minimum": 1 },
+          "version": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
           "kind": { "enum": ["explain", "quiz", "reflection", "experiment", "simulation"] },
           "files": {
             "type": "array",
