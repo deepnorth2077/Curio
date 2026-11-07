@@ -156,7 +156,7 @@ grade(answer, response)   // answer：活动文件里的 answer 对象；respons
 - **选择题**：`response` 是选项 `id`。是正确选项 → 对；是错误选项 → 错，误区是这个选项的 `misconception`（没有就是 `null`）；不是任何选项的 `id` → 错，`null`。
 - **数字题**：`response` 必须整个匹配 `-?[0-9]{1,9}(\.[0-9]{1,6})?`（整数部分最多 9 位，小数最多 6 位），否则错、`null`。**按十进制精确比较**，不用二进制浮点直接相减（`0.4 − 0.3` 用浮点算是 `0.10000000000000003`，会把边界上的对判成错）：
   - 把作答换成「百万分之一」为单位的整数：整数部分 × 1000000 + 小数部分补足 6 位。最大约 10^15，在安全整数以内。
-  - 活动里的 `value`、`tolerance`、`common_wrong[].value` 也这样换：先取它的最短十进制表示（JavaScript 的 `String(x)`、Python 的 `repr(x)`），再按同样的办法换成整数。这些数必须满足事件规格第 2 节的数值规则（小数不超过 6 位、绝对值小于 10^9），不满足时 `startQuiz` 抛错（6.1）。
+  - 活动里的 `value`、`tolerance`、`common_wrong[].value` 也这样换：先取它的最短十进制表示（JavaScript 的 `String(x)`、Python 的 `repr(x)`），**按带指数的十进制数**解析后再换成整数：Python 的 `repr(0.00001)` 是 `1e-05`，JavaScript 的 `String(1e-7)` 是 `1e-7`，不能只按小数点拆。这些数必须满足事件规格第 2 节的数值规则（小数不超过 6 位、绝对值小于 10^9），不满足时 `startQuiz` 抛错（6.1）。
   - `|X − V| ≤ T` → 对。否则按顺序看 `common_wrong`，第一个满足 `|X − 它的 V| ≤ T` 的，误区是它的；都不满足 → `null`。`tolerance` 没写时是 0。不加任何额外的 epsilon。
 - **分数题**：`response` 必须整个匹配 `a/b` 或 `b分之a`，斜杠和「分之」两边**只**允许普通空格 U+0020（任意个），不允许制表符、全角空格；`a`、`b` 都是 1～6 位半角数字（前导零也算位数）；否则错、`null`。按整数解析，`b` 是 0 时错、`null`。
   - `accept_equivalent` 为假：`a`、`b` 分别等于 `numerator`、`denominator` → 对（`01/04` 也对，按整数比）。
@@ -171,7 +171,7 @@ grade(answer, response)   // answer：活动文件里的 answer 对象；respons
 #### 6.1 挑战状态机（`quiz.js`）
 
 ```js
-let q = startQuiz(activity, order)     // order：活动全部 item_id 的一个排列，由外壳决定（shuffle 为真时外壳洗牌）
+let q = startQuiz(activity, order, mode)  // order：活动全部 item_id 的一个排列，由外壳决定（shuffle 为真时外壳洗牌）；mode：first 或 retry
 q = step(q, action)                    // 纯函数，返回新状态
 q.phase                                // "starting" | "answering" | "finishing" | "done"
 q.view                                 // 界面要显示什么：当前题、选项、反馈、是否等待存储、结果
@@ -179,7 +179,7 @@ q.pending                              // 要写的事件意图 {id, verb, paylo
 ```
 
 - `startQuiz` 检查：`order` 必须正好是活动里全部 `item_id` 的一个排列（不多、不少、不重复）；1a 只支持选择题；活动里的数（`value`、`tolerance` 等）满足第 5 节的范围。不满足就抛错，外壳显示「这个挑战暂时不能玩」，**不写**任何事件。
-- 新状态的 `phase` 是 `starting`，`pending` 是 `attempt.started` 的意图（`payload: {mode}`，`mode` 由外壳在 `startQuiz` 的第三个参数里给出）。
+- 新状态的 `phase` 是 `starting`，`pending` 是 `attempt.started` 的意图（`payload: {mode}`）。
 - **意图不带时间**。`pending.payload` 里没有 `duration_ms`；外壳第一次把这个意图组装成原始文字时补上 `duration_ms`，以后重试都用那同一条原始文字。
 - `pending.id` 是状态机给每个意图编的序号（1、2、3……）。`saved`、`failed` 都带着 `id`；和当前 `pending.id` 不一样的确认一律忽略（过期的回调不会推进新的意图）。
 
@@ -203,7 +203,9 @@ q.pending                              // 要写的事件意图 {id, verb, paylo
 ```js
 const committer = createCommitter(store, log)   // 外壳只建一个
 await committer.submit(raw, receipt)            // → "accepted" | "duplicate"；隔离和存储失败都抛错
-committer.frozen                                // 出了「存储和内存可能不一致」的错以后为真，之后 submit 一律抛错
+committer.frozen                                // 出了「存储和内存可能不一致」的错、或外壳调用过 freeze() 以后为真，之后 submit 一律抛错
+committer.freeze()                              // 外壳失去写锁时调用
+committer.nextSeq                               // 下一条本机事件该用的 device_seq：创建时取 loadAll 的值，每次 accepted 后加 1
 ```
 
 - **串行**：`submit` 排队，一次只处理一条，上一条结束才开始下一条。同一条原始文字正在处理时又提交（双击「再试」），返回同一个 Promise，不另起一次存储操作。启动时的补写也走它。
@@ -241,14 +243,14 @@ committer.frozen                                // 出了「存储和内存可�
 
 外壳有三种状态：**只读**、**正在恢复**、**可以写**。只有「可以写」时能开始或继续挑战。
 
-- **拿写锁**：启动时 `navigator.locks.request("curio-writer", {ifAvailable: true}, cb)`。拿到时 `cb` 返回一个**一直不结束**的 Promise，锁就一直持有；拿到以后进入「正在恢复」。拿不到（回调收到 `null`）→「只读」，提示「另一个窗口正在用」，给一个「再试一次」按钮（重新请求，仍然 `ifAvailable`，不抢锁、不用 `steal`）。浏览器没有 `navigator.locks` 或请求出错 → 「只读」，提示「这个浏览器不能记录」，和「被占用」分开说。
+- **拿写锁**：启动时 `navigator.locks.request("curio-writer", {ifAvailable: true}, cb)`。拿到时 `cb` 返回一个**一直不结束**的 Promise，锁就一直持有；拿到以后进入「正在恢复」。拿不到（回调收到 `null`）→「只读」，提示「另一个窗口正在用」。只读窗口照样 `loadAll` 并重放（只读事务，不写任何东西），画出星图让孩子看；存储里还没有身份时只显示提示。给一个「再试一次」按钮（重新请求，仍然 `ifAvailable`，不抢锁、不用 `steal`）。浏览器没有 `navigator.locks` 或请求出错 → 「只读」，提示「这个浏览器不能记录」，和「被占用」分开说。
 - **失去写锁**：`request` 返回的 Promise 结束或出错（例如 Safari 把页面挂起时会收回锁），或者页面从往返缓存恢复（`pageshow` 的 `persisted` 为真）→ 立刻进入「只读」，冻结 `committer`，提示「请刷新页面」。**不**自动接着做旧挑战：别的窗口可能已经把它补成了放弃。刷新后从头启动。
 - **正在恢复**（拿到锁以后）：
   1. `store.loadAll()`；身份为空时调用 `store.init` 生成 `lrn_`、`dev_`（在锁里做，两个空窗口不会各生成一套）。
   2. 收件表按到达顺序重新 `ingest`。
   3. 找出本设备上没有结束事件、而且没有被判为不一致的尝试，各补一条 `attempt.abandoned`（`reason: left`，`actor` 是 `{type: system, id: "sys:shell"}`）。**补写的事件从这次尝试的事件里复制** `learner_id`、`device_id`、`attempt_id` 和完整的 `content`（包括当时的 `content_release`、`activity_version`），只有 `event_id`、`occurred_at`、`device_seq`、`actor`、`payload` 是新的。所以发布更新了、旧活动不在新发布里了，也能合法地放弃。已经有结束事件的尝试不补。每条都走 `committer`。
   4. 算掌握度、画星图，进入「可以写」。
-- **写事件**：外壳把状态机的意图组装成 event/2 信封（`device_seq` 取存储里的「下一个序号」、`occurred_at` 取当前 UTC 时间、完成事件补 `duration_ms`、`content` 用这次挑战开始时冻结的那一份），`JSON.stringify` 一次得到原始文字，交给 `committer.submit`。`accepted` 或 `duplicate` → 给状态机发 `saved`；抛错 → 发 `failed`，留着这条原始文字，「再试」时原样再提交。
+- **写事件**：外壳把状态机的意图组装成 event/2 信封（`device_seq` 取 `committer.nextSeq`、`occurred_at` 取当前 UTC 时间、完成事件补 `duration_ms`、`content` 用这次挑战开始时冻结的那一份），`JSON.stringify` 一次得到原始文字，交给 `committer.submit`。`accepted` 或 `duplicate` → 给状态机发 `saved`；抛错 → 发 `failed`，留着这条原始文字，「再试」时原样再提交。
 - **开始一次挑战**：冻结当前发布的 `content`（`node_id`、`activity_id`、`activity_kind`、`activity_version`、`content_release`），这次尝试的每条事件都用它。`mode` 是 `first`（这台设备上这个活动从没完成过）或 `retry`。题目顺序按活动的 `shuffle` 决定。
 - **作答**：点一个选项就是一次作答，交给状态机。答对显示 `feedback.correct`（没有就用默认的话）；答错显示这个错误选项的 `feedback`，没有就用 `feedback.wrong` 或默认的话，可以再答。
 - **完成**：完成意图存好以后显示结果，重新算掌握度，星星从暗变亮（1a 直接换样子，1b 加动效，尊重 `prefers-reduced-motion`）。
@@ -321,7 +323,7 @@ committer.frozen                                // 出了「存储和内存可�
 
 ### 8. 演示部署（整合时 Claude 做）
 
-`pages.yml` 改成：用 `tools/build_release.py` 把 `tools/tests/fixtures/content/` 构建成发布包放进 `release/`（1a 用 `tools/tests/fixtures/slice-1a/content/`；不改现有的通用夹具），连同 `app/`、`kernel/`、`engine/` 按仓库里的目录结构一起发布，原型仍在根目录。演示地址 `https://deepnorth2077.github.io/Curio/app/`。CI 加一步 `node --test kernel engine app`。
+`pages.yml` 改成：用 `tools/build_release.py` 把 `tools/tests/fixtures/content/` 构建成发布包放进 `release/`（1a 用 `tools/tests/fixtures/slice-1a/content/`；不改现有的通用夹具），连同 `app/`、`kernel/`、`engine/` 按仓库里的目录结构一起发布，原型仍在根目录。演示地址 `https://deepnorth2077.github.io/Curio/app/`。CI 加一步 `node --test kernel/test/*.test.js engine/test/*.test.js app/test/*.test.js`（不加引号，由 shell 展开成文件名；`node --test <目录>` 在 Node 20 和 22 上行为不同，不用）。
 
 ## 测试接缝
 

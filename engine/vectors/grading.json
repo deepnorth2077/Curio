@@ -8,7 +8,8 @@
     "fraction-eq-q4": {"type": "fraction", "numerator": 2, "denominator": 8, "accept_equivalent": true, "common_wrong": [{"numerator": 2, "denominator": 6, "misconception": "part-vs-rest"}, {"numerator": 8, "denominator": 2, "misconception": "flip"}]},
     "fraction-strict-q5": {"type": "fraction", "numerator": 1, "denominator": 6, "accept_equivalent": false, "common_wrong": [{"numerator": 1, "denominator": 5, "misconception": "part-vs-rest"}]},
     "number-overlap": {"type": "number", "value": 2, "tolerance": 0.5, "common_wrong": [{"value": 3, "misconception": "plus-one"}]},
-    "number-decimal": {"type": "number", "value": 0.3, "tolerance": 0.1, "common_wrong": [{"value": 0.5, "misconception": "half"}]}
+    "number-decimal": {"type": "number", "value": 0.3, "tolerance": 0.1, "common_wrong": [{"value": 0.5, "misconception": "half"}]},
+    "number-tiny": {"type": "number", "value": 0.00003, "tolerance": 0.00001}
   },
   "cases": [
     {"answer": "choice-q1", "response": "a", "expect": {"correct": true, "misconception": null}, "why": "正确选项"},
@@ -90,6 +91,9 @@
     {"answer": "number-decimal", "response": "0.6", "expect": {"correct": false, "misconception": "half"}, "why": "|0.6−0.3|=0.3；|0.6−0.5|=0.1，边界上，命中 half"},
     {"answer": "number-decimal", "response": "0.1999999", "expect": {"correct": false, "misconception": null}, "why": "小数 7 位，超过 6 位，写法认不出"},
     {"answer": "number-decimal", "response": "1234567890", "expect": {"correct": false, "misconception": null}, "why": "整数部分 10 位，超过 9 位，写法认不出"},
+    {"answer": "number-tiny", "response": "0.00004", "expect": {"correct": true, "misconception": null}, "why": "value 0.00003 和 tolerance 0.00001 在 Python 里的最短表示是 3e-05、1e-05，要按带指数的十进制解析；|0.00004−0.00003|=0.00001，正好在边界上，对"},
+    {"answer": "number-tiny", "response": "0.000041", "expect": {"correct": false, "misconception": null}, "why": "|0.000041−0.00003|=0.000011>0.00001"},
+    {"answer": "number-tiny", "response": "0.00002", "expect": {"correct": true, "misconception": null}, "why": "下边界：|0.00002−0.00003|=0.00001"},
     {"answer": "fraction-eq-q4", "response": "0000001/4", "expect": {"correct": false, "misconception": null}, "why": "分子 7 位（含前导零），写法认不出。不查位数的实现会当成 1/4 判对（第 2 轮审阅第 5 条）"},
     {"answer": "fraction-eq-q4", "response": "1/0000004", "expect": {"correct": false, "misconception": null}, "why": "分母 7 位，写法认不出；不查位数会判对"},
     {"answer": "fraction-eq-q4", "response": "250000/1000000", "expect": {"correct": false, "misconception": null}, "why": "分母 7 位，写法认不出；不查位数会因等值于 1/4 判对"},
