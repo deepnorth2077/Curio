@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" role="img" aria-label="细胞核里摊开的 DNA 说明书">
+  <title>细胞核里的 DNA 说明书</title>
+  <desc>一个淡绿色细胞中，蓝色细胞核里摊开着一本书，书页写着 A、T、C、G。</desc>
+  <path d="M45 166 C42 110 92 56 166 48 C245 25 346 54 406 110 C457 164 423 237 357 268 C284 303 174 290 105 254 C63 232 48 202 45 166 Z" fill="#CCD6C0" fill-opacity="0.7"/>
+  <path d="M45 166 C42 110 92 56 166 48 C245 25 346 54 406 110 C457 164 423 237 357 268 C284 303 174 290 105 254 C63 232 48 202 45 166 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <path d="M130 159 C128 112 171 79 231 77 C294 70 350 105 354 156 C365 211 313 245 250 247 C184 250 137 216 130 159 Z" fill="#CFDCE6" fill-opacity="0.75"/>
+  <path d="M130 159 C128 112 171 79 231 77 C294 70 350 105 354 156 C365 211 313 245 250 247 C184 250 137 216 130 159 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <path d="M157 145 Q201 126 238 148 Q278 123 326 140 L321 221 Q276 208 239 229 Q199 207 157 224 Z" fill="#ECCDB6" fill-opacity="0.8"/>
+  <path d="M157 145 Q201 126 238 148 Q278 123 326 140 L321 221 Q276 208 239 229 Q199 207 157 224 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <path d="M164 139 Q201 126 237 146 L237 216 Q202 197 165 211 Z" fill="#EFE4D6" fill-opacity="0.85"/>
+  <path d="M164 139 Q201 126 237 146 L237 216 Q202 197 165 211 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+  <path d="M240 146 Q278 126 319 139 L315 210 Q276 197 240 216 Z" fill="#EFE4D6" fill-opacity="0.85"/>
+  <path d="M240 146 Q278 126 319 139 L315 210 Q276 197 240 216 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+  <path d="M238 147 C236 170 240 193 238 217" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+  <text x="177" y="159" font-size="14" fill="#1F1E1C">A T C G</text>
+  <text x="177" y="180" font-size="14" fill="#1F1E1C">T A G C</text>
+  <text x="177" y="201" font-size="14" fill="#1F1E1C">C G A T</text>
+  <text x="253" y="159" font-size="14" fill="#1F1E1C">G C T A</text>
+  <text x="253" y="180" font-size="14" fill="#1F1E1C">A T C G</text>
+  <text x="253" y="201" font-size="14" fill="#1F1E1C">T G A C</text>
+  <path d="M351 105 Q366 98 373 88" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+  <text x="374" y="86" font-size="14" fill="#1F1E1C">细胞核</text>
+</svg>
+<!-- END OF FILE -->
