@@ -1,0 +1,124 @@
+id: act.explain.dna-intro-01
+schema: activity-def/1
+kind: explain
+version: 1
+title: DNA：细胞里的说明书
+targets: [biology.genetics.dna-intro]
+age_band: G3-4
+duration_min: 5
+review: approved
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版初中生物学八年级下册（2024 年版）第六单元第二章第二节「基因在亲子代间的传递」
+  - type: textbook
+    ref: 人教版初中生物学（2024 年版）第四单元「人体生理与健康」讲血液的一节
+  - type: curriculum
+    ref: 《义务教育生物学课程标准（2022 年版）》「遗传与进化」
+  - type: reference
+    ref: NHGRI 染色体知识页
+    url: https://www.genome.gov/about-genomics/fact-sheets/Chromosomes-Fact-Sheet
+body:
+  style: tutor
+  steps:
+    - type: text
+      text: 舰长，为什么小狗生下来的总是小狗，不会是小猫？先想一想。
+    - type: text
+      text: 上一颗星说过，细胞核是细胞这个小房间里的小房间，里面放着一份说明书。它叫 DNA。
+    - type: text
+      text: DNA 像一本用 A、T、C、G 四种字母写成的说明书，记着身体怎么长、长成什么样。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.genetics.dna-intro/dna-book.svg
+      caption: 小狗的说明书写着怎么长成小狗。
+    - type: text
+      text: 身体里绝大多数细胞，带的都是同一套说明书。
+    - type: text
+      text: 神经细胞和肌肉细胞本领不同，是因为它们读的是同一本书的不同几页。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.genetics.dna-intro/dna-pages.svg
+      caption: 两本书是同一套，翻开的页不同，细胞的本领就不同。
+    - type: check
+      item:
+        id: c1
+        stem: 神经细胞和肌肉细胞带着同一套说明书，为什么本领不一样？
+        answer:
+          type: choice
+          choices:
+            - id: b
+              text: 它们的说明书本来就不同
+              misconception: different-books
+              feedback: 看起来确实像各有一本书，其实它们带的是同一套，只是读的几页不同。
+            - id: c
+              text: 它们带的说明书页数不一样多
+              misconception: different-books
+              feedback: 看起来确实像书有厚薄，其实绝大多数细胞带的是同一套，只是用的页不同。
+            - id: a
+              text: 它们读的是同一本书的不同几页
+              correct: true
+        hints:
+          - 想一想，刚才说的“同一套”是什么意思。
+          - 本领不同，不一定是书不同，也可能是翻开的地方不同。
+    - type: text
+      text: DNA 不是只在血液里。皮肤细胞、口腔里的细胞和肌肉细胞里，也都有 DNA。
+    - type: check
+      item:
+        id: c2
+        stem: 舰长，DNA 只在血液里吗？
+        answer:
+          type: choice
+          choices:
+            - id: a
+              text: 不是，皮肤、口腔和肌肉细胞里也有
+              correct: true
+            - id: b
+              text: 是，只在血液里
+              misconception: blood-only
+              feedback: 很多人都这么想，其实血液只是身体的一部分，皮肤、口腔和肌肉细胞里也有 DNA。
+            - id: c
+              text: 是，别的细胞都没有说明书
+              misconception: blood-only
+              feedback: 看起来确实像血液最特别，其实别的许多细胞也有细胞核，也带着说明书。
+        hints:
+          - 血液只是身体的一部分，身体还有皮肤、口腔和肌肉。
+          - 想想上一颗星：皮肤、肌肉里的细胞，一般都有细胞核吗？
+    - type: text
+      text: 人的红细胞快长好的时候，会把细胞核连同说明书一起推出去，腾出地方多装氧气。它当初也是照着同一本说明书长出来的。
+    - type: figure
+      figure:
+        type: svg
+        src: content/assets/biology.genetics.dna-intro/red-cell.svg
+      caption: 成熟红细胞没有细胞核，但年轻时也曾带着同一套说明书。
+    - type: text
+      text: 说明书不是放着不动的。你每天长个子、摔破的伤口长好，细胞都在照着它做。
+    - type: check
+      item:
+        id: c3
+        stem: 身体里的说明书，什么时候会用？
+        answer:
+          type: choice
+          choices:
+            - id: b
+              text: 只在生小宝宝时用
+              misconception: only-for-babies
+              feedback: 这个想法有道理，因为说明书会传给孩子；但长个子、修补伤口时也要用它。
+            - id: a
+              text: 长个子、修补伤口时都会用
+              correct: true
+            - id: c
+              text: 只有传给孩子时才用
+              misconception: only-for-babies
+              feedback: 说明书确实会传给孩子，但它在自己身体里也有工作，比如帮助身体长大和修补。
+        hints:
+          - 想想伤口长好的时候，细胞有没有在工作。
+          - 身体每天长个子、修补伤口，要不要照着说明书做？
+    - type: text
+      text: 说明书是爸爸妈妈传给孩子的，这叫遗传。小狗从狗爸爸狗妈妈那里拿到狗的说明书，所以长成小狗。
+    - type: text
+      text: 一个带细胞核的人体细胞里，DNA 全部拉直大约有 2 米，比大人还高。
+    - type: text
+      text: 这么长，怎么装进小小的细胞核？请舰长去下一颗星“染色体”找答案。
+# END OF FILE

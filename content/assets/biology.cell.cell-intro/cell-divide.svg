@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" role="img" aria-label="一个细胞分成两个细胞">
+  <title>细胞分成两个</title>
+  <desc>一个细胞先长大，中间收紧并且细胞核变成两个，最后分成两个细胞。</desc>
+  <g>
+    <path d="M67 86 C93 49 155 44 188 77 C221 110 215 169 178 196 C141 224 82 207 61 165 C48 138 50 108 67 86 Z" fill="#CCD6C0" fill-opacity="0.8"/>
+    <path d="M67 86 C93 49 155 44 188 77 C221 110 215 169 178 196 C141 224 82 207 61 165 C48 138 50 108 67 86 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M113 105 C126 92 150 96 157 114 C164 133 150 151 131 150 C111 149 99 132 104 116 C106 111 109 108 113 105 Z" fill="#CFDCE6" fill-opacity="0.85"/>
+    <path d="M113 105 C126 92 150 96 157 114 C164 133 150 151 131 150 C111 149 99 132 104 116 C106 111 109 108 113 105 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <text x="132" y="254" font-size="17" text-anchor="middle" fill="#1F1E1C">一个细胞</text>
+  </g>
+  <path d="M229 131 C246 130 259 130 275 130 M265 121 L276 130 L265 140" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <g>
+    <path d="M302 81 C330 53 369 61 389 91 C402 111 405 114 420 93 C443 62 484 67 504 97 C529 135 511 184 475 201 C443 216 414 195 404 169 C396 148 391 148 382 170 C368 204 328 211 302 183 C273 153 275 108 302 81 Z" fill="#CCD6C0" fill-opacity="0.8"/>
+    <path d="M302 81 C330 53 369 61 389 91 C402 111 405 114 420 93 C443 62 484 67 504 97 C529 135 511 184 475 201 C443 216 414 195 404 169 C396 148 391 148 382 170 C368 204 328 211 302 183 C273 153 275 108 302 81 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M328 108 C339 98 356 102 361 116 C367 131 355 145 341 144 C325 143 316 129 321 116 C323 112 325 110 328 108 Z" fill="#CFDCE6" fill-opacity="0.85"/>
+    <path d="M328 108 C339 98 356 102 361 116 C367 131 355 145 341 144 C325 143 316 129 321 116 C323 112 325 110 328 108 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+    <path d="M437 109 C448 98 466 102 471 117 C476 132 465 146 450 145 C434 144 425 130 430 116 C432 113 434 111 437 109 Z" fill="#CFDCE6" fill-opacity="0.85"/>
+    <path d="M437 109 C448 98 466 102 471 117 C476 132 465 146 450 145 C434 144 425 130 430 116 C432 113 434 111 437 109 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+    <text x="393" y="254" font-size="17" text-anchor="middle" fill="#1F1E1C">中间收紧</text>
+  </g>
+  <path d="M520 131 C529 130 535 130 541 130 M533 121 L542 130 L533 140" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+  <g>
+    <path d="M568 82 C588 58 622 62 637 88 C653 116 640 153 613 166 C585 180 555 162 550 132 C547 113 553 96 568 82 Z" fill="#CCD6C0" fill-opacity="0.8"/>
+    <path d="M568 82 C588 58 622 62 637 88 C653 116 640 153 613 166 C585 180 555 162 550 132 C547 113 553 96 568 82 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M584 103 C593 95 607 99 611 110 C615 122 606 133 594 132 C582 131 575 120 579 110 C580 107 582 105 584 103 Z" fill="#CFDCE6" fill-opacity="0.85"/>
+    <path d="M584 103 C593 95 607 99 611 110 C615 122 606 133 594 132 C582 131 575 120 579 110 C580 107 582 105 584 103 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+    <path d="M637 150 C657 132 688 139 699 164 C711 192 693 221 666 226 C639 232 616 211 617 184 C617 170 624 159 637 150 Z" fill="#CCD6C0" fill-opacity="0.8"/>
+    <path d="M637 150 C657 132 688 139 699 164 C711 192 693 221 666 226 C639 232 616 211 617 184 C617 170 624 159 637 150 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+    <path d="M651 169 C660 161 674 165 678 176 C682 188 673 199 661 198 C649 197 642 186 646 176 C647 173 649 171 651 169 Z" fill="#CFDCE6" fill-opacity="0.85"/>
+    <path d="M651 169 C660 161 674 165 678 176 C682 188 673 199 661 198 C649 197 642 186 646 176 C647 173 649 171 651 169 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+    <text x="627" y="267" font-size="17" text-anchor="middle" fill="#1F1E1C">两个细胞</text>
+  </g>
+</svg>
+<!-- END OF FILE -->
