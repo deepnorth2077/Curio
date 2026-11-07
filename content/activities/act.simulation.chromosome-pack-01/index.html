@@ -37,7 +37,7 @@ h1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);ma
 .hint{font-size:14px;color:var(--muted)}
 .readout{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15px;text-align:right}
 .readout b{color:var(--accent);font-weight:600}
-svg#stage{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+svg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 svg#stage:focus{outline:none}
 svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
 .k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -56,7 +56,8 @@ svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
 .bubble.good{background:var(--good-soft);border-color:transparent}
 .bubble.bad{background:var(--bad-soft);border-color:transparent}
 .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:10px 0 0}
-.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:none}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:manipulation}
+.btn.hold{touch-action:none}
 .btn.ghost{background:var(--pane);color:var(--ink)}
 .btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
 .btn.choice:hover{background:var(--hover)}
@@ -181,7 +182,7 @@ addEventListener("pointerdown", () => { fingerDown = true; }, true);
 for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);   // 抬起时立刻记下：随后的 click 里换出的按钮不必禁用
 function actions(list){
   const box = $("actions"); box.replaceChildren();
-  const guard = fingerDown;
+  const guard = fingerDown, born = performance.now();
   for (const a of list || []){
     const b = document.createElement("button");
     b.type = "button"; b.className = "btn " + (a.cls || ""); b.textContent = a.label;
@@ -192,11 +193,14 @@ function actions(list){
       b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); a.step(); } });
       b.addEventListener("contextmenu", e => e.preventDefault());
     } else {
-      b.addEventListener("click", a.go);
+      // 刚出现的 0.4 秒内不响应，免得双击「继续」时第二下替孩子选了答案
+      b.addEventListener("click", e => { if (performance.now() - born < 400) return; a.go(e); });
       if (guard){ b.disabled = true; const on = () => { setTimeout(() => { b.disabled = false; }, 120); removeEventListener("pointerup", on, true); }; addEventListener("pointerup", on, true); }
     }
     box.append(b);
   }
+  const first = box.querySelector("button");
+  if (first && !/^act/.test(S.mode)) first.focus({ preventScroll: true });   // 键盘用户不用再找按钮
   return box;
 }
 function ask(question, options, onAnswer, verb){
@@ -683,6 +687,7 @@ function enterEnd(){
 
 /* ============ 10. 画面和输入 ============ */
 function render(){
+  svg.style.touchAction = /^act|^pair$/.test(S.mode) ? "none" : "pan-y";   // 只在要拖动、点选时锁住页面滚动
   gDyn.innerHTML = S.station === 1 ? draw1() : S.station === 2 ? (nucleusOverlay() + draw2()) : S.station === 3 ? (nucleusOverlay() + draw3()) : S.station === 4 ? draw4() : drawEnd();
 }
 function nucleusOverlay(){
