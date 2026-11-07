@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>掰巧克力</title>
+<style>
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
+  --dad:#4F7FA8; --mom:#C2603F; --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --choc-hi:rgba(255,255,255,.6);
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#E0876A; --accent-soft:#3A2A24;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;
+  --dad:#7FA9CF; --mom:#E0876A; --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  --choc-hi:rgba(255,255,255,.13);
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:820px;margin:0 auto;padding:12px 14px 28px}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;overflow:hidden}
+.card header,.card footer{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px}
+.card header{border-bottom:1px solid var(--rule)}
+.card footer{border-top:1px solid var(--rule);min-height:44px;align-items:center}
+.station{font-size:13px;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+h1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);margin:0;text-align:right}
+.hint{font-size:14px;color:var(--muted)}
+.readout{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15px;text-align:right}
+.readout b{color:var(--accent);font-weight:600}
+svg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+svg#stage:focus{outline:none}
+svg#stage:focus-visible{outline:none}
+svg#stage.kbd:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.thread{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.thread-thin{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round}
+.t{fill:var(--ink);font-family:var(--f-sans);font-size:15px}
+.tm{fill:var(--muted);font-family:var(--f-sans);font-size:13px}
+.num{fill:var(--ink);font-family:var(--f-mono);font-size:12px}
+/* 本模块补充的画面样式：字号全部写在类上，窄屏在 body.narrow 里放大（教训 14、28） */
+.choc{fill:var(--apricot)}
+.hi{fill:none;stroke:var(--choc-hi);stroke-width:2;stroke-linecap:round}
+.kacc{fill:none;stroke:var(--accent);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.dash{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-dasharray:6 7}
+.faint{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;opacity:.7}
+.grid{fill:none;stroke:var(--ink);stroke-width:1;opacity:.22}
+.lb{fill:var(--ink);font-family:var(--f-sans);font-size:17px}
+.lbg{fill:var(--muted);font-family:var(--f-sans);font-size:16px}
+.lbm{fill:var(--ink);font-family:var(--f-mono);font-size:18px}
+.lba{fill:var(--accent);font-family:var(--f-mono);font-size:18px;font-weight:600}
+.tag{fill:var(--ink);font-family:var(--f-serif);font-size:19px}
+.big{fill:var(--ink);font-family:var(--f-mono);font-size:38px}
+.dig{fill:var(--ink);font-family:var(--f-mono);font-size:34px}
+.dig2{fill:var(--ink);font-family:var(--f-mono);font-size:30px}
+.dialn{fill:var(--ink);font-family:var(--f-mono);font-size:27px}
+.ttl{fill:var(--ink);font-family:var(--f-serif);font-size:26px}
+body.narrow .lb{font-size:22px} body.narrow .lbg{font-size:20px}
+body.narrow .lbm,body.narrow .lba{font-size:22px} body.narrow .tag{font-size:22px}
+body.narrow .big{font-size:42px} body.narrow .dig{font-size:38px} body.narrow .dig2{font-size:34px}
+body.narrow .dialn{font-size:29px} body.narrow .ttl{font-size:30px}
+.cue{fill:none;stroke:var(--muted);stroke-width:2.5;animation:cue 1.6s ease-in-out infinite}
+@keyframes cue{0%,100%{opacity:.12}50%{opacity:.75}}
+@media (prefers-reduced-motion:reduce){.cue{animation:none;opacity:.5}}
+.talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
+.ava{flex:none;width:42px;height:42px}
+.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
+.bubble.good{background:var(--good-soft);border-color:transparent}
+.bubble.bad{background:var(--bad-soft);border-color:transparent}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:10px 0 0}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:manipulation}
+.btn.hold{touch-action:none}
+.btn.ghost{background:var(--pane);color:var(--ink)}
+.btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
+.btn.choice:hover{background:var(--hover)}
+.btn.hold{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.hold.on{filter:brightness(.9)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500}
+.qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px} .card footer{flex-wrap:wrap;row-gap:2px} .hint{white-space:nowrap} .readout{font-size:14px;flex:1 1 auto} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <header><span class="station" id="station"></span><h1 id="title"></h1></header>
+    <svg id="stage" viewBox="0 0 800 610" tabindex="0" role="application" aria-label="动手区">
+      <g id="static"></g><g id="dyn"></g>
+      <g id="cueg"><circle id="cue" class="cue" cx="-100" cy="-100" r="30" style="display:none"/></g>
+      <rect id="touch" x="-400" y="-400" width="1600" height="1410" fill="transparent"/><!-- 永不重画的触摸层：重画 dyn 时不会删掉手指按着的元素 -->
+    </svg>
+    <footer><span class="hint" id="hint"></span><span class="readout" id="readout"></span></footer>
+  </div>
+  <div class="talk">
+    <svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="27" r="16" fill="var(--sky)"/>
+      <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+      <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+      <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+      <path class="k1" d="M18 32 C21 35 27 35 30 32"/>
+    </svg>
+    <div class="bubble" id="say" aria-live="polite"></div>
+  </div>
+  <div class="actions" id="actions"></div>
+  <div id="qarea"></div>
+</div>
+
+<script>
+"use strict";
+/* 好奇号 · 动手探索模块「掰巧克力」act.simulation.chocolate-split-01
+   从 curio-anatomy/references/starter.html 起步（来自 act.simulation.chromosome-pack-01）。 */
+
+/* ============ 1. 真相模型：页面上的每个数字都从这里算，每个值旁边写出处 ============ */
+const MODEL = {
+  perRow: 7,            // 一整块巧克力每排 7 块（设计约定：好数、好掰）
+  rows: 5,              // 一共 5 排（设计约定）
+  startSeam: 3,         // 领航员掰在第 3 条缝：左边每排 3 块、右边每排 4 块（谜题）
+  pieces: {             // 第 2 站的三块（设计约定）
+    A: { perRow: 3, rows: 5 },   // 拼台上固定的那块
+    B: { perRow: 4, rows: 5 },   // 排数一样，拼得成
+    C: { perRow: 4, rows: 6 }    // 排数不一样，拼不成
+  },
+  hundred: 100,         // 101 掰成 100 …（乘法分配律）
+  one: 1,               // … 和 1
+  startN: 37,           // 魔术机一开始的数（第 3 站谜题 37×101）
+  nMin: 10, nMax: 99,   // 两位数：10～99（由「两位数」的意思）
+  bigN: 123,            // 三位数反例：123×101 = 12423，不是「写两遍」（由乘法分配律算）
+  mental: { whole: 12, times: 3, tens: 10 }   // 口算 12×3：先算 10×3，再算 2×3（人教版三上「多位数乘一位数」口算乘法）
+};
+// 以下全部由 MODEL 算出
+const total = () => MODEL.perRow * MODEL.rows;                                    // 35
+const seamCount = () => MODEL.perRow - 1;                                         // 6
+const leftN = k => k * MODEL.rows, rightN = k => (MODEL.perRow - k) * MODEL.rows;  // k×5、(7−k)×5
+const wrongSum = () => MODEL.startSeam * MODEL.rows + (MODEL.perRow - MODEL.startSeam); // 3×5 + 4 = 19
+const missRows = () => MODEL.rows - 1;                                            // 包装纸下面 4 排
+const missN = () => (MODEL.perRow - MODEL.startSeam) * missRows();               // 4×4 = 16
+const cnt = p => p.perRow * p.rows;
+const times101 = n => n * MODEL.hundred + n * MODEL.one;                          // n×100 + n×1
+const twoDigitCount = () => MODEL.nMax - MODEL.nMin + 1;                          // 90
+const halves = n => { const s = String(times101(n)); return [s.slice(0, 2), s.slice(2)]; };
+const fmt = n => String(Math.round(n));
+
+/* ============ 2. 平台契约 activity/1.1（单独打开时也能玩） ============ */
+const Host = (() => {
+  const h = {}, inFrame = window.parent !== window;
+  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); };
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
+    state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
+})();
+Host.on("init", p => {
+  if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
+});
+// 同一道题只记一次、每站的 observed 只发一次（教训 15、19）；「再玩一次」也不重发
+const sentPred = new Set(), sentObs = new Set();
+let completed = false;
+function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station }); }
+
+/* ============ 3. 手绘线条（平台的 sketchLib） ============ */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function blob(cx,cy,rx,ry,seed){ const r=R(seed), N=9, p=[]; for(let i=0;i<N;i++){ const t=i/N*Math.PI*2, k=1+(r()-.5)*.1; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); } return cr(p,true)+"Z"; }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,blob,curve,cr,R};
+}
+const Sk = sketchLib();
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+const T = (x, y, s, cls, extra) => `<text x="${x}" y="${y}" class="${cls || "t"}"${extra ? " " + extra : ""}>${s}</text>`;
+const TC = (x, y, s, cls) => T(x, y, s, cls, 'text-anchor="middle"');
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const smooth = t => t * t * (3 - 2 * t);
+const lerp = (a, b, t) => a + (b - a) * t;
+const r1 = n => Math.round(n * 10) / 10;
+// 手绘的方框：四条抖一点的线
+const box = (x, y, w, h, seed, j) => Sk.line(x, y, x + w, y, seed, j) + Sk.line(x + w, y, x + w, y + h, seed + 1, j) + Sk.line(x + w, y + h, x, y + h, seed + 2, j) + Sk.line(x, y + h, x, y, seed + 3, j);
+
+/* 一块巧克力：杏色底、墨线画的缝、每小块一道很浅的高光线、手绘外框
+   vx / hy 是缝的位置（竖缝的 x、横缝的 y） */
+function choc(x, y, w, h, o){
+  o = o || {};
+  const seed = o.seed || 1, vx = o.vx || [], hy = o.hy || [];
+  let s = `<rect x="${r1(x)}" y="${r1(y)}" width="${r1(Math.max(0, w))}" height="${r1(h)}" rx="3" class="choc"/>`;
+  if (!o.nohi){
+    const xs = [x, ...vx, x + w], ys = [y, ...hy, y + h];
+    let d = "";
+    for (let i = 0; i + 1 < xs.length; i++) for (let j = 0; j + 1 < ys.length; j++){
+      const cw = xs[i + 1] - xs[i]; if (cw < 12) continue;
+      d += `M${r1(xs[i] + 6)} ${r1(ys[j] + 6)}L${r1(xs[i] + 6 + cw * .38)} ${r1(ys[j] + 6)}`;
+    }
+    if (d) s += P(d, "hi");
+  }
+  let g = "";
+  vx.forEach((vxi, i) => { g += Sk.line(vxi, y + 2, vxi, y + h - 2, seed * 31 + i, .35); });
+  hy.forEach((hyi, i) => { g += Sk.line(x + 2, hyi, x + w - 2, hyi, seed * 37 + i, .35); });
+  if (g) s += P(g, "k1");
+  s += P(box(x, y, w, h, seed * 7 + 3, .7), o.cls || "k");
+  return s;
+}
+// 一块每排 c 块、r 排、每小块边长 s 的巧克力
+function chocGrid(x, y, c, r, s, o){
+  o = Object.assign({}, o);
+  o.vx = []; for (let i = 1; i < c; i++) o.vx.push(x + i * s);
+  o.hy = []; for (let j = 1; j < r; j++) o.hy.push(y + j * s);
+  return choc(x, y, c * s, r * s, o);
+}
+// 算式牌：手绘的小框和一行大字
+function formulaCard(text, seed){
+  return `<rect x="200" y="210" width="400" height="150" rx="16" fill="var(--paper)" opacity=".75"/>` +
+    P(box(200, 210, 400, 150, seed, 1.2)) + TC(400, 300, text, "big");
+}
+// 「写两遍」：两半各画一道线
+function twice(cx, y, n, cls, half){
+  const [h1, h2] = halves(n), dx = half || 26;
+  return TC(cx - dx, y, h1, cls) + TC(cx + dx, y, h2, cls) +
+    P(Sk.line(cx - dx - 21, y + 10, cx - dx + 21, y + 10, n * 3 + 1, .6) + Sk.line(cx + dx - 21, y + 10, cx + dx + 21, y + 10, n * 3 + 2, .6));
+}
+
+/* ============ 4. 页面骨架 ============ */
+const $ = id => document.getElementById(id);
+const svg = $("stage"), gStatic = $("static"), gDyn = $("dyn"), cueEl = $("cue");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const STATIONS = 3;   // 一共几站
+// t 是孩子推到的进度，p 是画面上缓动跟随的进度；画面用 p
+const S = { station: 1, mode: "talk", scene: "s1", hold: false, narrow: false, t1: 0, p1: 0 };
+let gen = 0;          // 每换一站加一：延时回调先确认还在原来的状态（教训 11）
+
+function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
+function hint(s){ $("hint").textContent = s || ""; }
+function readout(html){ $("readout").innerHTML = html || ""; }
+function say(text, tone){ const b = $("say"); b.textContent = text; b.className = "bubble" + (tone ? " " + tone : ""); }
+// 手指还按着时换出来的新按钮，先禁用到手指抬起，免得松手时误点（按住类操作刚完成时最常见）
+let fingerDown = false;
+// 焦点框只给键盘用户看（教训 27）：程序把焦点移到 svg 时，触摸后的 Chrome 也会算 focus-visible
+addEventListener("pointerdown", () => svg.classList.remove("kbd"), true);
+addEventListener("keydown", e => { if (/Arrow|Tab| |Enter/.test(e.key)) svg.classList.add("kbd"); }, true);
+addEventListener("pointerdown", () => { fingerDown = true; }, true);
+for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);   // 抬起时立刻记下：随后的 click 里换出的按钮不必禁用
+// 键盘版：按住空格或回车时换出来的新按钮会拿到焦点，松键就会点到它。按键在按钮出现前就按下了，这次点击不算
+let keysDown = 0;
+addEventListener("keydown", e => { if (!e.repeat) keysDown++; }, true);
+addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true);
+addEventListener("blur", () => { keysDown = 0; });
+function actions(list){
+  const box = $("actions"); box.replaceChildren();
+  const guard = fingerDown, born = performance.now();
+  let keyGuard = keysDown > 0;
+  if (keyGuard){ const off = () => { if (keysDown === 0){ setTimeout(() => { keyGuard = false; }, 0); removeEventListener("keyup", off, true); } }; addEventListener("keyup", off, true); }
+  for (const a of list || []){
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn " + (a.cls || ""); b.textContent = a.label;
+    if (a.hold){
+      const on = v => { S.hold = v; b.classList.toggle("on", v); };
+      b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); on(true); });
+      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => on(false));
+      b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); a.step(); } });
+      b.addEventListener("contextmenu", e => e.preventDefault());
+    } else {
+      // 刚出现的 0.4 秒内不响应，免得双击「继续」时第二下替孩子选了答案
+      b.addEventListener("click", e => { if (performance.now() - born < 400 || (keyGuard && e.detail === 0)) return; a.go(e); });
+      if (guard){ b.disabled = true; const on = () => { setTimeout(() => { b.disabled = false; }, 120); removeEventListener("pointerup", on, true); }; addEventListener("pointerup", on, true); }
+    }
+    box.append(b);
+  }
+  const first = box.querySelector("button");
+  if (first && !/^act/.test(S.mode)) first.focus({ preventScroll: true });   // 键盘用户不用再找按钮
+  return box;
+}
+function ask(question, options, onAnswer){
+  say(question);
+  actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
+    if (!sentPred.has(S.station)){ sentPred.add(S.station); Host.event("predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null }); }
+    say(o.feedback, o.correct ? "good" : "bad");
+    onAnswer(o);
+  }})));
+}
+function next(label, go, cls){ actions([{ label, go, cls }]); }
+// 一直闪的提示圈：CSS 动画，只改位置，不重建（教训 23）
+function cueAt(x, y, r){ cueEl.setAttribute("cx", x); cueEl.setAttribute("cy", y); cueEl.setAttribute("r", r); cueEl.style.display = ""; }
+function hideCue(){ cueEl.style.display = "none"; }
+
+// 「我有个问题」：随时可以问，发到信号站
+(function(){
+  const area = $("qarea");
+  const open = document.createElement("button");
+  open.type = "button"; open.className = "btn ghost small"; open.textContent = "我有个问题";
+  open.style.marginTop = "12px";
+  open.addEventListener("click", () => {
+    if (area.querySelector("textarea")) return;
+    const ta = document.createElement("textarea"); ta.maxLength = 120; ta.placeholder = "想问领航员什么？";
+    const send = document.createElement("button"); send.type = "button"; send.className = "btn small"; send.textContent = "发给领航员";
+    const box = document.createElement("div"); box.className = "qbox"; box.append(ta, send);
+    send.addEventListener("click", () => {
+      const q = ta.value.trim(); if (!q) return;
+      Host.noteQuestion(q); box.remove(); say("好问题，我记下来了。等会儿一起找答案。");
+    });
+    area.append(box); ta.focus();
+  });
+  area.append(open);
+})();
+
+/* 窄屏：动手区的 viewBox 缩到中间 520 宽的操作区，字号类放大（教训 13、28） */
+const VB_WIDE = [0, 0, 800, 610];
+const VB_NARROW = { s1: [140, 36, 520, 450], s1r: [140, 70, 520, 400], s2card: [140, 170, 520, 230], s3card: [140, 170, 520, 230],
+  s2: [140, 40, 520, 560], s3: [140, 96, 520, 424], s3r: [140, 190, 520, 190], end: [140, 6, 520, 598] };
+const vb = () => S.narrow ? (VB_NARROW[S.scene] || VB_NARROW.end) : VB_WIDE;
+function fitView(){
+  const w = svg.clientWidth || 800;
+  S.narrow = w < 600;
+  document.body.classList.toggle("narrow", S.narrow);
+  const v = vb().join(" ");
+  if (svg.getAttribute("viewBox") !== v) svg.setAttribute("viewBox", v);
+}
+const hitR = () => Math.max(26, 24 * vb()[2] / (svg.clientWidth || 800));
+
+/* ============ 5. 第 1 站 · 掰开（拖：拉开包装纸、横着拖缝） ============ */
+const L1 = { s: 52, x0: 400 - 52 * 3.5, y0: 122, gap: 22 };
+L1.yb = L1.y0 + MODEL.rows * L1.s + 34;          // 包装纸拉到底时的下沿
+L1.knobY = L1.y0 - 40;
+const wrapTop = pw => L1.y0 + L1.s + (MODEL.rows - 1) * L1.s * pw;
+const seamX = kp => L1.x0 + kp * L1.s;
+function st1(){ return { station: 1, left: S.ks, right: MODEL.perRow - S.ks, rows: MODEL.rows, total: total() }; }
+
+function draw1(){
+  const { s, x0, y0 } = L1, C = MODEL.perRow, R = MODEL.rows;
+  const pw = S.p1, g = L1.gap * smooth(clamp(pw)), kp = S.kp;
+  const hy = []; for (let j = 1; j < R; j++) hy.push(y0 + j * s);
+  const lx = x0 - g / 2, rx = x0 + kp * s + g / 2;
+  const lvx = [], rvx = [];
+  for (let j = 1; j < C; j++){ if (j < kp - .02) lvx.push(lx + j * s); if (j > kp + .02) rvx.push(x0 + g / 2 + j * s); }
+  let out = choc(lx, y0, kp * s, R * s, { vx: lvx, hy, seed: 11 }) + choc(rx, y0, (C - kp) * s, R * s, { vx: rvx, hy, seed: 12 });
+  // 漏掉的 16 块：右边那块下面 4 排，虚线圈出来
+  if (S.showMiss){
+    const mx = x0 + MODEL.startSeam * s + g / 2 - 6, my = y0 + s - 6, mw = (C - MODEL.startSeam) * s + 12, mh = missRows() * s + 12;
+    out += P(box(mx, my, mw, mh, 41, .8), "dash");
+    const cx = mx + mw / 2, cy = my + mh / 2;
+    out += `<rect x="${cx - 86}" y="${cy - 40}" width="172" height="80" rx="12" fill="var(--pane)" opacity=".93"/>` +
+      TC(cx, cy - 8, `漏掉的 ${missN()} 块`, "lb") + TC(cx, cy + 24, `${missRows()} 排，每排 ${C - MODEL.startSeam} 块`, "lbg");
+  }
+  // 包装纸：从下面往下拉，挤成一条
+  const wt = wrapTop(pw), wx = x0 - L1.gap / 2 - 10, ww = C * s + L1.gap + 20, yb = L1.yb;
+  if (yb - wt > 2){
+    out += `<rect x="${r1(wx)}" y="${r1(wt)}" width="${ww}" height="${r1(yb - wt)}" rx="4" fill="var(--paper)"/>` + P(box(wx, wt, ww, yb - wt, 51, .8), "k1");
+    let folds = ""; const nf = 3;
+    for (let i = 1; i <= nf; i++){ const fy = wt + (yb - wt) * i / (nf + 1); if (yb - wt > 40) folds += Sk.line(wx + 14, fy, wx + ww - 14, fy + (i % 2 ? 2 : -2), 60 + i, 1.4); }
+    if (folds) out += P(folds, "faint");
+    // 拉手：包装纸上沿中间一个小舌头
+    if (pw < .999){
+      out += `<rect x="370" y="${r1(wt - 14)}" width="60" height="24" rx="8" fill="var(--paper)"/>` + P(box(370, wt - 14, 60, 24, 55, .6), "k1") +
+        P(Sk.line(384, wt - 6, 416, wt - 6, 56, .4) + Sk.line(384, wt + 1, 416, wt + 1, 57, .4), "k1");
+    }
+    // 手写感的小标签「5 排」
+    const ty = wt + Math.min(46, (yb - wt) / 2 + 4), tx = x0 + C * s - 34;
+    out += `<g transform="rotate(-6 ${tx} ${r1(ty)})"><rect x="${tx - 34}" y="${r1(ty - 17)}" width="68" height="32" rx="6" fill="var(--pane)"/>` +
+      P(box(tx - 34, ty - 17, 68, 32, 58, .6), "k1") + TC(tx, r1(ty + 6), `${R} 排`, "tag") + `</g>`;
+  }
+  // 主角：那条缝和缝上方的把手
+  const sx = seamX(kp), live = S.phase1 === "seam" && S.mode === "act1";
+  const visB = Math.min(y0 + R * s, wt) - 3;
+  out += `<g opacity="${S.phase1 === "seam" ? 1 : .4}">` + P(Sk.line(sx, y0 + 3, sx, visB, 71, .3), g > 6 ? "thread" : "thread-thin") +
+    P(Sk.line(sx, L1.knobY + 18, sx, y0 - 2, 72, .3), "thread") +
+    `<circle cx="${r1(sx)}" cy="${L1.knobY}" r="17" fill="var(--accent)"/>` + P(Sk.ellipse(sx, L1.knobY, 17, 17, 73, .6)) +
+    (live ? P(Sk.curve([[sx - 30, L1.knobY - 7], [sx - 37, L1.knobY], [sx - 30, L1.knobY + 7]], 74, .3) + Sk.curve([[sx + 30, L1.knobY - 7], [sx + 37, L1.knobY], [sx + 30, L1.knobY + 7]], 75, .3), "k1") : "") +
+    `</g>`;
+  // 每块下面一个小牌子：领航员的错账写「4」，拉开以后改成「4×5」
+  const ly = L1.yb + 34, k = S.ks;
+  out += TC(r1(lx + kp * s / 2), ly, `${k}×${R}`, "lbm") +
+    TC(r1(rx + (C - kp) * s / 2), ly, S.wrapDone ? `${C - k}×${R}` : `${C - k}`, "lbm");
+  return out;
+}
+// 揭晓：6 块缩略图，各掰在一条缝上，下面都写 35
+function draw1r(){
+  const s = 16, C = MODEL.perRow, R = MODEL.rows, g = 10, w = C * s + g;
+  let out = "";
+  for (let k = 1; k <= seamCount(); k++){
+    const cx = [250, 400, 550][(k - 1) % 3], top = k <= 3 ? 130 : 330, x = cx - w / 2;
+    out += chocGrid(x, top, k, R, s, { seed: 200 + k, nohi: true }) + chocGrid(x + k * s + g, top, C - k, R, s, { seed: 210 + k, nohi: true });
+    out += P(Sk.line(x + k * s + g / 2, top + 2, x + k * s + g / 2, top + R * s - 2, 220 + k, .2), "thread-thin");
+    out += TC(cx, top - 16, `${k} | ${C - k}`, "lbm") + TC(cx, top + R * s + 34, `${leftN(k) + rightN(k)} 块`, "lb");
+    if (S.stops.has(k)) out += P(Sk.curve([[cx + 52, top - 26], [cx + 58, top - 19], [cx + 70, top - 34]], 230 + k, .3));
+  }
+  return out;
+}
+function readout1(){ const k = S.ks; readout(`${k}×${MODEL.rows} = ${leftN(k)} · ${MODEL.perRow - k}×${MODEL.rows} = ${rightN(k)} · 一共 <b>${leftN(k) + rightN(k)}</b> 块`); }
+
+function enter1(){
+  gen++; S.station = 1; S.mode = "talk"; S.scene = "s1"; head(1, "掰开");
+  Object.assign(S, { t1: 0, p1: 0, ks: MODEL.startSeam, kp: MODEL.startSeam, phase1: "wrap", wrapDone: false, showMiss: false, movedAway: false, stops: new Set(), lastSeam: MODEL.startSeam });
+  gStatic.innerHTML = P(Sk.line(150, L1.yb + 3, 650, L1.yb + 1, 9, 1.2), "faint") + `<g id="desk"></g>`;   // 一条淡淡的桌沿
+  hideCue(); hint(""); render();
+  const C = MODEL.perRow, R = MODEL.rows, k = MODEL.startSeam;
+  readout(`${k}×${R} + ${C - k} = <b>${wrongSum()}</b> 块`);
+  Host.state(st1());
+  say(`舰长，我把巧克力掰成两块：左边 ${k}×${R}，右边 ${C - k}，一共 ${wrongSum()} 块。`);
+  next("继续", () => {
+    say(`可一整块是 ${C}×${R} = ${total()} 块。少了 ${total() - wrongSum()} 块，跑哪儿去了？`);
+    next("帮你找找", () => ask(`右边那块，每排 ${C - k} 块，一共有几块？`, [
+      { label: `${C - k} 块`, mis: "multiply-one-part", feedback: `我刚才也是这么算的。可右边不止一排，包装纸下面还有。` },
+      { label: `${(C - k) * R} 块`, correct: true, feedback: `对，右边也有 ${R} 排：${C - k}×${R} = ${(C - k) * R} 块。拉开包装纸看看。` },
+      { label: `${C - k + R} 块`, mis: "add-instead-of-multiply", feedback: `把 ${C - k} 和 ${R} 加起来，看起来很顺手。可 ${R} 是排数，${R} 排、每排 ${C - k} 块。` }
+    ], () => next("拉开包装纸", act1)));
+  });
+}
+function act1(){
+  S.mode = "act1"; S.phase1 = "wrap"; hint("往下拉包装纸"); say("舰长，抓住包装纸，往下拉。"); actions([]);
+  cueAt(400, wrapTop(0) - 2, 34); render(); svg.focus({ preventScroll: true });
+}
+function wrapDone(){   // 包装纸拉到底：错账在画面上被纠正
+  S.wrapDone = true; S.phase1 = "seam"; S.showMiss = true; S.hold = false;
+  hint("左右拖那条缝"); readout1(); Host.state(st1());
+  say(`下面还有 ${missRows()} 排，漏掉的 ${missN()} 块在这儿。拖那条缝，换个地方掰掰看。`);
+  cueAt(seamX(S.ks), L1.knobY, 30); render();
+}
+function seamTo(k){
+  k = clamp(Math.round(k), 1, seamCount());
+  if (k === S.ks) return false;
+  S.ks = k; if (k !== MODEL.startSeam) S.movedAway = true;
+  if (S.movedAway) S.showMiss = false;
+  hideCue(); readout1(); Host.state(st1()); return true;
+}
+// 「停下」：手指松开时所在的缝，或键盘每走一格；同一条缝只算一次；开头那条缝要拖走再回来才算
+function seamStop(){
+  if (S.mode !== "act1" || S.phase1 !== "seam") return;
+  const k = S.ks;
+  if (k === MODEL.startSeam && !S.movedAway) return;
+  S.lastSeam = k;
+  if (S.stops.has(k)) return;
+  S.stops.add(k);
+  const n = S.stops.size, C = MODEL.perRow, R = MODEL.rows;
+  if (n === 1) say(`${k}×${R} + ${C - k}×${R}，还是 ${total()} 块。再换一条缝试试。`);
+  else if (n === 2) say(`不管从哪条缝掰，都是 ${total()} 块。这个规律叫乘法分配律。`, "good");
+  else done1();
+}
+function done1(){
+  S.mode = "talk"; hint(""); observedOnce(1); hideCue();
+  S.scene = "s1r"; gStatic.innerHTML = ""; render();
+  readout(`试过 ${S.stops.size} 条缝 · 都是 <b>${total()}</b> 块`);
+  say(`${MODEL.perRow} 块一排，有 ${seamCount()} 条缝。从哪条掰，都是 ${total()} 块，一块都不少。`, "good");
+  const m = MODEL.mental, rest = m.whole - m.tens;
+  next("还有呢", () => {
+    say(`口算 ${m.whole}×${m.times} 时，可以先算 ${m.tens}×${m.times}，再算 ${rest}×${m.times}，也是这样掰的。`, "good");
+    readout(`${m.tens}×${m.times} = ${m.tens * m.times} · ${rest}×${m.times} = ${rest * m.times} · 一共 <b>${m.tens * m.times + rest * m.times}</b>`);
+    next("去第 2 站", enter2);
+  });
+}
+
+/* ============ 6. 第 2 站 · 拼起来（拼：拖着一块去对齐另一块） ============ */
+const L2 = { s: 36, ax: 274, ay: 90 };
+L2.slot = { x: L2.ax + MODEL.pieces.A.perRow * L2.s, y: L2.ay };
+L2.park = { C: { x: 222, y: 374 }, B: { x: 434, y: 374 } };
+const pieceRect = id => { const pc = S.pc[id], m = MODEL.pieces[id]; return { x: pc.x, y: pc.y, w: m.perRow * L2.s, h: m.rows * L2.s }; };
+const avail2 = () => ["C", "B"].filter(id => S.pc[id].shown);
+const settled = id => { const pc = S.pc[id]; return Math.abs(pc.x - pc.tx) < .6 && Math.abs(pc.y - pc.ty) < .6; };
+
+function static2(){
+  const A = MODEL.pieces.A, s = L2.s, tw = MODEL.perRow * s + 28;
+  const tx = L2.ax - 14, ty = 52, th = A.rows * s + 56;
+  return `<g id="tray"><rect x="${tx}" y="${ty}" width="${tw}" height="${th}" rx="14" fill="var(--sage-bg)" opacity=".8"/>` + P(box(tx, ty, tw, th, 301, .8), "k1") +
+    P(box(L2.slot.x + 3, L2.slot.y + 3, MODEL.pieces.B.perRow * s - 6, A.rows * s - 6, 305, .4), "kf") + `</g>` +
+    `<g id="pieceA">` + chocGrid(L2.ax, L2.ay, A.perRow, A.rows, s, { seed: 310 }) + TC(L2.ax + A.perRow * s / 2, L2.ay - 12, `${A.perRow}×${A.rows}`, "lbm") + `</g>`;
+}
+function draw2(){
+  const s = L2.s, A = MODEL.pieces.A;
+  let out = "";
+  for (const id of ["C", "B"]){
+    const pc = S.pc[id], m = MODEL.pieces[id];
+    if (!pc.shown) continue;
+    const hero = S.mode === "act2" && !S.merged && (pc.drag || (S.sel === id && !S.busy));
+    out += chocGrid(pc.x, pc.y, m.perRow, m.rows, s, { seed: id === "C" ? 320 : 330, cls: hero ? "kacc" : "k" }) +
+      TC(r1(pc.x + m.perRow * s / 2), r1(pc.y - 12), `${m.perRow}×${m.rows}`, "lbm");
+  }
+  // C 拼上去：最下面多出来的一排，虚线圈出来
+  if (S.snapped === "C" && settled("C")){
+    const C = MODEL.pieces.C, ex = L2.slot.x - 5, ey = L2.ay + A.rows * s - 5, ew = C.perRow * s + 10, eh = (C.rows - A.rows) * s + 10;
+    out += P(box(ex, ey, ew, eh, 340, .6), "dash") + TC(ex + ew / 2, ey + eh + 26, `多出 ${(C.rows - A.rows) * C.perRow} 块`, "lb");
+  }
+  // B 拼好：合成一整块，中间的缝留一条淡淡的线
+  if (S.merged && settled("B")){
+    const W = MODEL.perRow * s, H = A.rows * s, sx = L2.slot.x;
+    out += `<rect x="${sx - 4}" y="${L2.ay + 2}" width="8" height="${H - 4}" class="choc"/>`;
+    let g = ""; for (let j = 1; j < A.rows; j++) g += Sk.line(sx - 5, L2.ay + j * s, sx + 5, L2.ay + j * s, 350 + j, .1);
+    out += P(g, "k1") + P(Sk.line(sx, L2.ay + 3, sx, L2.ay + H - 3, 356, .3), "faint") + P(box(L2.ax, L2.ay, W, H, 357, .7)) +
+      TC(400, L2.ay + H + 48, `(${A.perRow}+${MODEL.pieces.B.perRow})×${A.rows} = ${total()} 块`, "lbm");
+  }
+  return out;
+}
+function enter2(){
+  gen++; S.station = 2; S.mode = "talk"; S.scene = "s2card"; head(2, "拼起来");
+  gStatic.innerHTML = ""; hint(""); readout(""); hideCue(); render();
+  const A = MODEL.pieces.A, C = MODEL.pieces.C;
+  ask(`${A.perRow}×${A.rows} + ${C.perRow}×${C.rows}，能不能写成 (${A.perRow}+${C.perRow})×${A.rows}？`, [
+    { label: `能，就是 (${A.perRow}+${C.perRow})×${A.rows}`, mis: "merge-unlike", feedback: `看起来确实像，前面都是 ${A.perRow} 和 ${C.perRow}。可 ${C.perRow}×${C.rows} 是 ${C.rows} 排，不是 ${A.rows} 排。` },
+    { label: `能，是 (${A.perRow}+${C.perRow})×(${A.rows}+${C.rows})`, mis: "merge-unlike", feedback: `把 ${A.rows} 和 ${C.rows} 也加起来，很顺手。可那是 ${A.perRow + C.perRow}×${A.rows + C.rows} = ${(A.perRow + C.perRow) * (A.rows + C.rows)} 块，太多了。` },
+    { label: "不能，排数不一样", correct: true, feedback: `对，一块 ${A.rows} 排，一块 ${C.rows} 排。我们拼拼看。` }
+  ], () => next("拼拼看", act2));
+}
+function act2(){
+  S.mode = "act2"; S.scene = "s2";
+  S.pc = { C: { x: L2.park.C.x, y: L2.park.C.y, tx: L2.park.C.x, ty: L2.park.C.y, shown: true, drag: false },
+           B: { x: L2.park.B.x, y: L2.park.B.y, tx: L2.park.B.x, ty: L2.park.B.y, shown: false, drag: false } };   // 先只放出 C（教训 11）
+  Object.assign(S, { sel: "C", snapped: null, busy: false, merged: false, triedC: false });
+  gStatic.innerHTML = static2();
+  const A = MODEL.pieces.A, C = MODEL.pieces.C;
+  hint("把一块拖到拼台上那块的右边"); actions([]);
+  say(`拼台上这块是 ${A.perRow}×${A.rows}。把 ${C.perRow}×${C.rows} 拖到它右边，上边对齐。`);
+  const r = pieceRect("C"); cueAt(r.x + r.w / 2, r.y + r.h / 2, 70);
+  render(); svg.focus({ preventScroll: true });
+}
+function drop2(id){
+  const pc = S.pc[id];
+  if (Math.hypot(pc.x - L2.slot.x, pc.y - L2.slot.y) < 95) snap2(id);
+  else { pc.tx = L2.park[id].x; pc.ty = L2.park[id].y; }
+}
+function snap2(id){
+  if (S.busy || S.merged || !S.pc[id].shown) return;
+  const pc = S.pc[id], m = MODEL.pieces[id], A = MODEL.pieces.A;
+  pc.tx = L2.slot.x; pc.ty = L2.slot.y; S.busy = true; S.snapped = id; S.sel = id; hideCue();
+  const fits = m.rows === A.rows, sum = cnt(A) + cnt(m), whole = (A.perRow + m.perRow) * A.rows;
+  Host.state({ station: 2, piece: id, fits, sum });
+  const g = gen;
+  if (!fits){
+    S.triedC = true;
+    readout(`${cnt(A)} + ${cnt(m)} = <b>${sum}</b> · ${A.perRow + m.perRow}×${A.rows} 只有 ${whole} · 多出 ${sum - whole} 块`);
+    say(`拼不成方方正正的一整块。最下面多出一排，${m.perRow} 块。`);
+    setTimeout(() => {   // 过一会儿 C 滑回原处，这时才放出 B
+      if (g !== gen || S.mode !== "act2" || S.snapped !== id) return;
+      pc.tx = L2.park[id].x; pc.ty = L2.park[id].y; S.snapped = null; S.busy = false;
+      const B = MODEL.pieces.B; S.pc.B.shown = true; S.sel = "B";
+      say(`再试试这块：每排 ${B.perRow} 块，有 ${B.rows} 排。`);
+      const r = { x: L2.park.B.x, y: L2.park.B.y, w: B.perRow * L2.s, h: B.rows * L2.s }; cueAt(r.x + r.w / 2, r.y + r.h / 2, 64);
+      render();
+    }, 2600);
+  } else {
+    S.merged = true;
+    readout(`${A.perRow}×${A.rows} + ${m.perRow}×${m.rows} = (${A.perRow}+${m.perRow})×${A.rows} = <b>${sum}</b>`);
+    say(`拼成了：每排 ${A.perRow + m.perRow} 块，${A.rows} 排，方方正正。`, "good");
+    setTimeout(() => { if (g === gen && S.mode === "act2") done2(); }, reduced ? 600 : 1300);
+  }
+  render();
+}
+function done2(){
+  S.mode = "talk"; hint(""); observedOnce(2); render();
+  const A = MODEL.pieces.A, B = MODEL.pieces.B;
+  say(`排数一样，才拼得成一整块。两个乘法里都有一个 ${A.rows}，才能合起来。`, "good");
+  next("还有呢", () => {
+    say(`${A.perRow}×${A.rows} + ${B.perRow}×${B.rows} = (${A.perRow}+${B.perRow})×${A.rows}。乘法分配律反过来也对。`, "good");
+    next("去第 3 站", enter3);
+  });
+}
+
+/* ============ 7. 第 3 站 · 乘 101 的魔术机（转：拨盘） ============ */
+const L3 = { dial: [{ x: 200, y: 300 }, { x: 271, y: 300 }], r: 34, bx: 332, by: 168, bw: 150, cg: 6, cw: 9, rowH: 2.9 };
+const curN = () => S.tens * 10 + S.ones;
+function static3(){
+  let s = `<g id="machine"><rect x="150" y="104" width="492" height="404" rx="18" fill="var(--paper)" opacity=".45"/>` + P(box(150, 104, 492, 404, 401, 1.1)) +
+    T(172, 140, "×101", "tag") +
+    P(Sk.line(312, 160, 312, 488, 402, .5) + Sk.line(500, 160, 500, 488, 403, .5), "kf") +
+    TC(L3.dial[0].x, 364, "十位", "lbg") + TC(L3.dial[1].x, 364, "个位", "lbg") +
+    `<rect x="512" y="262" width="116" height="80" rx="10" fill="var(--pane)"/>` + P(box(512, 262, 116, 80, 404, .6), "k1") +
+    TC(L3.bx + L3.bw / 2, 150, `每排 ${MODEL.hundred} 块`, "lb") + TC(L3.bx + L3.bw + L3.cg + L3.cw / 2, 150, `${MODEL.one}`, "lba") + `</g>`;
+  return s;
+}
+function dial(i, v){
+  const d = L3.dial[i], r = L3.r;
+  let s = `<circle cx="${d.x}" cy="${d.y}" r="${r}" fill="var(--sky)" opacity=".85"/>` + P(Sk.ellipse(d.x, d.y, r, r, 410 + i, .6));
+  let ticks = "";
+  for (let j = 0; j < 10; j++){ const a = (j * 36 + v * 36) * Math.PI / 180, r0 = j === 0 ? r - 9 : r - 5; ticks += `M${r1(d.x + Math.sin(a) * r0)} ${r1(d.y - Math.cos(a) * r0)}L${r1(d.x + Math.sin(a) * (r - 1))} ${r1(d.y - Math.cos(a) * (r - 1))}`; }
+  s += P(ticks, "k1");
+  s += P(Sk.curve([[d.x - 6, d.y - 19], [d.x, d.y - 25], [d.x + 6, d.y - 19]], 420 + i, .2) + Sk.curve([[d.x - 6, d.y + 21], [d.x, d.y + 27], [d.x + 6, d.y + 21]], 422 + i, .2), "k1");
+  s += TC(d.x, d.y + 9, String(v), "dialn");
+  if (S.mode === "act3" && S.dialSel === i) s += `<circle cx="${d.x}" cy="${d.y}" r="${r + 5}" class="kf"/>`;
+  return s;
+}
+function draw3(){
+  const n = curN(), h = Math.max(4, S.np * L3.rowH), { bx, by, bw, cg, cw } = L3;
+  let out = dial(0, S.tens) + dial(1, S.ones);
+  // n 排、每排 101 块：一大块「每排 100 块」，缝右边细细的「每排 1 块」一列是主角
+  out += `<rect x="${bx}" y="${by}" width="${bw}" height="${r1(h)}" rx="2" class="choc"/>`;
+  let g = ""; for (let j = 1; j < 10; j++) g += `M${bx + j * bw / 10} ${by + 1}L${bx + j * bw / 10} ${r1(by + h - 1)}`;
+  for (let j = 10; j < S.np; j += 10) g += `M${bx + 1} ${r1(by + j * L3.rowH)}L${bx + bw - 1} ${r1(by + j * L3.rowH)}`;
+  out += P(g, "grid") + P(box(bx, by, bw, h, 430, .5), "k1");
+  out += `<rect x="${bx + bw + cg}" y="${by}" width="${cw}" height="${r1(h)}" rx="2" fill="var(--accent)"/>` + P(box(bx + bw + cg, by, cw, h, 431, .3), "k1");
+  out += TC(bx + bw / 2, r1(by + h + 28), `${n} 排`, "lb");
+  out += twice(570, 314, n, "dig");
+  return out;
+}
+function draw3r(){
+  let out = "";
+  S.tried.forEach((n, i) => {
+    const cx = [250, 400, 550][i % 3], y = 250 + Math.floor(i / 3) * 150;
+    out += TC(cx, y, `${n}×${MODEL.hundred + MODEL.one}`, "lbm") + twice(cx, y + 52, n, "dig2", 22);
+  });
+  return out;
+}
+function readout3(){ const n = curN(); readout(`${n}×${MODEL.hundred} = ${n * MODEL.hundred} · ${n}×${MODEL.one} = ${n * MODEL.one} · 一共 <b>${times101(n)}</b>`); }
+function enter3(){
+  gen++; S.station = 3; S.mode = "talk"; S.scene = "s3card"; head(3, "乘 101 的魔术机");
+  gStatic.innerHTML = ""; hint(""); readout(""); hideCue(); render();
+  const n = MODEL.startN, m = MODEL.hundred + MODEL.one, right = times101(n);
+  const oneOnly = n * MODEL.hundred + MODEL.one, dropped = n * MODEL.hundred;
+  ask(`${n} × ${m} 等于多少？`, [
+    { label: String(right), correct: true, feedback: `对，${n}×${MODEL.hundred} = ${n * MODEL.hundred}，再加 ${n}×${MODEL.one} = ${n}。我们开机试试。` },
+    { label: String(oneOnly), mis: "multiply-one-part", feedback: `我第一次也只加了 ${MODEL.one}。可 ${MODEL.one} 也要乘 ${n}，${oneOnly} 少算了 ${right - oneOnly}。` },
+    { label: String(dropped), mis: "drop-small-part", feedback: `${m} 很像 ${MODEL.hundred}，看起来确实像。可多的那个 ${MODEL.one} 也要乘 ${n}，${dropped} 少算了 ${right - dropped}。` }
+  ], () => next("打开魔术机", act3));
+}
+function act3(){
+  S.mode = "act3"; S.scene = "s3";
+  S.tens = Math.floor(MODEL.startN / 10); S.ones = MODEL.startN % 10; S.np = MODEL.startN;
+  S.tried = [MODEL.startN]; S.changedAt = performance.now(); S.dialSel = 0;   // 魔术机出现时的 37 算第一个
+  gStatic.innerHTML = static3();
+  hint("转拨盘，或点上半边、下半边"); actions([]);
+  say(`${MODEL.startN} 排，每排 ${MODEL.hundred + MODEL.one} 块，掰成 ${MODEL.hundred} 和 ${MODEL.one}。转拨盘换个数。`);
+  readout3(); Host.state({ station: 3, n: curN(), product: times101(curN()) });
+  cueAt(L3.dial[0].x, L3.dial[0].y, L3.r + 12); render(); svg.focus({ preventScroll: true });
+}
+function setDial(i, v){
+  if (i === 0) v = ((v - 1) % 9 + 9) % 9 + 1; else v = ((v % 10) + 10) % 10;   // 十位 1～9，个位 0～9，转一圈回来
+  const key = i === 0 ? "tens" : "ones";
+  if (S[key] === v) return;
+  S[key] = v; S.changedAt = performance.now(); hideCue();
+  readout3(); Host.state({ station: 3, n: curN(), product: times101(curN()) }); render();
+}
+function triedNew(n){   // 拨盘停下 0.8 秒不动，算试过一个数
+  S.tried.push(n);
+  if (S.tried.length >= 3) done3();
+  else say(`${n}×${MODEL.hundred + MODEL.one} = ${times101(n)}，又把 ${n} 写了两遍。再换一个数。`);
+}
+function done3(){
+  S.mode = "talk"; hint(""); observedOnce(3); hideCue(); S.lastN = curN();
+  S.scene = "s3r"; gStatic.innerHTML = ""; render();
+  say(`${MODEL.hundred + MODEL.one} 掰成 ${MODEL.hundred} 和 ${MODEL.one}。两位数一共 ${twoDigitCount()} 个，每一个乘 ${MODEL.hundred + MODEL.one}，都是把自己写两遍。`, "good");
+  next("还有呢", () => {
+    const b = MODEL.bigN;
+    say(`三位数就不灵了：${b}×${MODEL.hundred + MODEL.one} = ${times101(b)}。`, "good");
+    readout(`${b}×${MODEL.hundred} = ${b * MODEL.hundred} · ${b}×${MODEL.one} = ${b * MODEL.one} · 一共 <b>${times101(b)}</b>`);
+    next("看我的星卡", enterEnd);
+  });
+}
+
+/* ============ 8. 结尾：星卡「我的乘法魔术」（按固定排版画，教训 12） ============ */
+function drawEnd(){
+  const C = MODEL.perRow, R = MODEL.rows, k = S.lastSeam, n = S.lastN, A = MODEL.pieces.A, B = MODEL.pieces.B, s = 16;
+  let out = `<rect x="160" y="16" width="480" height="578" rx="20" fill="var(--pane)"/>` + P(box(160, 16, 480, 578, 501, .8), "k1") +
+    `<path d="M598 40l7 14 15 2-11 11 3 15-14-7-14 7 3-15-11-11 15-2z" fill="var(--accent)" opacity=".85"/>` +
+    T(188, 66, "我的乘法魔术", "ttl") +
+    P(Sk.line(188, 226, 612, 226, 502, .6) + Sk.line(188, 412, 612, 412, 503, .6), "faint");
+  // 第 1 格：舰长最后停的那条缝
+  const x1 = 192, y1 = 112, g = 10;
+  out += chocGrid(x1, y1, k, R, s, { seed: 510, nohi: true }) + chocGrid(x1 + k * s + g, y1, C - k, R, s, { seed: 511, nohi: true }) +
+    P(Sk.line(x1 + k * s + g / 2, y1 + 2, x1 + k * s + g / 2, y1 + R * s - 2, 512, .2), "thread-thin");
+  out += T(344, 146, `(${k}+${C - k})×${R}`, "lbm") + T(344, 182, `= ${k}×${R} + ${C - k}×${R} = ${total()}`, "lbm");
+  // 第 2 格：拼好的 7×5
+  const y2 = 280;
+  out += chocGrid(x1, y2, C, R, s, { seed: 520, nohi: true }) + P(Sk.line(x1 + A.perRow * s, y2 + 2, x1 + A.perRow * s, y2 + R * s - 2, 521, .2), "faint");
+  out += T(344, 314, `${A.perRow}×${A.rows} + ${B.perRow}×${B.rows}`, "lbm") + T(344, 350, `= (${A.perRow}+${B.perRow})×${A.rows}`, "lbm");
+  // 第 3 格：舰长最后停的那个数
+  const y3 = 446, bh = Math.max(6, n * .95);
+  out += `<rect x="${x1}" y="${y3}" width="96" height="${r1(bh)}" rx="2" class="choc"/>` + P(box(x1, y3, 96, bh, 530, .3), "k1") +
+    `<rect x="${x1 + 100}" y="${y3}" width="7" height="${r1(bh)}" rx="2" fill="var(--accent)"/>`;
+  out += T(344, 486, `${n} × ${MODEL.hundred + MODEL.one}`, "lbm") + T(344, 536, "=", "lbm") + twice(410, 538, n, "dig2", 22);
+  return out;
+}
+function enterEnd(){
+  gen++; S.station = STATIONS + 1; S.mode = "end"; S.scene = "end"; head(0, "我的乘法魔术"); hint(""); gStatic.innerHTML = ""; hideCue(); render();
+  readout(`试过 ${Math.min(S.stops.size, seamCount())} 条缝，都是 ${total()} 块 · 拼成 ${MODEL.perRow}×${MODEL.rows} = ${total()} · 我的魔术数：${S.lastN}`);
+  say("这是你的星卡，舰长。三个魔术，都是乘法分配律。", "good");
+  if (!completed){ completed = true; Host.complete({}); }   // 只在第一次进入星卡时发
+  next("再玩一次", () => enter1(), "ghost");
+}
+
+/* ============ 9. 画面和输入 ============ */
+function render(){
+  const sc = S.scene; fitView();
+  gDyn.innerHTML = sc === "s1" ? draw1() : sc === "s1r" ? draw1r() :
+    sc === "s2card" ? formulaCard(`${MODEL.pieces.A.perRow}×${MODEL.pieces.A.rows} + ${MODEL.pieces.C.perRow}×${MODEL.pieces.C.rows}`, 290) :
+    sc === "s2" ? draw2() :
+    sc === "s3card" ? formulaCard(`${MODEL.startN} × ${MODEL.hundred + MODEL.one} = ?`, 390) :
+    sc === "s3" ? draw3() : sc === "s3r" ? draw3r() : drawEnd();
+}
+function toSvg(e){ const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+function segDist(q, x1, y1, x2, y2){ const dx = x2 - x1, dy = y2 - y1, L = dx * dx + dy * dy || 1; const t = clamp(((q.x - x1) * dx + (q.y - y1) * dy) / L); return Math.hypot(q.x - (x1 + t * dx), q.y - (y1 + t * dy)); }
+const inRect = (q, r, m) => q.x >= r.x - m && q.x <= r.x + r.w + m && q.y >= r.y - m && q.y <= r.y + r.h + m;
+let drag = null;
+svg.addEventListener("pointerdown", e => {
+  if (drag) return;
+  const q = toSvg(e), R = hitR();
+  if (S.mode === "act1"){
+    if (S.phase1 === "wrap"){
+      const wt = wrapTop(S.p1), wx = L1.x0 - L1.gap / 2 - 10;
+      if (inRect(q, { x: wx, y: wt - 16, w: MODEL.perRow * L1.s + L1.gap + 20, h: L1.yb - wt + 16 }, R / 2)) drag = { kind: "wrap", y0: q.y, t0: S.t1 };
+    } else {
+      const sx = seamX(S.kp);
+      if (Math.hypot(q.x - sx, q.y - L1.knobY) < Math.max(R, 32) || segDist(q, sx, L1.knobY, sx, L1.y0 + MODEL.rows * L1.s) < R) drag = { kind: "seam", x0: q.x, k0: S.ks };
+    }
+  } else if (S.mode === "act2" && !S.busy && !S.merged){
+    for (const id of avail2()) if (inRect(q, pieceRect(id), 8)){ const pc = S.pc[id]; drag = { kind: "piece", id, dx: q.x - pc.x, dy: q.y - pc.y }; pc.drag = true; S.sel = id; break; }
+  } else if (S.mode === "act3"){
+    L3.dial.forEach((d, i) => { if (!drag && Math.hypot(q.x - d.x, q.y - d.y) < Math.max(L3.r + 10, R)){ drag = { kind: "dial", i, y0: q.y, cy: d.y, v0: i ? S.ones : S.tens, moved: false }; S.dialSel = i; } });
+  }
+  if (drag){ svg.setPointerCapture(e.pointerId); e.preventDefault(); hideCue(); render(); }
+});
+svg.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const q = toSvg(e);
+  if (drag.kind === "wrap") S.t1 = clamp(drag.t0 + (q.y - drag.y0) / ((MODEL.rows - 1) * L1.s));
+  else if (drag.kind === "seam") seamTo(drag.k0 + (q.x - drag.x0) / L1.s);
+  else if (drag.kind === "piece"){ const pc = S.pc[drag.id]; pc.x = pc.tx = q.x - drag.dx; pc.y = pc.ty = q.y - drag.dy; render(); }
+  else if (drag.kind === "dial"){ if (Math.abs(q.y - drag.y0) > 8) drag.moved = true; if (drag.moved) setDial(drag.i, drag.v0 + Math.round((drag.y0 - q.y) / 26)); }
+});
+function endDrag(e){
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.kind === "seam") seamStop();
+  else if (d.kind === "piece"){ S.pc[d.id].drag = false; if (e.type === "pointerup") drop2(d.id); else { const pc = S.pc[d.id]; pc.tx = L2.park[d.id].x; pc.ty = L2.park[d.id].y; } render(); }
+  else if (d.kind === "dial" && !d.moved && e.type === "pointerup") setDial(d.i, (d.i ? S.ones : S.tens) + (d.y0 < d.cy ? 1 : -1));
+  else render();
+}
+for (const ev of ["pointerup", "pointercancel"]) svg.addEventListener(ev, endDrag);
+// svg 平时是 pan-y，页面能上下滑；拖动开始后再拦住这次触摸的滚动（教训 20）
+for (const ev of ["touchstart", "touchmove"]) svg.addEventListener(ev, e => { if (drag) e.preventDefault(); }, { passive: false });
+svg.addEventListener("contextmenu", e => { if (/^act/.test(S.mode)) e.preventDefault(); });
+svg.addEventListener("keydown", e => {   // 键盘替代：每个动手操作都要有
+  const k = e.key, L = k === "ArrowLeft", Rt = k === "ArrowRight", Up = k === "ArrowUp", Dn = k === "ArrowDown", Go = k === " " || k === "Enter";
+  if (S.mode === "act1"){
+    if (S.phase1 === "wrap" && (Dn || Go)){ e.preventDefault(); S.t1 = clamp(S.t1 + .25); hideCue(); }
+    else if (S.phase1 === "seam" && (L || Rt)){ e.preventDefault(); if (seamTo(S.ks + (L ? -1 : 1))) seamStop(); }
+  } else if (S.mode === "act2" && !S.busy && !S.merged){
+    const av = avail2();
+    if (L || Rt){ e.preventDefault(); const i = av.indexOf(S.sel); S.sel = av[((i < 0 ? 0 : i) + (L ? -1 : 1) + av.length) % av.length]; render(); }
+    else if (Go){ e.preventDefault(); if (av.includes(S.sel)) snap2(S.sel); }
+  } else if (S.mode === "act3"){
+    if (L || Rt){ e.preventDefault(); S.dialSel = L ? 0 : 1; render(); }
+    else if (Up || Dn){ e.preventDefault(); setDial(S.dialSel, (S.dialSel ? S.ones : S.tens) + (Up ? 1 : -1)); }
+  }
+});
+if (window.ResizeObserver) new ResizeObserver(() => { const was = S.narrow; fitView(); if (was !== S.narrow) render(); }).observe(svg);
+
+let last = performance.now();
+function tick(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  let dirty = false;
+  const k = reduced ? 1 : 1 - Math.exp(-dt / .12);       // 指数跟随；减少动效时直接到位
+  const ease = (tk, pk) => { const t = S[tk], p = S[pk]; if (t != null && p != null && Math.abs(t - p) > 1e-4){ S[pk] = Math.abs(t - p) < 1e-3 ? t : p + (t - p) * k; dirty = true; } };
+  if (S.scene === "s1"){ ease("t1", "p1"); ease("ks", "kp"); }
+  if (S.scene === "s2" && S.pc) for (const id of ["C", "B"]){ const pc = S.pc[id]; if (!pc.drag && (Math.abs(pc.tx - pc.x) > .05 || Math.abs(pc.ty - pc.y) > .05)){
+    pc.x = Math.abs(pc.tx - pc.x) < .5 ? pc.tx : pc.x + (pc.tx - pc.x) * k; pc.y = Math.abs(pc.ty - pc.y) < .5 ? pc.ty : pc.y + (pc.ty - pc.y) * k; dirty = true; } }
+  if (S.scene === "s3"){ const n = curN(); if (Math.abs(S.np - n) > .01){ S.np = Math.abs(S.np - n) < .05 ? n : S.np + (n - S.np) * k; dirty = true; } }
+  // 到 98.5% 就算完成，并把 t、p 都设成 1（教训 3）
+  const fin = n => { if (S["t" + n] >= .985 && S["p" + n] > .975){ S["t" + n] = S["p" + n] = 1; S.hold = false; return true; } return false; };
+  if (dirty && S.station <= STATIONS) render();
+  if (S.mode === "act1" && S.phase1 === "wrap" && fin(1)){ drag = null; render(); wrapDone(); }
+  if (S.mode === "act3" && now - S.changedAt >= 800 && !S.tried.includes(curN())) triedNew(curN());
+  requestAnimationFrame(tick);
+}
+fitView();
+enter1();
+Host.ready();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
+<!-- END OF FILE -->
