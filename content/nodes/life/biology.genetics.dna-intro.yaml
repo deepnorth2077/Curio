@@ -35,7 +35,7 @@ lenses:
     approach: 把 DNA 比作一本用 4 种字母写成的说明书，放在细胞核这个小房间里；不同细胞读这本书的不同几页，所以本领不一样；红细胞长好以后，把细胞核连同说明书一起扔掉了，好腾出地方装更多氧气，但它当初也是照着同一本说明书长出来的。
   - band: G7-8
     approach: 认识 DNA 是主要的遗传物质，基因是有遗传效应的 DNA 片段。
-activities: [act.explain.dna-intro-01, act.quiz.dna-intro-01]
+activities: [act.simulation.dna-book-01, act.explain.dna-intro-01, act.quiz.dna-intro-01]
 status: draft
 version: 1
 # END OF FILE
