@@ -19,6 +19,8 @@ import { createHash, createHmac } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { handle } from "../src/handler.js";
 
+// 每次改适配层或处理函数都改这个，日志里能看出跑的是哪一版代码
+export const CODE_VERSION = "2026-11-09.3";
 export const PORT = 9000;
 export const LISTEN_HOST = "0.0.0.0";
 export const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
@@ -169,6 +171,13 @@ export function credsFrom(headers, env = {}) {
   return { secretId: env.TENCENTCLOUD_SECRETID, secretKey: env.TENCENTCLOUD_SECRETKEY, sessionToken: env.TENCENTCLOUD_SESSIONTOKEN };
 }
 
+// 找不到临时密钥时写进日志的诊断：只列名字，不写值。
+export function credsDiagnosis(headers, env = {}) {
+  const scf = Object.keys(headers || {}).map((k) => k.toLowerCase()).filter((k) => k.startsWith("x-scf-")).sort();
+  const envNames = ["TENCENTCLOUD_SECRETID", "TENCENTCLOUD_SECRETKEY", "TENCENTCLOUD_SESSIONTOKEN"].map((n) => `${n}：${env[n] ? "有" : "没有"}`);
+  return `[curio-relay] 代码版本 ${CODE_VERSION}。没拿到运行角色的临时密钥。请求头里的 x-scf 头：${scf.length ? scf.join(", ") : "一个都没有"}；${envNames.join("，")}`;
+}
+
 export function toRequest({ method, url, headers }, body) {
   const h = new Headers();
   for (const [k, v] of Object.entries(headers || {})) {
@@ -224,7 +233,9 @@ export function createServer(env = process.env, fetchImpl = globalThis.fetch) {
     }
     try {
       // 临时密钥会轮换，每个请求重新取。
-      const response = await handle(toRequest(req, body), env, makeDeps(env, fetchImpl, credsFrom(req.headers, env)));
+      const creds = credsFrom(req.headers, env);
+      if (!creds.secretId || !creds.secretKey) console.error(credsDiagnosis(req.headers, env));
+      const response = await handle(toRequest(req, body), env, makeDeps(env, fetchImpl, creds));
       await writeResponse(res, response);
     } catch (e) {
       console.error("[curio-relay] 适配层出错：" + (e && e.name ? e.name : "Error"));
@@ -235,5 +246,5 @@ export function createServer(env = process.env, fetchImpl = globalThis.fetch) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  createServer().listen(PORT, LISTEN_HOST, () => console.log(`[curio-relay] 在 ${LISTEN_HOST}:${PORT} 上等请求`));
+  createServer().listen(PORT, LISTEN_HOST, () => console.log(`[curio-relay] 代码版本 ${CODE_VERSION}，在 ${LISTEN_HOST}:${PORT} 上等请求`));
 }

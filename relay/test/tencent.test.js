@@ -17,6 +17,7 @@ import {
   readBody,
   createServer,
   credsFrom,
+  credsDiagnosis,
   makeDeps,
   DEEPSEEK_URL,
   PORT,
@@ -415,4 +416,13 @@ test("整条链路：环境变量里没有临时密钥，请求头里有，照�
   } finally {
     await new Promise((r) => server.close(r));
   }
+});
+
+test("找不到临时密钥时的诊断：只列名字，不写值", () => {
+  const d = credsDiagnosis({ "x-scf-request-id": "r1", "x-scf-appid": "125", authorization: "Bearer secret" }, { TENCENTCLOUD_SECRETID: "id-value" });
+  assert.ok(d.includes("x-scf-appid, x-scf-request-id"));
+  assert.ok(d.includes("TENCENTCLOUD_SECRETID：有"));
+  assert.ok(d.includes("TENCENTCLOUD_SECRETKEY：没有"));
+  for (const v of ["r1", "125", "secret", "id-value"]) assert.ok(!d.includes(v), v);
+  assert.ok(credsDiagnosis({}, {}).includes("一个都没有"));
 });
