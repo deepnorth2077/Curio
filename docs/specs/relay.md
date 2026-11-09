@@ -45,7 +45,7 @@ relay/
 | 变量 | 说明 | 默认 |
 | --- | --- | --- |
 | `DEEPSEEK_API_KEY` | DeepSeek 密钥。只在这里 | 必填 |
-| `DEEPSEEK_MODEL` | 模型名。**必须是非思考档**（当时类似 `deepseek-chat` 的那一个）：思考档会把 400 token 的上限花在推理上，回答变空，花费结构也不同 | 部署手册里写当时的名字 |
+| `DEEPSEEK_MODEL` | 模型名。用 Flash 一档（2026-11 是 `deepseek-v4-flash`，价格页上写作 Flash）。DeepSeek 现在的思考是同一个模型上的开关、默认打开，所以请求里必须带 `thinking: {"type": "disabled"}`（第 4 节第 6 步）：开着思考会把 400 token 的上限花在推理上，回答变空，花费也不同 | 部署手册里写当时的名字 |
 | `CURIO_BUCKET`、`CURIO_REGION` | 存用量和失败记录的 COS 桶名和地域 | 必填 |
 | `CURIO_PASSPHRASE_HASH` | `sha256(盐 + 家庭口令)` 的十六进制小写 | 必填 |
 | `CURIO_SALT` | 盐，随机字符串（由下面的小网页生成，不要自己想） | 必填 |
@@ -54,9 +54,9 @@ relay/
 | `CURIO_MONTHLY_FEN` | 每月最多花多少分（本地月份，UTC+8） | 2000（20 元） |
 | `CURIO_PRICE_FEN_PER_M` | 单价，「分 / 百万 token」，三个整数用逗号分开：未命中缓存的输入、命中缓存的输入、输出 | 部署手册里写当时的价格 |
 
-部署手册附一个本地小网页（单文件，不联网）：家长只输入口令，它自己生成随机盐，直接输出 `CURIO_SALT=…`、`CURIO_PASSPHRASE_HASH=…` 两整行，整行复制粘进平台设置。口令本身不进任何平台。手册建议口令用四个随机的词，不用生日、名字。
+部署手册附一个本地小网页（单文件，不联网）：家长只输入口令，它自己生成随机盐，直接输出 `CURIO_SALT=…`、`CURIO_PASSPHRASE_HASH=…` 两整行，整行复制粘进平台设置。口令本身不进任何平台。手册建议口令用四个随机的词，不用生日、名字。**口令只能用 ASCII 字符**（英文字母、拼音、数字、空格和常见符号）：浏览器不允许请求头里有汉字，带汉字的口令根本发不出去，小网页和指挥中心都要拦下并说明。
 
-**启动时自检**：`CURIO_PASSPHRASE_HASH` 不是 64 位小写十六进制、盐为空、桶名或地域为空、`DEEPSEEK_API_KEY` 或 `DEEPSEEK_MODEL` 为空、单价不是三个非负整数（逗号两边的空格忽略）时，除 `OPTIONS` 预检外的每个请求（包括 `GET /v1/ping`，这样连通测试就能暴露配置错）都回 500 `misconfigured`，并在平台日志里写一句人话，指明是哪一项、回手册第几步。
+**启动时自检**：`CURIO_PASSPHRASE_HASH` 不是 64 位小写十六进制、盐为空、`CURIO_DAILY_CALLS` 或 `CURIO_MONTHLY_FEN` 填了但不是正整数、桶名或地域为空、`DEEPSEEK_API_KEY` 或 `DEEPSEEK_MODEL` 为空、单价不是三个非负整数（逗号两边的空格忽略）时，除 `OPTIONS` 预检外的每个请求（包括 `GET /v1/ping`，这样连通测试就能暴露配置错）都回 500 `misconfigured`，并在平台日志里写一句人话，指明是哪一项、回手册第几步。
 
 ### 3. 接口
 
@@ -66,7 +66,7 @@ relay/
 
 - 每个响应（包括错误响应）都带 `Vary: Origin`；没有 `Origin` 头的请求（比如 curl）照常处理，不回 ACAO。
 - 请求的 `Origin` 在 `CURIO_ALLOWED_ORIGINS` 里时，回 `Access-Control-Allow-Origin: <那个来源>`；不在名单里就不回这个头，请求照常处理。
-- `OPTIONS` 预检（不论路径）回 204，名单里的来源再加 `Access-Control-Allow-Methods: GET, POST, OPTIONS`、`Access-Control-Allow-Headers: authorization, content-type`、`Access-Control-Max-Age: 600`。页面带 `Authorization` 和 JSON 请求体，一定会先发预检，少了这几个头就调不通。
+- `OPTIONS` 预检（不论路径）回 204，名单里的来源再加 `Access-Control-Allow-Methods: GET, POST, OPTIONS`、`Access-Control-Allow-Headers: authorization, content-type`、`Access-Control-Max-Age: 600`。名单里的来源在所有响应上再加 `Access-Control-Expose-Headers: Retry-After`，不然页面读不到要等多久。页面带 `Authorization` 和 JSON 请求体，一定会先发预检，少了这几个头就调不通。
 
 带口令的响应（`tutor.ask`、`usage`）都加 `Cache-Control: no-store`。没有的路径回 404 `not_found`，路径对、方法不对回 405 `method_not_allowed`。
 
@@ -147,6 +147,8 @@ relay/
 
 **存储里的两个文件**：`usage/<YYYY-MM>.json`（`{calls_by_day: {日期: 次数}, cost_ufen: 整数}`），`auth/failures.json`（`{times: [毫秒时间戳…]}`）。新的月份就是新文件，旧的保留，家长以后想看历史也能看。
 
+**存储出错**：读存储失败 → 500 `misconfigured`，日志指向手册里「绑定运行角色」那一步（最常见的原因）。DeepSeek 已经回答、但写用量失败时，回答照样交给页面，日志记一句；这次的次数和花费就漏记了，由预充值兜底。
+
 **并发**：读改写之间不加锁。一个孩子几乎不会同时发两个问题；万一同时发，可能丢一次计数更新，计数偏低，上限略松，最多多花一两次的钱，由 DeepSeek 预充值兜底（ADR-010 第 5 条）。
 
 **日期**：从毫秒时间戳算本地日期和月份，一律写成「UTC 字段加 8 小时再进位」的纯函数，**不用**运行环境的本地时区方法（云函数的时区不一定是 UTC，换平台更说不准）。
@@ -171,7 +173,7 @@ relay/
 
 - **连通测试**：对 `GET /v1/ping` 连续请求 5 次，每次最多等 5 秒，显示「成功 X/5，平均 Y 毫秒」。全部失败时提示「连不上：检查地址，再看部署手册的『常见问题』」。
 - **试问一个问题**：用固定的问题「天空为什么是蓝色的？」调用 `tutor.ask`，显示回答和用量。
-- **用量**：调用 `GET /v1/usage`，显示本月每天的次数和花费。
+- **用量**：调用 `GET /v1/usage`，显示本月每天的次数和本月花费（存储只记本月总花费，不分天）。
 - 页面上的「每天最多问几次」只是显示用，真正的上限在中转服务的设置里，卡片上要写明这一点。
 
 ### 7. 部署手册（`relay/DEPLOY.md`）
