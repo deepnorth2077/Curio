@@ -8,7 +8,7 @@
 //     外壳拿到写锁以后调用：loadAll → 身份为空时 init（ids.learner()、ids.device()）→ 收件表按顺序 ingest
 //     → 建 committer → 给本设备上没结束、也没被判为不一致的尝试各补一条 attempt.abandoned（走 committer）。
 //     全部补写存好以后才 resolve，返回 {identity, log, committer, abandoned}，abandoned 是补写的 event_id 列表。
-//     ids.event() 生成 event_id，now() 返回 occurred_at 用的 UTC 时间字符串；收据是 {event_id, received_at: now()}。
+//     ids.event() 生成 event_id，now() 返回 occurred_at 用的 UTC 时间字符串；收据照事件规格 5.3：{event_id, recorded_at: now(), source: "local"}。
 //     它不读发布包：补写需要的东西全从这次尝试的事件里复制。
 import { test } from "node:test";
 import assert from "node:assert/strict";

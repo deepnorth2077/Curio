@@ -252,7 +252,7 @@ committer.nextSeq                               // 下一条本机事件该用�
   3. 找出本设备上没有结束事件、而且没有被判为不一致的尝试，各补一条 `attempt.abandoned`（`reason: left`，`actor` 是 `{type: system, id: "sys:shell"}`）。**补写的事件从这次尝试的事件里复制** `learner_id`、`device_id`、`attempt_id` 和完整的 `content`（包括当时的 `content_release`、`activity_version`），只有 `event_id`、`occurred_at`、`device_seq`、`actor`、`payload` 是新的。所以发布更新了、旧活动不在新发布里了，也能合法地放弃。已经有结束事件的尝试不补。每条都走 `committer`。
   4. 算掌握度、画星图，进入「可以写」。
 
-  第 1～3 步在 `app/session.js` 里：`openSession(store, {ids, now})` → `{identity, log, committer, abandoned}`。`ids` 生成 `lrn_`、`dev_`、`evt_` 等 ID，`now()` 给 `occurred_at` 用的 UTC 时间；收据是 `{event_id, received_at}`；`abandoned` 是补写的 `event_id` 列表。全部补写存好以后才 resolve，所以外壳拿到会话之前开始不了挑战。它不读发布包。（第 3 稿合入后、派发前按验收测试补写，PR #97。）
+  第 1～3 步在 `app/session.js` 里：`openSession(store, {ids, now})` → `{identity, log, committer, abandoned}`。`ids` 生成 `lrn_`、`dev_`、`evt_` 等 ID，`now()` 给 `occurred_at` 用的 UTC 时间；收据照事件规格 5.3 写成 `{event_id, recorded_at, source: "local"}`；`abandoned` 是补写的 `event_id` 列表。全部补写存好以后才 resolve，所以外壳拿到会话之前开始不了挑战。它不读发布包。（第 3 稿合入后、派发前按验收测试补写，PR #97。）
 - **写事件**：外壳把状态机的意图组装成 event/2 信封（`device_seq` 取 `committer.nextSeq`、`occurred_at` 取当前 UTC 时间、完成事件补 `duration_ms`、`content` 用这次挑战开始时冻结的那一份），`JSON.stringify` 一次得到原始文字，交给 `committer.submit`。`accepted` 或 `duplicate` → 给状态机发 `saved`；抛错 → 发 `failed`，留着这条原始文字，「再试」时原样再提交。
 - **开始一次挑战**：冻结当前发布的 `content`（`node_id`、`activity_id`、`activity_kind`、`activity_version`、`content_release`），这次尝试的每条事件都用它。`mode` 是 `first`（这台设备上这个活动从没完成过）或 `retry`。题目顺序按活动的 `shuffle` 决定。
 - **作答**：点一个选项就是一次作答，交给状态机。答对显示 `feedback.correct`（没有就用默认的话）；答错显示这个错误选项的 `feedback`，没有就用 `feedback.wrong` 或默认的话，可以再答。

@@ -126,7 +126,8 @@ export function raw(fx, identity, committer, { verb, attempt_id, payload, conten
   });
 }
 
-export const receiptOf = (fx, r) => ({ event_id: JSON.parse(r).event_id, received_at: fx.now() });
+/** 本机事件的摄入收据（事件规格 5.3、schemas/ingest-receipt.schema.json）。 */
+export const receiptOf = (fx, r) => ({ event_id: JSON.parse(r).event_id, recorded_at: fx.now(), source: "local" });
 
 /** 每种情况结束都查的三件事（规格 6.2 表下）。log 为 null 时只查存储。opts.quarantined：收件表里应有几条隔离的原文。 */
 export function checkInvariants(assert, store, log, opts = {}) {
@@ -141,7 +142,14 @@ export function checkInvariants(assert, store, log, opts = {}) {
   const mine = fresh.events().filter((e) => e.device_id === dev);
   const seqs = mine.map((e) => e.device_seq).sort((a, b) => a - b);
   seqs.forEach((s, i) => assert.equal(s, i + 1, "本设备的 device_seq 从 1 连续"));
-  for (const e of mine) assert.ok(store.state.receipts.has(e.event_id), `本机事件 ${e.event_id} 应有收据`);
+  for (const e of mine) {
+    const rc = store.state.receipts.get(e.event_id);
+    assert.ok(rc, `本机事件 ${e.event_id} 应有收据`);
+    assert.deepEqual(Object.keys(rc).sort(), ["event_id", "recorded_at", "source"], "收据照 ingest-receipt/1：本机的只有这三个字段");
+    assert.equal(rc.event_id, e.event_id);
+    assert.equal(rc.source, "local");
+    assert.match(rc.recorded_at, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
+  }
   assert.equal(store.state.receipts.size, mine.length, "收据只写给接收的本机事件");
   if (store.state.nextSeq !== null) assert.equal(store.state.nextSeq, seqs.length + 1, "存储里的下一个序号 = 本设备事件数 + 1");
 }
