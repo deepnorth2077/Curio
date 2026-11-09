@@ -4,7 +4,7 @@
     python preview/build.py --root <内容根目录> [--root <另一个根目录> ...] --out <输出文件>
     python preview/build.py --root . --bundle prototype/content.js
 
---bundle：把所有 status: published 的知识点、它们卡片里列的活动和配图打成一个 JS 文件，
+--bundle：把所有 status: published 的知识点、它们卡片里列的已批准（review: approved）活动和配图打成一个 JS 文件，
 原型（prototype/index.html）用 <script src="content.js"> 读。content/ 改了就重新生成一次。
 
 每个根目录下应当有 content/nodes/、content/activities/、content/assets/。
@@ -74,11 +74,22 @@ def collect_srcs(obj, out):
             collect_srcs(v, out)
 
 
-def load_activity(roots, aid, figures):
-    """读一个活动：动手探索（manifest.yaml + index.html）或数据活动（activity.yaml）。配图收进 figures。找不到返回 None。"""
+def not_approved(doc, aid, only_approved):
+    """只收已批准的活动时，没批准的返回 True 并打印原因（和 tools/build_release.py 的筛选一致）。"""
+    if only_approved and doc.get("review") != "approved":
+        print(f"跳过（还没批准，review: {doc.get('review')}）：{aid}")
+        return True
+    return False
+
+
+def load_activity(roots, aid, figures, only_approved=False):
+    """读一个活动：动手探索（manifest.yaml + index.html）或数据活动（activity.yaml）。配图收进 figures。
+    找不到返回 None；only_approved 时，review 不是 approved 的也返回 None，配图不收。"""
     manifest = find(roots, f"content/activities/{aid}/manifest.yaml", required=False)
     if manifest:
         m = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+        if not_approved(m, aid, only_approved):
+            return None
         page = find(roots, f"content/activities/{aid}/{m.get('entry', 'index.html')}").read_text(encoding="utf-8")
         return {"id": m["id"], "kind": "simulation", "title": m["title"], "duration_min": m.get("duration_min"),
                 "age_band": m.get("age_band", "G3-4"), "targets": m.get("targets", []), "html": page}
@@ -87,6 +98,8 @@ def load_activity(roots, aid, figures):
         print(f"跳过（还没有）：{aid}")
         return None
     act = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not_approved(act, aid, only_approved):
+        return None
     srcs = []
     collect_srcs(act.get("body"), srcs)
     for src in srcs:
@@ -96,7 +109,8 @@ def load_activity(roots, aid, figures):
 
 
 def build_bundle(roots):
-    """原型用的内容包：所有已发布的知识点（同一个 id 取第一个根目录里的），活动按知识点卡里的顺序。"""
+    """原型用的内容包：所有已发布的知识点（同一个 id 取第一个根目录里的），活动按知识点卡里的顺序。
+    孩子在原型里玩的就是这份，所以只收 review: approved 的活动；没批准的跳过。"""
     nodes, acts, figures, seen = [], {}, {}, set()
     for r in roots:
         for path in sorted((r / "content/nodes").rglob("*.yaml")):
@@ -107,7 +121,7 @@ def build_bundle(roots):
             ids = []
             for aid in node.get("activities", []):
                 if aid not in acts:
-                    a = load_activity(roots, aid, figures)
+                    a = load_activity(roots, aid, figures, only_approved=True)
                     if not a:
                         continue
                     acts[aid] = a
