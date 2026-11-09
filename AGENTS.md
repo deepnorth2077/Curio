@@ -1,6 +1,6 @@
 # 给接手本仓库的模型
 
-开始任何改动之前先读这份文件。如果你是新对话里刚接手的 Claude，接着读 `docs/handoff.md`，它说明现在做到哪里、怎么接上。然后按需读 `docs/architecture.md`。用词以 `GLOSSARY.md` 为准；审核时对照 `docs/standards.md`；开发做法见 ADR-009。
+开始任何改动之前先读这份文件。如果你是新对话里刚接手的 Claude，接着读 `docs/handoff.md`，它说明现在做到哪里、怎么接上。如果你是从别的环境或别的模型接手维护，再读 `docs/maintainer-handoff.md`。然后按需读 `docs/architecture.md`。用词以 `GLOSSARY.md` 为准；审核时对照 `docs/standards.md`；开发做法见 ADR-009。
 
 ## 这是什么
 
@@ -35,7 +35,7 @@ Luka 不写代码，只负责部署和验收。所以：
 
 ## 协作方式
 
-**Claude 是本仓库唯一的维护者，也是唯一操作 git 的。**其他 AI 只做实现：内容和模块默认由 Claude 会话里的子 agent 做，它们可以只读仓库副本，写进各自隔离的输出目录；外部模型由 Luka 传话（两条通道见 ADR-007 增补 1）。审什么按影响勾选 A（长期规则和数据）、B（科学事实）、C（体验和审美），各项检查取并集；三项都不沾、并满足排除条件才走 D（ADR-009 增补 1）。完整流程见 `docs/collaboration.md`。如果你是 Claude，要点如下：
+**Claude 是本仓库唯一的维护者，也是唯一操作 git 的。**其他 AI 只做实现：内容和模块默认由 Claude 会话里的子 agent 做，它们可以只读仓库副本，写进各自隔离的输出目录；外部模型由 Luka 传话（两条通道见 ADR-007 增补 1）。审什么按影响勾选 A（长期规则和数据）、B（科学事实）、C（体验和审美），各项检查取并集；三项都不沾、并满足排除条件才走 D（ADR-009 增补 1）。完整流程见 `docs/collaboration.md`；派发、收货审核整合、自己的 A 改动这三件事的操作步骤见 `docs/runbooks/`，不依赖任何平台的技能功能。如果你是 Claude，要点如下：
 
 - **每件事先有 issue。**按 `.github/ISSUE_TEMPLATE/task.md` 写：给 Luka 的一句话说明、规格、验收标准、提示词。知识点一个主 issue，下面每个活动一个子 issue。
 - **规格的原件只在仓库里。**提示词里贴的是快照，开头必须写「基于提交 `<提交号>`」；规格改了就重新生成提示词。给外部模型的任务文件一律用 `tools/make_task.py` 从已合入 `main` 的提交生成，不手工拼。

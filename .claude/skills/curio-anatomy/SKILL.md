@@ -7,6 +7,8 @@ description: 好奇号里设计、拆解或审核任何一个知识点的活动�
 
 改编自 wheresryan22/anatomy（MIT）。原版把技术概念做成等距机械图；这里是给 8 到 17 岁孩子用的简化版，画风换成 Claude 的暖纸面和墨线。
 
+「Claude 画风」是这套视觉风格的名字，下面「Claude 画风」一节的颜色、线条、卡片、动效都是质量要求，和用哪家模型实现无关。（提示词用 `{{embed: …#Claude 画风}}` 按这个标题嵌入，所以标题不改。）
+
 ## 唯一要记住的一句话
 
 **实物就是解释。** 不要写「X 是 Y」再配一张图，再出三道选择题。要发明一个孩子能亲手摆弄的东西，让它的运转本身就是这个知识。孩子看懂这个东西是怎么动的，也就懂了这个知识。
@@ -82,20 +84,22 @@ description: 好奇号里设计、拆解或审核任何一个知识点的活动�
 | --- | --- |
 | `lessons.md` | **每次都先读。**做「生命的说明书」三个模拟模块时踩过的坑和定下的做法。写提示词时把「实现」一节原样贴进去；审查时逐条对照；发现新坑就补进去。 |
 | `starter.html` | 新模块从它起步，不要从零写。卡片、领航员气泡、「我有个问题」、activity/1.1 契约、手绘线、按住按钮（含松手防误点）、缓动和完成判定 `fin()` 都写好了，只要换掉 `{{…}}` 和两个示例站。 |
-| `brief-template.md` | 给实现者的设计说明（提示词）模板，以及派给子 agent 时附上的话。实现用 Opus。 |
-| `review-template.md` | 给审查者的提示词模板，以及收到审查后怎么处理。审查用 Sonnet，和实现者不是同一个模型。 |
-| `walk.py` | Playwright 走查脚本的样例（染色体模块）。改出每个模块自己的版本：平板、手机、电脑三种宽度，浅色深色，reduced-motion，逐站截图。 |
+| `brief-template.md` | 给实现者的设计说明（提示词）模板，以及派给子 agent 时附上的话。实现者当前默认用 Opus，这是操作选择，不是要求。 |
+| `review-template.md` | 给审查者的提示词模板，以及收到审查后怎么处理。审查者必须没参与制作、不是实现者那个实例；当前默认用 Sonnet，这是操作选择。 |
+| `walk.py` | Playwright 走查脚本的样例（染色体模块）。改出每个模块自己的版本：平板、手机、电脑三种宽度，浅色深色，reduced-motion，逐站截图。脚本里的文件路径是原来环境的，复制后先改；用别的无头浏览器也行，要求的是视图和截图，不是 Playwright。 |
 
 三个标杆模块（风格和质量以它们为准）：`content/activities/act.simulation.chromosome-pack-01/`（Claude 自己做的第一个）、`act.simulation.cell-zoom-01/`、`act.simulation.dna-book-01/`。它们的设计说明在 `prompts/` 下同名文件，审查记录在 `docs/reviews/`。
 
 ### 一个模块的完整流程
 
 1. 用本技能拆解知识点，按 `brief-template.md` 写设计说明，存为 `prompts/act.simulation.<名字>-01.md`。
-2. 派 Opus 子 agent 实现（附上模板里那段话），它从 `starter.html` 起步，自己走查、迭代、跑 `tools/ci_checks.py`，不提交。
+2. 派实现者（子 agent，当前默认 Opus）实现（附上模板里那段话），它从 `starter.html` 起步，自己走查、迭代、跑 `tools/ci_checks.py`，不提交。
 3. 维护者在知识点卡的 `activities` 里登记新活动（实现者不改别的文件），跑 CI。
-4. 派 Sonnet 子 agent 审查（`review-template.md`）。阻断和重要逐条改，改完重新走查；审查和答复存进 `docs/reviews/`。
+4. 派一个没参与制作的审查者（子 agent，当前默认 Sonnet）审查（`review-template.md`）。阻断和重要逐条改，改完重新走查；审查和答复存进 `docs/reviews/`。
 5. 新坑补进 `lessons.md`；能放进骨架的做法同步改 `starter.html`。
 6. 用 `preview/build.py` 生成试玩页给家长试，孩子试玩后再合入。
+
+**哪些是要求、哪些可以换**：上面的方法、画风、「检查」七问、三种屏幕和浅深色的截图走查、`lessons.md`、骨架和三个标杆、制作和审查分开、至少两轮走查，都是质量要求。用哪个模型实现和审查、用什么工具开子 agent、用什么浏览器截图，是操作选择（`docs/collaboration.md`「用哪个模型」）。换了制作用的模型或核心提示词，按 ADR-009 增补 1 第 3 条请别家模型核对事实，并和三个标杆并排对照画面。
 
 ## 检查
 
