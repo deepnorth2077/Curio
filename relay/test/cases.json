@@ -2909,6 +2909,1038 @@
      "cost_ufen": 450000
     }
    }
+  },
+  {
+   "name": "错误响应也带 CORS 头：401",
+   "why": "页面要读到 error 才能提示",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "bad",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 401,
+      "headers": {
+       "vary": "Origin",
+       "access-control-allow-origin": "https://deepnorth2077.github.io"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "错误响应也带 CORS 头：429",
+   "why": "同上",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 429,
+      "json": {
+       "error": "daily_cap"
+      },
+      "headers": {
+       "vary": "Origin",
+       "access-control-allow-origin": "https://deepnorth2077.github.io"
+      }
+     }
+    }
+   ],
+   "storage": {
+    "usage/2026-11.json": {
+     "calls_by_day": {
+      "2026-11-09": 30
+     },
+     "cost_ufen": 0
+    }
+   }
+  },
+  {
+   "name": "错误响应也带 CORS 头：413、404、500",
+   "why": "同上",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body_bytes": 5000
+     },
+     "expect": {
+      "status": 413,
+      "headers": {
+       "vary": "Origin",
+       "access-control-allow-origin": "https://deepnorth2077.github.io"
+      }
+     }
+    },
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "GET",
+      "path": "/v1/nothing",
+      "auth": "none"
+     },
+     "expect": {
+      "status": 404,
+      "headers": {
+       "vary": "Origin",
+       "access-control-allow-origin": "https://deepnorth2077.github.io"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "错误响应也带 CORS 头：500",
+   "why": "同上",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 500,
+      "headers": {
+       "vary": "Origin",
+       "access-control-allow-origin": "https://deepnorth2077.github.io"
+      }
+     }
+    }
+   ],
+   "env": {
+    "CURIO_SALT": ""
+   }
+  },
+  {
+   "name": "没有 Origin 头",
+   "why": "照常处理，不回 ACAO",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "GET",
+      "path": "/v1/ping",
+      "auth": "none"
+     },
+     "expect": {
+      "status": 200,
+      "headers": {
+       "vary": "Origin"
+      },
+      "headers_absent": [
+       "access-control-allow-origin"
+      ]
+     },
+     "origin": null
+    }
+   ]
+  },
+  {
+   "name": "ping 不受锁定影响",
+   "why": "规格第 3 节接口表",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "GET",
+      "path": "/v1/ping",
+      "auth": "none"
+     },
+     "expect": {
+      "status": 200,
+      "json": {
+       "service": "curio-relay",
+       "version": 1
+      }
+     }
+    }
+   ],
+   "storage": {
+    "auth/failures.json": {
+     "times": [
+      1794200400000,
+      1794200399000,
+      1794200398000,
+      1794200397000,
+      1794200396000,
+      1794200395000,
+      1794200394000,
+      1794200393000,
+      1794200392000,
+      1794200391000
+     ]
+    }
+   }
+  },
+  {
+   "name": "预检不论路径",
+   "why": "总顺序里 OPTIONS 在路由前",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "OPTIONS",
+      "path": "/v1/nothing",
+      "auth": "none"
+     },
+     "expect": {
+      "status": 204,
+      "headers": {
+       "vary": "Origin",
+       "access-control-allow-origin": "https://deepnorth2077.github.io"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "顺序：配置错时，没有的路径仍是 404",
+   "why": "路由在自检前",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/nothing",
+      "auth": "good",
+      "body": {}
+     },
+     "expect": {
+      "status": 404,
+      "json": {
+       "error": "not_found"
+      }
+     }
+    }
+   ],
+   "env": {
+    "CURIO_SALT": ""
+   }
+  },
+  {
+   "name": "顺序：配置错时，太大的请求体是 500",
+   "why": "自检在大小检查前",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body_bytes": 5000
+     },
+     "expect": {
+      "status": 500,
+      "json": {
+       "error": "misconfigured"
+      }
+     }
+    }
+   ],
+   "env": {
+    "CURIO_SALT": ""
+   }
+  },
+  {
+   "name": "配置错时日志里有一句话",
+   "why": "规格第 2 节：平台日志里写一句人话",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 500,
+      "logs_nonempty": true
+     }
+    }
+   ],
+   "env": {
+    "CURIO_PRICE_FEN_PER_M": "200,20"
+   }
+  },
+  {
+   "name": "自检：单价有四个",
+   "why": "不是三个",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 500,
+      "json": {
+       "error": "misconfigured"
+      },
+      "upstream_calls": 0
+     }
+    }
+   ],
+   "env": {
+    "CURIO_PRICE_FEN_PER_M": "200,20,800,1"
+   }
+  },
+  {
+   "name": "用量路径方法不对",
+   "why": "405",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/usage",
+      "auth": "good",
+      "body": {}
+     },
+     "expect": {
+      "status": 405,
+      "json": {
+       "error": "method_not_allowed"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "Bearer 不分大小写",
+   "why": "规格第 3 节",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "raw:bearer correct horse battery staple",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 200
+     },
+     "upstream": {
+      "status": 200,
+      "json": {
+       "choices": [
+        {
+         "message": {
+          "role": "assistant",
+          "content": "舰长，阳光里藏着好多颜色，蓝色最容易被空气弹来弹去。"
+         }
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 1500,
+        "prompt_cache_miss_tokens": 1000,
+        "prompt_cache_hit_tokens": 500,
+        "completion_tokens": 300
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "请求体按字节算，不按字符算",
+   "why": "约 1440 个字符、4200 多字节 → 413",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "raw_body": "{\"question\": \"好\", \"age_band\": \"G3-4\", \"pad\": \"好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好\"}"
+     },
+     "expect": {
+      "status": 413,
+      "json": {
+       "error": "too_large"
+      },
+      "upstream_calls": 0
+     }
+    }
+   ]
+  },
+  {
+   "name": "200 个字加首尾空白",
+   "why": "去掉空白后正好 200 → 放行，发出去的是去掉空白的",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "  好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好 \n",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 200,
+      "upstream_user_message": "好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好好"
+     },
+     "upstream": {
+      "status": 200,
+      "json": {
+       "choices": [
+        {
+         "message": {
+          "role": "assistant",
+          "content": "舰长，阳光里藏着好多颜色，蓝色最容易被空气弹来弹去。"
+         }
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 1500,
+        "prompt_cache_miss_tokens": 1000,
+        "prompt_cache_hit_tokens": 500,
+        "completion_tokens": 300
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "发给 DeepSeek 的消息：第一条是领航员说明，最后一条是去掉空白的问题",
+   "why": "规格第 5 节",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": " 为什么天空是蓝色的？ ",
+       "age_band": "G7-9"
+      }
+     },
+     "expect": {
+      "status": 200,
+      "upstream_first_role": "system",
+      "upstream_user_message": "为什么天空是蓝色的？",
+      "upstream_messages_contain": [
+       "初中"
+      ]
+     },
+     "upstream": {
+      "status": 200,
+      "json": {
+       "choices": [
+        {
+         "message": {
+          "role": "assistant",
+          "content": "舰长，阳光里藏着好多颜色，蓝色最容易被空气弹来弹去。"
+         }
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 1500,
+        "prompt_cache_miss_tokens": 1000,
+        "prompt_cache_hit_tokens": 500,
+        "completion_tokens": 300
+       }
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "context 是 null",
+   "why": "有就必须是对象",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4",
+       "context": null
+      }
+     },
+     "expect": {
+      "status": 400,
+      "json": {
+       "error": "bad_request"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "context 的字段不是字符串",
+   "why": "400",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4",
+       "context": {
+        "node_title": 3
+       }
+      }
+     },
+     "expect": {
+      "status": 400,
+      "json": {
+       "error": "bad_request"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "锁定边界的另一侧：t0 + 1799.999 秒",
+   "why": "t0 那条还差 1 毫秒满 1800 秒，仍有 10 条 → 锁；Retry-After 向上取整 = 1",
+   "steps": [
+    {
+     "at": "2026-11-09T05:29:59.999Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 429,
+      "json": {
+       "error": "locked"
+      },
+      "headers": {
+       "retry-after": "1"
+      }
+     }
+    }
+   ],
+   "storage": {
+    "auth/failures.json": {
+     "times": [
+      1794200400000,
+      1794200401000,
+      1794200402000,
+      1794200403000,
+      1794200404000,
+      1794200405000,
+      1794200406000,
+      1794200407000,
+      1794200408000,
+      1794200409000
+     ]
+    }
+   }
+  },
+  {
+   "name": "次数和花费都到上限时先报 daily_cap",
+   "why": "第 4 步在第 5 步前",
+   "steps": [
+    {
+     "at": "2026-11-09T13:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 429,
+      "json": {
+       "error": "daily_cap"
+      },
+      "headers": {
+       "retry-after": "10800"
+      }
+     }
+    }
+   ],
+   "storage": {
+    "usage/2026-11.json": {
+     "calls_by_day": {
+      "2026-11-09": 30
+     },
+     "cost_ufen": 2000000000
+    }
+   }
+  },
+  {
+   "name": "用量不受上限影响",
+   "why": "usage 不走第 4 步以后；2000000000 → fen_month 2000",
+   "steps": [
+    {
+     "at": "2026-11-09T13:00:00.000Z",
+     "request": {
+      "method": "GET",
+      "path": "/v1/usage",
+      "auth": "good"
+     },
+     "expect": {
+      "status": 200,
+      "json": {
+       "fen_month": 2000,
+       "calls_by_day": {
+        "2026-11-09": 30
+       }
+      }
+     }
+    }
+   ],
+   "storage": {
+    "usage/2026-11.json": {
+     "calls_by_day": {
+      "2026-11-09": 30
+     },
+     "cost_ufen": 2000000000
+    }
+   }
+  },
+  {
+   "name": "前一天满 30 次，过了本地 0 点就能问",
+   "why": "UTC 16:30 是本地 11-10 00:30",
+   "steps": [
+    {
+     "at": "2026-11-09T16:30:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 200,
+      "json": {
+       "usage": {
+        "calls_today": 1,
+        "daily_calls": 30,
+        "fen_month": 1,
+        "monthly_fen": 2000
+       }
+      }
+     },
+     "upstream": {
+      "status": 200,
+      "json": {
+       "choices": [
+        {
+         "message": {
+          "role": "assistant",
+          "content": "舰长，阳光里藏着好多颜色，蓝色最容易被空气弹来弹去。"
+         }
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 1500,
+        "prompt_cache_miss_tokens": 1000,
+        "prompt_cache_hit_tokens": 500,
+        "completion_tokens": 300
+       }
+      }
+     }
+    }
+   ],
+   "storage": {
+    "usage/2026-11.json": {
+     "calls_by_day": {
+      "2026-11-09": 30
+     },
+     "cost_ufen": 0
+    }
+   }
+  },
+  {
+   "name": "上个月花满了，新月份照常",
+   "why": "12 月是新文件",
+   "steps": [
+    {
+     "at": "2026-11-30T16:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 200
+     },
+     "upstream": {
+      "status": 200,
+      "json": {
+       "choices": [
+        {
+         "message": {
+          "role": "assistant",
+          "content": "舰长，阳光里藏着好多颜色，蓝色最容易被空气弹来弹去。"
+         }
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 1500,
+        "prompt_cache_miss_tokens": 1000,
+        "prompt_cache_hit_tokens": 500,
+        "completion_tokens": 300
+       }
+      }
+     }
+    }
+   ],
+   "storage": {
+    "usage/2026-11.json": {
+     "calls_by_day": {},
+     "cost_ufen": 2000000000
+    }
+   },
+   "storage_after": {
+    "usage/2026-11.json": {
+     "calls_by_day": {},
+     "cost_ufen": 2000000000
+    },
+    "usage/2026-12.json": {
+     "calls_by_day": {
+      "2026-12-01": 1
+     },
+     "cost_ufen": 450000
+    }
+   }
+  },
+  {
+   "name": "fen_month 正好整除不多进一",
+   "why": "1000000 → 1",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "GET",
+      "path": "/v1/usage",
+      "auth": "good"
+     },
+     "expect": {
+      "status": 200,
+      "json": {
+       "fen_month": 1
+      }
+     }
+    }
+   ],
+   "storage": {
+    "usage/2026-11.json": {
+     "calls_by_day": {},
+     "cost_ufen": 1000000
+    }
+   }
+  },
+  {
+   "name": "fen_month 多一点就进一",
+   "why": "1000001 → 2",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "GET",
+      "path": "/v1/usage",
+      "auth": "good"
+     },
+     "expect": {
+      "status": 200,
+      "json": {
+       "fen_month": 2
+      }
+     }
+    }
+   ],
+   "storage": {
+    "usage/2026-11.json": {
+     "calls_by_day": {},
+     "cost_ufen": 1000001
+    }
+   }
+  },
+  {
+   "name": "daily_cap 的 Retry-After 向上取整",
+   "why": "本地 23:59:59.500，离 0 点 0.5 秒 → 1",
+   "steps": [
+    {
+     "at": "2026-11-09T15:59:59.500Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 429,
+      "json": {
+       "error": "daily_cap"
+      },
+      "headers": {
+       "retry-after": "1"
+      }
+     }
+    }
+   ],
+   "storage": {
+    "usage/2026-11.json": {
+     "calls_by_day": {
+      "2026-11-09": 30
+     },
+     "cost_ufen": 0
+    }
+   }
+  },
+  {
+   "name": "12 月的 monthly_cap 到次年 1 月 1 日",
+   "why": "本地 12-10 12:00（UTC 04:00）到本地 2027-01-01 00:00（UTC 12-31 16:00）= 21 天 12 小时 = 1857600 秒",
+   "steps": [
+    {
+     "at": "2026-12-10T04:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 429,
+      "json": {
+       "error": "monthly_cap"
+      },
+      "headers": {
+       "retry-after": "1857600"
+      }
+     }
+    }
+   ],
+   "storage": {
+    "usage/2026-12.json": {
+     "calls_by_day": {},
+     "cost_ufen": 2000000000
+    }
+   }
+  },
+  {
+   "name": "DeepSeek 回 200 但内容为空",
+   "why": "502 upstream；次数不加，花费照记 450000",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 502,
+      "json": {
+       "error": "upstream"
+      }
+     },
+     "upstream": {
+      "status": 200,
+      "json": {
+       "choices": [
+        {
+         "message": {
+          "content": ""
+         }
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 1500,
+        "prompt_cache_miss_tokens": 1000,
+        "prompt_cache_hit_tokens": 500,
+        "completion_tokens": 300
+       }
+      }
+     }
+    }
+   ],
+   "storage_after": {
+    "usage/2026-11.json": {
+     "calls_by_day": {},
+     "cost_ufen": 450000
+    }
+   }
+  },
+  {
+   "name": "DeepSeek 回 200 但没有 choices",
+   "why": "502 upstream；没有用量就不写存储",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 502,
+      "json": {
+       "error": "upstream"
+      }
+     },
+     "upstream": {
+      "status": 200,
+      "json": {}
+     }
+    }
+   ],
+   "storage_absent": [
+    "usage/2026-11.json"
+   ]
+  },
+  {
+   "name": "DeepSeek 回 429",
+   "why": "别的非 2xx → upstream",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 502,
+      "json": {
+       "error": "upstream"
+      }
+     },
+     "upstream": {
+      "status": 429,
+      "json": {}
+     }
+    }
+   ]
+  },
+  {
+   "name": "只缺命中缓存字段",
+   "why": "缺的算 0：1000×200 + 0 + 100×800 = 280000；prompt_tokens 不用",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 200
+     },
+     "upstream": {
+      "status": 200,
+      "json": {
+       "choices": [
+        {
+         "message": {
+          "content": "舰长，阳光里藏着好多颜色，蓝色最容易被空气弹来弹去。"
+         }
+        }
+       ],
+       "usage": {
+        "prompt_tokens": 1500,
+        "prompt_cache_miss_tokens": 1000,
+        "completion_tokens": 100
+       }
+      }
+     }
+    }
+   ],
+   "storage_after": {
+    "usage/2026-11.json": {
+     "calls_by_day": {
+      "2026-11-09": 1
+     },
+     "cost_ufen": 280000
+    }
+   }
   }
+ ],
+ "global_never_contain": [
+  "sk-test-not-a-real-key",
+  "correct horse battery staple",
+  "s4lt-7f3a",
+  "652689b7a191cb878c3cc03d0a47e4402feef74f8b60e91ed6b31eea836c2585"
  ]
 }
