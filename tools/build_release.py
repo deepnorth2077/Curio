@@ -324,7 +324,7 @@ def write_release(manifest, files, out_dir):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="构建好奇号不可变发布包")
+    parser = argparse.ArgumentParser(description="构建 Curio 不可变发布包")
     parser.add_argument("--content", required=True, help="内容目录")
     parser.add_argument("--out", required=True, help="发布包输出目录")
     parser.add_argument("--commit", help="40 位来源提交号；默认取 git HEAD")

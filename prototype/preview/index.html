@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>好奇号 · 试玩版 · 生命的说明书</title>
+<title>Curio · 试玩版 · 生命的说明书</title>
 <style>
 :root{
   --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
@@ -146,7 +146,7 @@ textarea{width:100%;font:inherit;font-size:17px;padding:10px 12px;border:1.5px s
 <body>
 <div class="topbar"><div class="in">
   <button class="back" id="back" hidden>← 星图</button>
-  <div class="title" id="title">好奇号</div>
+  <div class="title" id="title">Curio</div>
   <span class="tag">试玩版 · 不保存</span>
 </div></div>
 <main class="wrap" id="app"></main>
@@ -338,9 +338,9 @@ function endButtons(a){
 }
 
 function viewHome(){
-  setTop("好奇号", false); dock();
+  setTop("Curio", false); dock();
   const hero = el("div", {class:"hero"},
-    el("div", {}, el("div", {class:"eyebrow"}, "好奇号 · 星座"), el("h1", {}, DATA.constellation),
+    el("div", {}, el("div", {class:"eyebrow"}, "Curio · 星座"), el("h1", {}, DATA.constellation),
       el("p", {}, "三颗星，按顺序飞：" + DATA.stars.map(s => s.title.split("：")[0]).join(" → ") + "。")),
     svgEl(SHIP));
   const line = el("div", {class:"line"});
@@ -504,7 +504,7 @@ function viewSim(a){
 }
 
 function recordText(){
-  const out = [`好奇号试玩记录 · ${DATA.constellation}`];
+  const out = [`Curio 试玩记录 · ${DATA.constellation}`];
   for (const st of DATA.stars){
     out.push("", `【${st.title}】`);
     for (const a of st.activities){

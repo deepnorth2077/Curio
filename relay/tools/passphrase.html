@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>好奇号 · 生成口令的两行设置</title>
+<title>Curio · 生成口令的两行设置</title>
 <style>
 :root{color-scheme:light dark;--bg:#FAF6EE;--pane:#FFFDF8;--ink:#2A2620;--muted:#6F675B;--rule:#D9D0C0;--good:#3B7A56;--bad:#B4432E}
 @media (prefers-color-scheme:dark){:root{--bg:#1E1E24;--pane:#26262E;--ink:#ECE8E0;--muted:#A49D92;--rule:#3A3A44;--good:#7CC79A;--bad:#EF8A72}}
@@ -31,7 +31,7 @@ ol{margin:0;padding-left:20px}
   <div class="card">
     <label for="pw">家庭口令</label>
     <input id="pw" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="例如：juzi taideng paobu yunduo">
-    <p class="muted">建议用四个随便挑的词，用拼音或英文字母写，中间空一格（只能用英文字母、数字和英文标点：浏览器发请求时，请求头里放不了汉字）。不要用生日、名字、电话。这句口令要记下来：以后在好奇号的设置里还要填一次。</p>
+    <p class="muted">建议用四个随便挑的词，用拼音或英文字母写，中间空一格（只能用英文字母、数字和英文标点：浏览器发请求时，请求头里放不了汉字）。不要用生日、名字、电话。这句口令要记下来：以后在 Curio 的设置里还要填一次。</p>
     <div class="line"><button class="ink" id="go" type="button">生成两行设置</button></div>
     <p id="msg" class="muted" role="status"></p>
   </div>
@@ -113,7 +113,7 @@ if (typeof document !== "undefined") {
     const pw = $("#pw").value;
     if (!pw.trim()) { msg("先填口令。", "bad"); return; }
     if (!/^[\x20-\x7e]+$/.test(pw)) { msg("口令里只能有英文字母、数字、空格和英文标点。汉字请改成拼音。", "bad"); return; }
-    if (pw !== pw.trim()) { msg("口令开头或结尾有空格，去掉再生成（好奇号里填的时候也不要带）。", "bad"); return; }
+    if (pw !== pw.trim()) { msg("口令开头或结尾有空格，去掉再生成（Curio 里填的时候也不要带）。", "bad"); return; }
     if (pw.trim().length < 8) msg("口令有点短。建议用四个随便挑的词。", "bad"); else msg("");
     try {
       const out = await makeLines(pw, makeSalt());

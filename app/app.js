@@ -1,4 +1,4 @@
-// 好奇号 Curio · 竖切片 1a 的外壳（规格第 2 节、6.3）：读发布包 → 拿写锁 → 恢复 → 画星图 → 挑战 → 点亮。
+// Curio · 竖切片 1a 的外壳（规格第 2 节、6.3）：读发布包 → 拿写锁 → 恢复 → 画星图 → 挑战 → 点亮。
 // 读写 IndexedDB、取当前时间、生成 ULID、洗牌都在这里做，结果作为参数交给内核和引擎。
 import { createLog } from "../kernel/js/log.js";
 import { projectMastery, groupAttempts } from "../kernel/js/mastery.js";
@@ -717,7 +717,7 @@ async function boot() {
   try {
     app.pack = await loadRelease();
   } catch (e) {
-    if (e instanceof ReleaseError && e.kind === "update") renderStop("需要更新", "请家长更新好奇号，再打开。");
+    if (e instanceof ReleaseError && e.kind === "update") renderStop("需要更新", "请家长更新 Curio，再打开。");
     else { console.error(e); renderStop("内容包不完整，请家长重新部署", ""); }
     return;
   }

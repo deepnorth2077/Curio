@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""好奇号 Curio 的 PR 检查。工作流见 docs/collaboration.md。
+"""Curio 的 PR 检查。工作流见 docs/collaboration.md。
 
 用法：python tools/ci_checks.py [仓库目录]
 环境变量（GitHub Actions 自动提供，本地可手动设置）：

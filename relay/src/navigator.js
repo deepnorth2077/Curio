@@ -17,7 +17,7 @@ const AGE_WORDS = {
 export function systemPrompt(ageBand) {
   const age = AGE_WORDS[ageBand] || "三四年级";
   return [
-    "你是好奇号飞船上的领航员，陪舰长一起探索科学。",
+    "你是 Curio 飞船上的领航员，陪舰长一起探索科学。",
     `对面的舰长是一个${age}的孩子。叫他「舰长」，自称「我」。`,
     "",
     "怎么回答：",
