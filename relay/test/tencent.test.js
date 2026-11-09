@@ -16,6 +16,7 @@ import {
   writeResponse,
   readBody,
   createServer,
+  credsFrom,
   makeDeps,
   DEEPSEEK_URL,
   PORT,
@@ -355,4 +356,63 @@ test("makeDeps：临时密钥的 token 放进 x-cos-security-token；DeepSeek �
   assert.equal(h.get("x-cos-security-token"), "token-from-env");
   await deps.upstream({ model: "m", messages: [] });
   assert.equal(new Headers(calls[1].init.headers).get("authorization"), "Bearer sk-abc");
+});
+
+test("临时密钥：Web 函数从 X-Scf-* 请求头拿，没有再用环境变量", () => {
+  const env = { TENCENTCLOUD_SECRETID: "env-id", TENCENTCLOUD_SECRETKEY: "env-key", TENCENTCLOUD_SESSIONTOKEN: "env-token" };
+  assert.deepEqual(credsFrom({ "x-scf-secret-id": "h-id", "x-scf-secret-key": "h-key", "x-scf-session-token": "h-token" }, env),
+    { secretId: "h-id", secretKey: "h-key", sessionToken: "h-token" });
+  assert.deepEqual(credsFrom({}, env), { secretId: "env-id", secretKey: "env-key", sessionToken: "env-token" });
+  assert.equal(credsFrom({}, {}).secretId, undefined);
+});
+
+test("x-scf-* 请求头不交给 handle", () => {
+  const r = toRequest({ method: "GET", url: "/v1/ping", headers: { host: "h", "x-scf-secret-key": "k", "X-Scf-Session-Token": "t", origin: "o" } });
+  assert.equal(r.headers.get("x-scf-secret-key"), null);
+  assert.equal(r.headers.get("x-scf-session-token"), null);
+  assert.equal(r.headers.get("origin"), "o");
+});
+
+test("整条链路：环境变量里没有临时密钥，请求头里有，照样能读写 COS", async () => {
+  const env = {
+    DEEPSEEK_API_KEY: "sk-test",
+    DEEPSEEK_MODEL: "m",
+    CURIO_BUCKET: "b-1250000000",
+    CURIO_REGION: "ap-guangzhou",
+    CURIO_PASSPHRASE_HASH: "a7745af11e674ef4d55476be509fb4710fa9b08d58dc83ebef0af62440a4ad2a", // sha256("s" + "pw pw")
+    CURIO_SALT: "s",
+    CURIO_PRICE_FEN_PER_M: "200,4,800",
+  };
+  const cos = [];
+  const f = async (url, init) => {
+    if (url.includes("deepseek")) {
+      return new Response(JSON.stringify({ choices: [{ message: { content: "回答" } }], usage: { completion_tokens: 1 } }), { status: 200 });
+    }
+    cos.push({ url, headers: new Headers(init.headers), method: init.method });
+    return new Response("", { status: init.method === "GET" ? 404 : 200 });
+  };
+  const server = createServer(env, f);
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const res = await fetch(base + "/v1/capabilities/tutor.ask", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer pw pw",
+        "content-type": "application/json",
+        "x-scf-secret-id": "AKIDweb",
+        "x-scf-secret-key": "webkey",
+        "x-scf-session-token": "webtoken",
+      },
+      body: JSON.stringify({ question: "为什么？", age_band: "G3-4" }),
+    });
+    assert.equal(res.status, 200);
+    assert.ok(cos.length >= 2);
+    for (const c of cos) {
+      assert.equal(c.headers.get("x-cos-security-token"), "webtoken");
+      assert.ok(c.headers.get("authorization").includes("q-ak=AKIDweb&"));
+    }
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
 });
