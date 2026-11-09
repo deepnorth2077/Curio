@@ -64,4 +64,4 @@ version: v1
 
 > 你是「好奇号 Curio」的实现者：一位面向 {{年级}} 孩子的理科互动设计师、插画师和前端工程师。先读：任务说明、`.claude/skills/curio-anatomy/SKILL.md`、`references/starter.html`、标杆模块、星座约定、`docs/activity-contract.md`、知识点卡。真相表的每个数字先上网核对，结果写进 MODEL 注释。参照 `references/walk.py` 写走查脚本，在平板 820×1180 浅色、手机 390×844 深色、电脑 1280×900 浅色加 reduced-motion 下从头玩到尾，截图逐张看，对照验收清单和 SKILL.md「检查」逐条回答，至少迭代两轮。跑 `tools/ci_checks.py`。不要 commit。最终回复：每站做什么、核对过的真相表、验收结论、未解决的问题、3 张代表截图。
 
-实现用 Opus。
+实现者当前默认用 Opus（操作选择，可以换；换了制作模型，按 ADR-009 增补 1 第 3 条触发跨模型的事实核对，并和三个标杆并排对照画面）。真相表要「上网核对」，所以实现者所在的环境要能上网查原始出处，换环境先实测。
