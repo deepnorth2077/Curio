@@ -1,10 +1,11 @@
-# 把 prototype/ 发布到 GitHub Pages。main 分支上的 prototype/ 一变化就自动发布，也可以在 Actions 页面手动运行。
+# 把 prototype/ 发布到 GitHub Pages，同时把中转服务打成 zip 放在 relay/ 下（部署手册第 7 步下载它）。
+# main 分支上的 prototype/ 或 relay/ 一变化就自动发布，也可以在 Actions 页面手动运行。
 name: 发布原型到 GitHub Pages
 
 on:
   push:
     branches: [main]
-    paths: ["prototype/**", ".github/workflows/pages.yml"]
+    paths: ["prototype/**", "relay/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -25,8 +26,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: 组装网站，打包中转服务
+        run: |
+          mkdir -p _site/relay
+          cp -r prototype/. _site/
+          # 在 Linux 上打包，scf_bootstrap 的可执行位（755）会保存在 zip 里；Windows 上重新压缩会丢掉它
+          if [ -f relay/scf_bootstrap ]; then
+            test -x relay/scf_bootstrap
+            (cd relay && zip -X -r ../_site/relay/curio-relay.zip scf_bootstrap package.json src adapters)
+            unzip -Z _site/relay/curio-relay.zip | grep -q '^-rwx.*scf_bootstrap$'
+            cp relay/tools/passphrase.html _site/relay/passphrase.html
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: prototype
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
