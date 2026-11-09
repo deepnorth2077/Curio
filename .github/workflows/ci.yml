@@ -32,3 +32,9 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: python tools/ci_checks.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: 中转服务测试
+        run: |
+          if [ -f relay/src/handler.js ]; then node --test 'relay/test/*.test.js'; else echo "还没有 relay/src/handler.js，跳过"; fi

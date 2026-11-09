@@ -19,7 +19,9 @@ from pathlib import Path
 
 # fnmatch 的 * 会跨过 /，所以 "prompts/*" 覆盖整个 prompts/ 目录。例外只有两条，见地盘检查：
 # kp/ 分支改自己活动的提示词和任务文件；feat/、fix/、chore/ 分支新增任务文件留档（*.task.md）。
-PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "prompts/*", "AGENTS.md", "CLAUDE.md", "README.md", "GLOSSARY.md"]
+# relay/ 里 Claude 手算的验收用例、跑用例的脚本和领航员说明也只能在 arch/ 改：实现者不能为了通过去改期望值。
+PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "prompts/*", "AGENTS.md", "CLAUDE.md", "README.md", "GLOSSARY.md",
+             "relay/test/cases.json", "relay/test/cases.test.js", "relay/src/navigator.js"]
 ACT_PROMPT = re.compile(r"^prompts/(act\.[A-Za-z0-9._-]+?)(\.task)?\.md$")
 TASK_ARCHIVE = re.compile(r"^prompts/[A-Za-z0-9][A-Za-z0-9._-]*\.task\.md$")
 # kp/ 分支可以新增、修改本知识点活动的审查记录，以及本知识点自己的审查记录（ADR-009 增补 1）；不能删除
