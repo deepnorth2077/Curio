@@ -1646,7 +1646,7 @@ function renderGround(){
   if(!unlocked){ B.innerHTML=`<div class="card" style="max-width:340px;margin:40px auto 0;text-align:center"><h3>家长入口</h3><p class="muted" style="font-size:13px">原型默认 PIN：1234</p><div class="pdots">${[0,1,2,3].map(i=>`<i class="${i<pin.length?"f":""}"></i>`).join("")}</div>
       <div class="pin">${[1,2,3,4,5,6,7,8,9,"",0,"删"].map(k=>k===""?"<span></span>":`<button data-k="${k}">${k}</button>`).join("")}</div></div>`;
     B.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{ const k=b.dataset.k; if(k==="删") pin=pin.slice(0,-1); else if(pin.length<4) pin+=k; if(pin.length===4){ if(pin===S.pin){ unlocked=true; } else toast("PIN 不对，再试一次"); pin=""; } renderGround(); }); return; }
-  const R=S.rewardGoal, today=todayStr(), calls=S.ai.calls.filter(c=>c.at.slice(0,10)===today);
+  const R=S.rewardGoal, today=todayStr();
   // hand-drawn chart: learning events per day, last 7 days
   const days=[...Array(7)].map((_,i)=>{ const d=new Date(); d.setDate(d.getDate()-6+i); const k=todayStr(d); return [k,S.events.filter(e=>(e.ts||"").slice(0,10)===k&&e.node&&!e.kind).length]; });
   const mx=Math.max(4,...days.map(d=>d[1])), pts=days.map(([k,v],i)=>[40+i*70, 130-v/mx*100]);
@@ -1661,14 +1661,16 @@ function renderGround(){
         <div class="field"><label for="gn">下一份奖励</label><input type="text" id="gn" value="${esc(R.name)}" maxlength="18"></div><div class="field"><label for="gt">需要的点数</label><input type="number" id="gt" min="3" max="99" value="${R.target}"></div><div><button class="btn ink" id="gs">保存</button></div></div>
       <div class="card"><h3>任务库</h3><div class="chips">${S.tasks.map((t,i)=>`<span class="chip">${esc(t)} <button data-del="${i}" aria-label="删除 ${esc(t)}" style="margin-left:4px;color:var(--muted)">×</button></span>`).join("")}</div>
         <form id="tf" style="display:flex;gap:8px"><div class="field" style="flex:1"><input type="text" id="ti" placeholder="新任务" maxlength="6" aria-label="新任务"></div><button class="btn" type="submit">添加</button></form></div>
-      <div class="card"><h3>AI 答疑 <span class="pill" style="font-weight:400">${S.ai.relay.url?"已填地址 · 还没接通":"模拟模式"}</span></h3>
+      <div class="card"><h3>AI 答疑 <span class="pill" id="rst-pill" style="font-weight:400">${relayStatusWord()}</span></h3>
         <p class="muted" style="font-size:13px">DeepSeek 的密钥不填在这里：它只放在中转服务自己的设置里，页面永远拿不到。这里填中转服务的地址和家庭口令。</p>
         <div class="field"><label for="ru">中转服务地址</label><input type="url" id="ru" inputmode="url" autocomplete="off" placeholder="https://…" value="${esc(S.ai.relay.url)}"></div>
         <div class="field"><label for="rp">家庭口令</label><input type="password" id="rp" autocomplete="off" value="${esc(S.ai.relay.passphrase)}"></div>
         <div class="field"><label for="cp">每天最多问几次</label><input type="number" id="cp" min="1" max="200" value="${S.ai.dailyCap}"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ink" id="cs">保存</button><button class="btn" id="rt" disabled title="中转服务做好之后才能用">连通测试</button></div>
-        <dl class="kv"><dt>今日调用</dt><dd>${calls.length} / ${S.ai.dailyCap}</dd><dt>今日费用</dt><dd>¥0.00</dd></dl>
-        <div class="log">${S.ai.calls.slice(-20).reverse().map(c=>`<div>${c.at.slice(5,16).replace("T"," ")} · ${c.capability}</div>`).join("")||"<div>还没有调用</div>"}</div></div>
+        <p class="muted" style="font-size:12px">这里的「每天最多问几次」只是显示用。真正的上限在中转服务的设置里：每天几次看 CURIO_DAILY_CALLS，每月花多少看 CURIO_MONTHLY_FEN。</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ink" id="cs">保存</button><button class="btn" id="rt">连通测试</button><button class="btn" id="rq">试问一个问题</button><button class="btn" id="rus">用量</button></div>
+        <p class="muted" style="font-size:12px">三个按钮用的是已经保存的地址和口令。改过地址或口令，先点「保存」。</p>
+        <div id="rr" aria-live="polite" style="display:grid;gap:8px;min-width:0;overflow-wrap:anywhere"></div>
+        </div>
       <div class="card"><h3>数据</h3><dl class="kv"><dt>学习事件</dt><dd>${S.events.length}</dd><dt>维修舱</dt><dd>${S.repairs.length}</dd><dt>信号</dt><dd>${S.questions.length}</dd><dt>数据版本</dt><dd>v${S.version}</dd></dl>
         <label class="toggle"><input type="checkbox" id="dbg" ${S.debug?"checked":""}>显示黑匣子（调试学习事件流）</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="ex">导出数据</button><button class="btn" id="rst">恢复示例数据</button></div><div id="eb"></div></div>
@@ -1682,11 +1684,82 @@ function renderGround(){
     if(u&&!/^https:\/\/[^\s]+$/.test(u)){ toast("地址要以 https:// 开头"); return; }
     S.ai.relay={url:u.replace(/\/+$/,""),passphrase:$("#rp").value}; S.ai.dailyCap=Math.max(1,Math.min(200,+$("#cp").value||30)); save(); renderGround(); toast("已保存"); };
   bindSettings();
+  bindRelayCard();
   $("#dbg").onchange=e=>{ S.debug=e.target.checked; save(); renderStatus(); };
   $("#ex").onclick=()=>{ const json=JSON.stringify(Object.assign({},S,{ai:Object.assign({},S.ai,{relay:{url:S.ai.relay.url,passphrase:S.ai.relay.passphrase?"(不导出)":""}}),repairs:S.repairs.map(r=>Object.assign({},r,{crop:r.crop?"(裁剪图略)":null}))}),null,2);
     $("#eb").innerHTML=`<textarea id="et" readonly style="font-family:var(--f-mono);font-size:12px;min-height:150px">${esc(json)}</textarea><button class="btn" id="cpy" style="margin-top:8px">复制</button>`;
     $("#cpy").onclick=()=>{ const ta=$("#et"); if(navigator.clipboard) navigator.clipboard.writeText(ta.value).then(()=>toast("已复制"),()=>{ ta.select(); toast("已选中，请手动复制"); }); else { ta.select(); toast("已选中，请手动复制"); } }; };
   $("#rst").onclick=()=>{ const b=$("#rst"); if(b.dataset.arm){ const keep={profile:S.profile,relay:S.ai.relay,pin:S.pin,dailyCap:S.ai.dailyCap}; S=seedState(); S.profile=keep.profile; S.ai.relay=keep.relay; S.ai.dailyCap=keep.dailyCap; S.pin=keep.pin; applyProfile(); save(); unlocked=true; renderStatus(); renderExplorer(); renderGround(); toast("已恢复示例数据"); } else { b.dataset.arm="1"; b.textContent="再点一次确认"; b.style.color="var(--bad)"; b.style.borderColor="var(--bad)"; } };
+}
+/* 指挥中心 · AI 答疑卡片：连通测试、试问一个问题、用量（docs/specs/relay.md 第 6 节）。
+   地址和口令取自已保存的设置。「已接通」只记在这次打开的页面里，不存进数据。 */
+const RELAY_LINK={url:null};
+function relayStatusWord(){ const u=S.ai.relay.url; if(!u) return "模拟模式"; return RELAY_LINK.url===u?"已接通":"已填地址 · 还没接通"; }
+function relayAgeBand(){ const g=gradeIndex(); return g<=2?"G1-2":g<=4?"G3-4":g<=6?"G5-6":g<=9?"G7-9":"G10-12"; }
+function relayWait(sec){ sec=Math.max(1,Math.ceil(sec)); if(sec<60) return "不到 1 分钟"; const m=Math.ceil(sec/60); if(m<60) return `约 ${m} 分钟`;
+  const h=Math.floor(m/60), mm=m%60; if(h<24) return `约 ${h} 小时${mm?` ${mm} 分钟`:""}`; const d=Math.floor(h/24), hh=h%24; return `约 ${d} 天${hh?` ${hh} 小时`:""}`; }
+function relayLocalWait(kind){ // 读不到 Retry-After 时，按北京时间（UTC+8）自己算到哪个 0 点
+  const now=Date.now(), t=new Date(now+8*3600e3), y=t.getUTCFullYear(), mo=t.getUTCMonth(), d=t.getUTCDate();
+  const end=kind==="monthly_cap"?Date.UTC(y,mo+1,1)-8*3600e3:Date.UTC(y,mo,d+1)-8*3600e3; return (end-now)/1000; }
+function relayFen(f){ return "¥"+((+f||0)/100).toFixed(2); }
+async function relayFetch(path,opt,ms){ const ctl=new AbortController(), timer=setTimeout(()=>ctl.abort(),ms);
+  try{ return await fetch(S.ai.relay.url.replace(/\/+$/,"")+path,Object.assign({cache:"no-store",signal:ctl.signal},opt||{})); } finally{ clearTimeout(timer); } }
+function relayAuth(){ const p=S.ai.relay.passphrase||"";
+  if(!p) return {err:"先在上面填家庭口令，再点「保存」。"};
+  if(p!==p.trim()) return {err:"口令的开头或结尾有空格。浏览器发请求时会悄悄去掉它们，口令就对不上了。请把空格删掉再保存；生成那两行设置时用的口令也不要带空格。"};
+  if(!/^[\x20-\x7e]+$/.test(p)) return {err:"口令里有汉字或全角符号，浏览器发不出去。请在部署手册第 4 步的小网页里换一个只用拼音或英文字母的口令。"};
+  return {h:{authorization:"Bearer "+p}}; }
+function relayErrorText(code,res){ const ra=res&&+res.headers.get("retry-after"), wait=k=>relayWait(ra>0?ra:(k==="locked"?1800:relayLocalWait(k)));
+  return ({
+    bad_passphrase:"口令不对。检查上面的家庭口令，要和生成那两行设置时用的完全一样。连续错 10 次会被锁半小时。",
+    locked:`口令连错太多次，中转服务锁住了，还要等${wait("locked")}。急用的话，按部署手册「常见问题」第一条：到 COS 控制台删掉 auth/failures.json，马上解锁。`,
+    daily_cap:`今天的次数用完了，还要等${wait("daily_cap")}（到明天 0 点）。想多问几次，改中转服务设置里的 CURIO_DAILY_CALLS。`,
+    monthly_cap:`这个月的花费到上限了，还要等${wait("monthly_cap")}（到下个月 1 日）。想调高，改中转服务设置里的 CURIO_MONTHLY_FEN。`,
+    no_balance:"DeepSeek 的余额用完了。请家长到 DeepSeek 后台充值，充好就能用。",
+    misconfigured:"中转服务的设置填错了，看云函数日志：日志里会写是哪一项、回手册第几步。",
+    upstream:"DeepSeek 这次没有回答（出错，或者超过 15 秒）。过一会儿再试；一直这样，先看 DeepSeek 的余额。",
+    bad_request:"请求格式不对。请把这句话告诉维护者。",
+    too_large:"请求太大了。请把这句话告诉维护者。",
+    not_found:"地址后面好像多了东西。地址只填到函数地址为止，不要带 /v1。",
+    method_not_allowed:"地址后面好像多了东西。地址只填到函数地址为止，不要带 /v1。"
+  })[code]||`中转服务回了没见过的答复（${res?res.status:"?"}）。`; }
+async function relayRead(res){ try{ return await res.json(); }catch(e){ return null; } }
+function relayShow(html,kind){ const box=$("#rr"); if(!box) return; box.innerHTML=`<div class="callout ${kind==="ok"?"tip":""}" style="min-width:0">${html}</div>`; }
+const RELAY_OFFLINE="连不上：检查地址，再看部署手册的「常见问题」。";
+function bindRelayCard(){
+  const btns=["#rt","#rq","#rus"].map(s=>$(s)).filter(Boolean);
+  const busy=(b,label)=>{ btns.forEach(x=>x.disabled=true); const old=b.textContent; b.textContent=label; return ()=>{ btns.forEach(x=>x.disabled=false); b.textContent=old; }; };
+  const needUrl=()=>{ if(S.ai.relay.url) return false; relayShow(`<span class="ct">先填地址</span><span>在上面填中转服务地址，点「保存」，再来点这里。</span>`); return true; };
+  $("#rt").onclick=async()=>{ if(needUrl()) return; const done=busy($("#rt"),"测试中…"); let ok=0, sum=0, misconf=false, other=null;
+    for(let i=0;i<5;i++){ const t0=performance.now();
+      try{ const res=await relayFetch("/v1/ping",{},5000), j=await relayRead(res);
+        if(res.ok&&j&&j.service==="curio-relay"){ ok++; sum+=performance.now()-t0; }
+        else if(j&&j.error==="misconfigured") misconf=true; else other=res.status; }
+      catch(e){} }
+    done();
+    if(ok>0){ RELAY_LINK.url=S.ai.relay.url; const p=$("#rst-pill"); if(p) p.textContent=relayStatusWord(); }
+    if(misconf&&!ok) relayShow(`<span class="ct">连上了，但设置有错</span><span>${esc(relayErrorText("misconfigured"))}</span>`);
+    else if(!ok) relayShow(`<span class="ct">成功 0/5</span><span>${esc(other?`中转服务回了 ${other}。`+relayErrorText("not_found"):RELAY_OFFLINE)}</span>`);
+    else relayShow(`<span class="ct">成功 ${ok}/5，平均 ${Math.round(sum/ok)} 毫秒</span><span class="muted" style="font-size:13px">${ok<5?"有几次没连上，网络可能不太稳。":"连得上。"}再点「试问一个问题」看看 AI 能不能回答。</span>`,"ok"); };
+  $("#rq").onclick=async()=>{ if(needUrl()) return; const a=relayAuth(); if(a.err){ relayShow(`<span class="ct">还不能问</span><span>${esc(a.err)}</span>`); return; }
+    const done=busy($("#rq"),"等回答…"), t0=performance.now();
+    try{ const res=await relayFetch("/v1/capabilities/tutor.ask",{method:"POST",headers:Object.assign({"content-type":"application/json"},a.h),body:JSON.stringify({question:"天空为什么是蓝色的？",age_band:relayAgeBand()})},25000), j=await relayRead(res);
+      if(res.ok&&j&&typeof j.answer==="string"){ const u=j.usage||{}, secs=((performance.now()-t0)/1000).toFixed(1);
+        relayShow(`<span class="ct">问：天空为什么是蓝色的？（${secs} 秒收到）</span><span style="white-space:pre-wrap">${esc(j.answer)}</span>
+          <span class="muted" style="font-size:13px">今天第 ${esc(u.calls_today)} 次，上限 ${esc(u.daily_calls)} 次；本月花了 ${relayFen(u.fen_month)}，上限 ${relayFen(u.monthly_fen)}。${j.answer.trim()?"":"回答是空的：先检查中转服务设置里的模型是不是 deepseek-flash（部署手册第 8 步）。"}</span>`,"ok"); }
+      else relayShow(`<span class="ct">没问成</span><span>${esc(relayErrorText(j&&j.error,res))}</span>`); }
+    catch(e){ relayShow(`<span class="ct">没问成</span><span>${esc(RELAY_OFFLINE)}</span>`); }
+    finally{ done(); } };
+  $("#rus").onclick=async()=>{ if(needUrl()) return; const a=relayAuth(); if(a.err){ relayShow(`<span class="ct">还不能看</span><span>${esc(a.err)}</span>`); return; }
+    const done=busy($("#rus"),"读取中…");
+    try{ const res=await relayFetch("/v1/usage",{headers:a.h},8000), j=await relayRead(res);
+      if(res.ok&&j&&j.calls_by_day){ const days=Object.keys(j.calls_by_day).sort(), total=days.reduce((n,k)=>n+(+j.calls_by_day[k]||0),0);
+        relayShow(`<span class="ct">${esc(j.month)} 的用量</span><span>本月一共问了 ${total} 次，花了 ${relayFen(j.fen_month)}（上限 ${relayFen(j.monthly_fen)}）；每天最多 ${esc(j.daily_calls)} 次。</span>
+          <div class="log">${days.map(k=>`<div>${esc(k.slice(5))} · ${esc(j.calls_by_day[k])} 次</div>`).join("")||"<div>这个月还没问过</div>"}</div>
+          <span class="muted" style="font-size:12px">中转服务只按月记花费，所以每天只显示次数。花费按设置里的单价估算，以 DeepSeek 后台的账单为准。</span>`,"ok"); }
+      else relayShow(`<span class="ct">没读到</span><span>${esc(relayErrorText(j&&j.error,res))}</span>`); }
+    catch(e){ relayShow(`<span class="ct">没读到</span><span>${esc(RELAY_OFFLINE)}</span>`); }
+    finally{ done(); } };
 }
 function openBlackBox(){ const was=$(".pop.box"); closePops(); if(was) return; const p=document.createElement("div"); p.className="pop right box";
   p.innerHTML=`<h3>黑匣子 · 学习事件流</h3><div class="log" style="max-height:52vh">${S.events.slice(-60).reverse().map(e=>`<div class="ev ${e.kind||""}"><span class="v">${esc(e.verb)}</span> <span class="muted">${esc((e.ts||"").slice(11,19))}${e.seed?" · 示例":""}</span><br><span class="muted">${esc(e.node||"")}${e.activity?" · "+esc(e.activity):""}</span>${e.result?`<br>${esc(JSON.stringify(e.result))}`:""}</div>`).join("")}</div>`;

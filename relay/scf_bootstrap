@@ -1,0 +1,10 @@
+#!/bin/bash
+# 腾讯云 Web 函数的启动文件：平台启动实例时执行它。
+# 文件名只能是 scf_bootstrap，要有 755 权限，LF 换行（腾讯云「Web 函数 · 启动文件说明」）。
+# 它进到代码包所在的目录，用 Node.js 运行适配层 adapters/tencent.js；适配层监听 0.0.0.0:9000。
+# 需要 Node.js 18 或更新：按 20、18 的顺序找平台自带的 node。
+cd "$(dirname "$0")" || exit 1
+for NODE in /var/lang/node20/bin/node /var/lang/node18/bin/node; do
+  if [ -x "$NODE" ]; then exec "$NODE" adapters/tencent.js; fi
+done
+exec node adapters/tencent.js
