@@ -3935,7 +3935,189 @@
      "cost_ufen": 280000
     }
    }
+  },
+  {
+   "name": "花费用整数算：奇数个 token",
+   "why": "777×200 + 0×20 + 333×800 = 155400 + 266400 = 421800（浮点先除再乘会得到 421800.00000000006）",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 200
+     },
+     "upstream": {
+      "status": 200,
+      "json": {
+       "choices": [
+        {
+         "message": {
+          "content": "舰长，阳光里藏着好多颜色，蓝色最容易被空气弹来弹去。"
+         }
+        }
+       ],
+       "usage": {
+        "prompt_cache_miss_tokens": 777,
+        "prompt_cache_hit_tokens": 0,
+        "completion_tokens": 333
+       }
+      }
+     }
+    },
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 200
+     },
+     "upstream": {
+      "status": 200,
+      "json": {
+       "choices": [
+        {
+         "message": {
+          "content": "舰长，阳光里藏着好多颜色，蓝色最容易被空气弹来弹去。"
+         }
+        }
+       ],
+       "usage": {
+        "prompt_cache_miss_tokens": 777,
+        "prompt_cache_hit_tokens": 0,
+        "completion_tokens": 333
+       }
+      }
+     }
+    }
+   ],
+   "storage_after": {
+    "usage/2026-11.json": {
+     "calls_by_day": {
+      "2026-11-09": 2
+     },
+     "cost_ufen": 843600
+    }
+   }
+  },
+  {
+   "name": "失败记录的文件坏了",
+   "why": "读到的不是合法 JSON → 500 misconfigured，日志说是哪个文件",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 500,
+      "json": {
+       "error": "misconfigured"
+      },
+      "logs_nonempty": true,
+      "upstream_calls": 0
+     }
+    }
+   ],
+   "raw_storage": {
+    "auth/failures.json": "{times:"
+   }
+  },
+  {
+   "name": "用量文件的格式不对",
+   "why": "cost_ufen 不是整数 → 500 misconfigured",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 500,
+      "json": {
+       "error": "misconfigured"
+      },
+      "upstream_calls": 0
+     }
+    }
+   ],
+   "storage": {
+    "usage/2026-11.json": {
+     "calls_by_day": {},
+     "cost_ufen": "lots"
+    }
+   }
+  },
+  {
+   "name": "DeepSeek 回 503 却带着内容",
+   "why": "非 2xx 一律算出错 → 502 upstream，次数不加",
+   "steps": [
+    {
+     "at": "2026-11-09T05:00:00.000Z",
+     "request": {
+      "method": "POST",
+      "path": "/v1/capabilities/tutor.ask",
+      "auth": "good",
+      "body": {
+       "question": "为什么天空是蓝色的？",
+       "age_band": "G3-4"
+      }
+     },
+     "expect": {
+      "status": 502,
+      "json": {
+       "error": "upstream"
+      }
+     },
+     "upstream": {
+      "status": 503,
+      "json": {
+       "choices": [
+        {
+         "message": {
+          "content": "舰长，阳光里藏着好多颜色，蓝色最容易被空气弹来弹去。"
+         }
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "storage_absent": [
+    "usage/2026-11.json"
+   ]
   }
+ ],
+ "global_never_log": [
+  "为什么天空是蓝色的？",
+  "舰长，阳光里藏着好多颜色，蓝色最容易被空气弹来弹去。",
+  "为什么我的眼睛像妈妈？"
  ],
  "global_never_contain": [
   "sk-test-not-a-real-key",

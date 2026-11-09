@@ -3,7 +3,7 @@
 //
 // 用例格式（curio-relay-cases/1）：
 //   base_env + case.env（值为 null 表示删掉这一项）→ env，全是字符串。
-//   case.storage：初始存储，键 → 对象（这里转成 JSON 字符串放进去）。
+//   case.storage：初始存储，键 → 对象（这里转成 JSON 字符串放进去）；case.raw_storage：键 → 原样字符串（用来放坏掉的内容）。
 //   case.steps[]：按顺序发请求。
 //     at：这一步的时间（deps.now() 返回它的毫秒数）。
 //     origin：请求的 Origin，默认 doc.origin；null 表示不带 Origin 头。
@@ -23,6 +23,7 @@
 //   case.storage_absent：结束时这些键不存在。
 //   case.never_contain：存储里的任何值、任何日志都不能包含这些字符串（不存原文）。
 //   doc.global_never_contain：每一条用例的存储、日志、响应体、响应头都不能包含这些字符串（密钥、口令、盐、哈希）。
+//   doc.global_never_log：每一条用例的存储和日志都不能包含这些字符串（问题和回答的原文）。
 //   日志 = console 的五个方法 + process.stdout.write + process.stderr.write。
 //
 // handle(request, env, deps) 可以是 async。deps.storage.get/put 返回 Promise；deps.upstream 返回 Promise。
@@ -73,6 +74,7 @@ function makeRequest(step) {
 for (const c of doc.cases) {
   test(c.name, async () => {
     const store = new Map(Object.entries(c.storage || {}).map(([k, v]) => [k, JSON.stringify(v)]));
+    for (const [k, v] of Object.entries(c.raw_storage || {})) store.set(k, v);
     let now = 0;
     let pending = null;
     let calls = [];
@@ -178,6 +180,10 @@ for (const c of doc.cases) {
       for (const [k, v] of store) assert.ok(!v.includes(s), `存储 ${k} 里出现了不该出现的「${s.slice(0, 6)}…」`);
       for (const l of logs) assert.ok(!l.includes(s), `日志里出现了不该出现的「${s.slice(0, 6)}…」`);
       for (const r of responses) assert.ok(!r.includes(s), `响应里出现了不该出现的「${s.slice(0, 6)}…」`);
+    }
+    for (const s of doc.global_never_log || []) {
+      for (const [k, v] of store) assert.ok(!v.includes(s), `存储 ${k} 里出现了原文「${s}」`);
+      for (const l of logs) assert.ok(!l.includes(s), `日志里出现了原文「${s}」`);
     }
     for (const s of c.never_contain || []) {
       for (const [k, v] of store) assert.ok(!v.includes(s), `存储 ${k} 里出现了原文「${s}」`);
