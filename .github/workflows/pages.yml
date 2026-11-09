@@ -1,11 +1,12 @@
 # 把 prototype/ 发布到 GitHub Pages，同时把中转服务打成 zip 放在 relay/ 下（部署手册第 7 步下载它）。
-# main 分支上的 prototype/ 或 relay/ 一变化就自动发布，也可以在 Actions 页面手动运行。
+# 竖切片 1 的演示页：app/、kernel/、engine/ 原样发布，release/ 是从 1a 夹具构建的发布包（切片规格第 8 节）。
+# main 分支上这些目录一变化就自动发布，也可以在 Actions 页面手动运行。
 name: 发布原型到 GitHub Pages
 
 on:
   push:
     branches: [main]
-    paths: ["prototype/**", "relay/**", ".github/workflows/pages.yml"]
+    paths: ["prototype/**", "relay/**", "app/**", "kernel/**", "engine/**", "tools/build_release.py", "tools/tests/fixtures/slice-1a/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -36,6 +37,20 @@ jobs:
             (cd relay && zip -X -r ../_site/relay/curio-relay.zip scf_bootstrap package.json src adapters)
             unzip -Z _site/relay/curio-relay.zip | grep -q '^-rwx.*scf_bootstrap$'
             cp relay/tools/passphrase.html _site/relay/passphrase.html
+          fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 竖切片 1 演示页（https://deepnorth2077.github.io/Curio/app/）
+        run: |
+          if [ -f app/index.html ]; then
+            pip install --quiet -r tools/requirements.txt
+            python tools/build_release.py --content tools/tests/fixtures/slice-1a/content --out _site/release
+            mkdir -p _site/app _site/kernel _site/engine
+            cp -r kernel/js _site/kernel/js
+            cp -r engine/js _site/engine/js
+            find app -maxdepth 1 -type f -exec cp {} _site/app/ \;
+            test -f _site/release/release.json
           fi
       - uses: actions/upload-pages-artifact@v3
         with:
