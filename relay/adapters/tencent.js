@@ -7,8 +7,10 @@
 // deps.storage：COS 的 XML API（GET/PUT Object），自己按 COS 请求签名算法签名
 //   （q-sign-algorithm=sha1，HMAC-SHA1；文档：腾讯云对象存储「请求签名」，
 //   https://cloud.tencent.com/document/product/436/7778）。凭证是云函数运行角色给的临时密钥：
-//   环境变量 TENCENTCLOUD_SECRETID、TENCENTCLOUD_SECRETKEY、TENCENTCLOUD_SESSIONTOKEN，
-//   令牌放在请求头 x-cos-security-token 里。
+//   Web 函数在每个请求的头里带 X-Scf-Secret-Id、X-Scf-Secret-Key、X-Scf-Session-Token
+//   （腾讯云「函数概述 → 函数公共请求头」，开启运行角色后才有）；事件函数用环境变量
+//   TENCENTCLOUD_SECRETID、TENCENTCLOUD_SECRETKEY、TENCENTCLOUD_SESSIONTOKEN。先看请求头，没有再看环境变量。
+//   令牌放在请求头 x-cos-security-token 里。所有 x-scf-* 头都不交给 handle。
 // deps.upstream：全局 fetch 调 DeepSeek，15 秒超时就抛错。
 // 不引入任何 npm 依赖。需要 Node.js 18 或更新（全局 fetch、Request、Response、AbortSignal.timeout）。
 
@@ -155,10 +157,24 @@ export function readBody(req, limit = BODY_READ_LIMIT) {
   });
 }
 
+// 运行角色的临时密钥：Web 函数从请求头拿，事件函数从环境变量拿。
+export function credsFrom(headers, env = {}) {
+  const h = headers || {};
+  const pick = (name) => {
+    const v = h[name];
+    return Array.isArray(v) ? v[0] : v;
+  };
+  const id = pick("x-scf-secret-id"), key = pick("x-scf-secret-key");
+  if (id && key) return { secretId: id, secretKey: key, sessionToken: pick("x-scf-session-token") };
+  return { secretId: env.TENCENTCLOUD_SECRETID, secretKey: env.TENCENTCLOUD_SECRETKEY, sessionToken: env.TENCENTCLOUD_SESSIONTOKEN };
+}
+
 export function toRequest({ method, url, headers }, body) {
   const h = new Headers();
   for (const [k, v] of Object.entries(headers || {})) {
-    if (v === undefined || SKIP_HEADERS.has(k.toLowerCase())) continue;
+    const lk = k.toLowerCase();
+    // 平台注入的 x-scf-* 头里有临时密钥，不交给 handle
+    if (v === undefined || SKIP_HEADERS.has(lk) || lk.startsWith("x-scf-")) continue;
     h.set(k, Array.isArray(v) ? v.join(", ") : String(v));
   }
   const host = (headers && headers.host) || "localhost";
@@ -179,15 +195,15 @@ export async function writeResponse(res, response) {
   res.end(buf);
 }
 
-export function makeDeps(env = process.env, fetchImpl = globalThis.fetch) {
+export function makeDeps(env = process.env, fetchImpl = globalThis.fetch, creds = credsFrom({}, env)) {
   return {
     storage: makeCosStorage({
       fetchImpl,
       bucket: env.CURIO_BUCKET,
       region: env.CURIO_REGION,
-      secretId: env.TENCENTCLOUD_SECRETID,
-      secretKey: env.TENCENTCLOUD_SECRETKEY,
-      sessionToken: env.TENCENTCLOUD_SESSIONTOKEN,
+      secretId: creds.secretId,
+      secretKey: creds.secretKey,
+      sessionToken: creds.sessionToken,
     }),
     // 密钥粘贴时常带上换行或空格，放进请求头会出错，这里去掉首尾空白
     upstream: makeUpstream({ apiKey: String(env.DEEPSEEK_API_KEY || "").trim(), fetchImpl }),
@@ -195,7 +211,7 @@ export function makeDeps(env = process.env, fetchImpl = globalThis.fetch) {
   };
 }
 
-export function createServer(env = process.env) {
+export function createServer(env = process.env, fetchImpl = globalThis.fetch) {
   return http.createServer(async (req, res) => {
     let body;
     try {
@@ -207,8 +223,8 @@ export function createServer(env = process.env) {
       return;
     }
     try {
-      // 临时密钥会轮换，每个请求重新读环境变量。
-      const response = await handle(toRequest(req, body), env, makeDeps(env));
+      // 临时密钥会轮换，每个请求重新取。
+      const response = await handle(toRequest(req, body), env, makeDeps(env, fetchImpl, credsFrom(req.headers, env)));
       await writeResponse(res, response);
     } catch (e) {
       console.error("[curio-relay] 适配层出错：" + (e && e.name ? e.name : "Error"));
