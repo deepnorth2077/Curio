@@ -306,6 +306,37 @@ class TestKnowledgePointBranch(Base):
         self.r.write("prompts/act.quiz.frac.md", "# 提示词"); self.r.commit()
         self.ok(self.r.check())
 
+    def test_kp_branch_may_write_review_records_for_own_activity_and_node(self):
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=["act.quiz.frac"], mis=("denominator-bigger",)))
+        self.r.write("content/activities/act.quiz.frac/activity.yaml", structured("act.quiz.frac", [N2]))
+        self.r.write("docs/reviews/act.quiz.frac.md", "# 审查记录")
+        self.r.write(f"docs/reviews/{N2}.md", "# 知识点的审查记录"); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_kp_branch_may_not_write_other_review_records_or_docs(self):
+        self.r.write(f"{NODE_DIR}/{N1}.yaml", node(N1, activities=["act.quiz.other"]))
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2))
+        self.r.write("content/activities/act.quiz.other/manifest.yaml", activity("act.quiz.other", [N1]))
+        self.add_html("act.quiz.other"); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.r.write("docs/reviews/act.quiz.other.md", "# 别人的活动")
+        self.r.write(f"docs/reviews/{N1}.md", "# 别的知识点")
+        self.r.write("docs/reviews/pr-1.md", "# PR 的审阅记录")
+        self.r.write("docs/standards.md", "# 规范"); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), sorted([
+            "docs/reviews/act.quiz.other.md", f"docs/reviews/{N1}.md", "docs/reviews/pr-1.md", "docs/standards.md"]))
+
+    def test_kp_branch_may_not_delete_review_records(self):
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=["act.quiz.frac"], mis=("denominator-bigger",)))
+        self.r.write("content/activities/act.quiz.frac/activity.yaml", structured("act.quiz.frac", [N2]))
+        self.r.write("docs/reviews/act.quiz.frac.md", "# 审查记录")
+        self.r.write(f"docs/reviews/{N2}.md", "# 知识点的审查记录"); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.r.delete("docs/reviews/act.quiz.frac.md"); self.r.delete(f"docs/reviews/{N2}.md"); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), sorted(["docs/reviews/act.quiz.frac.md", f"docs/reviews/{N2}.md"]))
+
     def test_own_structured_activity_on_kp_branch_passes(self):
         self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.baseline()
         self.r.branch(f"kp/{N2}")

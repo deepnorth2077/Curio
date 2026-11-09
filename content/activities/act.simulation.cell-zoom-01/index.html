@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>显微镜下的小房间</title>
+<style>
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
+  --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#E0876A; --accent-soft:#3A2A24;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;
+  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:820px;margin:0 auto;padding:12px 14px 28px}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;overflow:hidden}
+.card header,.card footer{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px}
+.card header{border-bottom:1px solid var(--rule)}
+.card footer{border-top:1px solid var(--rule);min-height:44px;align-items:center;flex-wrap:wrap}
+.station{font-size:13px;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+h1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);margin:0;text-align:right}
+.hint{font-size:14px;color:var(--muted);flex:1 1 auto}
+.readout{white-space:nowrap;margin-left:auto;font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15px;text-align:right}
+.readout b{color:var(--accent);font-weight:600}
+/* 画面占了大半屏：允许上下滑动页面；转旋钮、拖玻片、拖红点时在 touchstart 里拦下滚动 */
+svg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+svg#stage:focus{outline:none}
+body.kbd svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.4;stroke-linecap:round;stroke-dasharray:3 6}
+.thread{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+/* SVG 里的字号只在这里定：写在元素属性上的 font-size 会被这里盖掉。手机上统一放大 */
+.t{fill:var(--ink);font-family:var(--f-sans);font-size:16px}
+.tm{fill:var(--muted);font-family:var(--f-sans);font-size:15px}
+.num{fill:var(--ink);font-family:var(--f-mono);font-size:16px}
+.lab{fill:var(--ink);font-family:var(--f-sans);font-size:19px}
+.ttl{fill:var(--ink);font-family:var(--f-serif);font-size:26px}
+.big{fill:var(--ink);font-family:var(--f-serif);font-size:30px}
+.cnt{fill:var(--ink);font-family:var(--f-mono);font-size:40px}
+.huge{fill:var(--ink);font-family:var(--f-serif);font-size:84px}
+.c-cheek{fill:var(--paper);stroke:var(--ink);stroke-width:1.2;stroke-linejoin:round}
+.c-onion{fill:var(--sage);stroke:var(--ink);stroke-width:1.3;stroke-linejoin:round}
+.c-rbc{fill:var(--apricot);stroke:var(--ink);stroke-width:1.2}
+.dimple{fill:none;stroke:var(--ink);stroke-width:1;stroke-opacity:.35}
+.c-hero{fill:var(--accent);fill-opacity:.26;stroke:var(--accent);stroke-width:2.6;stroke-linejoin:round}
+.nuc{fill:var(--ink);fill-opacity:.55}
+.talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
+.ava{flex:none;width:42px;height:42px}
+.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
+.bubble.good{background:var(--good-soft);border-color:transparent}
+.bubble.bad{background:var(--bad-soft);border-color:transparent}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:10px 0 0}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:manipulation}
+.btn.ghost{background:var(--pane);color:var(--ink)}
+.btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
+.btn.choice:hover{background:var(--hover)}
+.btn.hold{background:var(--accent);border-color:var(--accent);color:#fff;touch-action:none;-webkit-touch-callout:none}
+.btn.hold.on{filter:brightness(.9)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500}
+.qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
+@media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px}
+  .t{font-size:22px} .tm{font-size:22px} .num{font-size:22px} .lab{font-size:24px} .ttl{font-size:32px} .big{font-size:34px} .cnt{font-size:40px} .huge{font-size:72px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <header><span class="station" id="station">第 1 站 · 共 4 站</span><h1 id="title">放大</h1></header>
+    <svg id="stage" viewBox="0 0 800 610" tabindex="0" role="application" aria-label="动手区">
+      <defs><clipPath id="vclip"><circle id="vclipc" cx="285" cy="272" r="210"/></clipPath></defs>
+      <g id="static"></g><g id="dyn"></g>
+      <!-- 一直不重绘的透明触摸层：手指按下的目标不会被 innerHTML 换掉，touchstart 才能到 svg、拦下滚动 -->
+      <rect id="hit" x="0" y="0" width="800" height="610" fill="transparent"/>
+    </svg>
+    <footer><span class="hint" id="hint"></span><span class="readout" id="readout"></span></footer>
+  </div>
+  <div class="talk">
+    <svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="27" r="16" fill="var(--sky)"/>
+      <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+      <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+      <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+      <path class="k1" d="M18 32 C21 35 27 35 30 32"/>
+    </svg>
+    <div class="bubble" id="say" aria-live="polite"></div>
+  </div>
+  <div class="actions" id="actions"></div>
+  <div id="qarea"></div>
+</div>
+
+<script>
+"use strict";
+/* ============ 1. 真相模型：页面上的每个数字都从这里算 ============
+   出处在 2026-11-06 / 11-07 用网络核对，见右边注释。 */
+const MODEL = {
+  bodyCells: 3.72e13,   // 人体约 3.72×10¹³ 个细胞。Bianconi E 等 2013, Annals of Human Biology 40(6):463–471, doi:10.3109/03014460.2013.807878
+                        //   核对：BioNumbers BNID 109716 引同一篇，3.7×10¹³ ± 0.8×10¹³
+  rbcCells: 2.5e13,     // 红细胞约 2.5×10¹³ 个：Sender R, Fuchs S, Milo R 2016, PLoS Biol 14(8):e1002533——约 3.0×10¹³ 个人体细胞里红细胞占 84%
+                        //   核对：BioNumbers BNID 113005「The cell count is dominated by red blood cells (84%)」
+  earthKm: 40075,       // 地球赤道一圈约 40075 公里（NASA Earth Fact Sheet：赤道半径 6378 千米 × 2π）
+  hookeYear: 1665,      // 胡克《Micrographia》1665：看软木塞，一格格小空格像修道院的小房间，叫 cell（拉丁文 cella = 小房间）
+                        //   注意：软木塞的细胞已经死了，胡克看到的是空的格子壁。页面只说「小空格」
+  eyeMm: 0.1,           // 人眼能分辨的最小约 0.1 毫米。James Madison University 显微镜中心 resolution.pdf
+                        //   页面不说「比 0.1 毫米小就看不见」（一根 0.07 毫米的头发明明看得见），只说「又小、又挤在一起，眼睛就分不清」
+  hairMm: 0.07,         // 一根头发约 0.05～0.1 毫米，取 0.07。The Physics Factbook（扫描电镜实测 0.06～0.08 毫米）
+  cheekMm: 0.06,        // 口腔上皮细胞：扁平、边缘不规则，约 0.05～0.07 毫米，取 0.06。
+                        //   样本：人教版初中生物学七年级上册（2024 年版）第一单元第二章第三节「动物细胞」的实验「观察人的口腔上皮细胞」
+                        //   （和知识点卡 sources 一致；2024 年版原文没在网上查到全文，这个实验从 2012 年版起一直保留）。
+                        //   取样是用消毒牙签/棉签在口腔内侧轻刮，滴碘液染色后细胞核最清楚。
+                        //   「低倍镜可观察到边缘不规则的扁平细胞」：仪器信息网 口腔上皮细胞装片制作 instrument.com.cn/suppliers/SH103540/news_683844.html
+                        //   大小：Hande AH & Chaudhary MS 2010, Romanian Journal of Morphology and Embryology 51(3)：正常人颊黏膜细胞直径 72.9 ± 5.3 微米（取的是最长径）；
+                        //   中学资料多写 50～60 微米。取 0.06 毫米，页面写「约 0.06 毫米」。这些是口腔里表层的活细胞，有细胞核（和手背最外层的死细胞不同）
+  rbcMm: 0.0075,        // 红细胞直径 7～8 微米，双凹的圆饼；人成熟的红细胞没有细胞核（人教版七上；life-manual）
+  onionMm: 0.25,        // 洋葱表皮细胞约 0.2～0.4 毫米长，取 0.25。docbrown.info microscopy-3（约 200 微米）；Wayne's Word Lab Exercise 1（0.25～0.4 毫米）
+  onionWideMm: 0.05,    // 只用来画长砖的宽，页面上不显示这个数
+  neuronM: 1,           // 最长的神经细胞从脊髓下端伸到大脚趾，可以超过 1 米。Guinness World Records「Longest cell」。页面说「1 米多」
+  fov0Mm: 40,           // 画法约定（不是事实）：放大 1 倍时，视野圆圈当作 4 厘米宽，放大 m 倍就是 40/m 毫米。
+                        //   真的学生显微镜（目镜 10×、视场数约 18 毫米）同样倍数下视野约宽 4.5 倍，细胞看起来更小。页面上由领航员说明「飞船上的倍数简化过」
+  maxMag: 400,
+  target: { cheek: 100, onion: 40, blood: 400 }   // 每种样本放大到几倍算「看清了」：在这套约定下，细胞约占视野的 1/7～1/13
+};
+MODEL.divisions = Math.round(Math.log2(MODEL.bodyCells));   // 45：log2(3.72×10¹³) ≈ 45.1
+MODEL.cellsAfter = Math.pow(2, MODEL.divisions);            // 2^45 ≈ 35.2 万亿（算术，假设每次全部分成两个）
+MODEL.rbcLineKm = MODEL.rbcCells * MODEL.rbcMm / 1e6;       // 红细胞一个挨一个排成一排：2.5×10¹³ × 0.0075 毫米 ≈ 18.75 万公里
+MODEL.earthLoops = MODEL.rbcLineKm / MODEL.earthKm;         // ≈ 4.68 圈 →「4 圈多」
+MODEL.onionVsCheek = Math.floor(MODEL.onionMm / MODEL.cheekMm);                     // 4：0.25 / 0.06 ≈ 4.2 →「4 倍多」
+MODEL.neuronVsRbcWan = Math.floor(MODEL.neuronM * 1000 / MODEL.rbcMm / 1e4);        // 13：1 米 ÷ 0.0075 毫米 ≈ 13.3 万倍
+MODEL.cheekNearHair = Math.abs(MODEL.cheekMm / MODEL.hairMm - 1) < .25;             // 0.06 / 0.07 ≈ 0.86 →「差不多粗」
+const magOf = z => Math.pow(MODEL.maxMag, z);
+const zOf = m => Math.log(m) / Math.log(MODEL.maxMag);
+const trim = s => String(s).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
+function fmtMm(mm){
+  if (mm >= 10) return trim((mm / 10).toFixed(mm >= 100 ? 0 : 1)) + " 厘米";
+  if (mm >= 1) return trim(mm.toFixed(mm >= 9.95 ? 0 : 1)) + " 毫米";
+  return String(+mm.toPrecision(2)) + " 毫米";
+}
+const fmtMag = m => String(Math.max(1, Math.round(m)));
+// 用法：`${fmtCount(n)}个`——数和「万」之间空一格，「万」和量词之间不空
+function fmtCount(n){
+  const u = (v, w) => (v < 10 ? trim(v.toFixed(1)) : String(Math.round(v))) + " " + w;
+  if (n < 1e4) return String(Math.round(n));
+  if (n < 1e8) return u(n / 1e4, "万");
+  if (n < 1e12) return u(n / 1e8, "亿");
+  return u(n / 1e12, "万亿");
+}
+
+/* ============ 2. 平台契约 activity/1.1（单独打开时也能玩） ============ */
+const Host = (() => {
+  const h = {}, inFrame = window.parent !== window;
+  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); };
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
+    state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
+})();
+Host.on("init", p => {
+  if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
+});
+// 事件只在第一轮发；同一件事只发一次（key 去重）。「再玩一次」不再发 predicted、observed、complete
+let ROUND = 1;
+const SENT = new Set();
+function emit(verb, result, key){
+  if (ROUND > 1) return;
+  if (key){ if (SENT.has(key)) return; SENT.add(key); }
+  Host.event(verb, result);
+}
+
+/* ============ 3. 手绘线条（平台的 sketchLib） ============ */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function blob(cx,cy,rx,ry,seed){ const r=R(seed), N=9, p=[]; for(let i=0;i<N;i++){ const t=i/N*Math.PI*2, k=1+(r()-.5)*.1; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); } return cr(p,true)+"Z"; }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,blob,curve,cr,R};
+}
+const Sk = sketchLib();
+function ring(cx, cy, r, seed, j){   // 大圆：一笔画圈，末尾稍稍搭过头
+  const rnd = Sk.R(seed), N = 28, a0 = rnd() * Math.PI * 2, over = .03 + rnd() * .03, p = [];
+  j = j == null ? 1 : j;
+  for (let i = 0; i <= N; i++){ const t = a0 + i / N * Math.PI * 2 * (1 + over), k = 1 + (rnd() - .5) * .012 * j; p.push([cx + Math.cos(t) * r * k, cy + Math.sin(t) * r * k]); }
+  return Sk.cr(p, false);
+}
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+// 字号只由 class 决定（.t .tm .num .lab .ttl .big .cnt .huge），手机上在 CSS 里统一放大
+const T = (x, y, s, cls, extra) => `<text x="${x}" y="${y}" class="${cls || "t"}"${extra ? " " + extra : ""}>${s}</text>`;
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const smooth = t => t * t * (3 - 2 * t);
+const f1 = n => Math.round(n * 10) / 10;
+function hash(i, j, s){ let x = Math.imul(i | 0, 73856093) ^ Math.imul(j | 0, 19349663) ^ Math.imul((s | 0) + 1, 83492791); x = Math.imul(x ^ (x >>> 13), 1274126177); return ((x ^ (x >>> 16)) >>> 0) / 4294967296; }
+const limb = (d, w, fill) => `<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="${f1(w + 3)}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${fill}" stroke-width="${f1(w)}" stroke-linecap="round" stroke-linejoin="round"/>`;
+const rectP = (x0, y0, w, h) => `M${f1(x0)} ${f1(y0)}h${f1(w)}v${f1(h)}h${f1(-w)}Z`;
+
+/* ============ 4. 页面骨架 ============ */
+const $ = id => document.getElementById(id);
+const svg = $("stage"), gStatic = $("static"), gDyn = $("dyn");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const STATIONS = 4;
+function fresh(){
+  return { station: 1, mode: "talk", holdKey: null, z: 0, zt: 0, sample: "cheek", seen: { cheek: false, onion: false, blood: false },
+    said: {}, band: -1, want: null, drag: null, cork: false,
+    nzT: 0, nzP: 0, nt: 0, np: 0, neuronDone: false,            // 神经细胞：镜头拉远的过渡、拖出来的长度
+    d: 0, dt: 0, earth: false, eP: 0,                            // 第 3 站：分裂进度、地球「哇」
+    pick: { cheek: null, onion: null, blood: null }, stain: { cheek: 0, onion: 0, blood: 0 }, staining: null,
+    found: {}, saidBook: false, saidSeen: false, focus: -1, kbd: false };
+}
+let S = fresh();
+
+function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
+function hint(s){ $("hint").textContent = s || ""; }
+function readout(html){ $("readout").innerHTML = html || ""; }
+function say(text, tone){ const b = $("say"); b.textContent = text; b.className = "bubble" + (tone ? " " + tone : ""); }
+// 手指还按着时换出来的新按钮，先禁用到这次抬起（按住「放大」「分」刚完成时最常见）
+let fingerDown = false, keyHeld = false;
+addEventListener("pointerdown", () => { fingerDown = true; }, true);
+for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);   // 抬起时立刻记下
+addEventListener("keydown", e => { if (e.repeat) keyHeld = true; if (e.key !== "Shift") document.body.classList.add("kbd"); }, true);
+addEventListener("pointerdown", () => document.body.classList.remove("kbd"), true);
+addEventListener("keyup", () => { keyHeld = false; }, true);
+const FRESH_MS = 400, FRESH_KEY_MS = 900;   // 新按钮出现后 400 毫秒内不认点击：双击「继续」时第二下不会替孩子选答案；
+// 键盘连敲空格「放大」时，站点完成、焦点跳到新按钮，900 毫秒内的键盘点击也不认
+function actions(list, keepFocus){
+  const box = $("actions");
+  const ae = document.activeElement;
+  const moveFocus = !keepFocus && (!ae || ae === document.body || ae === svg || box.contains(ae));
+  box.replaceChildren();
+  const guard = fingerDown, born = performance.now();
+  for (const a of list || []){
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn " + (a.cls || ""); b.textContent = a.label;
+    if (a.hold){
+      const on = v => { S.holdKey = v ? a.hold : null; b.classList.toggle("on", v); };
+      b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); on(true); });
+      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => on(false));
+      b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); a.step(); } });
+      b.addEventListener("contextmenu", e => e.preventDefault());
+    } else {
+      b.addEventListener("click", e => {
+        if (performance.now() - born < (e.detail === 0 ? FRESH_KEY_MS : FRESH_MS)) return;      // 双击、连点、连敲
+        if (e.detail === 0 && keyHeld) return;                // 键盘一直按着、自动重复
+        a.go(e);
+      });
+      if (guard){ b.disabled = true; const on = () => { setTimeout(() => { b.disabled = false; }, 120); removeEventListener("pointerup", on, true); }; addEventListener("pointerup", on, true); }
+    }
+    box.append(b);
+  }
+  if (moveFocus && box.firstChild) box.firstChild.focus({ preventScroll: true });
+  return box;
+}
+function ask(item, question, options, onAnswer){
+  say(question);
+  actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
+    emit("predicted", { station: S.station, item, choice: i, correct: !!o.correct, misconception: o.mis || null }, "p-" + item);
+    say(o.feedback, o.correct ? "good" : "bad");
+    onAnswer(o);
+  }})));
+}
+function next(label, go, cls, keepFocus){ actions([{ label, go, cls }], keepFocus); }
+
+// 「我有个问题」：随时可以问，发到信号站
+(function(){
+  const area = $("qarea");
+  const open = document.createElement("button");
+  open.type = "button"; open.className = "btn ghost small"; open.textContent = "我有个问题";
+  open.style.marginTop = "12px";
+  open.addEventListener("click", () => {
+    if (area.querySelector("textarea")) return;
+    const ta = document.createElement("textarea"); ta.maxLength = 120; ta.placeholder = "想问领航员什么？";
+    const send = document.createElement("button"); send.type = "button"; send.className = "btn small"; send.textContent = "发给领航员";
+    const box = document.createElement("div"); box.className = "qbox"; box.append(ta, send);
+    send.addEventListener("click", () => {
+      const q = ta.value.trim(); if (!q) return;
+      Host.noteQuestion(q); box.remove(); say("好问题，我记下来了。等会儿一起找答案。");
+    });
+    area.append(box); ta.focus();
+  });
+  area.append(open);
+})();
+
+/* ============ 5. 排版：电脑和平板一套（800 宽），手机一套（520 宽、竖着排） ============ */
+// 手机上 800 宽的画面会缩到不到一半；换成 520 宽的竖排版，视野圆圈、旋钮、玻片都放大约 1.5 倍
+const NRQ = matchMedia("(max-width:520px)");
+let NR = NRQ.matches, VBW = 800, VBH = 610;
+let VX = 285, VY = 272;
+const VR = 210, KR = 44;
+let DX = 665, DY = 462;
+let SCOPE = { tx: 0, ty: 0, s: 1 }, STAGE = { x: 652, y: 186 };
+let ILLO = { x: 100, y: 556 }, CORK = { x: 210, y: 508 };
+const SLIDES = { cheek: { x: 105, name: "口腔" }, onion: { x: 270, name: "洋葱" }, blood: { x: 435, name: "血" } };
+let SLIDE_Y = 552, SW = 146, SH = 48;
+const TILE = { cheek: { name: "口腔" }, onion: { name: "洋葱" }, blood: { name: "血" } };
+let TR = 118;
+const KEYS = ["cheek", "onion", "blood"];
+function fitView(){
+  NR = NRQ.matches;
+  const st = S.station;
+  if (!NR){
+    VBW = 800; VBH = 610; VX = 285; VY = 272; DX = 665; DY = 462;
+    SCOPE = { tx: 0, ty: 0, s: 1 }; ILLO = { x: 100, y: 556 }; CORK = { x: 210, y: 508 };
+    SW = 146; SH = 48; SLIDE_Y = 552; SLIDES.cheek.x = 105; SLIDES.onion.x = 270; SLIDES.blood.x = 435;
+    TR = 118; [140, 400, 660].forEach((x, i) => Object.assign(TILE[KEYS[i]], { x, y: 284, cx: x, cy: 88, cr: 54 }));
+  } else {
+    VBW = 520; VBH = st <= 2 ? 840 : st === 3 ? 740 : st === 4 ? 960 : 800;
+    VX = 260; VY = 245; DX = 110; DY = 585;
+    SCOPE = { tx: -96.6, ty: 469.6, s: .6 }; ILLO = { x: 440, y: 556 }; CORK = { x: 110, y: 738 };
+    SW = 150; SH = 60; SLIDE_Y = 775; SLIDES.cheek.x = 85; SLIDES.onion.x = 260; SLIDES.blood.x = 435;
+    TR = 115; [135, 425, 715].forEach((y, i) => Object.assign(TILE[KEYS[i]], { x: 160, y, cx: 410, cy: y - 18, cr: 66 }));
+  }
+  STAGE = { x: 652 * SCOPE.s + SCOPE.tx, y: 186 * SCOPE.s + SCOPE.ty };
+  svg.setAttribute("viewBox", `0 0 ${VBW} ${VBH}`);
+  $("hit").setAttribute("width", VBW); $("hit").setAttribute("height", VBH);
+  const c = $("vclipc"); c.setAttribute("cx", VX); c.setAttribute("cy", VY); c.setAttribute("r", VR);
+  gStatic.innerHTML = S.station === 3 ? counterStatic() : "";
+}
+NRQ.addEventListener && NRQ.addEventListener("change", () => { fitView(); render(); });
+// 点击判定半径按屏幕像素换算：至少 26 个画面单位，也至少 24 个屏幕像素
+function hitR(){ return Math.max(26, 24 * VBW / Math.max(1, svg.clientWidth)); }
+
+/* ============ 6. 显微镜、旋钮、玻片 ============ */
+function microscopeSvg(){
+  let s = "";
+  s += `<path d="${Sk.blob(665, 352, 84, 14, 301)}" fill="var(--paper)" opacity=".9"/>` + P(Sk.blob(665, 352, 84, 14, 301), "k");
+  const arm = Sk.cr([[700, 342], [722, 292], [721, 206], [697, 142], [712, 128], [740, 204], [741, 294], [718, 342]], true) + "Z";
+  s += `<path d="${arm}" fill="var(--paper)" opacity=".9"/>` + P(arm, "k");
+  s += P(Sk.line(652, 288, 652, 206, 304), "kf");
+  s += `<circle cx="652" cy="302" r="13" fill="var(--apricot)" opacity=".9"/>` + P(Sk.ellipse(652, 302, 13, 13, 305), "k1");
+  s += `<rect x="588" y="190" width="156" height="12" rx="3" fill="var(--paper)"/>` + P(Sk.line(588, 190, 744, 190, 306) + Sk.line(588, 202, 744, 202, 307) + Sk.line(588, 190, 588, 202, 308) + Sk.line(744, 190, 744, 202, 309), "k1");
+  s += `<path d="M640 132 L664 132 L658 178 L646 178 Z" fill="var(--sky)" opacity=".85"/>` + P(Sk.line(640, 132, 646, 178, 310) + Sk.line(664, 132, 658, 178, 311) + Sk.line(646, 178, 658, 178, 312), "k1");
+  s += `<rect x="616" y="96" width="92" height="36" rx="9" fill="var(--paper)"/>` + P(Sk.line(624, 96, 700, 96, 313) + Sk.line(624, 132, 700, 132, 314) + Sk.curve([[624, 96], [616, 104], [616, 124], [624, 132]], 315, .3) + Sk.curve([[700, 96], [708, 104], [708, 124], [700, 132]], 316, .3), "k");
+  s += `<rect x="641" y="42" width="22" height="54" fill="var(--sky)" opacity=".85"/>` + P(Sk.line(641, 42, 641, 96, 317) + Sk.line(663, 42, 663, 96, 318), "k") + P(Sk.ellipse(652, 42, 12, 4, 319), "k1");
+  if (S.sample && !S.drag) s += `<rect x="612" y="182" width="80" height="8" rx="2" fill="var(--sky)"/>` + P(Sk.line(612, 182, 692, 182, 360) + Sk.line(612, 190, 692, 190, 361), "k1") + sampleDot(S.sample, 652, 185, 6);
+  return `<g transform="translate(${SCOPE.tx} ${SCOPE.ty}) scale(${SCOPE.s})">${s}</g>`;
+}
+const lookCurve = () => NR ? "" : P(Sk.curve([[652, 34], [600, 16], [520, 30], [452, 100]], 300, .4), "kf");   // 「从目镜看进去」
+function dialSvg(active){
+  let s = `<circle cx="${DX}" cy="${DY}" r="60" fill="var(--sage)" opacity=".6"/>`;
+  for (const v of [1, 4, 10, 40, 100, 400]){
+    const a = (-150 + 300 * zOf(v)) * Math.PI / 180, sx = Math.sin(a), cy = -Math.cos(a);
+    s += P(Sk.line(DX + sx * 52, DY + cy * 52, DX + sx * 62, DY + cy * 62, 320 + v), "k1");
+    s += T(f1(DX + sx * 82), f1(DY + cy * 82 + 6), v, "num", 'text-anchor="middle"');
+  }
+  s += T(DX, DY + 136, "放大旋钮", "tm", 'text-anchor="middle"');
+  const a = (-150 + 300 * S.z) * Math.PI / 180, sx = Math.sin(a), cy = -Math.cos(a);
+  s += `<g opacity="${active ? 1 : .45}"><circle cx="${DX}" cy="${DY}" r="${KR}" fill="var(--pane)"/>` + P(Sk.ellipse(DX, DY, KR, KR, 330), "k");
+  for (let i = 0; i < 12; i++){ const b = a + i * Math.PI / 6; s += `<line x1="${f1(DX + Math.sin(b) * 36)}" y1="${f1(DY - Math.cos(b) * 36)}" x2="${f1(DX + Math.sin(b) * 43)}" y2="${f1(DY - Math.cos(b) * 43)}" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/>`; }
+  s += `<line x1="${DX}" y1="${DY}" x2="${f1(DX + sx * 28)}" y2="${f1(DY + cy * 28)}" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"/><circle cx="${DX}" cy="${DY}" r="7" fill="var(--ink)"/></g>`;
+  return s;
+}
+function sampleDot(key, cx, cy, r){
+  const fill = key === "onion" ? "var(--sage)" : "var(--apricot)";
+  const d = key === "blood" ? `M${f1(cx)} ${f1(cy - r)}C${f1(cx + r * .3)} ${f1(cy - r * .4)} ${f1(cx + r * .8)} ${f1(cy)} ${f1(cx + r * .8)} ${f1(cy + r * .35)}A${f1(r * .8)} ${f1(r * .8)} 0 0 1 ${f1(cx - r * .8)} ${f1(cy + r * .35)}C${f1(cx - r * .8)} ${f1(cy)} ${f1(cx - r * .3)} ${f1(cy - r * .4)} ${f1(cx)} ${f1(cy - r)}Z`
+    : Sk.blob(cx, cy, r, r * .8, 340 + key.length);
+  return `<path d="${d}" fill="${fill}" opacity=".95"/>` + P(d, "k1");
+}
+function slideSvg(key, x, y, dim){
+  const w = SW, h = SH, o = SLIDES[key];
+  let s = `<g opacity="${dim ? .45 : 1}"><rect x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="6" fill="var(--sky)" opacity=".7"/>` +
+    P(Sk.line(x - w / 2, y - h / 2, x + w / 2, y - h / 2, 350) + Sk.line(x - w / 2, y + h / 2, x + w / 2, y + h / 2, 351) + Sk.line(x - w / 2, y - h / 2, x - w / 2, y + h / 2, 352) + Sk.line(x + w / 2, y - h / 2, x + w / 2, y + h / 2, 353), "k1") +
+    sampleDot(key, x - w / 2 + 28, y, 14) + T(x - w / 2 + 50, y + 8, o.name, "lab");
+  if (S.seen[key]) s += `<circle cx="${x + w / 2 - 18}" cy="${y}" r="12" fill="var(--good)"/><path d="M${x + w / 2 - 24} ${y} l4 5 l8 -10" fill="none" stroke="var(--pane)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return s + "</g>";
+}
+
+/* ============ 7. 视野里的东西：都按真实大小（毫米）放在世界坐标里，乘上倍数画出来 ============ */
+const uOf = m => 2 * VR * m / MODEL.fov0Mm;        // 每毫米多少个画面单位
+const fadeLog = (m, a, b) => smooth(clamp((Math.log(m) - Math.log(a)) / (Math.log(b) - Math.log(a))));
+function wideBlob(wx, wy, rmm, u, seed){
+  const r = rmm * u;
+  if (r > VR * 4) return rectP(VX - VR, VY - VR, 2 * VR, 2 * VR);
+  return Sk.blob(VX + wx * u, VY + wy * u, r, r * .9, seed);
+}
+// 世界坐标里的一条直线（毫米），只画落在视野里的那段
+function worldLine(x1, y1, x2, y2, u, seed, cls, extra){
+  const a = [VX + x1 * u, VY + y1 * u], b = [VX + x2 * u, VY + y2 * u];
+  const near = q => Math.abs(q - 0) < 1e5;
+  if (![...a, ...b].every(near)) return "";
+  const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, t0 = ((VX - a[0]) * dx + (VY - a[1]) * dy) / L;
+  const dist = Math.abs((VX - a[0]) * dy - (VY - a[1]) * dx) / L;
+  if (dist > VR + 4) return "";
+  const h = Math.sqrt(Math.max(0, (VR + 10) ** 2 - dist ** 2)), s0 = clamp(t0 - h, 0, L), s1 = clamp(t0 + h, 0, L);
+  if (s1 - s0 < 1) return "";
+  return P(Sk.line(a[0] + dx * s0 / L, a[1] + dy * s0 / L, a[0] + dx * s1 / L, a[1] + dy * s1 / L, seed), cls, extra);
+}
+// 第 1 站：口腔刮下来的东西，抹在玻片上，盖上盖玻片，旁边放一根头发作比较
+function drawCheek(m, hero){
+  const u = uOf(m), W = VR / u;
+  let s = "";
+  // 载玻片 76×26 毫米、盖玻片 18×18 毫米
+  s += `<path d="${rectP(VX + -43 * u, VY - 13 * u, 76 * u, 26 * u)}" fill="var(--sky)" opacity=".45"/>`;
+  s += worldLine(-43, -13, 33, -13, u, 402, "k1") + worldLine(-43, 13, 33, 13, u, 403, "k1");
+  s += worldLine(-9, -9, 9, -9, u, 404, "k1", 'opacity=".45"') + worldLine(-9, 9, 9, 9, u, 405, "k1", 'opacity=".45"') + worldLine(-9, -9, -9, 9, u, 406, "k1", 'opacity=".45"') + worldLine(9, -9, 9, 9, u, 407, "k1", 'opacity=".45"');
+  // 抹开的一小片
+  s += `<path d="${wideBlob(.5, .3, 6, u, 401)}" fill="var(--apricot)" opacity=".55"/>`;
+  const edge = 1 - fadeLog(m, 2, 7);
+  if (edge > .02) s += `<path d="${wideBlob(.5, .3, 6, u, 401)}" class="k1" opacity="${edge.toFixed(2)}"/>`;
+  // 细胞：扁平、边缘不规则，有的几个挨在一起，有的单独一个
+  const fc = fadeLog(m, 18, 45);
+  if (fc > .01){
+    const p = .068, rh = p * .87, Wc = W + p;
+    let cells = "", heroS = "";
+    for (let j = Math.floor(-Wc / rh) - 1; j <= Math.ceil(Wc / rh) + 1; j++) for (let i = Math.floor(-Wc / p) - 1; i <= Math.ceil(Wc / p) + 1; i++){
+      const zero = i === 0 && j === 0, core = Math.abs(i) <= 1 && Math.abs(j) <= 1;
+      if (!core && !(hash(i >> 2, j >> 2, 50) < .6 && hash(i, j, 51) < .8)) continue;
+      const wx = (i + (j & 1 ? .5 : 0)) * p + (zero ? 0 : (hash(i, j, 52) - .5) * .18 * p), wy = j * rh + (zero ? 0 : (hash(i, j, 53) - .5) * .18 * p);
+      const sx = VX + wx * u, sy = VY + wy * u, rr = MODEL.cheekMm / 2 * u * (.94 + hash(i, j, 54) * .12);
+      if (Math.hypot(sx - VX, sy - VY) > VR + rr) continue;
+      let d;
+      if (rr < 6) d = null;
+      else {
+        const n = 5 + Math.floor(hash(i, j, 55) * 3), a0 = hash(i, j, 56) * 6.283, pts = [];
+        for (let k = 0; k < n; k++){ const a = a0 + k / n * 6.283, rk = rr * (.74 + .34 * hash(i * 7 + k, j, 57)); pts.push(f1(sx + Math.cos(a) * rk) + " " + f1(sy + Math.sin(a) * rk)); }
+        d = "M" + pts.join("L") + "Z";
+      }
+      const el = d ? `<path class="${zero && hero ? "c-hero" : "c-cheek"}" d="${d}"/>` : `<circle class="c-cheek" cx="${f1(sx)}" cy="${f1(sy)}" r="${f1(rr)}"/>`;
+      if (zero && hero) heroS = el; else cells += el;
+    }
+    s += `<g opacity="${fc.toFixed(2)}">${cells}${heroS}</g>`;
+  }
+  s += hairSvg(u);
+  return s;
+}
+function hairSvg(u){   // 一根头发：真实的粗细（0.07 毫米），斜着横过视野，离中心 0.12 毫米
+  const hd = .12 * u, hw = MODEL.hairMm / 2 * u;
+  if (hd - hw > VR) return "";
+  let s = `<g transform="translate(${VX} ${VY}) rotate(-18)">`;
+  if (hw < 1) s += `<line x1="${-VR - 20}" y1="${f1(hd)}" x2="${VR + 20}" y2="${f1(hd)}" stroke="var(--ink)" stroke-width="${Math.max(1.4, hw * 2).toFixed(1)}" opacity=".8"/>`;
+  else {
+    s += `<rect x="${-VR - 40}" y="${f1(hd - hw)}" width="${2 * VR + 80}" height="${f1(2 * hw)}" fill="var(--muted)" opacity=".4"/>` +
+      P(Sk.line(-VR - 40, hd - hw, VR + 40, hd - hw, 410) + Sk.line(-VR - 40, hd + hw, VR + 40, hd + hw, 411), "k1");
+    if (hw > 10) for (let x = -VR - 20; x < VR + 20; x += hw * 1.3) s += P(`M${f1(x)} ${f1(hd - hw)}Q${f1(x + hw * .5)} ${f1(hd)} ${f1(x)} ${f1(hd + hw)}`, "k1", 'opacity=".3"');
+  }
+  return s + "</g>";
+}
+function drawOnion(m){
+  const u = uOf(m), W = VR / u;
+  let s = `<path d="${wideBlob(-2, 1.5, 13, u, 420)}" fill="var(--sage)" opacity=".5"/>`;
+  s += `<path d="${wideBlob(-2, 1.5, 13, u, 420)}" class="k1" opacity="${(1 - fadeLog(m, 2, 6)).toFixed(2)}"/>`;
+  const fc = fadeLog(m, 8, 25);
+  if (fc > .01){
+    const L = MODEL.onionMm, H = MODEL.onionWideMm;
+    let cells = "", heroS = "";
+    for (let j = Math.floor(-W / H) - 1; j <= Math.ceil(W / H) + 1; j++){
+      const off = (hash(j, 0, 11) - .5) * L;
+      for (let i = Math.floor((-W - off) / L) - 1; i <= Math.ceil((W - off) / L) + 1; i++){
+        const cx = off + i * L, cy = j * H;
+        const sx = VX + cx * u, sy = VY + cy * u, hw = L / 2 * u, hh = H / 2 * u;
+        if (Math.abs(sy - VY) > VR + hh || Math.abs(sx - VX) > VR + hw) continue;
+        const jt = k => (hash(i, j, 20 + k) - .5) * 4;
+        const d = `M${f1(sx - hw + jt(1))} ${f1(sy - hh + jt(2))}L${f1(sx + hw + jt(3))} ${f1(sy - hh + jt(4))}L${f1(sx + hw + jt(5))} ${f1(sy + hh + jt(6))}L${f1(sx - hw + jt(7))} ${f1(sy + hh + jt(8))}Z`;
+        if (j === 0 && Math.abs(cx) <= L / 2) heroS = `<path class="c-hero" d="${d}"/>`; else cells += `<path class="c-onion" d="${d}" fill-opacity=".75"/>`;
+      }
+    }
+    s += `<g opacity="${fc.toFixed(2)}">${cells}${heroS}</g>`;
+  }
+  return s;
+}
+// 红细胞：中间凹下去的地方只画一圈细线。画成实心圆，深色模式下会像细胞核
+function rbcSvg(x, y, r, hero){
+  return `<circle class="${hero ? "c-hero" : "c-rbc"}" cx="${f1(x)}" cy="${f1(y)}" r="${f1(r)}"/>` + (r > 5 ? `<circle class="dimple" cx="${f1(x)}" cy="${f1(y)}" r="${f1(r * .52)}"/>` : "");
+}
+function drawBlood(m){
+  const u = uOf(m), W = VR / u;
+  let s = `<path d="${wideBlob(1.5, -1, 10, u, 430)}" fill="var(--apricot)" opacity=".45"/><path d="${wideBlob(1.5, -1, 10, u, 430)}" class="k1" opacity="${(1 - fadeLog(m, 3, 12)).toFixed(2)}"/>`;
+  const fc = fadeLog(m, 150, 330);
+  if (fc > .01){
+    const q = .0105, Wc = W + q;
+    let cells = "", heroS = "";
+    for (let j = Math.floor(-Wc / q); j <= Math.ceil(Wc / q); j++) for (let i = Math.floor(-Wc / q); i <= Math.ceil(Wc / q); i++){
+      const zero = i === 0 && j === 0;
+      if (!zero && hash(i, j, 30) < .14) continue;
+      const wx = (i + (zero ? 0 : (hash(i, j, 31) - .5) * .5)) * q, wy = (j + (zero ? 0 : (hash(i, j, 32) - .5) * .5)) * q;
+      const sx = VX + wx * u, sy = VY + wy * u, r = MODEL.rbcMm / 2 * u;
+      if (Math.hypot(sx - VX, sy - VY) > VR + r) continue;
+      if (zero) heroS = rbcSvg(sx, sy, r, true); else cells += rbcSvg(sx, sy, r);
+    }
+    s += `<g opacity="${fc.toFixed(2)}">${cells}${heroS}</g>`;
+  }
+  return s;
+}
+function scaleBar(m){
+  const u = uOf(m);
+  const L = [20, 10, 5, 2, 1, .5, .2, .1, .05, .02, .01].find(v => v * u <= 150) || .01, w = L * u, y = VY + VR - 28;
+  const bw = Math.max(w + 36, NR ? 140 : 104);
+  return `<rect x="${f1(VX - bw / 2)}" y="${y - (NR ? 36 : 30)}" width="${f1(bw)}" height="${NR ? 48 : 42}" rx="10" fill="var(--pane)" opacity=".9"/>` +
+    `<path d="M${f1(VX - w / 2)} ${y - 5}v10M${f1(VX - w / 2)} ${y}H${f1(VX + w / 2)}M${f1(VX + w / 2)} ${y - 5}v10" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>` +
+    T(VX, y - 11, fmtMm(L), "t", 'text-anchor="middle"');
+}
+function eyeRing(m){   // 0.1 毫米的虚线圈：眼睛能分辨的大约这么小
+  const D = MODEL.eyeMm * uOf(m);
+  if (D < 10 || D > 230) return "";
+  const o = Math.min(clamp((D - 10) / 10), clamp((230 - D) / 30)), cx = VX + 70, cy = VY - 70, lw = NR ? 96 : 80, lh = NR ? 32 : 26;
+  return `<g opacity="${o.toFixed(2)}"><circle cx="${cx}" cy="${cy}" r="${f1(D / 2)}" fill="var(--pane)" fill-opacity=".25" stroke="var(--ink)" stroke-width="2.4" stroke-dasharray="5 6"/>` +
+    `<rect x="${cx - lw / 2}" y="${f1(cy - D / 2 - lh - 8)}" width="${lw}" height="${lh}" rx="8" fill="var(--pane)" opacity=".92"/>` +
+    T(cx, f1(cy - D / 2 - 14), fmtMm(MODEL.eyeMm), "t", 'text-anchor="middle"') + "</g>";
+}
+function centerMark(m, fadeAt){   // 主角：我们要找的那一小块
+  const o = 1 - fadeLog(m, fadeAt[0], fadeAt[1]);
+  if (o < .02) return "";
+  return `<rect x="${VX - 11}" y="${VY - 11}" width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="3" opacity="${o.toFixed(2)}"/>`;
+}
+const FADE = { cheek: [40, 80], onion: [6, 15], blood: [180, 320] };
+function viewSvg(){
+  const m = magOf(S.z);
+  let s = `<circle cx="${VX}" cy="${VY}" r="${VR}" fill="var(--pane)"/><circle cx="${VX}" cy="${VY}" r="${VR}" fill="var(--sky)" opacity=".25"/><g clip-path="url(#vclip)">`;
+  if (S.sample === "cheek") s += drawCheek(m, true) + centerMark(m, FADE.cheek);
+  else if (S.sample === "onion") s += drawOnion(m) + centerMark(m, FADE.onion);
+  else if (S.sample === "blood") s += drawBlood(m) + centerMark(m, FADE.blood);
+  if (S.station === 1) s += eyeRing(m);
+  s += "</g>" + P(ring(VX, VY, VR, 600), "k") + P(ring(VX, VY, VR + 7, 601, 2), "k1");
+  if (S.sample) s += scaleBar(m);
+  return s;
+}
+// 第 1 站底下：棉签和玻片。红框就是视野里那一块，越放大越小
+function illoSvg(){
+  const m = magOf(S.z), cx = ILLO.x, cy = ILLO.y, k = 1.5;   // 每毫米 1.5 个单位
+  let s = P(Sk.line(cx - 64, cy - 52, cx + 6, cy - 34, 803), "k", 'stroke-width="5"') +
+    `<path d="${Sk.blob(cx + 14, cy - 31, 14, 8, 804)}" fill="var(--pane)"/>` + P(Sk.blob(cx + 14, cy - 31, 14, 8, 804), "k1");
+  s += `<rect x="${cx - 38 * k}" y="${cy - 13 * k}" width="${76 * k}" height="${26 * k}" rx="3" fill="var(--sky)" opacity=".75"/>` +
+    P(Sk.line(cx - 38 * k, cy - 13 * k, cx + 38 * k, cy - 13 * k, 805) + Sk.line(cx - 38 * k, cy + 13 * k, cx + 38 * k, cy + 13 * k, 806) + Sk.line(cx - 38 * k, cy - 13 * k, cx - 38 * k, cy + 13 * k, 807) + Sk.line(cx + 38 * k, cy - 13 * k, cx + 38 * k, cy + 13 * k, 808), "k1");
+  s += `<path d="${Sk.blob(cx + 5 * k, cy, 6 * k, 5 * k, 809)}" fill="var(--apricot)" opacity=".9"/>`;
+  const side = Math.max(5, MODEL.fov0Mm / m * k);
+  s += `<rect x="${f1(cx + 5 * k - side / 2)}" y="${f1(cy - side / 2)}" width="${f1(side)}" height="${f1(side)}" fill="var(--accent)" fill-opacity=".12" stroke="var(--accent)" stroke-width="2.6"/>`;
+  const to = NR ? [VX + 150, VY + VR - 60] : [VX - 70, VY + VR - 8];
+  s += P(Sk.curve([[cx + 5 * k + side / 2, cy - side / 2], [(cx + to[0]) / 2 + (NR ? 40 : -10), (cy + to[1]) / 2 - 20], to], 802, .3), "kf");
+  return s;
+}
+function corkSvg(){   // 1665 年胡克画的软木塞：一格一格的空格子
+  const x0 = CORK.x, y0 = CORK.y, w = 300, h = 92;
+  let s = `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" rx="12" fill="var(--paper)" opacity=".92"/>` + P(Sk.line(x0, y0, x0 + w, y0, 810) + Sk.line(x0, y0 + h, x0 + w, y0 + h, 811), "k1");
+  let cells = "";
+  const hx = 13, hy = 15;
+  for (let j = 0; j < 4; j++) for (let i = 0; i < 6; i++){
+    const cx = x0 + 22 + i * hx * 2 + (j & 1 ? hx : 0), cy = y0 + 16 + j * hy * 1.5, rr = Sk.R(820 + i + j * 7);
+    const pts = []; for (let q = 0; q < 6; q++){ const a = Math.PI / 6 + q * Math.PI / 3; pts.push([cx + Math.cos(a) * hx * 1.12 + (rr() - .5) * 2, cy + Math.sin(a) * hy * .98 + (rr() - .5) * 2]); }
+    if (cy + hy < y0 + h) cells += "M" + pts.map(q => f1(q[0]) + " " + f1(q[1])).join("L") + "Z";
+  }
+  s += `<path d="${cells}" fill="var(--pane)" fill-opacity=".7" stroke="var(--ink)" stroke-width="1.3" stroke-linejoin="round"/>`;
+  s += T(x0 + 190, y0 + 42, MODEL.hookeYear, "big") + T(x0 + 190, y0 + 74, "软木塞", "tm");
+  return s;
+}
+
+/* ============ 8. 第 1 站：放大 ============ */
+function enter1(){
+  S.station = 1; S.mode = "talk"; S.sample = "cheek"; S.z = S.zt = 0; head(1, "放大"); hint("");
+  fitView(); render(); readoutZoom();
+  say("舰长，用棉签在嘴巴里面轻轻刮一下，抹在玻片上。");
+  next("抹好了", () => {
+    say("玻片上只有一小片黏黏的东西，看不出别的。");
+    next("猜一猜", () => ask("zoom-guess", "这一小片黏黏的东西里，藏着什么？", [
+      { label: "什么也没有，就是黏黏的水", mis: "visible", feedback: "看起来确实只是黏黏的水。可放得够大，就不一样了。" },
+      { label: "一个个小房间，眼睛看不见", correct: true, feedback: "你猜对了。我们用显微镜亲眼看看。" },
+      { label: "一个个小房间，眼睛能看见", mis: "visible", feedback: "很多人这么想。可玻片上，你看得见小房间吗？放大看看。" }
+    ], () => next("放大看看", act1)));
+  });
+}
+function zoomButtons(){
+  actions([
+    { label: "− 缩小", cls: "ghost", hold: "zout", step: () => { S.zt = clamp(S.zt - .04, 0, zMax()); } },
+    { label: "＋ 放大", cls: "hold", hold: "zin", step: () => { S.zt = clamp(S.zt + .04, 0, zMax()); } }
+  ]);
+}
+const zMax = () => zOf(MODEL.target[S.mode === "act1" ? "cheek" : S.want] || MODEL.maxMag);
+function act1(){
+  S.mode = "act1"; hint("转动旋钮，或按住「放大」");
+  say("这是显微镜。转动右边的旋钮，把玻片放大。");
+  zoomButtons(); render(); readoutZoom(); svg.focus({ preventScroll: true });
+}
+function readoutZoom(){
+  const m = +fmtMag(magOf(S.z));
+  readout(`放大 <b>${m}</b> 倍 · 圆圈宽 ${fmtMm(MODEL.fov0Mm / m)}`);
+  Host.state({ station: S.station, sample: S.sample, magnification: m, field_mm: +(MODEL.fov0Mm / m).toPrecision(3) });
+}
+function milestones1(){
+  const m = magOf(S.z), once = (k, c, text) => { if (c && !S.said[k]){ S.said[k] = true; say(text); } };
+  once("hair", m >= 5, "那条线是一根头发，放在玻片上比一比。头发眼睛看得见。");
+  once("eye", m >= 22, `虚线圈有 ${fmtMm(MODEL.eyeMm)}宽。比它小、又挤在一起，眼睛就分不清了。`);
+  once("cells", m >= 50, "出现一个一个的东西了。再转一点。");
+}
+function done1(){
+  S.mode = "talk"; S.holdKey = null; hint(""); S.seen.cheek = true;
+  emit("observed", { station: 1, item: "cheek", magnification: MODEL.target.cheek }, "o-cheek");
+  render(); readout(`放大 <b>${MODEL.target.cheek}</b> 倍 · 一个细胞约 ${fmtMm(MODEL.cheekMm)}`);
+  say("一个一个的小房间！每一个就是一个细胞。", "good");
+  next("继续", () => {
+    S.cork = true; render();
+    say(`${MODEL.hookeYear} 年，胡克用显微镜看软木塞，也看到一格一格的小空格。`);
+    next("他叫它们什么？", () => {
+      say("他叫它们 cell，意思是「小房间」。中文叫细胞。");
+      next("再比一比", () => {
+        say(MODEL.cheekNearHair ? "看那根头发：一个口腔细胞，和一根头发差不多粗。" : `一个口腔细胞约 ${fmtMm(MODEL.cheekMm)}，头发约 ${fmtMm(MODEL.hairMm)}。`);
+        next("继续", () => {
+          say("飞船上的倍数是简化过的。学校显微镜开到同样倍数，细胞看起来更小。");
+          next("去第 2 站", enter2);
+        });
+      });
+    });
+  });
+}
+
+/* ============ 9. 第 2 站：换样本，再拉出一个神经细胞 ============ */
+function enter2(){
+  S.station = 2; S.mode = "talk"; S.cork = false; head(2, "换样本"); hint("");
+  fitView(); render(); readoutZoom();
+  say("口腔里的细胞是一个一个的。那植物呢？");
+  next("猜一猜", () => ask("plant-guess", "洋葱是植物。放大以后，它也是一个一个的细胞吗？", [
+    { label: "是，也是一格一格的", correct: true, feedback: "你猜对了。拖洋葱片上去看看。" },
+    { label: "不是，植物是一整块的", mis: "only-animals", feedback: "很多人这么想，植物摸着也是一整块。我们放大看看。" }
+  ], () => next("去拿洋葱片", () => pick("onion"))));
+}
+function pick(key){
+  S.mode = "pick"; S.want = key; hint(`把「${SLIDES[key].name}」片拖到显微镜上，或点一下它`);
+  say(`把${SLIDES[key].name}片拖到显微镜的台子上。`);
+  actions([]); render(); svg.focus({ preventScroll: true });
+}
+function place(key){
+  S.drag = null; S.sample = key; S.z = S.zt = 0;
+  if (S.mode === "pick" && key === S.want){
+    S.mode = "zoom2"; hint("转动旋钮，或按住「放大」");
+    say("放好了。转动旋钮，放大看看。"); zoomButtons(); svg.focus({ preventScroll: true });
+  }
+  render(); readoutZoom();
+}
+function seen2(key){
+  S.mode = "talk"; S.holdKey = null; S.seen[key] = true; hint("");
+  emit("observed", { station: 2, item: key, magnification: MODEL.target[key] }, "o-" + key);
+  render();
+  if (key === "onion"){
+    say("植物也是一格一格的！洋葱细胞像一块块长砖。", "good");
+    readout(`放大 <b>${MODEL.target.onion}</b> 倍 · 洋葱细胞约 ${fmtMm(MODEL.onionMm)}长`);
+    next("继续", () => {
+      say(`一个洋葱细胞，比口腔细胞长 ${MODEL.onionVsCheek} 倍多。`);
+      next("下一片", () => ask("blood-guess", "血里的细胞，和口腔、洋葱的细胞长得一样吗？", [
+        { label: "一样，都是一格一格的", mis: "one-kind", feedback: "都叫细胞，听起来像一样的。可它们样子各不一样。看看吧。" },
+        { label: "不一样，形状各不同", correct: true, feedback: "你猜对了。拖血片上去看看。" }
+      ], () => next("去拿血片", () => pick("blood"))));
+    });
+  } else {
+    say("血里最多的是红细胞，像一个个小圆饼，不连在一起。", "good");
+    readout(`放大 <b>${MODEL.target.blood}</b> 倍 · 红细胞约 ${fmtMm(MODEL.rbcMm)}`);
+    next("继续", () => {
+      say("口腔、洋葱、红细胞，形状各不一样。");
+      next("还有更怪的吗？", neuronIntro);
+    });
+  }
+}
+// 神经细胞：显微镜里装不下，先把镜头拉远（视野缩小、淡出），再看整个人
+function neuronIntro(){
+  S.mode = "zoomout"; S.nzT = 1; actions([]); readout("");
+  say("有的神经细胞特别长，显微镜里装不下。我们把镜头拉远，看整个人。");
+}
+function actNeuron(){
+  S.mode = "neuron"; hint("把红点从腰拖到脚趾");
+  say("一个神经细胞从腰这里出发。拖着红点，把它一直拉到脚趾。");
+  readoutNeuron(); svg.focus({ preventScroll: true });
+}
+function readoutNeuron(){
+  const L = S.np * MODEL.neuronM;
+  readout(S.neuronDone ? `神经细胞 <b>${MODEL.neuronM} 米</b>多` : `神经细胞长 <b>${L.toFixed(1)}</b> 米`);
+  Host.state({ station: 2, neuron_m: +L.toFixed(2) });
+}
+function doneNeuron(){
+  S.mode = "talk"; S.neuronDone = true; hint(""); readoutNeuron(); render();
+  emit("observed", { station: 2, item: "neuron", length_m: MODEL.neuronM }, "o-neuron");
+  say(`在大人身上，这一个细胞能长到 ${MODEL.neuronM} 米多！`, "good");
+  next("继续", () => {
+    say(`它比一个红细胞长 ${MODEL.neuronVsRbcWan} 万多倍。`);
+    next("去第 3 站", enter3);
+  });
+}
+// 人和神经细胞都按米画：地面在 floor，每米 perM 个单位
+function neuronGeo(){
+  return NR ? { px: 210, floor: 800, perM: 420, rx: 370 } : { px: 330, floor: 588, perM: 300, rx: 470 };
+}
+let NPATH = null, NPATH_KEY = "";
+function neuronPath(){
+  const g = neuronGeo(), key = g.px + "," + g.floor;
+  if (NPATH && NPATH_KEY === key) return NPATH;
+  const X = dx => g.px + dx * g.perM, Y = h => g.floor - h * g.perM;
+  const ctrl = [[X(-.09), Y(1.0)], [X(-.075), Y(.78)], [X(-.065), Y(.5)], [X(-.07), Y(.2)], [X(-.03), Y(.05)], [X(.08), Y(.03)], [X(.2), Y(.03)]];
+  // 沿控制点插值出密的点，按弧长算进度
+  const pts = [];
+  for (let i = 0; i < ctrl.length - 1; i++){
+    const p0 = ctrl[Math.max(0, i - 1)], p1 = ctrl[i], p2 = ctrl[i + 1], p3 = ctrl[Math.min(ctrl.length - 1, i + 2)];
+    for (let k = 0; k < 20; k++){ const t = k / 20, t2 = t * t, t3 = t2 * t;
+      pts.push([0, 1].map(c => .5 * (2 * p1[c] + (-p0[c] + p2[c]) * t + (2 * p0[c] - 5 * p1[c] + 4 * p2[c] - p3[c]) * t2 + (-p0[c] + 3 * p1[c] - 3 * p2[c] + p3[c]) * t3))); }
+  }
+  pts.push(ctrl[ctrl.length - 1]);
+  const acc = [0]; for (let i = 1; i < pts.length; i++) acc.push(acc[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  NPATH = { pts, acc, L: acc[acc.length - 1] }; NPATH_KEY = key;
+  return NPATH;
+}
+function pathAt(p){
+  const N = neuronPath(), want = clamp(p) * N.L;
+  let i = 1; while (i < N.acc.length - 1 && N.acc[i] < want) i++;
+  const a = N.acc[i - 1], b = N.acc[i], t = b > a ? (want - a) / (b - a) : 0;
+  return [N.pts[i - 1][0] + (N.pts[i][0] - N.pts[i - 1][0]) * t, N.pts[i - 1][1] + (N.pts[i][1] - N.pts[i - 1][1]) * t, i];
+}
+function nearestOnPath(q, from){
+  const N = neuronPath();
+  let best = from, bd = 1e9;
+  for (let i = 0; i < N.pts.length; i++){
+    const p = N.acc[i] / N.L;
+    if (Math.abs(p - from) > .3) continue;     // 只在当前位置附近找，免得一下跳到脚趾
+    const d = Math.hypot(q.x - N.pts[i][0], q.y - N.pts[i][1]);
+    if (d < bd){ bd = d; best = p; }
+  }
+  return best;
+}
+function neuronScene(){
+  const g = neuronGeo(), X = dx => f1(g.px + dx * g.perM), Y = h => f1(g.floor - h * g.perM), M = v => v * g.perM;
+  let s = P(Sk.line(g.px - M(.6), g.floor + 4, g.px + M(.85), g.floor + 4, 700), "k1");
+  // 一个大人（侧面），身高约 1.7 米
+  s += limb(`M${X(-.01)} ${Y(.95)} L${X(.02)} ${Y(.5)} L${X(-.01)} ${Y(.07)}`, M(.13), "var(--paper)");
+  s += limb(`M${X(-.04)} ${Y(.045)} L${X(.2)} ${Y(.035)}`, M(.07), "var(--paper)");
+  const torso = Sk.blob(+X(0), +Y(1.2), M(.15), M(.3), 701);
+  s += `<path d="${torso}" fill="var(--paper)"/>` + P(torso, "k");
+  s += limb(`M${X(.03)} ${Y(1.4)} L${X(.09)} ${Y(1.1)} L${X(.13)} ${Y(.86)}`, M(.065), "var(--paper)");
+  s += `<circle cx="${X(.02)}" cy="${Y(1.58)}" r="${f1(M(.11))}" fill="var(--paper)"/>` + P(Sk.ellipse(+X(.02), +Y(1.58), M(.11), M(.11), 702), "k");
+  // 神经细胞：腰（脊髓下端）到脚趾。没拉到的部分用虚线引路
+  const N = neuronPath(), [hx, hy, hi] = pathAt(S.np);
+  s += P(Sk.cr(N.pts.filter((_, i) => i % 3 === 0 || i === N.pts.length - 1), false), "kf", 'stroke-width="2.2"');
+  const done = N.pts.slice(0, hi).concat([[hx, hy]]);
+  if (done.length > 1) s += `<path class="thread" d="M${done.map(q => f1(q[0]) + " " + f1(q[1])).join("L")}"/>`;
+  const [sx, sy] = N.pts[0];
+  s += `<circle cx="${f1(sx)}" cy="${f1(sy)}" r="13" fill="var(--accent)"/>` + P(Sk.ellipse(sx, sy, 13, 13, 704), "k1");
+  const [tx, ty] = N.pts[N.pts.length - 1];
+  if (!S.neuronDone) s += `<circle cx="${f1(tx)}" cy="${f1(ty)}" r="20" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="4 5"/>`;
+  if (S.mode === "neuron" || S.np > .02){
+    s += `<circle cx="${f1(hx)}" cy="${f1(hy)}" r="16" fill="var(--accent)"/>` + P(Sk.ellipse(hx, hy, 16, 16, 705), "k");
+  }
+  if (S.mode === "neuron" && S.kbd) s += `<circle cx="${f1(hx)}" cy="${f1(hy)}" r="28" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="4 4"/>`;
+  // 尺子：从神经细胞的起点高度到地面，正好 1 米。拉完才写出「1 米」
+  const top = +Y(MODEL.neuronM);
+  s += P(Sk.line(g.rx, top, g.rx, g.floor, 707), "k");
+  for (let i = 0; i <= 10; i++){ const y = top + (g.floor - top) * i / 10; s += P(Sk.line(g.rx, y, g.rx + (i % 5 ? 8 : 16), y, 710 + i), "k1"); }
+  s += P(Sk.line(sx + 14, top, g.rx - 4, top, 721), "kf");
+  if (S.neuronDone){
+    s += `<rect x="${g.rx + 22}" y="${f1((top + g.floor) / 2 - 24)}" width="${NR ? 100 : 80}" height="${NR ? 40 : 34}" rx="8" fill="var(--pane)"/>` + T(g.rx + (NR ? 72 : 62), f1((top + g.floor) / 2 + 3), MODEL.neuronM + " 米", "big", 'text-anchor="middle"');
+    s += T(sx - 18, sy - 22, "一个神经细胞", "tm", 'text-anchor="end"');
+  }
+  return s;
+}
+
+/* ============ 10. 第 3 站：细胞是活的 ============ */
+const DFIT = 300, FAST = 6, SHRINK_TO = 10;   // 第 6 次（64 个）以后铺成一整片；一直缩小到第 10 次，越分越密
+const colsOf = g => Math.pow(2, Math.ceil(g / 2)), rowsOf = g => Math.pow(2, Math.floor(g / 2));
+const scOf = g => DFIT / Math.max(colsOf(g), rowsOf(g));
+function unionPath(x1, y1, x2, y2, R){   // 两个一样大的圆合起来的轮廓（细胞中间正在收紧）
+  const dx = x2 - x1, dy = y2 - y1, s = Math.hypot(dx, dy);
+  if (s < .01) return `M${f1(x1 - R)} ${f1(y1)}a${f1(R)} ${f1(R)} 0 1 0 ${f1(2 * R)} 0a${f1(R)} ${f1(R)} 0 1 0 ${f1(-2 * R)} 0Z`;
+  if (s >= 2 * R) return null;
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, h = Math.sqrt(R * R - s * s / 4), px = -dy / s, py = dx / s;
+  const ax = mx + px * h, ay = my + py * h, bx = mx - px * h, by = my - py * h;
+  return `M${f1(ax)} ${f1(ay)}A${f1(R)} ${f1(R)} 0 1 1 ${f1(bx)} ${f1(by)}A${f1(R)} ${f1(R)} 0 1 1 ${f1(ax)} ${f1(ay)}Z`;
+}
+function cellPair(x, y, ax, ay, q, r, sc, nucOff, withWall, ox, oy){
+  ox = ox == null ? VX : ox; oy = oy == null ? VY : oy;
+  const c1x = x - ax * q / 2, c1y = y - ay * q / 2, c2x = x + ax * q / 2, c2y = y + ay * q / 2;
+  const X = v => ox + v * sc, Y = v => oy + v * sc, R = r * sc;
+  let s = "";
+  const d = unionPath(X(c1x), Y(c1y), X(c2x), Y(c2y), R);
+  if (d){
+    s += `<path class="c-hero" d="${d}"/>`;
+    if (withWall && q > .02){
+      const s2 = q * sc, h = Math.sqrt(Math.max(0, R * R - s2 * s2 / 4)) * Math.min(1, q * 3), mx = X(x), my = Y(y);
+      s += `<line x1="${f1(mx - ay * h)}" y1="${f1(my + ax * h)}" x2="${f1(mx + ay * h)}" y2="${f1(my - ax * h)}" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/>`;
+    }
+  } else s += `<circle class="c-hero" cx="${f1(X(c1x))}" cy="${f1(Y(c1y))}" r="${f1(R)}"/><circle class="c-hero" cx="${f1(X(c2x))}" cy="${f1(Y(c2y))}" r="${f1(R)}"/>`;
+  const nr = Math.max(1.2, .13 * sc);
+  if (nucOff < .001) s += `<circle class="nuc" cx="${f1(X(x))}" cy="${f1(Y(y))}" r="${f1(nr)}"/>`;
+  else s += `<circle class="nuc" cx="${f1(X(x - ax * nucOff))}" cy="${f1(Y(y - ay * nucOff))}" r="${f1(nr)}"/><circle class="nuc" cx="${f1(X(x + ax * nucOff))}" cy="${f1(Y(y + ay * nucOff))}" r="${f1(nr)}"/>`;
+  return s;
+}
+function divPhase(d){
+  const n = MODEL.divisions, g = Math.min(n, Math.floor(d + 1e-9)), ph = g >= n ? 0 : d - g;
+  const grow = smooth(clamp(ph / .4)), split = smooth(clamp((ph - .55) / .45)), nsplit = smooth(clamp((ph - .38) / .22));
+  return { g, ph, grow, split, nsplit };
+}
+function drawDivide(){
+  const { g, ph, grow, split, nsplit } = divPhase(S.d);
+  const xAxis = g % 2 === 0, ax = xAxis ? 1 : 0, ay = xAxis ? 0 : 1;
+  const sc0 = scOf(Math.min(g, SHRINK_TO)), sc1 = scOf(Math.min(g + 1, SHRINK_TO)), sc = sc0 * Math.pow(sc1 / sc0, split);
+  const cols = colsOf(g), rows = rowsOf(g);
+  const r = .45 * (ph < .55 ? 1 + .26 * grow : 1.26 - .26 * split);
+  const nucOff = split > 0 ? .2 * (1 - split) + .5 * split : .2 * nsplit;
+  let s = `<circle cx="${VX}" cy="${VY}" r="${VR}" fill="var(--sage)" opacity=".25"/>`;
+  if (g < FAST){
+    for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++){
+      const x0 = i - (cols - 1) / 2, y0 = j - (rows - 1) / 2;
+      const x = xAxis ? x0 * (1 + split) : x0, y = xAxis ? y0 : y0 * (1 + split);
+      s += cellPair(x, y, ax, ay, split, r, sc, nucOff, true);
+      if (g <= 2 && ph > 0 && ph < .42){   // 养料：从四周被吸进来
+        for (let k = 0; k < 6; k++){
+          const a = k / 6 * Math.PI * 2 + i + j, rr = (1.25 - .75 * clamp(ph / .4)) * .6;
+          s += `<circle cx="${f1(VX + (x + Math.cos(a) * rr) * sc)}" cy="${f1(VY + (y + Math.sin(a) * rr) * sc)}" r="${f1(Math.max(2.5, .04 * sc))}" fill="var(--good)" opacity="${(.8 * (1 - clamp(ph / .4))).toFixed(2)}"/>`;
+        }
+      }
+    }
+  } else {
+    // 太多了，视野里装不下：铺成一整片，每一格还是一个细胞，一起长大、一起分、越来越密
+    const tw = (xAxis ? 1 + split : 1) * sc, th = (xAxis ? 1 : 1 + split) * sc;
+    const inner = cellPair(0, 0, ax, ay, split, r, sc, nucOff, sc > 14, tw / 2, th / 2);
+    s += `<pattern id="tis" patternUnits="userSpaceOnUse" x="${VX}" y="${VY}" width="${f1(tw)}" height="${f1(th)}">${inner}</pattern>`;
+    s += `<rect x="${VX - VR}" y="${VY - VR}" width="${2 * VR}" height="${2 * VR}" fill="url(#tis)"/>`;
+    const push = 10 * split;
+    for (let i = 0; i < 8; i++){
+      const a = i / 8 * Math.PI * 2 + Math.PI / 8, x1 = VX + Math.cos(a) * (VR - 46 + push), y1 = VY + Math.sin(a) * (VR - 46 + push);
+      const x2 = VX + Math.cos(a) * (VR - 18 + push), y2 = VY + Math.sin(a) * (VR - 18 + push);
+      s += `<g opacity=".85"><line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" stroke="var(--pane)" stroke-width="8" stroke-linecap="round"/>` +
+        `<path class="k" d="M${f1(x1)} ${f1(y1)}L${f1(x2)} ${f1(y2)}M${f1(x2 - Math.cos(a - .5) * 9)} ${f1(y2 - Math.sin(a - .5) * 9)}L${f1(x2)} ${f1(y2)}L${f1(x2 - Math.cos(a + .5) * 9)} ${f1(y2 - Math.sin(a + .5) * 9)}"/></g>`;
+    }
+  }
+  return s;
+}
+// 「哇」：只把身体里的红细胞一个挨一个排成一排，能绕地球几圈
+function drawEarth(){
+  const R = 92, p = S.eP, loops = MODEL.earthLoops;
+  let s = `<circle cx="${VX}" cy="${VY}" r="${VR}" fill="var(--sky)" opacity=".25"/>`;
+  s += `<circle cx="${VX}" cy="${VY}" r="${R}" fill="var(--sky)"/>`;
+  for (const [dx, dy, rx, ry, sd] of [[-30, -28, 34, 24, 731], [26, 18, 30, 40, 732], [-36, 40, 18, 14, 733], [44, -44, 16, 12, 734]])
+    s += `<path d="${Sk.blob(VX + dx, VY + dy, rx, ry, sd)}" fill="var(--sage)"/>`;
+  s += P(Sk.ellipse(VX, VY, R, R, 735, .4), "k");
+  const turns = loops * p, N = Math.max(2, Math.ceil(turns * 64)), pts = [];
+  for (let i = 0; i <= N; i++){ const th = i / N * turns * Math.PI * 2 - Math.PI / 2, rr = R + 12 + 8.5 * (th + Math.PI / 2) / (Math.PI * 2); pts.push(f1(VX + Math.cos(th) * rr) + " " + f1(VY + Math.sin(th) * rr)); }
+  if (p > .001) s += `<path class="thread" stroke-width="3.2" d="M${pts.join("L")}"/>`;
+  s += T(VX, VY + 8, "地球", "lab", 'text-anchor="middle"') + T(VX, VY - VR + (NR ? 44 : 38), "红细胞排成的一排", "tm", 'text-anchor="middle"');
+  const done = Math.floor(turns + 1e-6);
+  s += `<rect x="${VX - (NR ? 120 : 100)}" y="${VY + VR - (NR ? 54 : 46)}" width="${NR ? 240 : 200}" height="${NR ? 40 : 34}" rx="10" fill="var(--pane)" opacity=".92"/>` +
+    T(VX, VY + VR - (NR ? 24 : 22), p >= 1 ? `绕 ${done} 圈多` : `绕了 ${done} 圈`, "t", 'text-anchor="middle"');
+  return s;
+}
+function counterStatic(){
+  if (NR) return `<rect x="20" y="478" width="480" height="150" rx="16" fill="var(--paper)" opacity=".6"/>` +
+    P(Sk.line(30, 478, 490, 478, 900) + Sk.line(30, 628, 490, 628, 901) + Sk.line(260, 494, 260, 612, 902), "k1") +
+    T(140, 512, "分了几次", "t", 'text-anchor="middle"') + T(380, 512, "现在有", "t", 'text-anchor="middle"') + T(380, 612, "个细胞", "t", 'text-anchor="middle"');
+  return `<rect x="560" y="64" width="216" height="420" rx="16" fill="var(--paper)" opacity=".6"/>` +
+    P(Sk.line(570, 64, 766, 64, 900) + Sk.line(570, 484, 766, 484, 901) + Sk.line(560, 74, 560, 474, 903) + Sk.line(776, 74, 776, 474, 904), "k1") +
+    T(668, 112, "分了几次", "lab", 'text-anchor="middle"') + P(Sk.line(588, 262, 748, 262, 902), "k1") + T(668, 310, "现在有", "lab", 'text-anchor="middle"') +
+    T(668, 446, "个细胞", "lab", 'text-anchor="middle"');
+}
+function counterDyn(){
+  const { g } = divPhase(S.d), n = Math.pow(2, g);
+  if (NR) return T(140, 600, g, "huge", 'text-anchor="middle"') + T(380, 570, fmtCount(n), "cnt", 'text-anchor="middle"');
+  return T(668, 220, g, "huge", 'text-anchor="middle"') + T(668, 392, fmtCount(n), "cnt", 'text-anchor="middle"');
+}
+function barsSvg(){
+  const { g } = divPhase(S.d), n = Math.pow(2, g);
+  const [x0, W, y1, y2, lx] = NR ? [130, 370, 652, 698, 20] : [120, 390, 520, 566, 30];
+  const w1 = Math.max(3, W * n / MODEL.bodyCells);
+  return T(lx, y1 + 18, "分出来的", "t") + `<rect x="${x0}" y="${y1}" width="${f1(Math.min(W, w1))}" height="26" rx="5" fill="var(--accent)" opacity=".85"/>` +
+    T(lx, y2 + 18, "你身体里", "t") + `<rect x="${x0}" y="${y2}" width="${W}" height="26" rx="5" fill="var(--sage)" opacity=".85"/>` + P(Sk.line(x0, y2, x0 + W, y2, 910) + Sk.line(x0, y2 + 26, x0 + W, y2 + 26, 911) + Sk.line(x0 + W, y2, x0 + W, y2 + 26, 912), "k1") +
+    T(x0 + 10, y2 + 19, "约 " + fmtCount(MODEL.bodyCells), "t");
+}
+function readout3(){
+  const { g } = divPhase(S.d);
+  readout(`分了 <b>${g}</b> 次 · 现在 ${fmtCount(Math.pow(2, g))}个`);
+  Host.state({ station: 3, divisions: g, cells: Math.pow(2, g) });
+}
+function enter3(){
+  S.station = 3; S.mode = "talk"; S.d = S.dt = 0; S.band = -1; S.earth = false; head(3, "细胞是活的"); hint("");
+  fitView(); render(); readout3();
+  say("舰长，我们凑近看你身体里的一个细胞。");
+  next("然后呢？", () => ask("alive-guess", "细胞是活的，还是像积木一样的零件？", [
+    { label: "是活的，会长大、会分开", correct: true, feedback: "你猜对了。我们看看它怎么分。" },
+    { label: "像积木，搭好就不变了", mis: "cells-are-dead", feedback: "看起来确实像积木，一格挨一格。可细胞会吃养料、会长大。" }
+  ], () => next("按住看看", act3)));
+}
+function act3(){
+  S.mode = "act3"; hint("按住「分」，或按空格");
+  say("假设每次所有细胞都一起分成两个。按住「分」，喂它养料。");
+  actions([{ label: "按住 分", cls: "hold", hold: "div", step: () => { S.dt = clamp(S.dt + .02); } }]);
+  svg.focus({ preventScroll: true });
+}
+// 前 3 次慢慢看清楚；中间快；最后 5 次再放慢，让孩子看见红条每次翻一倍
+const tOfD = t => t < .3 ? 3 * t / .3 : t < .65 ? 3 + 37 * (t - .3) / .35 : 40 + (MODEL.divisions - 40) * (t - .65) / .35;
+// 领航员的话按「段」说：每一段的话在这一段里一直是对的，按得再快也不会停在旧话上
+const BANDS = [[1, "一个变两个了。中间的小圆先分开，房间再分开。"], [2, "两个变四个。"], [3, "四个变八个。接着按住，越分越快。"],
+  [6, "太多了，视野里装不下，都挤在一起。"], [10, "超过 1000 个了。"], [20, `超过 ${fmtCount(1e6)}个了。`], [30, `超过 ${fmtCount(1e9)}个了。`],
+  [40, `超过 ${fmtCount(1e12)}个了。看下面的红条。`], [41, "最后几次，每分一次就多一倍。看红条。"]];
+function milestones3(){
+  const { g } = divPhase(S.d);
+  let b = -1; BANDS.forEach((x, i) => { if (g >= x[0]) b = i; });
+  if (b !== S.band && b >= 0){ S.band = b; say(BANDS[b][1]); }
+}
+function done3(){
+  S.mode = "talk"; S.holdKey = null; hint("");
+  emit("observed", { station: 3, divisions: MODEL.divisions, cells: MODEL.cellsAfter }, "o-divide");
+  say(`如果每次都全部分成两个，分 ${MODEL.divisions} 次就有约 ${fmtCount(MODEL.cellsAfter)}个。`, "good");
+  next("继续", () => {
+    say(`你身体里约有 ${fmtCount(MODEL.bodyCells)}个细胞，差不多一样多。`);
+    next("身体就是这样长的吗？", () => {
+      say("不是。这只是假设的算术，身体真正长大要复杂得多。");
+      next("这么多，有多多？", () => {
+        S.earth = true; S.eP = reduced ? 1 : 0; render();
+        readout(`红细胞排成一排 · 约 ${Math.round(MODEL.rbcLineKm / 1e4)} 万公里`);
+        say(`只把你身体里的红细胞一个挨一个排成一排，能绕地球 ${Math.floor(MODEL.earthLoops)} 圈多。`);
+        next("去第 4 站", enter4);
+      });
+    });
+  });
+}
+
+/* ============ 11. 第 4 站：小房间里的小房间（滴染色的药水，找细胞核） ============ */
+const CELLS = { cheek: [], onion: [], blood: [] };
+function makeTiles(){
+  const B = 118;   // 按半径 118 生成，画的时候按 TR 缩放
+  CELLS.cheek = [];
+  for (let j = -4; j <= 4; j++) for (let i = -4; i <= 4; i++){
+    const core = Math.abs(i) <= 1 && Math.abs(j) <= 1;
+    if (!core && hash(i + 9, j + 9, 60) < .24) continue;   // 刮下来的细胞：大多挨在一起，中间有空隙
+    const x = (i + (j & 1 ? .5 : 0)) * 52 + (hash(i, j, 61) - .5) * 8, y = j * 45 + (hash(i, j, 62) - .5) * 8;
+    if (Math.hypot(x, y) > B + 30) continue;
+    const n = 5 + Math.floor(hash(i, j, 63) * 3), a0 = hash(i, j, 64) * 6.283, poly = [];
+    for (let k = 0; k < n; k++){ const a = a0 + k / n * 6.283, rk = 25 * (.76 + .3 * hash(i * 7 + k, j, 65)); poly.push([Math.cos(a) * rk, Math.sin(a) * rk]); }
+    CELLS.cheek.push({ x, y, poly, nx: (hash(i, j, 66) - .5) * 8, ny: (hash(i, j, 67) - .5) * 8, cand: Math.hypot(x, y) <= B - 26 });
+  }
+  CELLS.onion = [];
+  for (let j = -3; j <= 3; j++){
+    const off = (hash(j, 0, 44) - .5) * 150;
+    for (let i = -2; i <= 2; i++){
+      const x = off + i * 150, y = j * 44;
+      if (Math.abs(x) > B + 80 || Math.abs(y) > B + 22) continue;
+      const nx = (hash(i, j, 45) - .5) * 70, ny = (hash(i, j, 46) - .5) * 10;
+      CELLS.onion.push({ x, y, w: 146, h: 40, nx, ny, cand: Math.hypot(clamp(0, x - 73, x + 73), y) <= B - 30 });
+    }
+  }
+  const r = Sk.R(77), pts = [];
+  for (let k = 0; k < 22; k++){
+    let best = null, bg = -1e9;
+    for (let t = 0; t < 300; t++){   // 挑离别的红细胞最远的位置，互不重叠
+      const a = r() * Math.PI * 2, d = Math.sqrt(r()) * (B - 10), x = Math.cos(a) * d, y = Math.sin(a) * d;
+      const gap = pts.length ? Math.min(...pts.map(p => Math.hypot(p.x - x, p.y - y))) : 99;
+      if (gap > bg){ bg = gap; best = { x, y }; }
+    }
+    pts.push(best);
+  }
+  CELLS.blood = pts.map(p => ({ x: p.x, y: p.y, r: 17, cand: Math.hypot(p.x, p.y) <= B - 20 }));
+}
+// 一个格子在格子坐标（半径 118）里的中心
+const cellCenter = (key, c) => key === "onion" ? [clamp(0, c.x - c.w / 2 + 14, c.x + c.w / 2 - 14), c.y] : [c.x, c.y];
+function tileSvg(key, cx, cy, R, pick, stain, id){
+  const k = R / 118, X = v => f1(cx + v * k), Y = v => f1(cy + v * k);
+  const st = clamp((stain - .4) / .6);   // 药水滴下去以后慢慢染开
+  let s = `<clipPath id="${id}"><circle cx="${cx}" cy="${cy}" r="${R}"/></clipPath><circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--pane)"/><circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--sky)" opacity=".25"/><g clip-path="url(#${id})">`;
+  if (key === "cheek"){
+    s += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--apricot)" opacity=".3"/>`;
+    CELLS.cheek.forEach((c, i) => { s += `<path class="${pick === i ? "c-hero" : "c-cheek"}" d="M${c.poly.map(q => X(c.x + q[0]) + " " + Y(c.y + q[1])).join("L")}Z"/>`; });
+  } else if (key === "onion"){
+    s += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--sage)" opacity=".4"/>`;
+    CELLS.onion.forEach((c, i) => { s += `<path class="${pick === i ? "c-hero" : "c-onion"}" d="${rectP(cx + (c.x - c.w / 2) * k, cy + (c.y - c.h / 2) * k, c.w * k, c.h * k)}"${pick === i ? "" : ' fill-opacity=".75"'}/>`; });
+  } else {
+    s += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--apricot)" opacity=".25"/>`;
+    CELLS.blood.forEach((c, i) => { s += rbcSvg(+X(c.x), +Y(c.y), c.r * k, pick === i); });
+  }
+  if (st > 0){
+    s += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--apricot)" opacity="${(.35 * st).toFixed(2)}"/>`;
+    if (key !== "blood"){   // 染上色，细胞核才看得清
+      let n = "";
+      CELLS[key].forEach((c, i) => {
+        const [x0, y0] = cellCenter(key, c), nx = x0 + (key === "onion" ? 0 : c.nx), ny = y0 + c.ny * (key === "onion" ? .3 : 1);
+        n += key === "onion" ? `<ellipse class="nuc" cx="${X(nx)}" cy="${Y(ny)}" rx="${f1(9 * k)}" ry="${f1(7 * k)}"/>` : `<circle class="nuc" cx="${X(nx)}" cy="${Y(ny)}" r="${f1(7.5 * k)}"/>`;
+        if (pick === i) n += `<circle cx="${X(nx)}" cy="${Y(ny)}" r="${f1(9 * k)}" fill="var(--accent)" stroke="var(--ink)" stroke-width="1.4"/>`;
+      });
+      s += `<g opacity="${st.toFixed(2)}">${n}</g>`;
+    }
+  }
+  s += "</g>" + P(ring(cx, cy, R, 1100 + key.length), "k");
+  return s;
+}
+function calloutSvg(key){   // 放大镜：把点中的那个细胞再放大一点
+  const t = TILE[key], c = CELLS[key][S.pick[key]], k = TR / 118, [x0, y0] = cellCenter(key, c);
+  const cx = t.cx, cy = t.cy, R = t.cr, px = t.x + x0 * k, py = t.y + y0 * k;
+  let s = P(Sk.line(px, py, cx + (NR ? -R : 0), cy + (NR ? 0 : R), 1200), "kf");
+  s += `<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--pane)"/>`;
+  const q = R / 54;
+  if (key === "cheek") s += `<path class="c-hero" d="M${c.poly.map(p => f1(cx + p[0] * 1.6 * q) + " " + f1(cy + p[1] * 1.6 * q)).join("L")}Z"/><circle cx="${f1(cx + c.nx * 1.6 * q)}" cy="${f1(cy + c.ny * 1.6 * q)}" r="${f1(12 * q)}" fill="var(--accent)" stroke="var(--ink)" stroke-width="1.6"/>`;
+  else if (key === "onion") s += `<path class="c-hero" d="${rectP(cx - 46 * q, cy - 19 * q, 92 * q, 38 * q)}"/><ellipse cx="${cx}" cy="${cy}" rx="${f1(13 * q)}" ry="${f1(10 * q)}" fill="var(--accent)" stroke="var(--ink)" stroke-width="1.6"/>`;
+  else s += rbcSvg(cx, cy, 38 * q, true);
+  s += P(ring(cx, cy, R, 1201), "k") + P(Sk.line(cx - R * .72, cy + R * .72, cx - R * .72 - 16, cy + R * .72 + 16, 1202), "k", 'stroke-width="5"');
+  const has = key !== "blood", ly = NR ? cy + R + 36 : t.y + TR + 64, lx = NR ? cx : t.x;
+  s += T(lx, ly, has ? "有细胞核" : "没有细胞核", "t", 'text-anchor="middle"');
+  return s;
+}
+function dropSvg(key){   // 一滴染色的药水落到点中的细胞上
+  const t = TILE[key], c = CELLS[key][S.pick[key]], k = TR / 118, [x0, y0] = cellCenter(key, c);
+  const p = clamp(S.stain[key] / .4); if (p >= 1) return "";
+  const x = t.x + x0 * k, y = t.y + y0 * k - 70 * (1 - p);
+  return `<path d="M${f1(x)} ${f1(y - 14)}C${f1(x + 4)} ${f1(y - 6)} ${f1(x + 8)} ${f1(y)} ${f1(x + 8)} ${f1(y + 3)}A8 8 0 0 1 ${f1(x - 8)} ${f1(y + 3)}C${f1(x - 8)} ${f1(y)} ${f1(x - 4)} ${f1(y - 6)} ${f1(x)} ${f1(y - 14)}Z" fill="var(--apricot)" stroke="var(--ink)" stroke-width="1.4"/>`;
+}
+function suggestCell(key){   // 每片里离中心最近的一个候选细胞：提示圈和键盘都用它
+  let best = 0, bd = 1e9;
+  CELLS[key].forEach((c, i) => { if (!c.cand) return; const [x, y] = cellCenter(key, c), d = Math.hypot(x, y); if (d < bd){ bd = d; best = i; } });
+  return best;
+}
+function legendSvg(){   // 小房间 → 小房间里的小房间 → 说明书
+  const y = NR ? VBH - 44 : 556, xs = NR ? [44, 82, 132, 200, 228, 302, 380, 408] : [150, 205, 250, 340, 374, 440, 528, 562];
+  const room = (x, w, h, cls) => `<path class="${cls}" d="M${x - w / 2} ${y + h / 2}V${y - h / 2 + 10}L${x} ${y - h / 2 - 8}L${x + w / 2} ${y - h / 2 + 10}V${y + h / 2}Z"/>`;
+  const arrow = (a, b, sd) => P(Sk.line(a, y, b, y, sd) + Sk.line(b - 10, y - 7, b, y, sd + 1) + Sk.line(b - 10, y + 7, b, y, sd + 2), "k1");
+  let s = room(xs[0], 60, 46, "c-cheek") + room(xs[0], 26, 20, "c-hero") + T(xs[1], y + 7, "细胞", "t");
+  s += arrow(xs[2], xs[2] + (NR ? 36 : 42), 1500);
+  s += room(xs[3], 40, 32, "c-hero") + T(xs[4], y + 7, "细胞核", "t");
+  s += arrow(xs[5], xs[5] + (NR ? 36 : 42), 1503);
+  const bx = xs[6] - 22;
+  s += `<rect x="${bx}" y="${y - 17}" width="40" height="32" rx="4" fill="var(--paper)"/>` + P(Sk.line(bx, y - 17, bx + 40, y - 17, 1506) + Sk.line(bx, y + 15, bx + 40, y + 15, 1507) + Sk.line(bx, y - 17, bx, y + 15, 1508) + Sk.line(bx + 40, y - 17, bx + 40, y + 15, 1509), "k1") +
+    P(Sk.line(bx + 7, y - 8, bx + 33, y - 8, 1510) + Sk.line(bx + 7, y, bx + 33, y, 1511) + Sk.line(bx + 7, y + 8, bx + 26, y + 8, 1512), "k1", 'opacity=".6"') + T(xs[7], y + 7, "说明书", "t");
+  return s;
+}
+function draw4(){
+  let s = "";
+  for (const key of KEYS){
+    const t = TILE[key];
+    s += tileSvg(key, t.x, t.y, TR, S.pick[key], S.stain[key], "tc-" + key);
+    s += T(t.x, t.y + TR + (NR ? 30 : 34), t.name, "lab", 'text-anchor="middle"');
+    if (S.pick[key] != null){ s += dropSvg(key); if (S.found[key]) s += calloutSvg(key); }
+  }
+  if (S.found.cheek || S.found.onion) s += legendSvg();
+  const k = TR / 118;
+  const ringAt = (x, y, w) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(31 * k)}" fill="none" stroke="var(--pane)" stroke-width="${w + 3}" opacity=".8"/><circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(31 * k)}" fill="none" stroke="var(--ink)" stroke-width="${w}" stroke-dasharray="5 5"/>`;
+  if (S.mode === "tap4" && !S.kbd) for (const key of KEYS){   // 还没染过的那一片：提示「点这样一个」
+    if (S.pick[key] != null) continue;
+    const [x, y] = cellCenter(key, CELLS[key][suggestCell(key)]);
+    s += `<g opacity=".7">${ringAt(TILE[key].x + x * k, TILE[key].y + y * k, 2)}</g>`;
+  }
+  if (S.mode === "tap4" && S.kbd && S.focus >= 0){ const t = TILE[KEYS[S.focus]]; s += `<circle cx="${t.x}" cy="${t.y}" r="${TR + 9}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="7 6"/>`; }
+  return s;
+}
+function readout4(){
+  const k = KEYS.filter(x => S.found[x]).length;
+  readout(`染过 <b>${k}</b> / 3 种`);
+  Host.state({ station: 4, samples_stained: k });
+}
+function enter4(){
+  S.station = 4; S.mode = "tap4"; head(4, "小房间里的小房间"); hint("点一个细胞，给它滴药水");
+  S.focus = -1; makeTiles(); fitView(); render(); readout4(); actions([]);
+  say("每个细胞里，还藏着一个更小的房间。没染色时很难看清。点一个细胞，滴一滴染色的药水。");
+  svg.focus({ preventScroll: true });
+}
+function tapCell(key, idx){
+  if (S.mode !== "tap4" || S.staining) return;
+  if (S.found[key] || S.pick[key] != null){ say("这一片已经染过了。换一片试试。"); return; }
+  S.pick[key] = idx; S.staining = key; S.stain[key] = reduced ? 1 : 0;
+  say("滴一滴……");
+  render();
+  if (reduced) revealCell(key);
+}
+function revealCell(key){
+  S.staining = null; S.found[key] = true; render(); readout4();
+  emit("observed", { station: 4, item: key, nucleus: key !== "blood" }, "o4-" + key);
+  const firstNuc = key !== "blood" && KEYS.filter(k => S.found[k] && k !== "blood").length === 1;
+  if (key === "blood") say("染了色，红细胞里还是找不到细胞核。人的红细胞是个例外。", "good");
+  else if (firstNuc) say("找到了！染上色冒出来的这个小圆，叫细胞核。", "good");
+  else say(key === "onion" ? "洋葱细胞里也有细胞核。" : "口腔细胞里也有细胞核。", "good");
+  after4();
+}
+function after4(){
+  const keep = document.activeElement === svg;
+  const anyNuc = S.found.cheek || S.found.onion, all = KEYS.every(k => S.found[k]);
+  if (anyNuc && !S.saidBook) next("它是做什么的？", () => { S.saidBook = true; say("它是小房间里的小房间，里面放着一份说明书。"); after4(); }, "", keep);
+  else if (anyNuc && !S.saidSeen) next("以前见过它吗？", () => { S.saidSeen = true; say("见过！第 3 站细胞分开前，中间先分开的小圆就是它。"); after4(); }, "", keep);
+  else if (all) next("看我的图鉴", enterEnd);
+  else actions([]);
+  hint(all ? "" : "再点另一片，滴一滴药水");
+}
+function hitTile(q){
+  const k = TR / 118, R = hitR();
+  for (const key of KEYS){
+    const t = TILE[key];
+    if (Math.hypot(q.x - t.x, q.y - t.y) > TR + 6) continue;
+    let best = null, bd = 1e9;
+    CELLS[key].forEach((c, idx) => {
+      if (!c.cand) return;
+      const [x, y] = cellCenter(key, c), d = Math.hypot(q.x - t.x - x * k, q.y - t.y - y * k);
+      if (d < bd){ bd = d; best = idx; }
+    });
+    if (best != null && bd <= Math.max(R, 40 * k)) return { key, idx: best };
+    return { key, idx: suggestCell(key) };   // 点在这一片里任何地方都算，染离手指最近的那个
+  }
+  return null;
+}
+
+/* ============ 12. 结尾：星卡 ============ */
+function drawEnd(){
+  const items = [["cheek", "口腔细胞", "约 " + fmtMm(MODEL.cheekMm)], ["onion", "洋葱细胞", "约 " + fmtMm(MODEL.onionMm) + "长"], ["blood", "红细胞", "约 " + fmtMm(MODEL.rbcMm)]];
+  // 按固定排版画：每片都画成染好色的样子，主角是孩子点中的那个（没点过就用提示的那个）
+  const pickOf = key => S.pick[key] != null ? S.pick[key] : suggestCell(key);
+  let s;
+  if (!NR){
+    s = `<rect x="30" y="20" width="740" height="570" rx="20" fill="var(--pane)" stroke="var(--rule)"/>` +
+      `<path d="M712 44l7 14 15 2-11 11 3 15-14-7-14 7 3-15-11-11 15-2z" fill="var(--accent)" opacity=".85"/>` +
+      T(60, 76, "我的显微镜图鉴", "ttl") + T(60, 106, "舰长亲手放大、亲手染色找到的", "tm");
+    items.forEach(([key, name, size], i) => {
+      const x = 160 + 240 * i;
+      s += tileSvg(key, x, 216, 76, pickOf(key), 1, "te-" + key);
+      s += T(x, 326, name, "lab", 'text-anchor="middle"') + T(x, 352, size, "tm", 'text-anchor="middle"') + T(x, 378, key === "blood" ? "没有细胞核" : "有细胞核", "t", 'text-anchor="middle"');
+    });
+    s += P(Sk.line(60, 400, 740, 400, 1300), "k1");
+    const stat = (x, big, small) => T(x, 452, big, "big", 'text-anchor="middle"') + T(x, 482, small, "tm", 'text-anchor="middle"');
+    s += stat(160, `${MODEL.maxMag} 倍`, "放大到") + stat(400, `${MODEL.divisions} 次`, "如果全都分成两个") + stat(640, `约 ${fmtCount(MODEL.bodyCells)}`, "你身体里的细胞");
+    s += P(Sk.line(60, 510, 740, 510, 1301), "k1") + neuronIcon(66, 548) +
+      T(150, 552, `3 种都找过，还拉出了 ${MODEL.neuronM} 米多长的神经细胞。`, "t");
+    return s;
+  }
+  s = `<rect x="14" y="14" width="492" height="772" rx="20" fill="var(--pane)" stroke="var(--rule)"/>` +
+    `<path d="M462 40l7 14 15 2-11 11 3 15-14-7-14 7 3-15-11-11 15-2z" fill="var(--accent)" opacity=".85"/>` +
+    T(40, 72, "我的显微镜图鉴", "ttl") + T(40, 108, "亲手放大、亲手染色找到的", "tm");
+  items.forEach(([key, name, size], i) => {
+    const x = 95 + 165 * i;
+    s += tileSvg(key, x, 196, 66, pickOf(key), 1, "te-" + key);
+    s += T(x, 296, name, "lab", 'text-anchor="middle"') + T(x, 326, size, "tm", 'text-anchor="middle"') + T(x, 358, key === "blood" ? "没有细胞核" : "有细胞核", "t", 'text-anchor="middle"');
+  });
+  s += P(Sk.line(40, 388, 480, 388, 1300), "k1");
+  const row = (y, big, small) => T(44, y, big, "big") + T(270, y - 4, small, "tm");
+  s += row(450, `${MODEL.maxMag} 倍`, "放大到") + row(530, `${MODEL.divisions} 次`, "如果全都分成两个") + row(610, `约 ${fmtCount(MODEL.bodyCells)}`, "你身体里的细胞");
+  s += P(Sk.line(40, 650, 480, 650, 1301), "k1") + T(44, 698, "3 种都找过，", "t") + neuronIcon(330, 690) + T(44, 736, `还拉出了 ${MODEL.neuronM} 米多长的神经细胞。`, "t");
+  return s;
+}
+function neuronIcon(x, y){   // 星卡上的小图：腰上的细胞，一路伸到脚趾
+  return `<path class="thread" stroke-width="3.5" d="M${x} ${y - 12}C${x + 20} ${y - 14} ${x + 34} ${y + 2} ${x + 52} ${y}S${x + 70} ${y - 6} ${x + 74} ${y + 4}"/><circle cx="${x}" cy="${y - 12}" r="7" fill="var(--accent)"/>`;
+}
+function enterEnd(){
+  S.station = 5; S.mode = "end"; head(0, "我的显微镜图鉴"); hint(""); readout("");
+  fitView(); render();
+  say("这是舰长的显微镜图鉴。细胞核里的说明书写了什么？下一颗星见。", "good");
+  if (ROUND === 1) Host.complete({});   // 只在第一轮告诉平台「做完了」，再玩一次不重复记
+  next("再玩一次", () => { ROUND++; S = fresh(); enter1(); }, "ghost");
+}
+
+/* ============ 13. 画面和输入 ============ */
+function render(){
+  let s = "";
+  if (S.station === 1 || S.station === 2){
+    const e = S.nzP;
+    if (e < .999){
+      // 镜头拉远：视野圆圈缩成腰上的一个小点（神经细胞出发的地方），显微镜先淡出
+      const sc = 1 - .96 * smooth(e), o = (1 - e).toFixed(2), o2 = clamp(1 - 2 * e).toFixed(2), active = S.mode === "act1" || S.mode === "zoom2";
+      const [nx, ny] = neuronPath().pts[0], cx = VX + (nx - VX) * smooth(e), cy = VY + (ny - VY) * smooth(e);
+      s += `<g opacity="${o}" transform="translate(${f1(cx - VX * sc)} ${f1(cy - VY * sc)}) scale(${sc.toFixed(3)})">${viewSvg()}</g>`;
+      s += `<g opacity="${o2}">` + microscopeSvg() + lookCurve() + dialSvg(active);
+      if (S.station === 1){ s += illoSvg(); if (S.cork) s += corkSvg(); }
+      else {
+        for (const key of KEYS){
+          if ((S.drag && S.drag.key === key) || S.sample === key) continue;
+          s += slideSvg(key, SLIDES[key].x, SLIDE_Y, S.mode === "pick" && key !== S.want);
+        }
+        if (S.mode === "pick"){
+          s += `<ellipse cx="${f1(STAGE.x)}" cy="${f1(STAGE.y)}" rx="${NR ? 56 : 70}" ry="22" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-dasharray="5 6"/>`;
+          if (!S.drag){ const w = SLIDES[S.want]; s += P(Sk.curve(NR ? [[w.x, SLIDE_Y - SH / 2 - 6], [(w.x + STAGE.x) / 2 + 30, (SLIDE_Y + STAGE.y) / 2], [STAGE.x + 20, STAGE.y + 24]] : [[w.x + 40, SLIDE_Y - 30], [530, 300], [STAGE.x - 60, STAGE.y + 26]], 1400, .4), "kf", 'stroke-width="2"'); }
+        }
+        if (S.drag) s += slideSvg(S.drag.key, S.drag.x, S.drag.y, false);
+      }
+      s += "</g>";
+    }
+    if (e > .001) s += `<g opacity="${e.toFixed(2)}">${neuronScene()}</g>`;
+  } else if (S.station === 3){
+    s += `<circle cx="${VX}" cy="${VY}" r="${VR}" fill="var(--pane)"/><g clip-path="url(#vclip)">${S.earth ? drawEarth() : drawDivide()}</g>` + P(ring(VX, VY, VR, 600), "k") + P(ring(VX, VY, VR + 7, 601, 2), "k1");
+    s += counterDyn() + barsSvg();
+  } else if (S.station === 4) s += draw4();
+  else s += drawEnd();
+  gDyn.innerHTML = s;
+}
+function toSvg(e){
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+// 这一点按下去会开始一个拖动或点选吗？会的话，拦下页面滚动
+function grabAt(q){
+  if ((S.mode === "act1" || S.mode === "zoom2") && Math.hypot(q.x - DX, q.y - DY) < 100) return "knob";
+  if (S.mode === "pick"){ const sx = SLIDES[S.want].x; if (Math.abs(q.x - sx) < SW / 2 + 12 && Math.abs(q.y - SLIDE_Y) < Math.max(SH / 2 + 12, hitR())) return "slide"; }
+  if (S.mode === "neuron"){ const [hx, hy] = pathAt(S.np); if (Math.hypot(q.x - hx, q.y - hy) < hitR() + 18) return "neuron"; }
+  if (S.mode === "tap4" && hitTile(q)) return "tap";
+  return null;
+}
+svg.addEventListener("touchstart", e => { if (e.touches.length === 1 && grabAt(toSvg(e.touches[0]))) e.preventDefault(); }, { passive: false });
+let drag = null;
+const angAt = q => Math.atan2(q.x - DX, -(q.y - DY)) * 180 / Math.PI;
+svg.addEventListener("pointerdown", e => {
+  const q = toSvg(e), g = grabAt(q); S.kbd = false;
+  if (g === "knob") drag = { kind: "knob", last: angAt(q) };
+  else if (g === "slide"){
+    const sx = SLIDES[S.want].x;
+    S.drag = { key: S.want, x: sx, y: SLIDE_Y, ox: q.x - sx, oy: q.y - SLIDE_Y, x0: q.x, y0: q.y, moved: false };
+    drag = { kind: "slide" }; render();
+  } else if (g === "neuron") drag = { kind: "neuron" };
+  else if (g === "tap"){ const h = hitTile(q); if (h) tapCell(h.key, h.idx); }
+  if (drag){ svg.setPointerCapture(e.pointerId); e.preventDefault(); }
+});
+svg.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const q = toSvg(e);
+  if (drag.kind === "knob"){
+    const a = angAt(q); let d = a - drag.last; if (d > 180) d -= 360; if (d < -180) d += 360;
+    drag.last = a; S.zt = clamp(S.zt + d / 300, 0, zMax());
+  } else if (drag.kind === "slide" && S.drag){
+    S.drag.x = q.x - S.drag.ox; S.drag.y = q.y - S.drag.oy;
+    if (Math.hypot(q.x - S.drag.x0, q.y - S.drag.y0) > 8) S.drag.moved = true;
+    render();
+  } else if (drag.kind === "neuron" && S.mode === "neuron"){
+    S.nt = nearestOnPath(q, S.nt);
+  }
+});
+function endDrag(){
+  if (drag && drag.kind === "slide" && S.drag){
+    const d = S.drag;
+    if (!d.moved || Math.hypot(d.x - STAGE.x, d.y - STAGE.y) < 130) place(d.key);   // 点一下也能放上去
+    else { S.drag = null; render(); }
+  }
+  drag = null;
+}
+for (const ev of ["pointerup", "pointercancel"]) svg.addEventListener(ev, endDrag);
+svg.addEventListener("keydown", e => {
+  const k = e.key;
+  if (S.mode === "act1" || S.mode === "zoom2"){
+    if (/ArrowUp|ArrowRight|^\+$|^=$| |Enter/.test(k)){ e.preventDefault(); S.zt = clamp(S.zt + .04, 0, zMax()); }
+    if (/ArrowDown|ArrowLeft|^-$/.test(k)){ e.preventDefault(); S.zt = clamp(S.zt - .04, 0, zMax()); }
+  } else if (S.mode === "pick" && (k === "Enter" || k === " ")){ e.preventDefault(); place(S.want); }
+  else if (S.mode === "neuron" && /Arrow|Enter| /.test(k)){ e.preventDefault(); S.kbd = true; S.nt = clamp(S.nt + (/Left|Up/.test(k) ? -.05 : .05)); }
+  else if (S.mode === "act3" && /Arrow|Enter| /.test(k)){ e.preventDefault(); S.dt = clamp(S.dt + .02); }
+  else if (S.mode === "tap4"){
+    if (/ArrowRight|ArrowDown/.test(k)){ e.preventDefault(); S.kbd = true; S.focus = (S.focus + 1) % 3; render(); }
+    if (/ArrowLeft|ArrowUp/.test(k)){ e.preventDefault(); S.kbd = true; S.focus = (S.focus + 2) % 3; render(); }
+    if ((k === "Enter" || k === " ") && S.focus >= 0){ e.preventDefault(); const key = KEYS[S.focus]; tapCell(key, suggestCell(key)); }
+  }
+});
+
+let last = performance.now();
+function tick(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  let dirty = false;
+  if ((S.holdKey === "zin" || S.holdKey === "zout") && (S.mode === "act1" || S.mode === "zoom2")) S.zt = clamp(S.zt + (S.holdKey === "zin" ? 1 : -1) * dt * .2, 0, zMax());
+  if (S.holdKey === "div" && S.mode === "act3") S.dt = clamp(S.dt + dt * .09);
+  const k = reduced ? 1 : 1 - Math.exp(-dt / .12);
+  const follow = (tk, pk, tv) => { const t = tv == null ? S[tk] : tv; if (Math.abs(t - S[pk]) > 1e-4){ S[pk] = Math.abs(t - S[pk]) < 1e-3 ? t : S[pk] + (t - S[pk]) * k; dirty = true; } };
+  follow("zt", "z"); follow(null, "d", tOfD(S.dt)); follow("nt", "np");
+  if (Math.abs(S.nzT - S.nzP) > 1e-4){ S.nzP = reduced ? S.nzT : clamp(S.nzP + dt * 1.6); dirty = true; }
+  if (S.earth && S.eP < 1){ S.eP = clamp(S.eP + dt * .45); dirty = true; }
+  if (S.staining){ const key = S.staining; S.stain[key] = clamp(S.stain[key] + dt * 1.6); dirty = true; if (S.stain[key] >= 1) revealCell(key); }
+  if (dirty && S.station <= 4){
+    if (S.mode === "act1"){
+      milestones1();
+      const zT = zOf(MODEL.target.cheek);
+      if (S.zt >= .985 * zT && S.z > .975 * zT){ S.z = S.zt = zT; render(); done1(); }   // 98.5% 就算完成，读数对齐到 100 倍
+      else { render(); readoutZoom(); }
+    } else if (S.mode === "zoom2"){
+      const zT = zOf(MODEL.target[S.want]);
+      if (S.zt >= .985 * zT && S.z > .975 * zT){ S.z = S.zt = zT; seen2(S.want); }
+      else { render(); readoutZoom(); }
+    } else if (S.mode === "zoomout"){
+      render(); if (S.nzP >= 1) actNeuron();
+    } else if (S.mode === "neuron"){
+      if (S.nt >= .985 && S.np > .975){ S.nt = S.np = 1; doneNeuron(); }
+      else { render(); readoutNeuron(); }
+    } else if (S.mode === "act3"){
+      if (S.dt >= .985 && S.d > tOfD(.975)){ S.dt = 1; S.d = MODEL.divisions; S.holdKey = null; render(); readout3(); done3(); }   // 读数对齐到 45 次
+      else { milestones3(); render(); readout3(); }
+    } else render();
+  }
+  requestAnimationFrame(tick);
+}
+Host.ready();   // 先发 ready，再发别的消息
+enter1();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

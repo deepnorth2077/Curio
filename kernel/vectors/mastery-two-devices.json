@@ -1,0 +1,44 @@
+{
+  "name": "mastery-two-devices",
+  "about": "同一个孩子在两台设备上各做一次，事件交错到达：取最好的一次。事件规格第 9 节「两台设备交错到达」。",
+  "order_free": true,
+  "base": {"schema": "event/2", "learner_id": "lrn_01JC00000000000000000000K1", "device_id": "dev_01JC00000000000000000000D1", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K1"}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}},
+  "inputs": [
+    {"event": {"event_id": "evt_01JC0000000000000000000E14", "device_seq": 1, "occurred_at": "2026-11-08T02:00:01.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"mode": "first"}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E1", "device_seq": 1, "occurred_at": "2026-11-08T02:00:01.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E15", "device_seq": 2, "occurred_at": "2026-11-08T02:00:02.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q1", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E2", "device_seq": 2, "occurred_at": "2026-11-08T02:00:02.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E16", "device_seq": 3, "occurred_at": "2026-11-08T02:00:03.000Z", "verb": "hint.used", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q1", "level": 1}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E3", "device_seq": 3, "occurred_at": "2026-11-08T02:00:03.000Z", "verb": "hint.used", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "level": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E17", "device_seq": 4, "occurred_at": "2026-11-08T02:00:04.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 2, "hints_used": 1}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E4", "device_seq": 4, "occurred_at": "2026-11-08T02:00:04.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 2, "hints_used": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E18", "device_seq": 5, "occurred_at": "2026-11-08T02:00:05.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E5", "device_seq": 5, "occurred_at": "2026-11-08T02:00:05.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q2", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E19", "device_seq": 6, "occurred_at": "2026-11-08T02:00:06.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E6", "device_seq": 6, "occurred_at": "2026-11-08T02:00:06.000Z", "verb": "hint.used", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q2", "level": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E20", "device_seq": 7, "occurred_at": "2026-11-08T02:00:07.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E7", "device_seq": 7, "occurred_at": "2026-11-08T02:00:07.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 2, "hints_used": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E21", "device_seq": 8, "occurred_at": "2026-11-08T02:00:08.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E8", "device_seq": 8, "occurred_at": "2026-11-08T02:00:08.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q3", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E22", "device_seq": 9, "occurred_at": "2026-11-08T02:00:09.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"duration_ms": 60000}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E9", "device_seq": 9, "occurred_at": "2026-11-08T02:00:09.000Z", "verb": "hint.used", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q3", "level": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E10", "device_seq": 10, "occurred_at": "2026-11-08T02:00:10.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 2, "hints_used": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E11", "device_seq": 11, "occurred_at": "2026-11-08T02:00:11.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E12", "device_seq": 12, "occurred_at": "2026-11-08T02:00:12.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E13", "device_seq": 13, "occurred_at": "2026-11-08T02:00:13.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"duration_ms": 60000}}, "expect": "accepted"}
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {
+      "math.number.fraction-intro": {
+        "state": "lit",
+        "best": {
+          "correct": 4,
+          "answered": 5
+        }
+      }
+    },
+    "conflicts": []
+  },
+  "worked": "D1 的 A1：q1、q2、q3 首答错，q4、q5 对 → 2/5。D2 的 A2：q1 首答错，其余对 → 4/5。两次都合法（各自只来自一台设备）。最好的一次：2×5=10 < 4×5=20 → 4/5。4×5=20 ≥ 5×4=20 → lit。"
+}

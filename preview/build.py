@@ -1,7 +1,11 @@
-"""生成一次性试玩预览页（单个 HTML 文件，内容和配图都嵌在里面）。
+"""生成一次性试玩预览页（单个 HTML 文件，内容和配图都嵌在里面），以及原型读的内容包。
 
 用法：
     python preview/build.py --root <内容根目录> [--root <另一个根目录> ...] --out <输出文件>
+    python preview/build.py --root . --bundle prototype/content.js
+
+--bundle：把所有 status: published 的知识点、它们卡片里列的已批准（review: approved）活动和配图打成一个 JS 文件，
+原型（prototype/index.html）用 <script src="content.js"> 读。content/ 改了就重新生成一次。
 
 每个根目录下应当有 content/nodes/、content/activities/、content/assets/。
 可以给多个根目录（例如三个 kp/ 分支各导出一份），按 STARS 里列的顺序取知识点和活动。
@@ -70,30 +74,72 @@ def collect_srcs(obj, out):
             collect_srcs(v, out)
 
 
+def not_approved(doc, aid, only_approved):
+    """只收已批准的活动时，没批准的返回 True 并打印原因（和 tools/build_release.py 的筛选一致）。"""
+    if only_approved and doc.get("review") != "approved":
+        print(f"跳过（还没批准，review: {doc.get('review')}）：{aid}")
+        return True
+    return False
+
+
+def load_activity(roots, aid, figures, only_approved=False):
+    """读一个活动：动手探索（manifest.yaml + index.html）或数据活动（activity.yaml）。配图收进 figures。
+    找不到返回 None；only_approved 时，review 不是 approved 的也返回 None，配图不收。"""
+    manifest = find(roots, f"content/activities/{aid}/manifest.yaml", required=False)
+    if manifest:
+        m = yaml.safe_load(manifest.read_text(encoding="utf-8"))
+        if not_approved(m, aid, only_approved):
+            return None
+        page = find(roots, f"content/activities/{aid}/{m.get('entry', 'index.html')}").read_text(encoding="utf-8")
+        return {"id": m["id"], "kind": "simulation", "title": m["title"], "duration_min": m.get("duration_min"),
+                "age_band": m.get("age_band", "G3-4"), "targets": m.get("targets", []), "html": page}
+    path = find(roots, f"content/activities/{aid}/activity.yaml", required=False)
+    if not path:
+        print(f"跳过（还没有）：{aid}")
+        return None
+    act = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not_approved(act, aid, only_approved):
+        return None
+    srcs = []
+    collect_srcs(act.get("body"), srcs)
+    for src in srcs:
+        if src not in figures:
+            figures[src] = prep_svg(find(roots, src).read_text(encoding="utf-8"), f"f{len(figures)}")
+    return {k: act[k] for k in ("id", "kind", "title", "duration_min", "age_band", "targets", "body") if k in act}
+
+
+def build_bundle(roots):
+    """原型用的内容包：所有已发布的知识点（同一个 id 取第一个根目录里的），活动按知识点卡里的顺序。
+    孩子在原型里玩的就是这份，所以只收 review: approved 的活动；没批准的跳过。"""
+    nodes, acts, figures, seen = [], {}, {}, set()
+    for r in roots:
+        for path in sorted((r / "content/nodes").rglob("*.yaml")):
+            node = yaml.safe_load(path.read_text(encoding="utf-8"))
+            if node.get("status") != "published" or node["id"] in seen:
+                continue
+            seen.add(node["id"])
+            ids = []
+            for aid in node.get("activities", []):
+                if aid not in acts:
+                    a = load_activity(roots, aid, figures, only_approved=True)
+                    if not a:
+                        continue
+                    acts[aid] = a
+                ids.append(aid)
+            nodes.append({
+                "id": node["id"], "title": node["title"], "theme": node["theme"], "grade": node["grade"],
+                "unit": node.get("unit", ""), "prerequisites": node.get("prerequisites", []),
+                "driving_question": node.get("driving_question", ""), "objectives": node.get("objectives", []),
+                "misconceptions": node.get("misconceptions", []), "lenses": node.get("lenses", []), "activities": ids,
+            })
+    return {"nodes": nodes, "activities": acts, "figures": figures}
+
+
 def build(roots):
     stars, figures = [], {}
     for node_id, act_ids in STARS:
         node = yaml.safe_load(find_node(roots, node_id).read_text(encoding="utf-8"))
-        acts = []
-        for aid in act_ids:
-            manifest = find(roots, f"content/activities/{aid}/manifest.yaml", required=False)
-            if manifest:
-                m = yaml.safe_load(manifest.read_text(encoding="utf-8"))
-                page = find(roots, f"content/activities/{aid}/index.html").read_text(encoding="utf-8")
-                acts.append({"id": m["id"], "kind": "simulation", "title": m["title"], "duration_min": m.get("duration_min"),
-                             "age_band": m.get("age_band", "G3-4"), "html": page})
-                continue
-            path = find(roots, f"content/activities/{aid}/activity.yaml", required=False)
-            if not path:
-                print(f"跳过（还没有）：{aid}")
-                continue
-            act = yaml.safe_load(path.read_text(encoding="utf-8"))
-            srcs = []
-            collect_srcs(act.get("body"), srcs)
-            for src in srcs:
-                if src not in figures:
-                    figures[src] = prep_svg(find(roots, src).read_text(encoding="utf-8"), f"f{len(figures)}")
-            acts.append({k: act[k] for k in ("id", "kind", "title", "duration_min", "body") if k in act})
+        acts = [a for a in (load_activity(roots, aid, figures) for aid in act_ids) if a]
         stars.append({
             "id": node_id,
             "title": node["title"],
@@ -107,14 +153,24 @@ def build(roots):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", action="append", required=True, type=Path)
-    ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--out", type=Path, help="试玩页（单个 HTML 文件）")
+    ap.add_argument("--bundle", type=Path, help="原型读的内容包（JS 文件）")
     a = ap.parse_args()
-    data = build(a.root)
-    blob = json.dumps(data, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
-    html = TEMPLATE.read_text(encoding="utf-8").replace("/*__DATA__*/null", blob)
-    a.out.write_text(html, encoding="utf-8")
-    n = sum(len(s["activities"]) for s in data["stars"])
-    print(f"写好了 {a.out}：{len(data['stars'])} 颗星，{n} 个活动，{len(data['figures'])} 张配图")
+    if not a.out and not a.bundle:
+        ap.error("--out 和 --bundle 至少要给一个")
+    if a.out:
+        data = build(a.root)
+        blob = json.dumps(data, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
+        html = TEMPLATE.read_text(encoding="utf-8").replace("/*__DATA__*/null", blob)
+        a.out.write_text(html, encoding="utf-8")
+        n = sum(len(s["activities"]) for s in data["stars"])
+        print(f"写好了 {a.out}：{len(data['stars'])} 颗星，{n} 个活动，{len(data['figures'])} 张配图")
+    if a.bundle:
+        data = build_bundle(a.root)
+        blob = json.dumps(data, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
+        a.bundle.write_text("// 自动生成，不要手改：python preview/build.py --root . --bundle prototype/content.js\n"
+                            f"window.CURIO_CONTENT={blob};\n", encoding="utf-8")
+        print(f"写好了 {a.bundle}：{len(data['nodes'])} 个知识点，{len(data['activities'])} 个活动，{len(data['figures'])} 张配图")
 
 
 if __name__ == "__main__":

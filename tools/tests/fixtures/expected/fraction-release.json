@@ -1,7 +1,7 @@
 {
   "schema": "release/1",
-  "release_id": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe",
-  "content_hash": "b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe",
+  "release_id": "rel_efb556635ad02d686802bc3e2bf4a3faefe6219204f49eb629579651064a9554",
+  "content_hash": "efb556635ad02d686802bc3e2bf4a3faefe6219204f49eb629579651064a9554",
   "engine_min": 1,
   "contracts": [],
   "nodes": [
@@ -9,7 +9,12 @@
       "id": "math.number.fraction-intro",
       "version": 1,
       "path": "content/nodes/num/math.number.fraction-intro.yaml",
-      "sha256": "21b3a1f15adeef754f5bf1844d88cc87ba43eba1d1f9efe996c7b607f4fa2271"
+      "sha256": "21b3a1f15adeef754f5bf1844d88cc87ba43eba1d1f9efe996c7b607f4fa2271",
+      "json": {
+        "path": "content/nodes/num/math.number.fraction-intro.yaml.json",
+        "sha256": "40797f4879c1516bc68c963319233521af43df2a5bd9ed9bb9f68001b568c62f",
+        "bytes": 1226
+      }
     }
   ],
   "activities": [
@@ -21,7 +26,12 @@
         {
           "path": "content/activities/act.explain.fraction-intro-01/activity.yaml",
           "sha256": "3b31d671d5a7ec3c65c2a3d1cd6cfd27fa4a427ca56e7ede64aa6f44650e8484",
-          "bytes": 2130
+          "bytes": 2130,
+          "json": {
+            "path": "content/activities/act.explain.fraction-intro-01/activity.yaml.json",
+            "sha256": "948df83b8fc59633e7588ec2d4934aec3c810bb4729aa2d064baa59f2ab4e413",
+            "bytes": 1921
+          }
         }
       ]
     },
@@ -33,7 +43,12 @@
         {
           "path": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
           "sha256": "a9c04f4979096edd843691b3cbb6c3e07c396a442c9a8ad60dcf872eab4ea2f8",
-          "bytes": 3689
+          "bytes": 3689,
+          "json": {
+            "path": "content/activities/act.quiz.fraction-intro-01/activity.yaml.json",
+            "sha256": "810229efef4d1832027de68e8117d145f42c828bfbb943a8febcb605ee12376b",
+            "bytes": 3141
+          }
         }
       ]
     },
@@ -45,7 +60,12 @@
         {
           "path": "content/activities/act.reflection.fraction-intro-01/activity.yaml",
           "sha256": "244225117db8b8957a9c680e5a8e78e4738f4640123872cf3aefcd204d2497cb",
-          "bytes": 380
+          "bytes": 380,
+          "json": {
+            "path": "content/activities/act.reflection.fraction-intro-01/activity.yaml.json",
+            "sha256": "8de2860b49534c46859c81b75e4c713175c111b445839450970cec684d9e61df",
+            "bytes": 397
+          }
         }
       ]
     }

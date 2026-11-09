@@ -1,0 +1,147 @@
+{
+  "name": "attempt-inconsistent",
+  "about": "每次尝试各违反一条合法性规则（事件规格 6.3），每次如果被计入都是 5/5 首答全对、会点亮星星；只有 A11 合法（3/5）。事件规格第 9 节「同一题两条 try=1；try 跳号」「混进另一个孩子或另一台设备的事件」。",
+  "order_free": true,
+  "base": {"schema": "event/2", "learner_id": "lrn_01JC00000000000000000000K1", "device_id": "dev_01JC00000000000000000000D1", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K1"}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}},
+  "inputs": [
+    {"event": {"event_id": "evt_01JC00000000000000000000E1", "device_seq": 1, "occurred_at": "2026-11-08T02:00:01.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E2", "device_seq": 2, "occurred_at": "2026-11-08T02:00:02.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E3", "device_seq": 3, "occurred_at": "2026-11-08T02:00:03.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E4", "device_seq": 4, "occurred_at": "2026-11-08T02:00:04.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E5", "device_seq": 5, "occurred_at": "2026-11-08T02:00:05.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E6", "device_seq": 6, "occurred_at": "2026-11-08T02:00:06.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E7", "device_seq": 7, "occurred_at": "2026-11-08T02:00:07.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E8", "device_seq": 8, "occurred_at": "2026-11-08T02:00:08.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E9", "device_seq": 9, "occurred_at": "2026-11-08T02:00:09.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"mode": "retry"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E10", "device_seq": 10, "occurred_at": "2026-11-08T02:00:10.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q1", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E11", "device_seq": 11, "occurred_at": "2026-11-08T02:00:11.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 3, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E12", "device_seq": 12, "occurred_at": "2026-11-08T02:00:12.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E13", "device_seq": 13, "occurred_at": "2026-11-08T02:00:13.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E14", "device_seq": 14, "occurred_at": "2026-11-08T02:00:14.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E15", "device_seq": 15, "occurred_at": "2026-11-08T02:00:15.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E16", "device_seq": 16, "occurred_at": "2026-11-08T02:00:16.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E17", "device_seq": 17, "occurred_at": "2026-11-08T02:00:17.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"mode": "retry"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E18", "device_seq": 18, "occurred_at": "2026-11-08T02:00:18.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E19", "device_seq": 19, "occurred_at": "2026-11-08T02:00:19.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E20", "device_seq": 20, "occurred_at": "2026-11-08T02:00:20.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}, "device_id": "dev_01JC00000000000000000000D2"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E21", "device_seq": 21, "occurred_at": "2026-11-08T02:00:21.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E22", "device_seq": 22, "occurred_at": "2026-11-08T02:00:22.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E23", "device_seq": 23, "occurred_at": "2026-11-08T02:00:23.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E24", "device_seq": 24, "occurred_at": "2026-11-08T02:00:24.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A4", "payload": {"mode": "retry"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E25", "device_seq": 25, "occurred_at": "2026-11-08T02:00:25.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A4", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E26", "device_seq": 26, "occurred_at": "2026-11-08T02:00:26.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A4", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E27", "device_seq": 27, "occurred_at": "2026-11-08T02:00:27.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A4", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}, "learner_id": "lrn_01JC00000000000000000000K2", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K2"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E28", "device_seq": 28, "occurred_at": "2026-11-08T02:00:28.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A4", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E29", "device_seq": 29, "occurred_at": "2026-11-08T02:00:29.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A4", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E30", "device_seq": 30, "occurred_at": "2026-11-08T02:00:30.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A4", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E31", "device_seq": 31, "occurred_at": "2026-11-08T02:00:31.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A5", "payload": {"mode": "retry"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E32", "device_seq": 32, "occurred_at": "2026-11-08T02:00:32.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A5", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E33", "device_seq": 33, "occurred_at": "2026-11-08T02:00:33.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A5", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E34", "device_seq": 34, "occurred_at": "2026-11-08T02:00:34.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A5", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}, "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K2"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E35", "device_seq": 35, "occurred_at": "2026-11-08T02:00:35.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A5", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E36", "device_seq": 36, "occurred_at": "2026-11-08T02:00:36.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A5", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E37", "device_seq": 37, "occurred_at": "2026-11-08T02:00:37.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A5", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E38", "device_seq": 38, "occurred_at": "2026-11-08T02:00:38.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A6", "payload": {"mode": "retry"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E39", "device_seq": 39, "occurred_at": "2026-11-08T02:00:39.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A6", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E40", "device_seq": 40, "occurred_at": "2026-11-08T02:00:40.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A6", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E41", "device_seq": 41, "occurred_at": "2026-11-08T02:00:41.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A6", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 2, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E42", "device_seq": 42, "occurred_at": "2026-11-08T02:00:42.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A6", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E43", "device_seq": 43, "occurred_at": "2026-11-08T02:00:43.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A6", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E44", "device_seq": 44, "occurred_at": "2026-11-08T02:00:44.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A6", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E45", "device_seq": 45, "occurred_at": "2026-11-08T02:00:45.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A7", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E46", "device_seq": 46, "occurred_at": "2026-11-08T02:00:46.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A7", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E47", "device_seq": 47, "occurred_at": "2026-11-08T02:00:47.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A7", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E48", "device_seq": 48, "occurred_at": "2026-11-08T02:00:48.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A7", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E49", "device_seq": 49, "occurred_at": "2026-11-08T02:00:49.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A7", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E50", "device_seq": 50, "occurred_at": "2026-11-08T02:00:50.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A7", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E51", "device_seq": 51, "occurred_at": "2026-11-08T02:00:51.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A8", "payload": {"mode": "retry"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E52", "device_seq": 52, "occurred_at": "2026-11-08T02:00:52.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A8", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E53", "device_seq": 53, "occurred_at": "2026-11-08T02:00:53.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A8", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E54", "device_seq": 54, "occurred_at": "2026-11-08T02:00:54.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A8", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E55", "device_seq": 55, "occurred_at": "2026-11-08T02:00:55.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A8", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E56", "device_seq": 56, "occurred_at": "2026-11-08T02:00:56.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A8", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E57", "device_seq": 57, "occurred_at": "2026-11-08T02:00:57.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A8", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E58", "device_seq": 58, "occurred_at": "2026-11-08T02:00:58.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A9", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E59", "device_seq": 59, "occurred_at": "2026-11-08T02:00:59.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A9", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E60", "device_seq": 60, "occurred_at": "2026-11-08T02:01:00.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A9", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E61", "device_seq": 61, "occurred_at": "2026-11-08T02:01:01.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A9", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E62", "device_seq": 62, "occurred_at": "2026-11-08T02:01:02.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A9", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E63", "device_seq": 63, "occurred_at": "2026-11-08T02:01:03.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A9", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E64", "device_seq": 64, "occurred_at": "2026-11-08T02:01:04.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A9", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E65", "device_seq": 65, "occurred_at": "2026-11-08T02:01:05.000Z", "verb": "attempt.abandoned", "attempt_id": "att_01JC00000000000000000000A9", "payload": {"reason": "left"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E66", "device_seq": 66, "occurred_at": "2026-11-08T02:01:06.000Z", "verb": "attempt.started", "attempt_id": "att_01JC0000000000000000000A10", "payload": {"mode": "retry"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E67", "device_seq": 67, "occurred_at": "2026-11-08T02:01:07.000Z", "verb": "attempt.started", "attempt_id": "att_01JC0000000000000000000A10", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E68", "device_seq": 68, "occurred_at": "2026-11-08T02:01:08.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A10", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E69", "device_seq": 69, "occurred_at": "2026-11-08T02:01:09.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A10", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E70", "device_seq": 70, "occurred_at": "2026-11-08T02:01:10.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A10", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E71", "device_seq": 71, "occurred_at": "2026-11-08T02:01:11.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A10", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E72", "device_seq": 72, "occurred_at": "2026-11-08T02:01:12.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A10", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E73", "device_seq": 73, "occurred_at": "2026-11-08T02:01:13.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC0000000000000000000A10", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E74", "device_seq": 74, "occurred_at": "2026-11-08T02:01:14.000Z", "verb": "attempt.started", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E75", "device_seq": 75, "occurred_at": "2026-11-08T02:01:15.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"item_id": "q1", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E76", "device_seq": 76, "occurred_at": "2026-11-08T02:01:16.000Z", "verb": "hint.used", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"item_id": "q1", "level": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E77", "device_seq": 77, "occurred_at": "2026-11-08T02:01:17.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 2, "hints_used": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E78", "device_seq": 78, "occurred_at": "2026-11-08T02:01:18.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E79", "device_seq": 79, "occurred_at": "2026-11-08T02:01:19.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E80", "device_seq": 80, "occurred_at": "2026-11-08T02:01:20.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"item_id": "q4", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E81", "device_seq": 81, "occurred_at": "2026-11-08T02:01:21.000Z", "verb": "hint.used", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"item_id": "q4", "level": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E82", "device_seq": 82, "occurred_at": "2026-11-08T02:01:22.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 2, "hints_used": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E83", "device_seq": 83, "occurred_at": "2026-11-08T02:01:23.000Z", "verb": "item.answered", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"item_id": "q5", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E84", "device_seq": 84, "occurred_at": "2026-11-08T02:01:24.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC0000000000000000000A11", "payload": {"duration_ms": 60000}}, "expect": "accepted"}
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {
+      "math.number.fraction-intro": {
+        "state": "explored",
+        "best": {
+          "correct": 3,
+          "answered": 5
+        }
+      }
+    },
+    "conflicts": [
+      {
+        "attempt_id": "att_01JC00000000000000000000A1",
+        "rule": 5
+      },
+      {
+        "attempt_id": "att_01JC00000000000000000000A2",
+        "rule": 5
+      },
+      {
+        "attempt_id": "att_01JC00000000000000000000A3",
+        "rule": 1
+      },
+      {
+        "attempt_id": "att_01JC00000000000000000000A4",
+        "rule": 1
+      },
+      {
+        "attempt_id": "att_01JC00000000000000000000A5",
+        "rule": 2
+      },
+      {
+        "attempt_id": "att_01JC00000000000000000000A6",
+        "rule": 3
+      },
+      {
+        "attempt_id": "att_01JC00000000000000000000A7",
+        "rule": 4
+      },
+      {
+        "attempt_id": "att_01JC00000000000000000000A8",
+        "rule": 4
+      },
+      {
+        "attempt_id": "att_01JC00000000000000000000A9",
+        "rule": 4
+      },
+      {
+        "attempt_id": "att_01JC0000000000000000000A10",
+        "rule": 4
+      }
+    ]
+  },
+  "worked": "A1：q1 有两条 try=1 → 第 5 条。A2：q1 的 try 是 1、3 → 第 5 条。A3：q3 记在 D2 上（device_seq 夹在中间，排序后第 4 条也满足）→ 第 1 条。A4：q3 的 learner_id 是 K2（actor 也是 K2，所以第 2 条满足）→ 第 1 条。A5：q3 的 actor 是 K2，learner_id 是 K1 → 第 2 条。A6：q3 的 content.activity_version 是 2 → 第 3 条。A7：第一条是 item.answered → 第 4 条。A8：completed 之后还有一条作答 → 第 4 条。A9：completed 之后又有 abandoned，两条结束事件 → 第 4 条。A10：两条 attempt.started → 第 4 条。A11 合法：q1、q4 首答错 → 3/5，3×5=15 < 20 → explored。attempt_id 按字符串排序：A1…A9 的标签补零后比 A10、A11 短一位数字，排在前面。"
+}

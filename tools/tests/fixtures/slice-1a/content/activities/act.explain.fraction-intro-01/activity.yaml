@@ -1,0 +1,57 @@
+id: act.explain.fraction-intro-01
+schema: activity-def/1
+kind: explain
+version: 1
+title: 分蛋糕里的分数
+targets: [math.number.fraction-intro]
+age_band: G3-4
+duration_min: 8
+review: approved
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版三年级上册“分数的初步认识”
+body:
+  steps:
+    - type: text
+      text: 一块蛋糕，平均切成 4 份，每份都一样大。
+    - type: figure
+      figure: {type: pie, parts: 4, shaded: 1}
+      caption: 涂色的是其中 1 份。
+    - type: text
+      text: 涂色部分是这块蛋糕的 1/4，读作四分之一。
+    - type: figure
+      figure: {type: rect-unequal, widths: [1, 1, 2], shaded: [0]}
+      caption: 这三份不一样大，涂色部分不能用 1/3 表示。
+    - type: check
+      item:
+        id: c1
+        stem: 哪种分法能用 1/4 表示涂色部分？
+        answer:
+          type: choice
+          choices:
+            - id: a
+              text: 平均分成 4 份，涂其中 1 份
+              correct: true
+            - id: b
+              text: 分成大小不同的 4 份，涂其中 1 份
+              misconception: equal-parts
+              feedback: 用分数表示这样的部分时，每一份要一样大。
+            - id: c
+              text: 平均分成 4 份，把涂色 1 份和剩下 3 份相比
+              misconception: part-vs-rest
+              feedback: 要和整块平均分成的总份数相比。
+        hints:
+          - 先看看每一份是不是一样大。
+          - 再看一共分成几份，涂色的是几份。
+        feedback:
+          correct: 你找到了平均分，也看清了总份数和涂色份数。
+          wrong: 先检查是不是平均分，再数一数总份数。
+    - type: text
+      text: 写 1/4 时，横线下面的数叫分母，表示平均分成的总份数；横线上面的数叫分子，表示涂色的份数。
+    - type: figure
+      figure: {type: rect, parts: 4, shaded: 3, direction: h}
+      caption: 平均分成 4 份，涂色 3 份。
+    - type: text
+      text: 涂色 3 份就是 3/4，读作四分之三。
+# END OF FILE

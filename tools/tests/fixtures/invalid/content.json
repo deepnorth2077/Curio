@@ -263,6 +263,34 @@
     "patch": [{"op": "replace", "path": "/nodes/0/path", "value": "content\\nodes\\num\\math.number.fraction-intro.yaml"}]
   },
   {
+    "name": "release-yaml-file-missing-json",
+    "why": "YAML 文件条目缺 json（外壳读的那份 JSON 没登记）",
+    "schema": "release",
+    "base": "content/release.json",
+    "patch": [{"op": "remove", "path": "/activities/0/files/0/json"}]
+  },
+  {
+    "name": "release-node-missing-json",
+    "why": "知识点条目缺 json",
+    "schema": "release",
+    "base": "content/release.json",
+    "patch": [{"op": "remove", "path": "/nodes/0/json"}]
+  },
+  {
+    "name": "release-non-yaml-file-with-json",
+    "why": "不是 YAML 的文件不能带 json",
+    "schema": "release",
+    "base": "content/release.json",
+    "patch": [{"op": "add", "path": "/assets/-", "value": {"path": "content/assets/x/a.svg", "sha256": "8888888888888888888888888888888888888888888888888888888888888888", "bytes": 10, "json": {"path": "content/assets/x/a.svg.yaml.json", "sha256": "9999999999999999999999999999999999999999999999999999999999999999", "bytes": 5}}}]
+  },
+  {
+    "name": "release-json-path-not-sidecar",
+    "why": "json 的路径必须以 .yaml.json 结尾",
+    "schema": "release",
+    "base": "content/release.json",
+    "patch": [{"op": "replace", "path": "/nodes/0/json/path", "value": "content/nodes/num/x.json"}]
+  },
+  {
     "name": "activity-missing-engine",
     "why": "结构化活动缺 engine",
     "schema": "activity-def",

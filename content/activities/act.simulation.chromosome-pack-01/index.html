@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>把 2 米说明书收进细胞核</title>
+<style>
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
+  --dad:#4F7FA8; --mom:#C2603F; --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#E0876A; --accent-soft:#3A2A24;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;
+  --dad:#7FA9CF; --mom:#E0876A; --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:820px;margin:0 auto;padding:12px 14px 28px}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;overflow:hidden}
+.card header,.card footer{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px}
+.card header{border-bottom:1px solid var(--rule)}
+.card footer{border-top:1px solid var(--rule);min-height:44px;align-items:center}
+.station{font-size:13px;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+h1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);margin:0;text-align:right}
+.hint{font-size:14px;color:var(--muted)}
+.readout{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15px;text-align:right}
+.readout b{color:var(--accent);font-weight:600}
+svg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+svg#stage:focus{outline:none}
+svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.thread{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.thread-thin{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round}
+.t{fill:var(--ink);font-family:var(--f-sans);font-size:15px}
+.tm{fill:var(--muted);font-family:var(--f-sans);font-size:13px}
+.num{fill:var(--ink);font-family:var(--f-mono);font-size:12px}
+.ttl{font-family:var(--f-serif);font-size:28px}
+.big{font-family:var(--f-serif);font-size:30px}
+.talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
+.ava{flex:none;width:42px;height:42px}
+.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
+.bubble.good{background:var(--good-soft);border-color:transparent}
+.bubble.bad{background:var(--bad-soft);border-color:transparent}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:10px 0 0}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:manipulation}
+.btn.hold{touch-action:none}
+.btn.ghost{background:var(--pane);color:var(--ink)}
+.btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
+.btn.choice:hover{background:var(--hover)}
+.btn.hold{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.hold.on{filter:brightness(.9)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500}
+.qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px}
+  .t{font-size:26px} .tm{font-size:22px} .num{font-size:20px} .ttl{font-size:38px} .big{font-size:42px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <header><span class="station" id="station">第 1 站 · 共 4 站</span><h1 id="title">绕线轴</h1></header>
+    <svg id="stage" viewBox="0 0 800 610" tabindex="0" role="application" aria-label="动手区">
+      <g id="static"></g><g id="dyn"></g>
+      <rect id="touch" x="-400" y="-400" width="1600" height="1410" fill="transparent"/><!-- 永不重画的触摸层：重画 dyn 时不会删掉手指按着的元素 -->
+    </svg>
+    <footer><span class="hint" id="hint"></span><span class="readout" id="readout"></span></footer>
+  </div>
+  <div class="talk">
+    <svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="27" r="16" fill="var(--sky)"/>
+      <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+      <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+      <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+      <path class="k1" d="M18 32 C21 35 27 35 30 32"/>
+    </svg>
+    <div class="bubble" id="say" aria-live="polite"></div>
+  </div>
+  <div class="actions" id="actions"></div>
+  <div id="qarea"></div>
+</div>
+
+<script>
+"use strict";
+/* ============ 1. 真相模型：页面上的每个数字都从这里算 ============ */
+const MODEL = {
+  dnaMeters: 2,            // 一个人体细胞里的 DNA 拉直约 2 米（Nature Scitable；Wikipedia「Chromosome condensation」）
+  nucleusUm: 6,            // 细胞核直径约 6 微米（5～10 微米）
+  pingpongCm: 4,           // 乒乓球直径 4 厘米
+  walkKmh: 4.5,            // 大人步行每小时约 4.5 公里
+  lettersPerSpool: 147,    // 每个小线轴绕 147 个字母（Luger 等 1997）
+  turnsPerSpool: 1.65,     // 绕不到两圈
+  spools: 3e7,             // 约 64 亿 ÷ 200 ≈ 3000 万个小线轴
+  fold: { spools: 7, loops: 1000, rods: 10000 },  // 一共缩短的倍数：绕线轴 / 盘成环 / 卷成小短棒
+  // 各号染色体的字母数（百万，GRCh38）和着丝粒的大致位置（只用来画形状）
+  chr: [["1",249,.50],["2",242,.39],["3",198,.47],["4",190,.27],["5",182,.27],["6",171,.36],["7",159,.38],["8",145,.31],
+        ["9",138,.34],["10",134,.30],["11",135,.39],["12",133,.27],["13",114,.15],["14",107,.15],["15",102,.15],["16",90,.42],
+        ["17",83,.31],["18",80,.23],["19",59,.45],["20",64,.45],["21",47,.15],["22",51,.15],["X",156,.39],["Y",57,.20]]
+};
+MODEL.scale = (MODEL.pingpongCm / 100) / (MODEL.nucleusUm * 1e-6);          // 细胞核放大成乒乓球的倍数（约 6667）
+const lenAt = fold => MODEL.dnaMeters / fold;                                 // 缩短 fold 倍后的长度（米）
+const geo = (a, b, p) => a * Math.pow(b / a, p);                              // 两个倍数之间按比例过渡
+function fmtLen(m){
+  if (m >= 1000) return (m/1000).toFixed(m >= 9500 ? 0 : 1).replace(/\.0$/, "") + " 公里";
+  if (m >= 1) return (m >= 10 ? Math.round(m) : m.toFixed(1).replace(/\.0$/, "")) + " 米";
+  if (m >= 0.01) return Math.round(m*100) + " 厘米";
+  return (m*1000 >= 10 ? Math.round(m*1000) : (m*1000).toFixed(1).replace(/\.0$/, "")) + " 毫米";
+}
+const fmtFold = f => f >= 9500 ? "1 万" : String(Math.round(f));
+const fmtWan = n => n >= 1e4 ? String(Math.round(n/1e4)) + " 万" : String(Math.round(n));   // 用法：`${fmtWan(x)}个`
+const fmtLetters = mb => mb >= 100 ? (mb/100).toFixed(2).replace(/0$/, "") + " 亿" : String(Math.round(mb * 100)) + " 万";
+
+/* ============ 2. 平台契约 activity/1.1（单独打开时也能玩） ============ */
+const Host = (() => {
+  const h = {}, inFrame = window.parent !== window;
+  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); };
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
+    state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
+})();
+Host.on("init", p => {
+  if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
+});
+
+/* ============ 3. 手绘线条（平台的 sketchLib） ============ */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function blob(cx,cy,rx,ry,seed){ const r=R(seed), N=9, p=[]; for(let i=0;i<N;i++){ const t=i/N*Math.PI*2, k=1+(r()-.5)*.1; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); } return cr(p,true)+"Z"; }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,blob,curve,cr,R};
+}
+const Sk = sketchLib();
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+const T = (x, y, s, cls, extra) => `<text x="${x}" y="${y}" class="${cls || "t"}"${extra ? " " + extra : ""}>${s}</text>`;
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const smooth = t => t * t * (3 - 2 * t);
+const lerp = (a, b, t) => a + (b - a) * t;
+
+/* ============ 4. 页面骨架 ============ */
+const $ = id => document.getElementById(id);
+const svg = $("stage"), gStatic = $("static"), gDyn = $("dyn");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const STATIONS = 4;
+const S = { station: 1, mode: "talk", hold: false, theta: -Math.PI/2,
+  t1: 0, p1: 0, t2: 0, p2: 0, t3: 0, p3: 0, count: 0, done: {}, pairs: 0, sel: null, boyReveal: false, girl: false,
+  round: 1, tries: 0, kcur: 0, wow: false };
+
+function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
+function hint(s){ $("hint").textContent = s || ""; }
+function readout(html){ $("readout").innerHTML = html || ""; }
+function say(text, tone){ const b = $("say"); b.textContent = text; b.className = "bubble" + (tone ? " " + tone : ""); }
+// 手指还按着时换出来的新按钮，先禁用到手指抬起，免得松手时误点（按住类操作刚完成时最常见）
+let fingerDown = false;
+addEventListener("pointerdown", () => { fingerDown = true; }, true);
+for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);   // 抬起时立刻记下：随后的 click 里换出的按钮不必禁用
+// 键盘版：按住空格或回车时换出来的新按钮会拿到焦点，松键就会点到它。按键在按钮出现前就按下了，这次点击不算
+let keysDown = 0;
+addEventListener("keydown", e => { if (!e.repeat) keysDown++; }, true);
+addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true);
+addEventListener("blur", () => { keysDown = 0; });
+function actions(list){
+  const box = $("actions"); box.replaceChildren();
+  const guard = fingerDown, born = performance.now();
+  let keyGuard = keysDown > 0;
+  if (keyGuard){ const off = () => { if (keysDown === 0){ setTimeout(() => { keyGuard = false; }, 0); removeEventListener("keyup", off, true); } }; addEventListener("keyup", off, true); }
+  for (const a of list || []){
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn " + (a.cls || ""); b.textContent = a.label;
+    if (a.hold){
+      const on = v => { S.hold = v; b.classList.toggle("on", v); };
+      b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); on(true); });
+      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => on(false));
+      b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); a.step(); } });
+      b.addEventListener("contextmenu", e => e.preventDefault());
+    } else {
+      // 刚出现的 0.4 秒内不响应，免得双击「继续」时第二下替孩子选了答案
+      b.addEventListener("click", e => { if (performance.now() - born < 400 || (keyGuard && e.detail === 0)) return; a.go(e); });
+      if (guard){ b.disabled = true; const on = () => { setTimeout(() => { b.disabled = false; }, 120); removeEventListener("pointerup", on, true); }; addEventListener("pointerup", on, true); }
+    }
+    box.append(b);
+  }
+  const first = box.querySelector("button");
+  if (first && !/^act/.test(S.mode)) first.focus({ preventScroll: true });   // 键盘用户不用再找按钮
+  return box;
+}
+function ask(question, options, onAnswer, verb){
+  say(question);
+  actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
+    Host.event(verb || "predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null });
+    say(o.feedback, o.correct ? "good" : "bad");
+    onAnswer(o);
+  }})));
+}
+function next(label, go, cls){ actions([{ label, go, cls }]); }
+
+// 「我有个问题」：随时可以问，发到信号站
+(function(){
+  const area = $("qarea");
+  const open = document.createElement("button");
+  open.type = "button"; open.className = "btn ghost small"; open.textContent = "我有个问题";
+  open.style.marginTop = "12px";
+  open.addEventListener("click", () => {
+    if (area.querySelector("textarea")) return;
+    const ta = document.createElement("textarea"); ta.maxLength = 120; ta.placeholder = "想问领航员什么？";
+    const send = document.createElement("button"); send.type = "button"; send.className = "btn small"; send.textContent = "发给领航员";
+    const box = document.createElement("div"); box.className = "qbox"; box.append(ta, send);
+    send.addEventListener("click", () => {
+      const q = ta.value.trim(); if (!q) return;
+      Host.noteQuestion(q); box.remove(); say("好问题，我记下来了。等会儿一起找答案。");
+    });
+    area.append(box); ta.focus();
+  });
+  area.append(open);
+})();
+
+/* ============ 5. 第 1 站：绕线轴 ============ */
+const REEL = { x: 135, y: 250, r: 96 }, ROW = { x0: 290, dx: 54, y: 250, n: 9 };
+function staticBench(){
+  return P(Sk.line(26, 392, 774, 392, 11), "k1") +
+    `<circle cx="${REEL.x}" cy="${REEL.y}" r="${REEL.r}" fill="var(--paper)" opacity=".7"/>` + P(Sk.ellipse(REEL.x, REEL.y, REEL.r, REEL.r, 21)) +
+    P(Sk.line(REEL.x - 30, REEL.y + REEL.r - 4, REEL.x - 52, 392, 22) + Sk.line(REEL.x + 30, REEL.y + REEL.r - 4, REEL.x + 52, 392, 23), "k") +
+    T(REEL.x, 422, "说明书 DNA", "tm", 'text-anchor="middle"') +
+    T(40, 488, "说明书长度", "t") + P(Sk.line(170, 482, 760, 482, 31), "k1") +
+    [[1, "2 米"], [.5, "1 米"], [1 / MODEL.fold.spools, "约 " + fmtLen(Math.round(lenAt(MODEL.fold.spools) * 10) / 10)]].map(([fr, lab], i) => {
+      const x = 170 + 590 * fr;
+      return P(Sk.line(x, 474, x, 490, 40 + i), "k1") + T(x, 512, lab, "tm", 'text-anchor="middle"');
+    }).join("");
+}
+function spoolSvg(cx, y, wraps, seed){
+  const w = 36, h = 46;
+  let s = `<rect x="${cx - w/2}" y="${y - h/2}" width="${w}" height="${h}" rx="8" fill="var(--apricot)" opacity=".9"/>` +
+    P(Sk.line(cx - w/2, y - h/2 + 6, cx - w/2, y + h/2 - 4, seed) + Sk.line(cx + w/2, y - h/2 + 6, cx + w/2, y + h/2 - 4, seed + 1), "k1") +
+    P(Sk.ellipse(cx, y - h/2 + 5, w/2, 6, seed + 2), "k1") + P(Sk.curve([[cx - w/2, y + h/2 - 6], [cx, y + h/2], [cx + w/2, y + h/2 - 6]], seed + 3, .5), "k1");
+  if (wraps > 0) s += P(Sk.curve([[cx - w/2 - 2, y - 13], [cx, y - 6], [cx + w/2 + 2, y - 1]], seed + 4, .4), "thread");
+  if (wraps > 1) s += P(Sk.curve([[cx - w/2 - 2, y + 3], [cx, y + 10], [cx + w/2 + 2, y + 15]], seed + 5, .4), "thread");
+  return s;
+}
+function draw1(){
+  const p = S.p1, k = p * ROW.n, full = Math.floor(k + 1e-6), frac = k - full;
+  const rr = 30 + 56 * (1 - p);
+  let s = `<circle cx="${REEL.x}" cy="${REEL.y}" r="${rr}" fill="var(--accent)" opacity=".22"/>`;
+  for (let i = 0; i < 4; i++) s += P(Sk.ellipse(REEL.x, REEL.y, rr * (0.5 + i * 0.16), rr * (0.5 + i * 0.16), 50 + i, .6), "thread-thin");
+  s += `<circle cx="${REEL.x}" cy="${REEL.y}" r="20" fill="var(--pane)"/>` + P(Sk.ellipse(REEL.x, REEL.y, 20, 20, 60), "k1");
+  // 线从卷筒顶上出来，连到一串小线轴
+  const pts = [[REEL.x + rr * 0.5, REEL.y - rr * 0.87], [REEL.x + rr + 30, REEL.y - rr * 0.6 - 10]];
+  const shown = Math.min(ROW.n, full + (frac > 0.02 ? 1 : 0));
+  const xs = i => ROW.x0 + i * ROW.dx;
+  let chain = "";
+  if (shown === 0){
+    pts.push([ROW.x0 - 30, ROW.y - 30], [ROW.x0 + 20, ROW.y + 20], [ROW.x0 + 90, ROW.y - 10], [ROW.x0 + 170, ROW.y + 16], [ROW.x0 + 260, ROW.y - 6], [ROW.x0 + 360, ROW.y + 14], [ROW.x0 + 470, ROW.y - 4]);
+    s += P(Sk.curve(pts, 70, .3), "thread");
+  } else {
+    pts.push([xs(0) - 22, ROW.y - 13]);
+    s += P(Sk.curve(pts, 70, .3), "thread");
+    for (let i = 0; i < shown; i++){
+      const wraps = i < full ? 2 : (frac > 0.75 ? 2 : frac > 0.3 ? 1 : 0);
+      if (i > 0) chain += P(Sk.curve([[xs(i - 1) + 20, ROW.y + 15], [(xs(i - 1) + xs(i)) / 2, ROW.y + 30], [xs(i) - 20, ROW.y - 13]], 80 + i, .3), "thread");
+      chain += spoolSvg(xs(i), ROW.y, wraps, 100 + i * 7);
+    }
+    s += chain;
+    if (shown < ROW.n){
+      const xe = xs(shown - 1) + 20;
+      s += P(Sk.curve([[xe, ROW.y + 15], [xe + 40, ROW.y + 34], [xe + 100, ROW.y + 10], [Math.min(780, xe + 190), ROW.y + 24]], 90, .3), "thread");
+    }
+    s += T(ROW.x0 + ROW.dx * 4, ROW.y + 70, "蛋白质小线轴", "tm", 'text-anchor="middle"');
+  }
+  // 把手
+  const ax = REEL.x + Math.cos(S.theta) * 66, ay = REEL.y + Math.sin(S.theta) * 66;
+  s += P(Sk.line(REEL.x, REEL.y, ax, ay, 61), "k") + `<circle cx="${ax}" cy="${ay}" r="17" fill="var(--pane)"/>` + P(Sk.ellipse(ax, ay, 17, 17, 62)) +
+    `<circle cx="${ax}" cy="${ay}" r="5" fill="var(--ink)"/>` + `<circle id="knob" cx="${ax}" cy="${ay}" r="36" fill="transparent"/>`;
+  // 长度条
+  const L = lenAt(geo(1, MODEL.fold.spools, p));
+  s += `<rect x="170" y="472" width="${Math.max(2, 590 * L / MODEL.dnaMeters)}" height="20" rx="4" fill="var(--accent)" opacity=".85"/>`;
+  return s;
+}
+function readout1(){
+  const p = S.p1, L = lenAt(geo(1, MODEL.fold.spools, p));
+  readout(`长 <b>${fmtLen(L)}</b> · 小线轴 ${p >= .995 ? "约 " + fmtWan(MODEL.spools) : fmtWan(MODEL.spools * p)}个`);
+  Host.state({ station: 1, length_m: +L.toFixed(3) });
+}
+function enter1(){
+  S.station = 1; S.mode = "talk"; head(1, "绕线轴"); hint(""); gStatic.innerHTML = staticBench(); render();
+  say("舰长，细胞核比针尖还小得多，可里面的说明书拉直了有 2 米长。");
+  next("然后呢？", () => ask("细胞是怎么把它收进细胞核的？", [
+    { label: "剪成很多小段，塞进去", mis: "cut-into-pieces", feedback: "看起来最省事。可剪断了，说明书就不全了，有的页会丢。" },
+    { label: "揉成一团，塞进去", mis: "stuffed-in", feedback: "很多人都这么想。可揉成一团会打结，要读的那一页就找不到了。" },
+    { label: "一圈圈绕好，一层层收整齐", correct: true, feedback: "你猜对了。像把毛线绕在线轴上。我们亲手试试。" }
+  ], o => next(o.correct ? "开始绕" : "那该怎么收？", o.correct ? act1 : () => { say("细胞的办法是一圈圈绕好，一层层收整齐。我们亲手试试。"); next("开始绕", act1); })));
+}
+function act1(){
+  S.mode = "act1"; hint("转动把手，或按住「转」");
+  say("说明书要先绕在蛋白质做的小线轴上。转动把手，看看它变短了多少。");
+  actions([{ label: "按住 转", cls: "hold", hold: true, step: () => { S.t1 = clamp(S.t1 + .04); S.theta += .5; } }]);
+  readout1(); svg.focus({ preventScroll: true });
+}
+function done1(){
+  S.mode = "talk"; S.hold = false; hint(""); Host.event("observed", { station: 1 });
+  say(`绕好了。每个小线轴上绕着 ${MODEL.lettersPerSpool} 个字母，绕不到两圈。说明书短了约 ${MODEL.fold.spools} 倍。`, "good");
+  next("继续", () => { say(`一个细胞里，大约有 ${fmtWan(MODEL.spools)} 个这样的小线轴。`); next("去第 2 站", enter2); });
+}
+
+/* ============ 6. 第 2 站：盘成环 ============ */
+const NUC = { x: 400, y: 232, r: 196 }, M = 240;
+const FIB = (() => {
+  const a = [], b = [], r = Sk.R(5);
+  for (let i = 0; i < M; i++){
+    a.push([NUC.x + 10 + i * 4.4, NUC.y + 26 * Math.sin(i * .33) + 9 * Math.sin(i * .12)]);
+    const th = i / M * Math.PI * 2 + .2, rad = 16 + 150 * Math.pow(Math.abs(Math.sin(3 * th)), .85) + (r() - .5) * 6;
+    b.push([NUC.x + Math.cos(th) * rad, NUC.y + Math.sin(th) * rad]);
+  }
+  return { a, b };
+})();
+const KNOB_I = 80;
+function fiberPts(p){
+  return FIB.a.map((q, i) => { const s = smooth(clamp(p * 1.5 - .5 * (i / M))); return [lerp(q[0], FIB.b[i][0], s), lerp(q[1], FIB.b[i][1], s)]; });
+}
+function staticCell(){
+  return `<path d="${Sk.blob(400, 280, 365, 268, 3)}" fill="var(--sage)" opacity=".55"/>` + P(Sk.blob(400, 280, 365, 268, 3), "k1");
+}
+function nucleusSvg(dashFade){
+  const o = 1 - (dashFade || 0);
+  return `<circle cx="${NUC.x}" cy="${NUC.y}" r="${NUC.r}" fill="var(--sky)" opacity="${(.75 * o + .15).toFixed(2)}"/>` +
+    P(Sk.ellipse(NUC.x, NUC.y, NUC.r, NUC.r, 7), "k", dashFade > .3 ? `stroke-dasharray="6 10" opacity="${(o + .25).toFixed(2)}"` : "");
+}
+function fiberSvg(pts, opacity, scale){
+  const sc = scale == null ? 1 : scale, q = sc === 1 ? pts : pts.map(([x, y]) => [NUC.x + (x - NUC.x) * sc, NUC.y + (y - NUC.y) * sc]);
+  let s = `<g opacity="${opacity == null ? 1 : opacity.toFixed(2)}">` + `<path class="thread" d="${Sk.cr(q, false)}" stroke-width="${(3.2 * Math.max(.6, sc)).toFixed(1)}"/>`;
+  for (let i = 3; i < q.length; i += 6) s += `<circle cx="${q[i][0].toFixed(1)}" cy="${q[i][1].toFixed(1)}" r="${(4.6 * Math.max(.6, sc)).toFixed(1)}" fill="var(--apricot)" stroke="var(--ink)" stroke-width=".9"/>`;
+  return s + "</g>";
+}
+function draw2(){
+  const p = S.p2, pts = fiberPts(p);
+  let s = fiberSvg(pts);
+  const kq = pts[KNOB_I];
+  if (S.mode === "act2"){
+    s += `<circle cx="${kq[0]}" cy="${kq[1]}" r="15" fill="var(--accent)"/>` + P(Sk.ellipse(kq[0], kq[1], 15, 15, 9)) +
+      `<circle id="knob" cx="${kq[0]}" cy="${kq[1]}" r="38" fill="transparent"/>`;
+  }
+  if (p < .5) s += `<g opacity="${(1 - p * 2).toFixed(2)}">` + T(770, 182, "还有好长 →", "tm", 'text-anchor="end"') + "</g>";
+  if (S.done[2] && !S.wow) s += pingpong(690, 92);
+  if (S.wow) s += walkPanel();
+  return s;
+}
+function pingpong(cx, cy){
+  return `<g><circle cx="${cx}" cy="${cy}" r="44" fill="var(--pane)"/>` + P(Sk.ellipse(cx, cy, 44, 44, 13)) +
+    P(Sk.curve([[cx - 20, cy - 6], [cx - 6, cy - 22], [cx + 14, cy - 10], [cx - 4, cy + 4], [cx + 18, cy + 14], [cx - 14, cy + 20], [cx - 22, cy + 2], [cx + 6, cy - 2]], 14, .6), "thread-thin") +
+    T(cx, cy + 66, "放大成乒乓球的细胞核", "tm", 'text-anchor="middle"') + "</g>";
+}
+// 「哇」：细胞核放大成乒乓球时，说明书有多长、要走多久
+function walkPanel(){
+  const km = lenAt(1) * MODEL.scale / 1000, h = Math.round(km / MODEL.walkKmh);
+  let s = `<rect x="20" y="430" width="760" height="168" rx="16" fill="var(--pane)" opacity=".96"/>` + P(Sk.ellipse(400, 514, 382, 86, 91, .2), "k1", 'opacity=".25"');
+  s += `<circle cx="72" cy="500" r="26" fill="var(--pane)"/>` + P(Sk.ellipse(72, 500, 26, 26, 92));
+  s += P(Sk.line(110, 506, 740, 506, 93), "thread");
+  for (let i = 0; i <= h; i++){ const x = 110 + 630 * i / h; s += P(Sk.line(x, 494, x, 518, 94 + i), "k1") + T(x, 548, i === 0 ? "出发" : `${i} 小时`, "tm", 'text-anchor="middle"'); }
+  const wx = 740, wy = 470;   // 走路的小人
+  s += `<circle cx="${wx}" cy="${wy - 16}" r="6" fill="none" stroke="var(--ink)" stroke-width="2"/>` +
+    P(`M${wx} ${wy - 10}L${wx} ${wy + 8}M${wx} ${wy - 4}L${wx - 8} ${wy + 4}M${wx} ${wy - 4}L${wx + 8} ${wy}M${wx} ${wy + 8}L${wx - 7} ${wy + 22}M${wx} ${wy + 8}L${wx + 8} ${wy + 20}`);
+  s += T(72, 580, "乒乓球", "tm", 'text-anchor="middle"') + T(425, 584, `拉直约 ${fmtLen(km * 1000)}`, "t", 'text-anchor="middle"');
+  return s;
+}
+function readout2(){
+  const L = lenAt(geo(MODEL.fold.spools, MODEL.fold.loops, S.p2));
+  readout(`长 <b>${fmtLen(L)}</b> · 放大成乒乓球时 ${fmtLen(L * MODEL.scale)}`);
+  Host.state({ station: 2, length_m: +L.toFixed(5) });
+}
+function enter2(){
+  S.station = 2; S.mode = "talk"; head(2, "盘成环"); hint(""); gStatic.innerHTML = staticCell() + nucleusSvg(0); render(); readout2();
+  say(`绕上线轴后短了约 ${MODEL.fold.spools} 倍，可还是比细胞核长得多。`);
+  next("怎么办？", act2);
+}
+function act2(){
+  S.mode = "act2"; hint("把红点拖进细胞核");
+  say("抓住红点，把这串小线轴拉进细胞核。它会自己一圈圈盘好。");
+  actions([]); render(); svg.focus({ preventScroll: true });
+}
+function done2(){
+  S.mode = "talk"; S.done[2] = true; hint(""); Host.event("observed", { station: 2 }); render();
+  say(`收进去了，一点也不乱。一共短了约 ${fmtFold(MODEL.fold.loops)} 倍。`, "good");
+  next("继续", () => {
+    say("细胞要读哪一段，就把那一段松开，读完再盘好。");
+    next("继续", () => {
+      S.wow = true; render();
+      say(`把细胞核放大成乒乓球，说明书拉直了约有 ${fmtLen(lenAt(1) * MODEL.scale)}，大人要走 ${Math.round(lenAt(1) * MODEL.scale / 1000 / MODEL.walkKmh)} 个小时。`);
+      next("继续", () => {
+        say(`你刚才把它盘成了约 ${fmtLen(lenAt(MODEL.fold.loops) * MODEL.scale)}，收进了这个乒乓球。`);
+        next("去第 3 站", enter3);
+      });
+    });
+  });
+}
+
+/* ============ 7. 第 3 站：卷紧、数一数、配对 ============ */
+const ROD_W = 11, ROD_K = 88 / 249;   // 1 号长 88，其他按字母数等比例
+const SLOT = { x0: 9, w: 34, base: 578 };
+function bandsOf(idx, len){
+  const r = Sk.R(300 + idx * 17), n = 2 + Math.round(len / 14), out = [];
+  for (let i = 0; i < n; i++) out.push([.08 + .84 * ((i + .2 + r() * .6) / n), 1.4 + r() * 3.2]);
+  return out;
+}
+const RODS = [];
+function makeRods(){
+  RODS.length = 0;
+  const r = Sk.R(42), place = [];
+  // 这次的细胞来自一个男孩：1～22 号各两根，X 一根，Y 一根
+  const list = [];
+  MODEL.chr.forEach(([id, mb, c], idx) => {
+    const copies = id === "X" || id === "Y" ? 1 : 2;
+    for (let k = 0; k < copies; k++) list.push({ id, idx, mb, c, len: Math.max(14, mb * ROD_K), copy: k });
+  });
+  for (const rod of list){
+    // 在细胞核里找离别的短棒最远的位置（试 300 个候选，挑最空的那个）
+    let best = null, bestGap = -1e9;
+    for (let tries = 0; tries < 300; tries++){
+      const a = r() * Math.PI * 2, d = Math.sqrt(r()) * (NUC.r - 18 - rod.len / 2);
+      const x = NUC.x + Math.cos(a) * d, y = NUC.y + Math.sin(a) * d, ang = (r() - .5) * 150;
+      const gap = place.length ? Math.min(...place.map(q => Math.hypot(q.x - x, q.y - y) - (q.len + rod.len) * .5)) : 0;
+      if (gap > bestGap){ bestGap = gap; best = { x, y, ang }; }
+    }
+    place.push({ x: best.x, y: best.y, len: rod.len });
+    RODS.push(Object.assign(rod, { bands: bandsOf(rod.idx, rod.len), hx: best.x, hy: best.y, ha: best.ang,
+      x: best.x, y: best.y, a: best.ang, tx: best.x, ty: best.y, ta: best.ang, paired: false, from: null, shake: 0, n: 0 }));
+  }
+  // 编号用来「数一数」：从左上往右下
+  [...RODS].sort((u, v) => (u.hy - v.hy) || (u.hx - v.hx)).forEach((rod, i) => rod.n = i + 1);
+}
+function rodPath(len, c, w){
+  const h = (w || ROD_W) / 2, t = -len / 2, b = len / 2, yc = t + len * c;
+  if (len < 26 || yc - 4 < t + h || yc + 4 > b - h) return `M${-h} ${t + h}A${h} ${h} 0 0 1 ${h} ${t + h}L${h} ${b - h}A${h} ${h} 0 0 1 ${-h} ${b - h}Z`;
+  return `M${-h} ${t + h}A${h} ${h} 0 0 1 ${h} ${t + h}L${h} ${yc - 4}Q${h - 3} ${yc} ${h} ${yc + 4}L${h} ${b - h}A${h} ${h} 0 0 1 ${-h} ${b - h}L${-h} ${yc + 4}Q${-h + 3} ${yc} ${-h} ${yc - 4}Z`;
+}
+function rodSvg(rod, scale, extra){
+  const sc = scale == null ? 1 : scale, len = rod.len, W = rod.w || ROD_W, d = rodPath(len, rod.c, W);
+  const fill = rod.from === "dad" ? "var(--dad)" : rod.from === "mom" ? "var(--mom)" : "var(--paper)";
+  const op = rod.from ? .55 : .95, sel = S.sel === rod, cur = S.mode === "pair" && S.kbd && kbdRod() === rod;
+  const dx = rod.shake ? Math.sin(rod.shake * 40) * 4 * rod.shake : 0;
+  let s = `<g transform="translate(${(rod.x + dx).toFixed(1)} ${rod.y.toFixed(1)}) rotate(${rod.a.toFixed(1)}) scale(${sc.toFixed(3)})"${extra || ""}>`;
+  if (sel) s += `<path d="${d}" fill="none" stroke="var(--accent)" stroke-width="7" opacity=".35"/>`;
+  if (cur) s += `<path d="${d}" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="3 3" transform="scale(1.5 1.15)"/>`;
+  s += `<path d="${d}" fill="${fill}" fill-opacity="${op}"/>`;
+  for (const [pos, w] of rod.bands){ const y = -len / 2 + len * pos; if (Math.abs(y) < len / 2 - 3) s += `<line x1="${-W/2 + 1}" y1="${y.toFixed(1)}" x2="${W/2 - 1}" y2="${y.toFixed(1)}" stroke="var(--ink)" stroke-opacity=".62" stroke-width="${(w * W / ROD_W).toFixed(1)}"/>`; }
+  s += `<path d="${d}" fill="none" stroke="${sel ? "var(--accent)" : "var(--ink)"}" stroke-width="${sel ? 2.6 : 1.4}" vector-effect="non-scaling-stroke"/>`;
+  return s + "</g>";
+}
+function slotX(i){ return SLOT.x0 + SLOT.w / 2 + SLOT.w * i; }
+function slotsSvg(dy){
+  let s = "";
+  for (let i = 0; i < 23; i++){
+    const x = slotX(i), lab = i < 22 ? String(i + 1) : "23";
+    s += `<rect x="${x - 15}" y="${SLOT.base - 92 + dy}" width="30" height="96" rx="6" fill="none" stroke="var(--rule)" stroke-dasharray="3 4"/>` + T(x, SLOT.base + 19 + dy, lab, "num", 'text-anchor="middle"');
+  }
+  return s;
+}
+function draw3(){
+  const p = S.p3;
+  let s = "";
+  if (S.mode !== "pair" && S.mode !== "pairtalk"){
+    s += fiberSvg(fiberPts(1), 1 - smooth(clamp(p * 1.4)), 1 - .55 * smooth(p));
+    for (const rod of RODS){
+      const g = smooth(clamp((p - .25) / .75));
+      if (g > 0) s += `<g opacity="${g.toFixed(2)}">` + rodSvg(rod, .3 + .7 * g) + "</g>";
+      if (S.count >= rod.n) s += T((rod.x + 9).toFixed(0), (rod.y - 8).toFixed(0), rod.n, "num");
+    }
+  } else {
+    for (const rod of RODS) if (!rod.paired) s += rodSvg(rod);
+    for (const rod of RODS) if (rod.paired) s += rodSvg(rod);
+  }
+  return s;
+}
+function readout3(){
+  const L = lenAt(geo(MODEL.fold.loops, MODEL.fold.rods, S.p3));
+  if (S.mode === "pair" || S.mode === "pairtalk") readout(`配好 <b>${S.pairs}</b> / 23 对`);
+  else readout(`一共短了 <b>${fmtFold(geo(MODEL.fold.loops, MODEL.fold.rods, S.p3))}</b> 倍`);
+  Host.state({ station: 3, length_m: +L.toFixed(6), pairs: S.pairs });
+}
+function enter3(){
+  S.station = 3; S.mode = "talk"; head(3, "卷紧、配对"); hint(""); makeRods();
+  gStatic.innerHTML = staticCell(); S.t3 = S.p3 = 0; render(); readout3();
+  say("细胞要分成两个了。说明书先抄一份，一个新细胞分一份。");
+  next("继续", () => { say("可是松松的线，分不清哪些给谁。"); next("那怎么办？", () => {
+    S.mode = "act3"; hint("按住「卷紧」");
+    say("把它卷得更紧，卷成一根根小短棒。按住「卷紧」。");
+    actions([{ label: "按住 卷紧", cls: "hold", hold: true, step: () => { S.t3 = clamp(S.t3 + .05); } }]);
+  }); });
+}
+function done3(){
+  S.mode = "talk"; hint(""); Host.event("observed", { station: 3 });
+  say(`卷成了一根根小短棒，一共短了约 ${fmtFold(MODEL.fold.rods)} 倍。`, "good");
+  next("继续", () => { say("这样卷好的小短棒，就叫染色体。"); next("继续", () => ask("猜猜，一共有几根小短棒？", [
+    { label: "23 根", feedback: "23 是对数，一对有两根。我们数一数。" },
+    { label: "46 根", correct: true, feedback: "猜对了。我们数一数。" },
+    { label: "100 根", feedback: "比这少得多。我们数一数。" }
+  ], () => next("数一数", countUp))); });
+}
+function countUp(){
+  actions([]); hint("");
+  const total = RODS.length;
+  const stepT = reduced ? 0 : 55;
+  let i = 0;
+  const go = () => { S.count = ++i; render(); if (i < total) setTimeout(go, stepT); else afterCount(); };
+  go();
+}
+function afterCount(){
+  say(`${RODS.length} 条染色体。科学家就是在这时候用显微镜数出来的。`);
+  next("继续", () => {
+    say(`说明书本来就分成 ${RODS.length} 卷，每卷是完整的一根，不是剪断的。`);
+    next("继续", () => { say("刚才为了看得清，我们只画了一根。"); next("去配对台", enterPair); });
+  });
+}
+// 窄屏（手机）配对时，画面只显示显微镜视野，相当于放大一倍
+function fitView(zoom){
+  const narrow = svg.clientWidth < 560;
+  svg.setAttribute("viewBox", zoom && narrow ? `${NUC.x - NUC.r - 14} ${NUC.y - NUC.r - 14} ${2 * NUC.r + 28} ${2 * NUC.r + 28}` : "0 0 800 610");
+}
+addEventListener("resize", () => { if (S.mode === "pair") fitView(true); });
+function hitR(){ const vb = svg.viewBox.baseVal; return Math.max(26, 24 * vb.width / Math.max(1, svg.clientWidth)); }
+function kbdList(){ return RODS.filter(r => !r.paired).sort((u, v) => u.n - v.n); }
+function kbdRod(){ const l = kbdList(); return l.length ? l[((S.kcur % l.length) + l.length) % l.length] : null; }
+function enterPair(){
+  S.mode = "pair"; S.count = 0; S.pairs = 0; S.sel = null; S.tries = 0; head(3, "配对台"); fitView(true);
+  gStatic.innerHTML = `<circle cx="${NUC.x}" cy="${NUC.y}" r="${NUC.r + 8}" fill="var(--sky)" opacity=".25"/>` + P(Sk.ellipse(NUC.x, NUC.y, NUC.r + 8, NUC.r + 8, 17), "k1") + slotsSvg(0);
+  hint("点一根，再点它的另一半");
+  say("46 条两两成对。点一根，再点和它一样长、条纹也一样的那根。");
+  actions([]); render(); readout3(); svg.focus({ preventScroll: true });
+}
+function pairUp(a, b, auto){
+  const slot = a.id === "X" || a.id === "Y" ? 22 : a.idx;
+  const dadFirst = a.id === "X" || a.id === "Y" ? a.id === "Y" : Sk.R(900 + a.idx)() < .5;
+  // 第 23 对：男孩的 X 来自妈妈，Y 来自爸爸
+  const [L, R2] = a.id === "Y" ? [b, a] : a.id === "X" ? [a, b] : [a, b];
+  const x = slotX(slot);
+  L.tx = x - 6.5; R2.tx = x + 6.5;
+  for (const r of [L, R2]){ r.ty = SLOT.base - r.len / 2; r.ta = 0; r.paired = true; }
+  if (slot === 22){ L.from = null; R2.from = null; }
+  else { L.from = dadFirst ? "dad" : "mom"; R2.from = dadFirst ? "mom" : "dad"; }
+  S.pairs++; S.sel = null;
+  readout3();
+}
+function tapRod(rod){
+  if (S.mode !== "pair" || rod.paired) return;
+  if (!S.sel){ S.sel = rod; render(); return; }
+  if (S.sel === rod){ S.sel = null; render(); return; }
+  const a = S.sel, b = rod;
+  const sex = (a.id === "X" || a.id === "Y") && (b.id === "X" || b.id === "Y");
+  if (a.id === b.id){
+    pairUp(a, b);
+    if (S.pairs === 1) say("配上了！蓝的那根来自爸爸，红的那根来自妈妈。每一对都是这样。", "good");
+    else say(`${a.id} 号配好了。`, "good");
+    if (S.pairs === 3) helpButton();
+    checkLeft();
+  } else if (sex && !RODS.every(r => r.paired || r.id === "X" || r.id === "Y")){
+    a.shake = b.shake = 1; S.sel = null;
+    say("这两根有点特别，留到最后。先把别的配好。", "bad");
+  } else if (sex){
+    pairUp(a, b);
+    say("这两根长短不一样，可它们也是一对！", "good");
+    afterSexPair();
+  } else {
+    a.shake = b.shake = 1; S.sel = null; S.tries++;
+    const ratio = Math.min(a.len, b.len) / Math.max(a.len, b.len);
+    say(ratio < .88 ? "这两根长短不一样，再找找。" : "长短差不多，再看看条纹。", "bad");
+  }
+  render();
+}
+function helpButton(){
+  actions([{ label: "剩下的让领航员帮忙", cls: "ghost", go: autoPair }]);
+}
+function autoPair(){
+  actions([]);
+  const left = () => MODEL.chr.slice(0, 22).map(c => c[0]).find(id => RODS.some(r => r.id === id && !r.paired));
+  const go = () => {
+    if (S.mode !== "pair") return;
+    const id = left(); if (!id){ checkLeft(); return; }
+    const two = RODS.filter(r => r.id === id && !r.paired); pairUp(two[0], two[1], true); render();
+    setTimeout(go, reduced ? 0 : 140);
+  };
+  say("好，我来帮你排。");
+  go();
+}
+function checkLeft(){
+  const rest = RODS.filter(r => !r.paired);
+  if (rest.length === 2 && rest.every(r => r.id === "X" || r.id === "Y")){
+    actions([]);
+    say("只剩最后两根了。它们一样长吗？点一根，再点另一根。");
+  }
+}
+function afterSexPair(){
+  if (S.pairs !== 23) return;
+  S.mode = "pairtalk"; actions([]); fitView(false);
+  Host.event("answered", { station: 3, item: "pairing", correct: true, tries: S.tries });
+  setTimeout(() => {
+    say("23 对都配好了。科学家也是这样排的。");
+    next("看看第 23 对", enter4);
+  }, reduced ? 0 : 700);
+}
+
+/* ============ 8. 第 4 站：第 23 对 ============ */
+function draw4(){
+  const X = MODEL.chr[22][1], Y = MODEL.chr[23][1], k = 250 / X;
+  const big = (x, mb, c, from, lab, idx) => {
+    const rod = { len: mb * k, w: 26, c, bands: bandsOf(idx, mb * k * .35).map(([p, w]) => [p, w * 1.6]), from, x, y: 430 - mb * k / 2, a: 0, shake: 0 };
+    return rodSvg(rod) + T(x, 466, lab, "t", 'text-anchor="middle"');
+  };
+  let s = "";
+  const panel = (x0, title, o) => `<g opacity="${o}"><rect x="${x0}" y="60" width="330" height="430" rx="16" fill="var(--pane)" stroke="var(--rule)"/>` + T(x0 + 165, 96, title, "t", 'text-anchor="middle"') + "</g>";
+  s += panel(45, "这个细胞（男孩）", 1);
+  s += big(170, X, MODEL.chr[22][2], S.boyReveal ? "mom" : null, "X", 22) + big(250, Y, MODEL.chr[23][2], S.boyReveal ? "dad" : null, "Y", 23);
+  if (S.girl){
+    s += panel(425, "女孩的细胞", 1);
+    s += big(550, X, MODEL.chr[22][2], "dad", "X", 22) + big(630, X, MODEL.chr[22][2], "mom", "X", 22);
+  }
+  if (S.boyReveal) s += `<rect x="250" y="532" width="22" height="14" rx="3" fill="var(--dad)" opacity=".6"/>` + T(280, 545, "来自爸爸", "tm") +
+    `<rect x="410" y="532" width="22" height="14" rx="3" fill="var(--mom)" opacity=".6"/>` + T(440, 545, "来自妈妈", "tm");
+  return s;
+}
+function enter4(){
+  fitView(false); S.station = 4; S.mode = "talk"; head(4, "第 23 对"); hint(""); gStatic.innerHTML = ""; readout(`X：${fmtLetters(MODEL.chr[22][1])}个字母 · Y：${fmtLetters(MODEL.chr[23][1])}个`); render();
+  say("第 23 对的两根不一样长：长的叫 X 染色体，短的叫 Y 染色体。");
+  next("继续", () => { say("这个细胞来自一个男孩。男孩的第 23 对一般是 X 和 Y。"); next("继续", () => ask("男孩的 Y 染色体，是从谁那里来的？", [
+    { label: "爸爸", correct: true, feedback: "对。妈妈只有 X，没有 Y 可以给。Y 来自爸爸，X 来自妈妈。" },
+    { label: "妈妈", mis: "y-from-mother", feedback: "很多人这么想。可妈妈只有 X，没有 Y 可以给，Y 来自爸爸。" }
+  ], o => { S.boyReveal = true; render();
+    next("那女孩呢？", () => { S.girl = true; render(); say("女孩的第 23 对一般是两根 X，一根来自爸爸，一根来自妈妈。");
+      next("继续", () => { say("在染色体上，男孩和女孩一般只差在这一对。"); next("看我的星卡", enterEnd); }); }); }, "answered")); });
+}
+
+/* ============ 9. 结尾：星卡 ============ */
+function drawEnd(){
+  let s = `<rect x="30" y="20" width="740" height="570" rx="20" fill="var(--pane)" stroke="var(--rule)"/>` +
+    `<path d="M712 44l7 14 15 2-11 11 3 15-14-7-14 7 3-15-11-11 15-2z" fill="var(--accent)" opacity=".85"/>` +
+    T(60, 76, "舰长的染色体图", "t ttl") +
+    "";
+  // 按固定排版摆：第 i 对在第 i 格，左边那根、右边那根；不依赖配对时的动画位置
+  const dy = -290;
+  for (let i = 0; i < 23; i++) s += T(slotX(i), SLOT.base + 19 + dy, i < 22 ? i + 1 : "23", "num", 'text-anchor="middle"');
+  for (const rod of RODS){
+    const slot = rod.id === "X" || rod.id === "Y" ? 22 : rod.idx;
+    const left = rod.id === "X" || (rod.id !== "Y" && rod.copy === 0);
+    const from = rod.id === "X" ? "mom" : rod.id === "Y" ? "dad" : (rod.from || (left ? "dad" : "mom"));
+    s += rodSvg(Object.assign({}, rod, { x: slotX(slot) + (left ? -6.5 : 6.5), y: SLOT.base + dy - rod.len / 2, a: 0, shake: 0, from }));
+  }
+  const stat = (x, big, small) => T(x, 372, big, "t big", 'text-anchor="middle"') + T(x, 404, small, "tm", 'text-anchor="middle"');
+  s += stat(150, `约 ${fmtWan(MODEL.spools)}`, "小线轴") + stat(400, `约 ${fmtFold(MODEL.fold.rods)} 倍`, "一共短了") + stat(650, "23 对", "亲手配好");
+  // 「哇」：21 号和 22 号放大 6 倍并排，配一把尺子
+  const k3 = ROD_K * 6, r21 = RODS.find(r => r.id === "21"), r22 = RODS.find(r => r.id === "22"), base = 560;
+  s += P(Sk.line(60, 432, 740, 432, 77), "k1");
+  for (let i = 0; i <= 6; i++){ const y = base - i * 20; s += P(Sk.line(300, y, 312, y, 120 + i), "k1"); }
+  s += P(Sk.line(306, base, 306, base - 120, 119), "k1");
+  for (const [r, x, lab] of [[r21, 350, "21 号"], [r22, 420, "22 号"]]){
+    const len = r.mb * k3;
+    s += rodSvg(Object.assign({}, r, { len, w: 24, x, y: base - len / 2, a: 0, shake: 0, from: null, bands: bandsOf(r.idx, len) })) + T(x, base + 26, lab, "tm", 'text-anchor="middle"');
+  }
+  s += T(470, 486, "21 号", "t") + T(470, 512, "比 22 号还短", "t");
+  return s;
+}
+function enterEnd(){
+  S.station = 5; S.mode = "end"; head(0, "我的染色体图"); hint(""); readout(""); gStatic.innerHTML = ""; render();
+  say("这是你亲手排好的染色体图。你把 2 米长的说明书收进了细胞核。", "good");
+  next("继续", () => {
+    say(`你发现了吗？21 号其实比 22 号还短：${fmtLetters(MODEL.chr[20][1])}对 ${fmtLetters(MODEL.chr[21][1])}个字母。`);
+    next("为什么？", () => { say("编号是很久以前按显微镜下的样子排的，那时看走了眼。");
+      next("再玩一次", () => { Object.assign(S, { t1: 0, p1: 0, t2: 0, p2: 0, t3: 0, p3: 0, count: 0, done: {}, pairs: 0, sel: null, boyReveal: false, girl: false, theta: -Math.PI/2, round: S.round + 1, tries: 0, wow: false }); enter1(); }, "ghost"); });
+  });
+  // 只在第一轮告诉平台「做完了」，再玩不重复记
+  if (S.round === 1){ Host.event("observed", { station: 4 }); Host.complete({}); }
+}
+
+/* ============ 10. 画面和输入 ============ */
+function render(){
+  svg.style.touchAction = /^act|^pair$/.test(S.mode) ? "none" : "pan-y";   // 只在要拖动、点选时锁住页面滚动
+  gDyn.innerHTML = S.station === 1 ? draw1() : S.station === 2 ? (nucleusOverlay() + draw2()) : S.station === 3 ? (nucleusOverlay() + draw3()) : S.station === 4 ? draw4() : drawEnd();
+}
+function nucleusOverlay(){
+  if (S.station === 2) return "";
+  if (S.mode === "pair" || S.mode === "pairtalk") return "";
+  return nucleusSvg(smooth(clamp(S.p3 * 1.2)));
+}
+function toSvg(e){
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+let drag = null;
+svg.addEventListener("pointerdown", e => {
+  const q = toSvg(e);
+  if (S.mode === "act1" && Math.hypot(q.x - REEL.x, q.y - REEL.y) < 130){
+    drag = { kind: "crank", last: Math.atan2(q.y - REEL.y, q.x - REEL.x) };
+  } else if (S.mode === "act2"){
+    const kq = fiberPts(S.p2)[KNOB_I];
+    if (Math.hypot(q.x - kq[0], q.y - kq[1]) < 70) drag = { kind: "pull", x0: q.x, p0: S.t2 };
+  } else if (S.mode === "pair"){
+    let best = null, bd = 1e9;
+    for (const rod of RODS){
+      if (rod.paired) continue;
+      const a = rod.a * Math.PI / 180, ux = -Math.sin(a), uy = Math.cos(a);
+      const t = clamp(((q.x - rod.x) * ux + (q.y - rod.y) * uy) / (rod.len / 2), -1, 1) * rod.len / 2;
+      const d = Math.hypot(q.x - (rod.x + ux * t), q.y - (rod.y + uy * t));
+      if (d < bd){ bd = d; best = rod; }
+    }
+    if (best && bd < hitR()){ S.kbd = false; tapRod(best); }
+  }
+  if (drag){ svg.setPointerCapture(e.pointerId); e.preventDefault(); }
+});
+svg.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const q = toSvg(e);
+  if (drag.kind === "crank"){
+    const ang = Math.atan2(q.y - REEL.y, q.x - REEL.x);
+    let d = ang - drag.last; if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
+    drag.last = ang; S.theta = ang; S.t1 = clamp(S.t1 + Math.abs(d) / (2 * Math.PI * 5));
+  } else if (drag.kind === "pull"){
+    S.t2 = clamp(drag.p0 + (drag.x0 - q.x) / 330);
+  }
+});
+for (const ev of ["pointerup", "pointercancel"]) svg.addEventListener(ev, () => { drag = null; });
+svg.addEventListener("keydown", e => {
+  const k = e.key;
+  if (S.mode === "act1" && /Arrow|Enter| /.test(k)){ e.preventDefault(); S.t1 = clamp(S.t1 + .04); S.theta += .5; }
+  if (S.mode === "act2" && /Arrow|Enter| /.test(k)){ e.preventDefault(); S.t2 = clamp(S.t2 + .05); }
+  if (S.mode === "act3" && /Arrow|Enter| /.test(k)){ e.preventDefault(); S.t3 = clamp(S.t3 + .05); }
+  if (S.mode === "pair" && /Arrow|Enter| /.test(k)){
+    // 键盘：方向键在没配的短棒之间移动，回车或空格选中
+    e.preventDefault(); S.kbd = true;
+    if (/Right|Down/.test(k)) S.kcur++;
+    else if (/Left|Up/.test(k)) S.kcur--;
+    else { const r = kbdRod(); if (r) tapRod(r); }
+    const r = kbdRod(); if (r) hint(`第 ${r.n} 根，长 ${fmtLetters(r.mb)}个字母。回车选中`);
+    render();
+  }
+});
+
+let last = performance.now();
+function tick(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  let dirty = false;
+  if (S.hold){
+    if (S.mode === "act1"){ S.t1 = clamp(S.t1 + dt * .16); S.theta += dt * 5; dirty = true; }
+    if (S.mode === "act3"){ S.t3 = clamp(S.t3 + dt * .22); }
+  }
+  const k = reduced ? 1 : 1 - Math.exp(-dt / .12);
+  for (const n of [1, 2, 3]){
+    const t = S["t" + n], p = S["p" + n];
+    if (Math.abs(t - p) > 1e-4){ S["p" + n] = Math.abs(t - p) < 1e-3 ? t : p + (t - p) * k; dirty = true; }
+  }
+  for (const rod of RODS){
+    const kk = reduced ? 1 : 1 - Math.exp(-dt / .09);
+    if (Math.abs(rod.tx - rod.x) + Math.abs(rod.ty - rod.y) + Math.abs(rod.ta - rod.a) > .05){
+      rod.x += (rod.tx - rod.x) * kk; rod.y += (rod.ty - rod.y) * kk; rod.a += (rod.ta - rod.a) * kk; dirty = true;
+    }
+    if (rod.shake > 0){ rod.shake = Math.max(0, rod.shake - dt * 2.5); dirty = true; }
+  }
+  // 进度到 98.5% 就算完成，并把读数对齐到真相表的终值
+  const fin = n => { if (S["t" + n] >= .985 && S["p" + n] > .975){ S["t" + n] = S["p" + n] = 1; S.hold = false; return true; } return false; };
+  if (dirty && S.station <= 4){
+    render();
+    if (S.station === 1 && S.mode === "act1"){ const f = fin(1); readout1(); if (f){ render(); done1(); } }
+    if (S.station === 2 && S.mode === "act2"){ const f = fin(2); readout2(); if (f){ render(); done2(); } }
+    if (S.station === 3 && S.mode === "act3"){ const f = fin(3); readout3(); if (f){ render(); done3(); } }
+  }
+  requestAnimationFrame(tick);
+}
+enter1();
+Host.ready();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

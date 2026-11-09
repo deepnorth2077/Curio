@@ -1,0 +1,18 @@
+id: act.reflection.chromosome-intro-01
+schema: activity-def/1
+kind: reflection
+version: 1
+title: 说明书的秘密
+targets: [biology.genetics.chromosome-intro]
+age_band: G3-4
+duration_min: 2
+review: approved
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版初中生物学八年级下册（2024 年版）第六单元「生命的延续和发展」第二章「生物的遗传与变异」第二节「基因在亲子代间的传递」
+body:
+  prompt: 舰长，关于说明书的秘密，你发现了什么？
+  starters: [我发现……, 原来我的说明书一半来自……, 我还想知道……]
+  max_chars: 120
+# END OF FILE

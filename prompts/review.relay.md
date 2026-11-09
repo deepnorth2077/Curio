@@ -37,7 +37,7 @@ Claude 写的架构改动不能自己审，所以请你来审。
 
 以下文件全部取自本 PR 的提交，原样贴入。
 
-{{embed: docs/adr/0010-cloud-relay-no-nas.md}}
+{{embed: docs/adr/0010-cloud-relay.md}}
 
 {{embed: docs/specs/relay.md}}
 

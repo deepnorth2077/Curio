@@ -8,7 +8,9 @@ Luka 在「学习台」项目里开新对话，第一句发：
 
 > 接手好奇号。先读仓库里的 `docs/handoff.md`，再按它说的去看 issue。然后告诉我：现在卡在哪里、下一步你打算做什么。
 
-新对话里的 Claude 应该：准备环境（第 2 节）→ 读第 1 节列的东西 → 用一两句话回答「卡在哪里、下一步做什么」→ 等 Luka 发「交付 #<号>」「审阅 #<号>」或新的要求。收货审核、派发任务、架构改动这三件事各有一个技能（`curio-intake-review`、`curio-dispatch-task`、`curio-arch-change`），照着做就行；如果对话里没有这些技能，就按第 3 节和 `docs/collaboration.md` 做。
+新对话里的 Claude 应该：准备环境（第 2 节）→ 读第 1 节列的东西 → 用一两句话回答「卡在哪里、下一步做什么」→ 等 Luka 发「交付 #<号>」「审阅 #<号>」或新的要求。
+
+**2026-11-08 起的做法**（ADR-009 增补 1、ADR-007 增补 1）：实现默认走**本地通道**（Claude 自己开子 agent 做、另一个子 agent 审查），不再让 Luka 传话；只有需要跨模型时（长期契约的审阅、触发条件下的事实核对、里程碑抽查）才走外部通道。每件改动开工前勾选 A、B、C，检查取并集；都不沾才走 D。收货审核、派发任务、架构改动这三件事各有一个技能（`curio-intake-review`、`curio-dispatch-task`、`curio-arch-change`），照着做就行；如果对话里没有这些技能，就按第 3 节和 `docs/collaboration.md` 做。
 
 每个对话结束前，Claude 要做一个**收尾里程碑**：把第 7 节的快照更新到当天，在 #13 留一条评论写明「这一轮做完了什么、还在等什么」，再告诉 Luka 可以开新对话了。
 
@@ -17,7 +19,7 @@ Luka 在「学习台」项目里开新对话，第一句发：
 1. `AGENTS.md`：不能破坏的原则、产品规则、协作方式。
 2. 本文件。
 3. issue #13（路线图总览）：做到哪一步、哪些任务被谁卡着。
-4. 正在流转的 issue：按标签查。`待派发` 表示任务文件已交给 Luka，等实现 AI；`待审核` 表示交付已带回，等 Claude 审核；`打回` 表示修改提示词已发出，等重交；`待试玩` 表示等孩子试玩。
+4. 正在流转的 issue：按标签查。`待派发`：外部通道是任务文件已交给 Luka、等外部模型，本地通道是等 Claude 开子 agent；`待审核`：交付已带回或子 agent 已交出产物，等 Claude 审核；`打回`：修改意见已发出，等重交；`待试玩`：等 Luka 验收或孩子试玩。issue 里写明走哪条通道。
 5. 用到哪部分，再读哪部分：`docs/collaboration.md`（流程）、`docs/specs/`（规格）、`docs/adr/`（决定）、`GLOSSARY.md`（用词）、`docs/standards.md`（审核标准）、`docs/reviews/`（外部审阅记录）。
 
 查 issue 和 PR 的命令（这个环境里 GraphQL 不能用，`gh issue list` 之类会失败，一律用 REST）：
@@ -41,8 +43,8 @@ python -m unittest discover -s tools/tests         # 全部通过再开始干活
 
 | 要做的事 | 怎么做 |
 | --- | --- |
-| 派发一个任务 | 按模板写 `prompts/<任务 id>.md`（平台任务用 `task-template.md`，讲解、挑战、反思用 `content-template.md`，实验用 `module-template.md`），高风险规则的验收用例自己先算好；开 `arch/` 分支 PR 合入；用 `python tools/make_task.py <任务 id>` 生成任务文件，发给 Luka；在 issue 里记下提交号、文件哈希和收货命令，贴 `待派发` 标签 |
-| 收货和审核 | `python tools/intake.py <交付包> --expect-issue '#<号>' --expect-task <任务 id> --expect-commit <派发时的提交号> --expect-version v1 --write <临时目录>`；在 `main` 的临时副本（`git worktree add`）里放入文件，跑全部测试；在临时副本里故意改坏几处规则，看测试能不能发现；按 `docs/collaboration.md` 的格式写审核评论，分「规格」「规范」两条线，每条标严重程度 |
+| 派发一个任务 | **本地通道（默认）**：写任务说明（基准提交、要读的规格路径；新设计才写设计说明），给子 agent 一个隔离的输出目录，另开一个子 agent 只读冻结的产物做审查。**外部通道**：按模板写 `prompts/<任务 id>.md`（平台任务用 `task-template.md`，讲解、挑战、反思用 `content-template.md`，实验用 `module-template.md`），高风险规则的验收用例自己先算好；开 `arch/` 分支 PR 合入；用 `python tools/make_task.py <任务 id>` 生成任务文件，发给 Luka；在 issue 里记下提交号、文件哈希和收货命令，贴 `待派发` 标签 |
+| 收货和审核 | 本地通道不收货，用提交号绑定被审的版本，按勾选的项做检查，结论写进 PR 的审查记录。外部通道：`python tools/intake.py <交付包> --expect-issue '#<号>' --expect-task <任务 id> --expect-commit <派发时的提交号> --expect-version v1 --write <临时目录>`；在 `main` 的临时副本（`git worktree add`）里放入文件，跑全部测试；在临时副本里故意改坏几处规则，看测试能不能发现；按 `docs/collaboration.md` 的格式写审核评论，分「规格」「规范」两条线，每条标严重程度 |
 | 整合 | 开 `arch/`（改到 `schemas/`、`docs/`、`tools/` 时）或对应前缀的分支；放入通过审核那一轮的文件，核对哈希一致；任务文件留档到 `prompts/`（`feat/`、`fix/`、`chore/` 分支只能新增 `<任务 id>.task.md`，`kp/` 分支只能放自己活动的）；提交末尾写 `Implemented-By:`、`Reviewed-By: Claude`、`Refs:`；开 PR，CI 绿勾后 squash 合入；关闭 issue |
 
 ## 4. 这个环境里的坑
@@ -53,11 +55,12 @@ python -m unittest discover -s tools/tests         # 全部通过再开始干活
 - **「Unverified」的提醒可以忽略**：会话结束时，钩子可能提醒 `main` 上 GitHub 生成的合并提交「没有签名」。那是 GitHub 用自己的密钥签的，用 `gh api repos/deepnorth2077/curio/commits/<提交号> -q .commit.verification` 能看到 `verified: true`。**不要**按提示去改写 `main` 的历史。
 - **零散附件**：Luka 有时会把交付包和单独的文件一起发来。只用交付包本身收货，零散文件只用来对照。不要把大附件整个读进上下文，用工具处理。
 - **`main` 要求分支和它同步**：合入前如果 `main` 有了新提交，先把 `main` 合进分支，等 CI 重新通过。
+- **内容改了要重新生成内容包**：原型读的是 `prototype/content.js`，不是 `content/`。知识点或活动合入、改版以后，跑 `python preview/build.py --root . --bundle prototype/content.js`，开 `chore/` 分支合入，否则网上的原型还是旧内容。
 
 ## 5. 和 Luka 相处
 
 - Luka 不写代码，只负责部署、传话和验收。用简体中文，说具体的事，少用术语。
-- 需要他拍板时，一轮把问题问完，每个附上推荐答案，措辞成「回答『是』就采纳推荐」（ADR-009 第 1 条）。
+- 需要他拍板时，一轮把问题问完，每个附上推荐答案，措辞成「回答『是』就采纳推荐」（ADR-009 原文第 1 条）。
 - 每个交付都要附「怎么验收」：打开什么、点哪里、应该看到什么。
 - 他会在对话里发「交付 #<号>」「审阅 #<号>」，附上实现 AI 或审阅模型的回复。
 - 不要问孩子或家人在哪里使用。需要按地区做的技术选择，用「连通测试」让 Luka 自己选（见 #31）。
@@ -70,20 +73,19 @@ python -m unittest discover -s tools/tests         # 全部通过再开始干活
 | Kimi | 交付稳，打回后只改要求改的地方。适合内容和工具类任务。审阅时擅长发现设计层面的大问题 |
 | GLM | 想得深，最会发现规格里没写清的地方，审阅时的系统性很强。交付格式和收尾不够细心，任务文件里要把格式要求写醒目 |
 
-## 7. 截至 2026-11-07（M3）的进行中事项
+## 7. 截至 2026-11-08（M7）的进行中事项
 
-以 issue 为准，下面只是写这份文件时的快照。上一个对话在这里收尾（里程碑 M3：Luka 试玩旧版讲解后觉得没意思；按 anatomy 的方法重做了三个讲解，做成能动手的模拟模块，技能 `curio-anatomy` 存进仓库）。
+以 issue 为准，下面只是写这份文件时的快照。上一个对话在这里收尾（里程碑 M7：竖切片 1 规格经两轮外部审阅合入；开发做法改成按影响勾选检查、默认本地通道）。
 
-- **三个「动手探索」模块**（都在各自的 `kp/` 分支上，没开 PR）：
-  - `act.simulation.cell-zoom-01`（细胞，`kp/biology.cell.cell-intro` 5da3c33）、`act.simulation.dna-book-01`（DNA，`kp/biology.genetics.dna-intro` 636b21c）：设计说明 Claude 写，Opus 子 agent 实现，Sonnet 子 agent 审查 1 轮，Opus 子 agent 按审查改完。
-  - `act.simulation.chromosome-pack-01`（染色体，`kp/biology.genetics.chromosome-intro` dbae6fa）：Claude 自己设计和实现的标杆，Sonnet 审查 1 轮后改完。
-  - 审查记录：`docs/reviews/act.simulation.*.md`。知识点卡已登记新活动；染色体卡新增误区 `stuffed-in`、`cut-into-pieces`。
-  - 原来的讲解还在，试玩页上标「旧版讲解」。孩子试玩后决定：旧版讲解是删掉（ID 不复用，状态改掉）还是保留。
-- **试玩页**（PR #52）：https://deepnorth2077.github.io/Curio/preview/ ，三颗星最前面是「动手探索」。下一步：等 Luka 和孩子试玩反馈；按反馈改；孩子玩过、Luka 确认后，三个知识点各开 PR 合入，关闭 #34–#43。
-- **技能 `curio-anatomy`**（`.claude/skills/curio-anatomy/`）：方法、`references/lessons.md`（30 条经验）、`starter.html` 骨架、`brief-template.md`、`review-template.md`、`walk.py`。以后每个知识点都按它的「一个模块的完整流程」做：Claude 写设计说明 → Opus 实现 → Sonnet 审查 → 改 → 新坑补进 lessons。
+- **新做法已生效**（PR #78，#77 已关闭）：ADR-009 增补 1、ADR-007 增补 1。开工前勾 A/B/C，检查取并集；默认子 agent 做、另一个子 agent 审；只有长期契约审阅、触发条件下的事实核对、里程碑抽查才请外部模型（Luka 传话）。`kp/` 分支可以写本知识点的 `docs/reviews/`。还要做：截图工具（平板亮色、平板暗色、窄屏，走 `arch/`）；下一个里程碑复盘看四个量（传话次数和耗时、等验收的停滞、合入后发现的缺陷、误判为 D 的次数）。
+- **竖切片 1**（#24，规格 PR #60 已合入，第 3 稿）：下一步写 1a 的实现任务，默认本地通道。先写 `engine/test/quiz.test.js`、`app/test/commit.test.js`、`app/test/resume.test.js`（接口见切片规格 6.1～6.3），确认在空实现上失败；1a 夹具是 `tools/tests/fixtures/slice-1a/content/`。勾 A（存储和事件）和 C（页面）。以后在 CI 的内容检查里拦住不满足数值规则的 `value`、`tolerance`（切片规格第 5 节说 `startQuiz` 会抛错，CI 先拦更好）。
+- **PR #62 ADR-010 和中转服务规格**（#31）：**先放着**。Luka 2026-11-09 说还在考虑 NAS 的方案；ADR-010 的前提是「家里没有 NAS」，Luka 定了以后再决定改写还是照用。下面是原来的计划：
+  - 家里没有 NAS，后端改为云上的无服务器函数加对象存储（腾讯云云函数 / Cloudflare Workers，连通测试决定）；ADR-006、ADR-008 增补 1；`docs/specs/relay.md`（#31 第一段：中转服务、连通测试、用量、部署手册）。审阅任务 `review.relay` 给 Kimi，基于 `9c025ef`。回来后处理意见，再向 Luka 问这几件事（推荐都是「是」）：云上同步端到端加密、恢复密钥打印一份放家里；DeepSeek 先充 50 元，中转服务每月上限 20 元、每天 30 次；第二份备份每月下载到自己的电脑或网盘；#31 拆成两段（先做中转服务，不等 #25）。确认后合入，更新 #11 的描述（Python 参考内核改作交叉验证用）。
+- **「乘法的秘密」星座**（#54）：#55 已关闭。多模型对比第一名 Claude Opus 5.5 的第 1 轮按 Luka 要求直接合入（PR #71），没有打回；知识点还是 `draft`。下一步：给这个知识点写讲解和挑战（发布门禁至少要这两个，误区 `split-both` 还没有活动针对），然后孩子试玩、发布。改版时顺手改掉评语里的三处小问题，并回答实现者的两个规格疑问（见 #55 最后一条评论）。
+- **原型能玩「生命的说明书」**（PR #75，#74 已关闭）：`preview/build.py --bundle` 把所有已发布知识点打成 `prototype/content.js`，原型合并进星图和地铁（替换示例星球 `b.g7.cell`；细胞在初一，DNA、染色体在初二；图上用短名）。右栏「任务」点「开始」进全屏活动：动手探索走沙箱和契约，讲解、挑战、反思由原型里的 `Player` 照数据画，判分和试玩页 `preview/template.html` 是同一套（两份代码，改一处要同步改另一处）。**这一版先不记进度**：不写学习事件、不加能量、不改星球状态、不进维修舱，留给竖切片 1、4；那时在 `Player` 里接 `logEvent`。问领航员的问题发到信号站，不挂星球。孩子玩过了，觉得很好玩（Luka 2026-11-09）。
+- **原型**（PR #58、#61、#64，#57 已关闭）：指挥中心有了「设置」（名字、年级、生日、教材、家长 PIN、AI 中转地址和家庭口令；年级存入学学年，每年 9 月自动升级；数据格式 v2 带迁移）；首页右栏变主栏，一开始不显示，点星球、地铁站或索引里的知识点才弹出（× 或 Esc 收起）；左上角、星图、地铁都不再写年级（Luka 不希望给孩子贴年级标签）。密钥不进页面，只填中转地址和口令。
+- **「生命的说明书」已发布**（PR #68、#69、#70，#34–#43 已关闭；试玩页 PR #72 重新生成）。旧版讲解还留着，删不删以后再定。孩子试玩时说「挑战的答案全是 A」：规格只规定打乱题目顺序，没规定选项怎么排，实现 AI 都把正确选项写在第一个。已在三个知识点里调整了选项先后（id 和文字不变）；`prompts/content-template.md` 加了一句「正确选项的位置尽量分散」。Luka 说都选 A 也不是不能接受，所以**不加 CI 报错**。
 - **事实核对剩下的建议 7、8**：`docs/constellations/life-manual.md` 的出处和配图说明，下次开 `arch/` 时改；「人的性别决定」的节名要对照 2024 年版实体书。
 - 以后加进 `prompts/content-template.md`：挑战打乱题目顺序时，数字题的答案不能出现在其他题的题干、选项、提示、反馈里（#42 第 1 轮）。DNA 第 1 题「几种字母」的两个错误选项还没有对应的误区 id，要先加进知识点卡。
-- **PR #46 已合入**：整个 `prompts/` 受保护；`kp/` 分支只能改自己活动的 `.md`、`.task.md` 和自己 `content/assets/<知识点 id>/` 下的 `.svg`；`feat/`、`fix/`、`chore/` 只能新增 `*.task.md` 留档；`svg` 配图必须在 `content/assets/` 下。逐条答复见 `docs/reviews/pr-46.md`。
-- **#24 竖切片 1**（分数挑战点亮一颗星）：没动，仍按 #24 评论里的 5 件事做。下一步：写切片规格和手算的黄金向量，改构建器输出 JSON，开 `arch/` PR 请外部审阅，合入后再写提示词、派发。
-- **#31 AI 答疑**：没动。Luka 已定：在领航员对话里随时问；只用一个模型（DeepSeek）；没有 NAS。下一步由 Claude 写 ADR 和规格：中转服务保管密钥，要家庭口令，有次数和花费上限；同一份代码能部署到国内云函数或海外服务，用连通测试决定放哪里。同一份 ADR 里要重新考虑原来放在 NAS 上的同步和备份（ADR-006、ADR-008 第 7 条都假设了 NAS）。
+- **开发顺序**（Luka 2026-11-07 定的标准）：按未来两年最难、最抽象、最需要拆解的知识点排，孩子的兴趣随时插进来。候选（按概念，具体册次对照新版课本）：分数「1 可以是任何东西」、面积和周长、小数和数位、乘法的面积模型、看不见的物质、电路的闭合回路、昼夜和月相、用字母表示数。科学课本是教育科学出版社的教科版，但 **Luka 2026-11-09 定了：科学不按课本架构排**（小学科学是副科），按「学了以后用得上的程度」和「小学生的认知曲线」排。数学仍跟课本。待办（下次开 `arch/` 时，勾 A，同模型独立审阅即可）：`docs/workflow.md` 第 1 步「选点」分数学、科学两种写法；科学知识点卡的 `grade` 改作「建议从几年级开始」（schema 描述现在写的是「首次出现的年级」），`unit`、`curriculum` 可以不填；在 `docs/` 里写一份科学的路线图（按认知阶段分组，标出前置关系）。
 - **以后的小改进**：`tools/ci_checks.py` 的提示泄露检查，中文数字的分数写法没有前后边界（答案 1/4 时「十四分之一」会被误判），见 #17 第 1 轮审核。

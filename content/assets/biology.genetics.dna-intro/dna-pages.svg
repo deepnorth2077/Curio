@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" role="img" aria-label="同一套说明书翻开不同的页">
+  <title>同一套说明书，不同的页</title>
+  <desc>两本一样的说明书并排，一本贴着神经细胞标签，另一本贴着肌肉细胞标签，两本翻开的页上写着不同的字母。</desc>
+  <defs>
+    <g id="book">
+      <path d="M28 122 Q75 101 122 122 Q163 101 216 117 L212 251 Q163 235 124 258 Q77 236 34 251 Z" fill="#CCD6C0" fill-opacity="0.75"/>
+      <path d="M28 122 Q75 101 122 122 Q163 101 216 117 L212 251 Q163 235 124 258 Q77 236 34 251 Z" fill="none" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="k"/>
+      <path d="M37 115 Q78 102 120 121 L120 242 Q79 220 39 236 Z" fill="#EFE4D6" fill-opacity="0.85"/>
+      <path d="M37 115 Q78 102 120 121 L120 242 Q79 220 39 236 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+      <path d="M125 121 Q165 102 207 115 L204 235 Q164 221 125 242 Z" fill="#EFE4D6" fill-opacity="0.85"/>
+      <path d="M125 121 Q165 102 207 115 L204 235 Q164 221 125 242 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+      <path d="M122 122 C120 159 124 203 122 243" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+      <path d="M49 213 Q79 207 105 219 M139 213 Q166 205 192 213" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+    </g>
+  </defs>
+  <text x="240" y="43" font-size="16" text-anchor="middle" fill="#1F1E1C">同一套说明书</text>
+  <use href="#book"/>
+  <use href="#book" transform="translate(232 0)"/>
+  <text x="52" y="145" font-size="14" fill="#1F1E1C">A T C G</text>
+  <text x="52" y="169" font-size="14" fill="#1F1E1C">T A G C</text>
+  <text x="52" y="193" font-size="14" fill="#1F1E1C">C G A T</text>
+  <text x="139" y="145" font-size="14" fill="#1F1E1C">G C T A</text>
+  <text x="139" y="169" font-size="14" fill="#1F1E1C">A T C G</text>
+  <text x="139" y="193" font-size="14" fill="#1F1E1C">T G A C</text>
+  <text x="284" y="145" font-size="14" fill="#1F1E1C">G G A T</text>
+  <text x="284" y="169" font-size="14" fill="#1F1E1C">C A T T</text>
+  <text x="284" y="193" font-size="14" fill="#1F1E1C">A C G G</text>
+  <text x="371" y="145" font-size="14" fill="#1F1E1C">T T C A</text>
+  <text x="371" y="169" font-size="14" fill="#1F1E1C">G A C C</text>
+  <text x="371" y="193" font-size="14" fill="#1F1E1C">C T A G</text>
+  <path d="M151 88 Q181 83 213 89 L212 119 Q181 112 153 117 Z" fill="#CFDCE6" fill-opacity="0.85"/>
+  <path d="M151 88 Q181 83 213 89 L212 119 Q181 112 153 117 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+  <text x="182" y="106" font-size="14" text-anchor="middle" fill="#1F1E1C">神经细胞</text>
+  <path d="M383 88 Q413 83 445 89 L444 119 Q413 112 385 117 Z" fill="#ECCDB6" fill-opacity="0.85"/>
+  <path d="M383 88 Q413 83 445 89 L444 119 Q413 112 385 117 Z" fill="none" stroke="#1F1E1C" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="k1"/>
+  <text x="414" y="106" font-size="14" text-anchor="middle" fill="#1F1E1C">肌肉细胞</text>
+</svg>
+<!-- END OF FILE -->
