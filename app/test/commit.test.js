@@ -1,5 +1,6 @@
 // 提交一条事件的验收测试（竖切片 1 规格 6.2）。Claude 派发前写好，实现者不改（受保护路径）。
 //
+// submit 出错时 reject 或同步 throw 都算抛错（测试用 assert.rejects(async () => …)）。
 // 这份测试固定了规格 6.2、6.3 里没有逐字写出的两个接口（实现者照这个来）：
 //   createCommitter(store, log, {nextSeq})
 //     nextSeq 是外壳 loadAll 读到的值；之后每次 accepted 加 1。
@@ -15,7 +16,7 @@ import { createLog } from "../../kernel/js/log.js";
 import { projectMastery } from "../../kernel/js/mastery.js";
 import { createCommitter } from "../commit.js";
 import { openSession } from "../session.js";
-import { createFakeStore, rebuild, fixtures, raw, receiptOf, checkInvariants, CONTENT_V1 } from "./fake-store.js";
+import { createFakeStore, rebuild, fixtures, raw, receiptOf, checkInvariants, until, CONTENT_V1 } from "./fake-store.js";
 
 const NODE = CONTENT_V1.node_id;
 const ITEMS = ["q1", "q2", "q3", "q4", "q5"];
@@ -68,7 +69,7 @@ test("作答那条事务提交前中止：三样都没变，日志没变；同�
   const before = storeSnap(store);
   const logBefore = JSON.stringify(s.log.raw());
   store.nextCommit = "abort";
-  await assert.rejects(s.committer.submit(r, rc));
+  await assert.rejects(async () => s.committer.submit(r, rc));
   assert.equal(storeSnap(store), before, "收件表、收据、nextSeq 都没变");
   assert.equal(JSON.stringify(s.log.raw()), logBefore, "日志没变");
   assert.equal(s.committer.nextSeq, 2, "nextSeq 没变");
@@ -86,7 +87,7 @@ test("完成那条事务提交前中止：同上", async () => {
   const rc = receiptOf(fx, r);
   const before = storeSnap(store);
   store.nextCommit = "abort";
-  await assert.rejects(s.committer.submit(r, rc));
+  await assert.rejects(async () => s.committer.submit(r, rc));
   assert.equal(storeSnap(store), before);
   assert.equal(projectMastery(s.log.events()).nodes[NODE].state, "untouched", "完成没存上，星星不亮");
   assert.equal(await s.committer.submit(r, rc), "accepted");
@@ -101,8 +102,7 @@ test("事务提交以后、ingest 之前页面关掉：重放能读到这条；�
   const r = raw(fx, s.identity, s.committer, answered(att, "q1", true));
   store.nextCommit = "close";
   s.committer.submit(r, receiptOf(fx, r)); // 永远不结束：页面关掉了
-  await new Promise((res) => setTimeout(res, 20));
-  assert.ok(store.state.inbox.includes(r), "事务已提交");
+  await until(() => store.state.inbox.includes(r));
   const s2 = await openSession(store, fx);
   assert.ok(s2.log.raw().includes(r), "重放读到了这条作答");
   assert.equal(s2.abandoned.length, 1, "没有结束事件，补一条 abandoned");
@@ -124,7 +124,7 @@ test("完成那条提交以后、saved 之前页面关掉：重放后尝试已�
   const r = raw(fx, s.identity, s.committer, completed(att));
   store.nextCommit = "close";
   s.committer.submit(r, receiptOf(fx, r));
-  await new Promise((res) => setTimeout(res, 20));
+  await until(() => store.state.inbox.includes(r));
   const s2 = await openSession(store, fx);
   assert.deepEqual(s2.abandoned, []);
   assert.deepEqual(projectMastery(s2.log.events()).nodes[NODE], { state: "lit", best: { correct: 4, answered: 5 } });
@@ -141,7 +141,7 @@ test("双击「再试」：同一条原始文字正在处理时又提交，只�
   const callsBefore = store.calls.commit;
   store.nextCommit = "gate";
   const p1 = s.committer.submit(r, rc);
-  await new Promise((res) => setTimeout(res, 5));
+  await until(() => store.gated);
   const p2 = s.committer.submit(r, rc);
   assert.strictEqual(p2, p1, "返回同一个 Promise");
   store.release();
@@ -169,6 +169,7 @@ test("串行：两条一起提交，第二条等第一条结束才开始，存�
   store.nextCommit = "gate";
   const pa = s.committer.submit(a, receiptOf(fx, a));
   const pb = s.committer.submit(b, receiptOf(fx, b));
+  await until(() => store.gated);
   await new Promise((res) => setTimeout(res, 10));
   assert.equal(store.calls.commit, 1, "第一条还没结束，第二条还没开始");
   store.release();
@@ -190,7 +191,8 @@ test("启动补写还没完成就开始挑战：openSession 等补写存好才 r
   store.nextCommit = "gate"; // 第一条补写卡住
   let resolved = false;
   const p = openSession(store, fx).then((x) => { resolved = true; return x; });
-  await new Promise((res) => setTimeout(res, 20));
+  await until(() => store.gated);
+  await new Promise((res) => setTimeout(res, 10));
   assert.equal(resolved, false, "补写没存好之前不 resolve，外壳还不能开始挑战");
   store.release();
   const s2 = await p;
@@ -209,7 +211,7 @@ test("隔离的原文：存进收件表，抛错，不推进 nextSeq；重放后
   await put(fx, s, started(att));
   const bad = raw(fx, s.identity, s.committer, { verb: "item.answered", attempt_id: att, payload: { item_id: "q1", response: "a", correct: 1, try: 1, hints_used: 0 } });
   const commits = store.calls.commit;
-  await assert.rejects(s.committer.submit(bad, receiptOf(fx, bad)));
+  await assert.rejects(async () => s.committer.submit(bad, receiptOf(fx, bad)));
   assert.equal(store.calls.commit, commits, "不合格的不走 commit");
   assert.equal(store.calls.putInbox, 1);
   assert.equal(store.state.inbox.at(-1), bad);
@@ -219,7 +221,7 @@ test("隔离的原文：存进收件表，抛错，不推进 nextSeq；重放后
   assert.deepEqual(fresh.quarantined().map((q) => [q.raw, q.reason]), [[bad, "invalid"]]);
   const s2 = await openSession(store, fx);
   assert.deepEqual(s2.log.quarantined().map((q) => [q.raw, q.reason]), [[bad, "invalid"]]);
-  checkInvariants(assert, store, s2.log);
+  checkInvariants(assert, store, s2.log, { quarantined: 1 });
 });
 
 test("commit 时存储里的 nextSeq 和 device_seq 对不上：事务中止，什么都没写，抛错", async () => {
@@ -229,9 +231,27 @@ test("commit 时存储里的 nextSeq 和 device_seq 对不上：事务中止，�
   store.state.nextSeq = 5; // 别人动过存储
   const r = raw(fx, s.identity, s.committer, answered(att, "q1", true));
   const before = storeSnap(store);
-  await assert.rejects(s.committer.submit(r, receiptOf(fx, r)));
+  await assert.rejects(async () => s.committer.submit(r, receiptOf(fx, r)));
   assert.equal(storeSnap(store), before, "什么都没写");
   assert.equal(s.log.raw().length, 1, "日志没变");
+});
+
+test("事务提交以后 ingest 的结果不是 accepted（存储和内存可能不一致）：frozen 变真，抛错，之后一律抛错", async () => {
+  const { store, fx, s } = await setup();
+  const att = fx.ids.attempt();
+  await put(fx, s, started(att));
+  const r = raw(fx, s.identity, s.committer, answered(att, "q1", true));
+  store.nextCommit = "gate";
+  const p = s.committer.submit(r, receiptOf(fx, r));
+  await until(() => store.gated);
+  s.log.ingest(r); // 模拟「不该发生」的情况：事务提交时，日志里已经有了这条
+  store.release();
+  await assert.rejects(async () => p);
+  assert.equal(s.committer.frozen, true);
+  const n = { ...store.calls };
+  const r2 = raw(fx, s.identity, s.committer, answered(att, "q2", true));
+  await assert.rejects(async () => s.committer.submit(r2, receiptOf(fx, r2)));
+  assert.deepEqual(store.calls, n, "冻结以后不再碰存储");
 });
 
 test("freeze() 以后 submit 一律抛错，不碰存储", async () => {
@@ -240,7 +260,7 @@ test("freeze() 以后 submit 一律抛错，不碰存储", async () => {
   assert.equal(s.committer.frozen, true);
   const r = raw(fx, s.identity, s.committer, started(fx.ids.attempt()));
   const n = store.calls.commit;
-  await assert.rejects(s.committer.submit(r, receiptOf(fx, r)));
+  await assert.rejects(async () => s.committer.submit(r, receiptOf(fx, r)));
   assert.equal(store.calls.commit, n);
   assert.equal(store.calls.putInbox, 0);
 });

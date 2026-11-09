@@ -59,12 +59,15 @@ for (const f of files) {
         assert.equal(after.events.length, before.events.length + 1, `第 ${i + 1} 项：接收后 events 应多一条`);
         assert.equal(after.raw.length, before.raw.length + 1);
         assert.equal(after.raw.at(-1), raws[i]);
+        assert.deepEqual(after.events.at(-1), JSON.parse(raws[i]), "events() 里是解析后的对象");
+        assert.deepEqual(after.events.slice(0, -1), before.events, "已接收的事件不被改动");
+        assert.deepEqual(after.raw.slice(0, -1), before.raw);
         assert.equal(after.quarantined.length, before.quarantined.length);
       } else if (g.result === "duplicate") {
         assert.deepEqual(after, before, `第 ${i + 1} 项：重复的不该进任何地方`);
       } else {
-        assert.equal(after.events.length, before.events.length);
-        assert.equal(after.raw.length, before.raw.length);
+        assert.deepEqual(after.events, before.events, "隔离的不覆盖已有的");
+        assert.deepEqual(after.raw, before.raw);
         assert.equal(after.quarantined.length, before.quarantined.length + 1, `第 ${i + 1} 项：隔离的应进隔离区`);
         const q = after.quarantined.at(-1);
         assert.equal(q.raw, raws[i]);

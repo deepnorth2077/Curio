@@ -48,6 +48,7 @@ app/
   index.html      页面外壳：星图（只有发布包里的星）、挑战、结果
   app.js          启动、读发布包、拿窗口锁、画界面、调用内核和引擎
   commit.js       createCommitter()：串行地「检查 → 写库 → 进日志」（不碰 DOM，可在 Node 里用假存储测）
+  session.js      openSession()：6.3「正在恢复」的第 1～3 步（不碰 DOM，可在 Node 里用假存储测）
   store.js        IndexedDB 存取（收到的原始文字、收据、设备信息、下一个序号）
 app/test/         node:test 测试：commit.test.js、resume.test.js（假存储，Claude 派发前写好）
 ```
@@ -201,7 +202,7 @@ q.pending                              // 要写的事件意图 {id, verb, paylo
 **不变量**：内存日志只来自两个地方——启动时重放存储，和已经提交成功的事务。除此之外谁也不改它。
 
 ```js
-const committer = createCommitter(store, log)   // 外壳只建一个
+const committer = createCommitter(store, log, {nextSeq})   // 外壳只建一个；nextSeq 是 loadAll 读到的值
 await committer.submit(raw, receipt)            // → "accepted" | "duplicate"；隔离和存储失败都抛错
 committer.frozen                                // 出了「存储和内存可能不一致」的错、或外壳调用过 freeze() 以后为真，之后 submit 一律抛错
 committer.freeze()                              // 外壳失去写锁时调用
@@ -250,6 +251,8 @@ committer.nextSeq                               // 下一条本机事件该用�
   2. 收件表按到达顺序重新 `ingest`。
   3. 找出本设备上没有结束事件、而且没有被判为不一致的尝试，各补一条 `attempt.abandoned`（`reason: left`，`actor` 是 `{type: system, id: "sys:shell"}`）。**补写的事件从这次尝试的事件里复制** `learner_id`、`device_id`、`attempt_id` 和完整的 `content`（包括当时的 `content_release`、`activity_version`），只有 `event_id`、`occurred_at`、`device_seq`、`actor`、`payload` 是新的。所以发布更新了、旧活动不在新发布里了，也能合法地放弃。已经有结束事件的尝试不补。每条都走 `committer`。
   4. 算掌握度、画星图，进入「可以写」。
+
+  第 1～3 步在 `app/session.js` 里：`openSession(store, {ids, now})` → `{identity, log, committer, abandoned}`。`ids` 生成 `lrn_`、`dev_`、`evt_` 等 ID，`now()` 给 `occurred_at` 用的 UTC 时间；收据是 `{event_id, received_at}`；`abandoned` 是补写的 `event_id` 列表。全部补写存好以后才 resolve，所以外壳拿到会话之前开始不了挑战。它不读发布包。（第 3 稿合入后、派发前按验收测试补写，PR #97。）
 - **写事件**：外壳把状态机的意图组装成 event/2 信封（`device_seq` 取 `committer.nextSeq`、`occurred_at` 取当前 UTC 时间、完成事件补 `duration_ms`、`content` 用这次挑战开始时冻结的那一份），`JSON.stringify` 一次得到原始文字，交给 `committer.submit`。`accepted` 或 `duplicate` → 给状态机发 `saved`；抛错 → 发 `failed`，留着这条原始文字，「再试」时原样再提交。
 - **开始一次挑战**：冻结当前发布的 `content`（`node_id`、`activity_id`、`activity_kind`、`activity_version`、`content_release`），这次尝试的每条事件都用它。`mode` 是 `first`（这台设备上这个活动从没完成过）或 `retry`。题目顺序按活动的 `shuffle` 决定。
 - **作答**：点一个选项就是一次作答，交给状态机。答对显示 `feedback.correct`（没有就用默认的话）；答错显示这个错误选项的 `feedback`，没有就用 `feedback.wrong` 或默认的话，可以再答。

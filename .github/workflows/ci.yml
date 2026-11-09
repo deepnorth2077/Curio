@@ -39,5 +39,13 @@ jobs:
         run: |
           if [ -f relay/src/handler.js ]; then node --test 'relay/test/*.test.js'; else echo "还没有 relay/src/handler.js，跳过"; fi
       - name: 竖切片 1 的向量和验收测试
+        env:
+          HEAD_REF: ${{ github.head_ref }}
         run: |
-          if [ -f kernel/js/log.js ]; then node --test kernel/test/*.test.js engine/test/*.test.js app/test/*.test.js; else echo "还没有 kernel/js/log.js，跳过"; fi
+          if [ -f kernel/js/log.js ]; then
+            node --test kernel/test/*.test.js engine/test/*.test.js app/test/*.test.js
+          elif [[ "$HEAD_REF" == feat/slice-1* ]]; then
+            echo "切片 1 的实现分支必须带 kernel/js/log.js，不能跳过验收测试"; exit 1
+          else
+            echo "还没有 kernel/js/log.js，跳过"
+          fi

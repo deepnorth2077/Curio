@@ -1,4 +1,5 @@
 // 判分向量的执行器（竖切片 1 规格第 5、7 节）。Claude 写，实现者不改（受保护路径）。
+// 补充要求：grade 不改传进来的 answer（引擎模块是纯函数，规格第 1 节）。
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
