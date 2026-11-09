@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>好奇号 · 生成口令的两行设置</title>
+<style>
+:root{color-scheme:light dark;--bg:#FAF6EE;--pane:#FFFDF8;--ink:#2A2620;--muted:#6F675B;--rule:#D9D0C0;--good:#3B7A56;--bad:#B4432E}
+@media (prefers-color-scheme:dark){:root{--bg:#1E1E24;--pane:#26262E;--ink:#ECE8E0;--muted:#A49D92;--rule:#3A3A44;--good:#7CC79A;--bad:#EF8A72}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:640px;margin:0 auto;padding:24px 16px 48px;display:grid;gap:16px}
+h1{font-size:22px;margin:0}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:14px;padding:16px;display:grid;gap:12px}
+.muted{color:var(--muted);font-size:14px}
+label{font-size:14px;color:var(--muted)}
+input{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--bg);color:var(--ink);min-height:44px}
+button{font:inherit;font-size:15px;min-height:42px;padding:0 16px;border-radius:10px;border:1px solid var(--rule);background:var(--pane);color:var(--ink);cursor:pointer}
+button.ink{background:var(--ink);color:var(--pane);border-color:var(--ink)}
+.line{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.line code{flex:1 1 280px;min-width:0;overflow-wrap:anywhere;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;background:var(--bg);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;user-select:all}
+.bad{color:var(--bad)}.good{color:var(--good)}
+ol{margin:0;padding-left:20px}
+</style>
+</head>
+<body>
+<main>
+  <h1>生成口令的两行设置</h1>
+  <p class="muted">这个网页不联网，算完的东西只显示在你自己的屏幕上。口令本身不用填到云上，云上只放下面生成的两行。</p>
+
+  <div class="card">
+    <label for="pw">家庭口令</label>
+    <input id="pw" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="例如：juzi taideng paobu yunduo">
+    <p class="muted">建议用四个随便挑的词，用拼音或英文字母写，中间空一格（只能用英文字母、数字和英文标点：浏览器发请求时，请求头里放不了汉字）。不要用生日、名字、电话。这句口令要记下来：以后在好奇号的设置里还要填一次。</p>
+    <div class="line"><button class="ink" id="go" type="button">生成两行设置</button></div>
+    <p id="msg" class="muted" role="status"></p>
+  </div>
+
+  <div class="card" id="out" hidden>
+    <p>把下面两行<b>整行</b>复制，粘进云函数的环境变量（部署手册第 8 步）。等号左边是名字，右边是值。</p>
+    <div class="line"><code id="l1"></code><button type="button" data-copy="l1">复制</button></div>
+    <div class="line"><code id="l2"></code><button type="button" data-copy="l2">复制</button></div>
+    <p class="muted">每点一次「生成」，盐都会换一个，两行要一起换。想换口令时，再来这里生成一次，把两行都改掉。</p>
+  </div>
+</main>
+
+<script>
+// sha256：浏览器有 crypto.subtle 就用它，并和下面的纯 JS 版本对一遍；没有就只用纯 JS 版本。
+// crypto.getRandomValues 在任何页面（包括双击打开的本地文件）都能用。
+function sha256HexJS(bytes) {
+  const K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const len = bytes.length, total = ((len + 9 + 63) >> 6) << 6;
+  const m = new Uint8Array(total);
+  m.set(bytes); m[len] = 0x80;
+  const bits = len * 8;
+  for (let i = 0; i < 8; i++) m[total - 1 - i] = Math.floor(bits / Math.pow(2, 8 * i)) & 0xff;
+  const w = new Uint32Array(64);
+  const r = (x, n) => (x >>> n) | (x << (32 - n));
+  for (let off = 0; off < total; off += 64) {
+    for (let i = 0; i < 16; i++) w[i] = (m[off + 4*i] << 24) | (m[off + 4*i + 1] << 16) | (m[off + 4*i + 2] << 8) | m[off + 4*i + 3];
+    for (let i = 16; i < 64; i++) {
+      const s0 = r(w[i-15], 7) ^ r(w[i-15], 18) ^ (w[i-15] >>> 3);
+      const s1 = r(w[i-2], 17) ^ r(w[i-2], 19) ^ (w[i-2] >>> 10);
+      w[i] = (w[i-16] + s0 + w[i-7] + s1) >>> 0;
+    }
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (h + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) >>> 0;
+      const t2 = ((r(a, 2) ^ r(a, 13) ^ r(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+      h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+    }
+    H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+    H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0; H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+  }
+  return H.map(x => x.toString(16).padStart(8, "0")).join("");
+}
+
+function toHex(bytes) { return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join(""); }
+
+async function sha256Hex(text) {
+  const bytes = new TextEncoder().encode(text);
+  const js = sha256HexJS(bytes);
+  const c = globalThis.crypto;
+  if (c && c.subtle && c.subtle.digest) {
+    try {
+      const native = toHex(new Uint8Array(await c.subtle.digest("SHA-256", bytes)));
+      if (native !== js) throw new Error("两种算法结果不一致");
+      return native;
+    } catch (e) {
+      if (e && e.message === "两种算法结果不一致") throw e;
+    }
+  }
+  return js;
+}
+
+function makeSalt() {
+  const b = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(b);
+  return toHex(b);
+}
+
+// 生成两行：盐在前，口令在后，sha256(盐 + 口令)。中转服务按同样的顺序算。
+async function makeLines(passphrase, salt) {
+  return { salt: "CURIO_SALT=" + salt, hash: "CURIO_PASSPHRASE_HASH=" + (await sha256Hex(salt + passphrase)) };
+}
+
+if (typeof document !== "undefined") {
+  const $ = s => document.querySelector(s);
+  const msg = (t, cls) => { $("#msg").textContent = t; $("#msg").className = cls || "muted"; };
+  if (!globalThis.crypto || !globalThis.crypto.getRandomValues) msg("这个浏览器太旧了，生成不了随机的盐。请换用新版的 Chrome、Edge、Safari 或 Firefox。", "bad");
+  $("#go").onclick = async () => {
+    const pw = $("#pw").value;
+    if (!pw.trim()) { msg("先填口令。", "bad"); return; }
+    if (!/^[\x20-\x7e]+$/.test(pw)) { msg("口令里只能有英文字母、数字、空格和英文标点。汉字请改成拼音。", "bad"); return; }
+    if (pw !== pw.trim()) { msg("口令开头或结尾有空格，去掉再生成（好奇号里填的时候也不要带）。", "bad"); return; }
+    if (pw.trim().length < 8) msg("口令有点短。建议用四个随便挑的词。", "bad"); else msg("");
+    try {
+      const out = await makeLines(pw, makeSalt());
+      $("#l1").textContent = out.salt; $("#l2").textContent = out.hash; $("#out").hidden = false;
+      if (pw.trim().length >= 8) msg("生成好了。", "good");
+    } catch (e) { msg("算的时候出错了：" + e.message + "。请换一个浏览器再试。", "bad"); }
+  };
+  document.querySelectorAll("[data-copy]").forEach(b => b.onclick = () => {
+    const el = document.getElementById(b.dataset.copy), text = el.textContent;
+    const done = () => { b.textContent = "已复制"; setTimeout(() => b.textContent = "复制", 1500); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "已选中，按 Ctrl+C 或 ⌘C"; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+  });
+}
+</script>
+</body>
+</html>
