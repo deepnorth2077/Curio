@@ -224,6 +224,16 @@ class TestBranches(Base):
         self.r.branch("arch/template"); self.r.write("prompts/content-template.md", "y"); self.r.commit()
         self.ok(self.r.check())
 
+    def test_relay_cases_only_on_arch(self):
+        self.r.write("relay/test/cases.json", "{}"); self.r.write("relay/src/navigator.js", "a"); self.r.baseline()
+        self.r.branch("feat/relay"); self.r.write("relay/test/cases.json", "{\"x\": 1}")
+        self.r.write("relay/src/navigator.js", "b"); self.r.write("relay/src/handler.js", "c")
+        self.r.write("relay/test/handler.test.js", "d"); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), ["relay/src/navigator.js", "relay/test/cases.json"])
+        self.r.git("checkout", "-q", "main"); self.r.branch("arch/relay-cases")
+        self.r.write("relay/test/cases.json", "{\"y\": 1}"); self.r.commit()
+        self.ok(self.r.check())
+
     def test_whole_prompts_dir_is_protected(self):
         self.r.write("prompts/review.x.md", "a"); self.r.write("prompts/act.quiz.frac.md", "a")
         self.r.write("prompts/curio-009.task.md", "a"); self.r.baseline()

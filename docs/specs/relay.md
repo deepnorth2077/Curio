@@ -1,10 +1,10 @@
 # 规格：AI 中转服务和连通测试（#31 第一段）
 
-- 状态：提议，第 3 稿（2026-11-09：中转放云上、每家一份、首批只做腾讯云；GLM 外部审阅的 12 条已处理，见 `docs/reviews/pr-62.md`）
+- 状态：已接受，第 3 稿（2026-11-09 Luka 确认；GLM 外部审阅和一致性复查已处理，见 `docs/reviews/pr-62.md`）。验收用例在 `relay/test/cases.json`，领航员说明在 `relay/src/navigator.js`，两者都由 Claude 写定，只能在 `arch/` 分支改
 - 依据：ADR-010（云上的小后端）、AGENTS.md 原则 5（AI 只走网关）、事件规格第 1 节（本地日期按 UTC+8）、`docs/constellations/life-manual.md`（领航员的说话方式）
-- 实现任务：#31 拆成两段（拆法等 Luka 确认）：
+- 实现任务：#31 拆成两段（Luka 2026-11-09 确认）：
   - **第一段（本规格）**：中转服务、部署手册、指挥中心的连通测试和用量。演示：家长在指挥中心点「连通测试」成功，点「试问一个问题」几秒内收到领航员的回答，用量数字跟着变。不依赖 #25。
-  - **第二段**：舰长在领航员对话里随时提问，问答存成私人文字和事件，进信号站，可以标记「这个回答好像不对」。等 #25（领航员对话）之后另写规格。
+  - **第二段**（#86）：舰长在领航员对话里随时提问，问答存成私人文字和事件，进信号站，追问带上下文，可以标记「这个回答好像不对」。等 #25（领航员对话）之后另写规格。
 
 ## 问题
 
@@ -38,7 +38,7 @@ relay/
 ```
 
 - JavaScript ES 模块，不引入依赖，不打包（ADR-008）。平台适配层只做转换，不含规则。首批只有腾讯云的适配层；以后要加 Cloudflare 等平台，只加一个 `adapters/<平台>.js`。
-- `deps` 把外部依赖都传进来：`deps.storage`（`get(key) → string | null`、`put(key, string)`）、`deps.upstream(body) → {status, json}`（调用 DeepSeek）、`deps.now() → 毫秒时间戳`。测试时换成内存版本，不联网、不读时钟。
+- `deps` 把外部依赖都传进来：`deps.storage`（`get(key) → string | null`、`put(key, string)`）、`deps.upstream(body) → {status, json}`（调用 DeepSeek）、`deps.now() → 毫秒时间戳`。测试时换成内存版本，不联网、不读时钟。`storage.get`、`storage.put`、`upstream` 都可以返回 Promise，`handle` 一律 `await`；DeepSeek 的 15 秒超时由 `upstream` 实现，超时就抛错。
 
 ### 2. 配置（平台的环境变量）
 
@@ -56,7 +56,7 @@ relay/
 
 部署手册附一个本地小网页（单文件，不联网）：家长只输入口令，它自己生成随机盐，直接输出 `CURIO_SALT=…`、`CURIO_PASSPHRASE_HASH=…` 两整行，整行复制粘进平台设置。口令本身不进任何平台。手册建议口令用四个随机的词，不用生日、名字。
 
-**启动时自检**：`CURIO_PASSPHRASE_HASH` 不是 64 位小写十六进制、盐为空、桶名或地域为空、`DEEPSEEK_API_KEY` 或 `DEEPSEEK_MODEL` 为空、单价不是三个非负整数时，除 `OPTIONS` 预检外的每个请求（包括 `GET /v1/ping`，这样连通测试就能暴露配置错）都回 500 `misconfigured`，并在平台日志里写一句人话，指明是哪一项、回手册第几步。
+**启动时自检**：`CURIO_PASSPHRASE_HASH` 不是 64 位小写十六进制、盐为空、桶名或地域为空、`DEEPSEEK_API_KEY` 或 `DEEPSEEK_MODEL` 为空、单价不是三个非负整数（逗号两边的空格忽略）时，除 `OPTIONS` 预检外的每个请求（包括 `GET /v1/ping`，这样连通测试就能暴露配置错）都回 500 `misconfigured`，并在平台日志里写一句人话，指明是哪一项、回手册第几步。
 
 ### 3. 接口
 
@@ -64,9 +64,9 @@ relay/
 
 **CORS**（它只管浏览器能不能读到响应，**不是**访问控制，访问控制靠口令）：
 
-- 每个响应都带 `Vary: Origin`。
+- 每个响应（包括错误响应）都带 `Vary: Origin`；没有 `Origin` 头的请求（比如 curl）照常处理，不回 ACAO。
 - 请求的 `Origin` 在 `CURIO_ALLOWED_ORIGINS` 里时，回 `Access-Control-Allow-Origin: <那个来源>`；不在名单里就不回这个头，请求照常处理。
-- `OPTIONS` 预检回 204，名单里的来源再加 `Access-Control-Allow-Methods: GET, POST, OPTIONS`、`Access-Control-Allow-Headers: authorization, content-type`、`Access-Control-Max-Age: 600`。页面带 `Authorization` 和 JSON 请求体，一定会先发预检，少了这几个头就调不通。
+- `OPTIONS` 预检（不论路径）回 204，名单里的来源再加 `Access-Control-Allow-Methods: GET, POST, OPTIONS`、`Access-Control-Allow-Headers: authorization, content-type`、`Access-Control-Max-Age: 600`。页面带 `Authorization` 和 JSON 请求体，一定会先发预检，少了这几个头就调不通。
 
 带口令的响应（`tutor.ask`、`usage`）都加 `Cache-Control: no-store`。没有的路径回 404 `not_found`，路径对、方法不对回 405 `method_not_allowed`。
 
@@ -76,7 +76,7 @@ relay/
 | `POST /v1/capabilities/tutor.ask` | 要 | 问一个问题，见下 |
 | `GET /v1/usage` | 要 | 回本月用量，见下 |
 
-**口令**放在请求头 `Authorization: Bearer <家庭口令>`。中转服务算 `sha256(盐 + 口令)`，和 `CURIO_PASSPHRASE_HASH` 做定长比较。
+**口令**放在请求头 `Authorization: Bearer <家庭口令>`，`Bearer` 不分大小写。中转服务算 `sha256(盐 + 口令)`，和 `CURIO_PASSPHRASE_HASH` 做定长比较。
 
 **`tutor.ask` 请求**：
 
@@ -84,7 +84,7 @@ relay/
 {"question": "为什么我的眼睛像妈妈？", "age_band": "G3-4", "context": {"node_title": "染色体", "activity_title": "把说明书卷好收起来"}}
 ```
 
-- `question`：去掉首尾空白后 1～200 个字符（按 Unicode 码点数）；`age_band` 是 `G1-2`、`G3-4`、`G5-6`、`G7-9`、`G10-12` 之一；`context` 可选，两个字段各最多 40 个字符。不满足 → 400 `{"error": "bad_request"}`。
+- `question`：去掉首尾空白后 1～200 个字符（按 Unicode 码点数）；`age_band` 是 `G1-2`、`G3-4`、`G5-6`、`G7-9`、`G10-12` 之一；`context` 可选，有就必须是对象（`null` 也不行）；`node_title`、`activity_title` 都可选，有就必须是字符串，各最多 40 个字符。不满足 → 400 `{"error": "bad_request"}`。
 
 **成功的响应**：
 
@@ -126,13 +126,13 @@ relay/
 一个 `tutor.ask` 请求进来：
 
 1. 格式不对 → 400。不计失败、不计次数。
-2. **锁定**：存储里记着失败时间，只算距现在**不到 1800 秒**的（更早的丢掉）。这样的有 10 个或更多 → 429 `locked`，锁到窗口里的记录少于 10 个为止，`Retry-After` 按这个时刻算。锁定期间不新增失败记录；记录最多存 10 条，多出的（并发时可能发生）丢最早的。
+2. **锁定**：存储里记着失败时间，只算距现在**不到 1800 秒**的（更早的丢掉）。这样的有 10 个或更多 → 429 `locked`，锁到窗口里的记录少于 10 个为止，`Retry-After` 按这个时刻算。锁定期间不新增失败记录；记录最多存 10 条，多出的（并发时可能发生）丢最早的。存回去时只存窗口里的记录；「清空」就是存成 `{"times": []}`。
 3. **口令**不对（包括没有 `Authorization` 头、格式不是 `Bearer <口令>`）→ 记下这次失败的时间 → 401。口令对 → 清空失败记录。
 
 锁定可以被人拿来把这家锁在门外（中转的地址是公开的，知道地址的人先发 10 个错口令，之后大约每半小时补 1 个，就能一直锁住）。这是**有意接受的取舍**：它不泄露口令、不花 DeepSeek 的钱，只影响能不能用；不锁的话，口令就可以被无限次地猜。应急办法写进部署手册「常见问题」的第一条：到 COS 控制台删掉 `auth/failures.json`，立刻解锁；被反复锁住就换一个新地址重新部署，同时换一个新的桶，或者删掉旧桶里的 `auth/failures.json`，不然旧的失败记录还在。家长自己在指挥中心连续输错口令，也会被锁半小时，手册里写明。
 4. **今天的次数**（UTC+8 的本地日期）已经 ≥ `CURIO_DAILY_CALLS` → 429 `daily_cap`。
 5. **本月花费**已经 ≥ `CURIO_MONTHLY_FEN` → 429 `monthly_cap`。
-6. 调用 DeepSeek（非思考档，请求里显式关闭思考输出，`max_tokens` 400）。DeepSeek 回 402 → 502 `no_balance`；别的失败或超时 → 502 `upstream`。都不计次数；如果 DeepSeek 回了用量，花费照记。
+6. 调用 DeepSeek：请求体是 `{model, messages, max_tokens: 400, thinking: {"type": "disabled"}, stream: false}`（`messages` 由 `navigator.js` 的 `buildMessages` 生成）。DeepSeek 回 402 → 502 `no_balance`；别的非 2xx、超时、连不上，或者回了 200 但没有 `choices[0].message.content`、内容是空字符串 → 502 `upstream`。都不计次数；如果 DeepSeek 回了用量，花费照记；没有用量就不写存储。
 7. 成功：今天的次数加一，按用量加上花费，存回存储，回答交给页面。
 
 `GET /v1/usage` 同样先查锁定和口令（第 2、3 步），通过后回用量，不计次数。
@@ -143,7 +143,7 @@ relay/
 花费 = 未命中缓存的输入 token × 单价1 + 命中缓存的输入 token × 单价2 + 输出 token × 单价3
 ```
 
-单价的单位是「分 / 百万 token」，所以乘出来正好是百万分之一分。本月累计存成这个单位的整数；比较上限时用 `累计 ≥ 上限分 × 1000000`；给页面看的 `fen_month` 是 `累计 ÷ 1000000` 向上取整。DeepSeek 的用量字段：`prompt_cache_miss_tokens`、`prompt_cache_hit_tokens`、`completion_tokens`；前两个缺的时候，把 `prompt_tokens` 全部算作未命中。
+单价的单位是「分 / 百万 token」，所以乘出来正好是百万分之一分。本月累计存成这个单位的整数；比较上限时用 `累计 ≥ 上限分 × 1000000`；给页面看的 `fen_month` 是 `累计 ÷ 1000000` 向上取整。DeepSeek 的用量字段：`prompt_cache_miss_tokens`、`prompt_cache_hit_tokens`、`completion_tokens`；两个都缺的时候，把 `prompt_tokens` 全部算作未命中；只缺一个，缺的那个算 0。
 
 **存储里的两个文件**：`usage/<YYYY-MM>.json`（`{calls_by_day: {日期: 次数}, cost_ufen: 整数}`），`auth/failures.json`（`{times: [毫秒时间戳…]}`）。新的月份就是新文件，旧的保留，家长以后想看历史也能看。
 
