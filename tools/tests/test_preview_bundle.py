@@ -94,6 +94,14 @@ class PreviewBundleReviewGate(unittest.TestCase):
         self.assertNotIn(QUIZ, data["activities"])
         self.assertNotIn(QUIZ, node_acts(data, NODE))
 
+    def test_trial_page_build_is_not_filtered(self):
+        # 试玩页（--out，build()）由维护者生成、按 STARS 显式列活动，这次不改它的行为
+        set_review(self.tmp, EXPLAIN, "pending")
+        with contextlib.redirect_stdout(io.StringIO()):
+            data = build.build([self.tmp])
+        star = next(s for s in data["stars"] if s["id"] == NODE)
+        self.assertIn(EXPLAIN, [a["id"] for a in star["activities"]])
+
 
 if __name__ == "__main__":
     unittest.main()
