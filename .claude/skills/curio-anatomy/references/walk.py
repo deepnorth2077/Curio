@@ -1,4 +1,4 @@
-# 好奇号 · 动手探索模块的走查脚本样例（染色体模块）。复制后改 URL 和流程：平板、手机、电脑三种宽度，浅色深色，reduced-motion，逐站截图到一个目录，收集 console 错误。
+# Curio · 动手探索模块的走查脚本样例（染色体模块）。复制后改 URL 和流程：平板、手机、电脑三种宽度，浅色深色，reduced-motion，逐站截图到一个目录，收集 console 错误。
 import sys
 from playwright.sync_api import sync_playwright
 URL = "file:///home/claude/wt-genetics.chromosome-intro/content/activities/act.simulation.chromosome-pack-01/index.html"

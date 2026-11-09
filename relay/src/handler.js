@@ -1,4 +1,4 @@
-// 好奇号 AI 中转服务的全部规则（docs/specs/relay.md 第 2～4 节）。
+// Curio AI 中转服务的全部规则（docs/specs/relay.md 第 2～4 节）。
 // handle(request, env, deps) → Response。不绑平台：平台适配层把请求转成标准 Request，
 // 把 deps（storage、upstream、now）传进来。这里不读时钟、不联网、不打印问题和回答。
 

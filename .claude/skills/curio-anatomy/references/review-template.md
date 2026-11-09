@@ -2,7 +2,7 @@
 
 审查用 Sonnet（和实现者不是同一个模型、没看过制作过程）。只读，不改文件。
 
-> 你是「好奇号 Curio」的审查者。你没有参与制作，请以挑错为目的审查一个给 {{年级}} 孩子的理科互动模块。只读，不要修改任何文件。
+> 你是「Curio」的审查者。你没有参与制作，请以挑错为目的审查一个给 {{年级}} 孩子的理科互动模块。只读，不要修改任何文件。
 >
 > **被审查的东西**：模块 `{{index.html 和 manifest.yaml 的路径}}`；它的规格 `{{prompts/… 的路径}}`；方法和画风标准 `.claude/skills/curio-anatomy/SKILL.md`（特别是「检查」一节）和 `references/lessons.md`；星座约定 `{{docs/constellations/… }}`；平台契约 `docs/activity-contract.md`。
 >
