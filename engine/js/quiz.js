@@ -35,7 +35,7 @@ import { grade, checkAnswerNumbers } from "./grade.js";
  */
 
 /** 内容里没写反馈时的默认的话。 */
-export const DEFAULT_FEEDBACK = Object.freeze({ correct: "答对了！", wrong: "再想想，换一个试试。", revealed: "看懂答案，再往下走。" });
+export const DEFAULT_FEEDBACK = Object.freeze({ correct: "答对了！", wrong: "再想想，再试一次。", revealed: "看懂答案，再往下走。" });
 
 /** 一道题最多几条提示（内容规格 3.4：1～3 条）。 */
 const hintLimit = (item) => Math.min(Array.isArray(item.hints) ? item.hints.length : 0, 3);
@@ -112,7 +112,7 @@ function build(phase, pending, s) {
     wrong_choices: id ? (s.wrong[id] || []).slice() : [],
     answer_type: it ? it.answer.type : null,
     choices: it ? choicesOf(it) : null,
-    unit: it && it.answer.type === "number" && typeof it.answer.unit === "string" ? it.answer.unit : null,
+    unit: it && it.answer.type === "number" && typeof it.answer.unit === "string" && it.answer.unit !== "" ? it.answer.unit : null,
     hints: it ? (it.hints || []).slice(0, s.hints[id] || 0) : [],
     can_hint: !!it && pending === null && (s.tries[id] || 0) >= 1 && (s.hints[id] || 0) < hintLimit(it),
     can_reveal: !!it && pending === null && (s.tries[id] || 0) >= 1,
