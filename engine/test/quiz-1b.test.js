@@ -1,11 +1,13 @@
 // 1b 的挑战状态机验收测试（竖切片 1 规格 6.4）。Claude 派发前写好，实现者不改（受保护路径）。
 // 接口沿用 quiz.test.js 开头固定的 view 字段，6.4 再加：
+//   view.item         {id, stem, figure}（没有配图时 figure 是 null）
 //   view.answer_type  "choice" | "number" | "fraction"
 //   view.choices      选择题是 [{id, text}]（不带 correct、misconception）
 //   view.unit         数字题的 unit，没有时 null
 //   view.hints        当前这道题已存好的提示原文，按顺序
 //   view.can_hint、view.can_reveal   布尔值
-//   看答案时 view.feedback = {item_id, correct: false, revealed: true, answer_text, text}
+//   看答案时 view.feedback = {item_id, correct: false, revealed: true, answer_text, text}，text 是这道题的
+//   feedback.correct，没有时是默认的话（非空）
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { startQuiz, step } from "../js/quiz.js";
@@ -16,7 +18,8 @@ const ACT = {
   body: {
     shuffle: false,
     items: [
-      { id: "q1", stem: "涂色部分是这个圆的几分之几？",
+      { id: "q1", stem: "涂色部分是这个圆的几分之几？", figure: { type: "pie", parts: 4, shaded: 1 },
+        feedback: { correct: "平均分成 4 份，涂了 1 份，就是 1/4。" },
         answer: { type: "choice", choices: [
           { id: "c", text: "4/1", misconception: "flip", feedback: "总份数写在横线下面。" },
           { id: "a", text: "1/4", correct: true },
@@ -58,6 +61,13 @@ function at(id) {
   assert.equal(q.view.item_id, id);
   return q;
 }
+
+test("view.item 是 {id, stem, figure}；没有配图时 figure 是 null", () => {
+  let q = begun();
+  assert.deepEqual(q.view.item, { id: "q1", stem: "涂色部分是这个圆的几分之几？", figure: { type: "pie", parts: 4, shaded: 1 } });
+  q = answerSaved(q, RIGHT.q1);
+  assert.deepEqual(q.view.item, { id: "q2", stem: "能直接用 1/3 表示吗？", figure: null });
+});
 
 test("选择题的 view：answer_type、choices 只有 id 和 text；一开始不能要提示、不能看答案", () => {
   const q = begun();
@@ -169,7 +179,10 @@ test("看答案：不产生意图，进入下一题；feedback 带 revealed 和 
   assert.equal(q.view.feedback.correct, false);
   assert.equal(q.view.feedback.revealed, true);
   assert.equal(q.view.feedback.answer_text, "1/4");
-  assert.ok(typeof q.view.feedback.text === "string" && q.view.feedback.text.length > 0);
+  assert.equal(q.view.feedback.text, "平均分成 4 份，涂了 1 份，就是 1/4。", "有 feedback.correct 时用它");
+  assert.deepEqual(q.view.hints, [], "下一题的提示是空的");
+  assert.equal(q.view.can_hint, false);
+  assert.equal(q.view.can_reveal, false);
 });
 
 test("看答案的 answer_text：分数题是「分子/分母」，数字题带单位，没有单位时只有数", () => {
@@ -177,6 +190,7 @@ test("看答案的 answer_text：分数题是「分子/分母」，数字题带�
   q = answerSaved(q, WRONG.q3);
   q = step(q, { type: "reveal" });
   assert.equal(q.view.feedback.answer_text, "3/4");
+  assert.ok(typeof q.view.feedback.text === "string" && q.view.feedback.text.length > 0, "没有 feedback.correct 时用默认的话");
   q = answerSaved(q, WRONG.q4);
   q = step(q, { type: "reveal" });
   assert.equal(q.view.feedback.answer_text, "6 块");
@@ -256,7 +270,6 @@ test("三种题型都能开始；数不满足规则时抛错", () => {
     (a) => { a.body.items[3].answer.tolerance = -1; },
     (a) => { a.body.items[3].answer.tolerance = 1.5e-7; },
     (a) => { a.body.items[3].answer.common_wrong[0].value = 1e9; },
-    (a) => { a.body.items[2].answer.numerator = 0; },
     (a) => { a.body.items[2].answer.denominator = 0; },
     (a) => { a.body.items[2].answer.denominator = 1000000; },
     (a) => { a.body.items[2].answer.numerator = 1.5; },
@@ -279,4 +292,61 @@ test("没有 hints 的题：can_hint 一直是 false", () => {
   assert.equal(q.view.can_reveal, true);
   const s = snap(q);
   assert.deepEqual(step(q, { type: "hint" }), s);
+});
+
+test("等作答存储时：hint、reveal 原样返回，can_hint、can_reveal 都是 false", () => {
+  let q = begun();
+  q = answerSaved(q, WRONG.q1);
+  q = step(q, { type: "answer", response: "c" });
+  assert.equal(q.pending.verb, "item.answered");
+  assert.equal(q.view.can_hint, false);
+  assert.equal(q.view.can_reveal, false);
+  const s = snap(q);
+  assert.deepEqual(step(q, { type: "hint" }), s);
+  assert.deepEqual(step(q, { type: "reveal" }), s);
+});
+
+test("starting、finishing、done 时 can_hint、can_reveal 都是 false", () => {
+  let q = startQuiz(act(), ORDER, "first");
+  assert.equal(q.view.can_hint, false);
+  assert.equal(q.view.can_reveal, false);
+  q = save(q);
+  for (const id of ORDER) q = answerSaved(q, RIGHT[id]);
+  assert.equal(q.phase, "finishing");
+  assert.equal(q.view.can_hint, false);
+  assert.equal(q.view.can_reveal, false);
+  q = save(q);
+  assert.equal(q.phase, "done");
+  assert.equal(q.view.can_hint, false);
+  assert.equal(q.view.can_reveal, false);
+});
+
+test("提示多于 3 条时只用前 3 条", () => {
+  const a = act();
+  a.body.items[0].hints = ["一", "二", "三", "四"];
+  let q = begun(a);
+  q = answerSaved(q, WRONG.q1);
+  for (let i = 1; i <= 3; i++) { q = step(q, { type: "hint" }); assert.equal(q.pending.payload.level, i); q = save(q); }
+  assert.deepEqual(q.view.hints, ["一", "二", "三"]);
+  assert.equal(q.view.can_hint, false);
+  const s = snap(q);
+  assert.deepEqual(step(q, { type: "hint" }), s);
+});
+
+test("分数题的分子可以是 0；分子、分母（含 common_wrong）越界时抛错", () => {
+  const ok = act();
+  ok.body.items[2].answer.common_wrong[0].numerator = 0;
+  assert.doesNotThrow(() => startQuiz(ok, ORDER, "first"), "common_wrong 的分子是 0 可以");
+  const zero = act();
+  zero.body.items[2].answer.numerator = 0;
+  assert.doesNotThrow(() => startQuiz(zero, ORDER, "first"), "分子是 0 可以（0/4）");
+  const bad = [
+    (a) => { a.body.items[2].answer.numerator = -1; },
+    (a) => { a.body.items[2].answer.numerator = 1000000; },
+    (a) => { a.body.items[2].answer.common_wrong[0].numerator = -1; },
+    (a) => { a.body.items[2].answer.common_wrong[0].numerator = 1000000; },
+    (a) => { a.body.items[2].answer.common_wrong[1].denominator = 1000000; },
+    (a) => { a.body.items[2].answer.denominator = 4.5; },
+  ];
+  bad.forEach((f, i) => { const a = act(); f(a); assert.throws(() => startQuiz(a, ORDER, "first"), undefined, `第 ${i + 1} 种`); });
 });
