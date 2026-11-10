@@ -235,16 +235,17 @@ class TestBranches(Base):
         self.ok(self.r.check())
 
     def test_slice1_acceptance_tests_only_on_arch(self):
-        for f in ("kernel/vectors/a.json", "engine/vectors/grading.json", "engine/test/quiz.test.js", "app/test/fake-store.js"):
+        for f in ("kernel/vectors/a.json", "engine/vectors/grading.json", "engine/test/quiz.test.js", "engine/test/quiz-1b.test.js", "app/test/fake-store.js"):
             self.r.write(f, "a")
         self.r.baseline()
         self.r.branch("feat/slice-1a")
         self.r.write("kernel/vectors/a.json", "b"); self.r.write("engine/test/quiz.test.js", "b")
         self.r.write("app/test/fake-store.js", "b"); self.r.write("kernel/vectors/new.json", "n")
+        self.r.write("engine/test/quiz-1b.test.js", "b")
         self.r.write("kernel/js/log.js", "c"); self.r.write("engine/test/extra.test.js", "d")
         self.r.write("app/test/store.test.js", "e"); self.r.commit()
         self.assertEqual(self.blocked(self.r.check()),
-                         ["app/test/fake-store.js", "engine/test/quiz.test.js", "kernel/vectors/a.json", "kernel/vectors/new.json"])
+                         ["app/test/fake-store.js", "engine/test/quiz-1b.test.js", "engine/test/quiz.test.js", "kernel/vectors/a.json", "kernel/vectors/new.json"])
         self.r.git("checkout", "-q", "main"); self.r.branch("arch/slice-1a-tests")
         self.r.write("engine/vectors/grading.json", "y"); self.r.write("app/test/fake-store.js", "y"); self.r.commit()
         self.ok(self.r.check())

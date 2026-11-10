@@ -1,14 +1,15 @@
-// Curio · 竖切片 1a 的外壳（规格第 2 节、6.3）：读发布包 → 拿写锁 → 恢复 → 画星图 → 挑战 → 点亮。
+// Curio · 竖切片 1 的外壳（规格第 2 节、6.3、6.4）：读发布包 → 拿写锁 → 恢复 → 画星图 → 挑战（选择题、数字题、分数题，
+// 提示和看答案）→ 点亮（带动效，尊重 reduced-motion）。
 // 读写 IndexedDB、取当前时间、生成 ULID、洗牌都在这里做，结果作为参数交给内核和引擎。
 import { createLog } from "../kernel/js/log.js";
 import { projectMastery, groupAttempts } from "../kernel/js/mastery.js";
 import { createUlid } from "../kernel/js/ulid.js";
-import { startQuiz, step } from "../engine/js/quiz.js";
+import { startQuiz, step, DEFAULT_FEEDBACK } from "../engine/js/quiz.js";
 import { openStore } from "./store.js";
 import { openSession, localReceipt, assemble, guardDeps, LockLostError } from "./session.js";
 import { FrozenError } from "./commit.js";
 
-/** 这个外壳实现的引擎等级（内容规格 3.8）。1a 只实现第 1 级里的选择题挑战。 */
+/** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。 */
 export const ENGINE_LEVEL = 1;
 /** 发布包的位置：部署时 release/ 和 app/ 同级（规格第 2、8 节）。 */
 const RELEASE_URL = new URL("../release/release.json", import.meta.url);
@@ -166,7 +167,7 @@ const Sk = sketchLib();
 const $ = (sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 /** 文字里的 1/4 排成上下结构（内容规格 3.7）。 */
-const rich = (s) => esc(s).replace(/(\d+)\/(\d+)/g, (_m, a, b) => `<span class="frac" aria-label="${b}分之${a}"><span>${a}</span><span>${b}</span></span>`);
+const rich = (s) => esc(s).replace(/(\d+)\/(\d+)/g, (_m, a, b) => `<span class="frac" role="img" aria-label="${b}分之${a}"><span>${a}</span><span>${b}</span></span>`);
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const ulid = createUlid();
@@ -206,7 +207,7 @@ function starSvg(state, seed, size) {
     body += `<path class="k" d="${Sk.poly(pts, seed, true, .8)}"/>`;
     for (let i = 0; i < 8; i++) {
       const a = i / 8 * Math.PI * 2 + .2;
-      body += `<path class="k1" d="${Sk.line(50 + Math.cos(a) * 44, 52 + Math.sin(a) * 44, 50 + Math.cos(a) * 49, 52 + Math.sin(a) * 49, seed + 20 + i, .4)}"/>`;
+      body += `<path class="k1 ray" d="${Sk.line(50 + Math.cos(a) * 44, 52 + Math.sin(a) * 44, 50 + Math.cos(a) * 49, 52 + Math.sin(a) * 49, seed + 20 + i, .4)}"/>`;
     }
   } else if (state === "explored") {
     body += `<path class="star-half" d="${Sk.area(starPoints(50, 52, 38, 16).filter((p) => p[0] <= 50.5).concat([[50, 90], [50, 14]]))}" opacity=".7"/>`;
@@ -230,7 +231,7 @@ function figureSvg(fig, seed = 7) {
     for (let i = 0; i < k; i++) inner += `<path class="fig-shade" d="${wedge(cx, cy, r, -Math.PI / 2 + i / n * 2 * Math.PI, -Math.PI / 2 + (i + 1) / n * 2 * Math.PI)}"/>`;
     inner += `<path class="k" d="${Sk.ellipse(cx, cy, r, r, seed, .5)}"/>`;
     for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i / n * 2 * Math.PI; inner += `<path class="k1" d="${Sk.line(cx, cy, cx + Math.cos(a) * r, cy + Math.sin(a) * r, seed + 3 + i, .4)}"/>`; }
-    label = `一个圆平均分成 ${n} 份，涂色 ${k} 份`;
+    label = `一个圆，分成 ${n} 份，涂色 ${k} 份`; // 只描述形状：「平均」「不一样大」可能就是题目要问的
   } else if (fig.type === "rect" || fig.type === "rect-unequal") {
     const widths = fig.type === "rect" ? Array(fig.parts).fill(1) : fig.widths;
     const shaded = fig.type === "rect" ? [...Array(fig.shaded).keys()] : fig.shaded;
@@ -244,7 +245,7 @@ function figureSvg(fig, seed = 7) {
       if (i > 0) inner += `<path class="k1" d="${vertical ? Sk.line(X, box[1], X + W, box[1], seed + 10 + i, .4) : Sk.line(box[0], Y, box[0], Y + H, seed + 10 + i, .4)}"/>`;
     });
     inner += `<path class="k" d="${Sk.rect(X, Y, W, H, seed, .5)}"/>`;
-    label = fig.type === "rect" ? `一个长方形平均分成 ${fig.parts} 份，涂色 ${fig.shaded} 份` : `一个长方形分成大小不一样的 ${widths.length} 份`;
+    label = `一个长方形，分成 ${widths.length} 份，涂色 ${shaded.length} 份`;
   } else if (fig.type === "number-line") {
     const from = Number(fig.from), to = Number(fig.to), stp = Number(fig.step) || 1;
     const x = (v) => 20 + (v - from) / ((to - from) || 1) * 160;
@@ -411,6 +412,7 @@ function startChallenge(node, def) {
     attempt_id: ids.attempt(),
     startedMs: 0,
     cur: null, busy: false, error: null, solved: null, wrongBy: {}, resultSeen: false, lastKey: "",
+    answered: {}, lastResponse: {}, draft: {}, lit: false, focusHint: false,
     litBefore: nodeState(node.id) === "lit",
   };
   app.view = "quiz";
@@ -454,11 +456,23 @@ async function pump() {
     z.error = null;
     if (cur.verb === "item.answered") {
       const pl = /** @type {any} */ (cur.payload);
+      z.answered[pl.item_id] = true;
+      z.lastResponse[pl.item_id] = pl.response;
       if (!pl.correct) z.wrongBy[pl.item_id] = [...(z.wrongBy[pl.item_id] || []), pl.response];
       else z.solved = pl.item_id;
+    } else if (cur.verb === "hint.used") {
+      z.focusHint = true;
     }
     z.q = step(z.q, { type: "saved", id: cur.id });
-    if (z.q.phase === "done") { recompute(); }
+    // 读屏器：答错的反馈、新提示用常驻的 aria-live 区域读出来（焦点会回到输入框）
+    const v2 = z.q.view;
+    if (cur.verb === "hint.used" && v2.hints.length) z.announce = `提示 ${v2.hints.length}：${v2.hints[v2.hints.length - 1]}`;
+    else if (cur.verb === "item.answered" && v2.feedback && !v2.feedback.correct && v2.feedback.item_id === v2.item_id) z.announce = v2.feedback.text;
+    if (z.q.phase === "done") {
+      recompute();
+      // 星星这一次才从暗变亮：结果页放一次点亮动效（尊重 reduced-motion，见 resultHtml）
+      z.lit = !z.litBefore && nodeState(z.node.id) === "lit";
+    }
   } catch (e) {
     if (app.quiz !== z) return;
     z.error = e;
@@ -483,6 +497,47 @@ function answer(response) {
   pump();
 }
 
+/** 要个提示（6.4）：状态机接受了才写 hint.used，存好以后提示才显示。 */
+function askHint() {
+  const z = app.quiz;
+  if (!z || app.mode !== "writable") return;
+  const before = z.q;
+  z.q = step(z.q, { type: "hint" });
+  if (z.q === before) return;
+  pump();
+}
+
+/** 看答案（6.4）：不写事件，这道题记为「看过答案」，进入下一题；是最后一题时产出完成。 */
+function revealAnswer() {
+  const z = app.quiz;
+  if (!z || app.mode !== "writable") return;
+  const id = z.q.view.item_id;
+  const before = z.q;
+  z.q = step(z.q, { type: "reveal" });
+  if (z.q === before) return;
+  z.solved = id;
+  renderQuiz();
+  if (z.q.pending) pump();
+}
+
+/** 数字框、分数框交上来的作答；框是空的时不提交。 */
+function submitTyped(form) {
+  const z = app.quiz;
+  if (!z) return;
+  const t = z.q.view.answer_type;
+  const val = (name) => /** @type {HTMLInputElement} */ (form.elements.namedItem(name)).value;
+  let response;
+  if (t === "number") {
+    if (!val("n").trim()) return;
+    response = val("n");
+  } else if (t === "fraction") {
+    const a = val("a").trim(), b = val("b").trim();
+    if (!a || !b) return;
+    response = `${a}/${b}`;
+  } else return;
+  answer(response);
+}
+
 function retry() {
   const z = app.quiz;
   if (!z || z.busy) return;
@@ -498,19 +553,56 @@ function progressHtml(z) {
   return `<div class="prog" role="img" aria-label="第 ${Math.min(v.index + 1, v.total)} 题，一共 ${v.total} 题">${Array.from({ length: v.total }, (_, i) => `<i class="${i < solvedN ? "on" : ""}"></i>`).join("")}<span>${Math.min(v.index + 1, v.total)} / ${v.total}</span></div>`;
 }
 
+/** 一道题：配图、题干、作答区（选项，或数字框，或上下两个分数框）。 */
 function itemHtml(item, opts) {
-  const { wrong = [], right = null, disabled = false } = opts;
-  const choices = item.answer ? item.answer.choices : item.choices;
+  const { wrong = [], right = null, disabled = false, busy = false, draft = {}, shown = null, itemId = "" } = opts;
+  // 等待存储时输入框只读（不是 disabled），焦点和平板输入法不丢；选项按钮照旧变灰
+  const off = disabled || busy;
+  const inAttr = disabled ? "disabled" : busy ? "readonly" : "";
+  const a = item.answer;
+  // 作答时选项取自状态机的 view.choices（不带答案）；已有结果时才用活动数据标出正确选项
+  const choices = opts.choices || (a.type === "choice" ? a.choices.map((c) => ({ id: c.id, text: c.text })) : []);
+  let area = "";
+  if (a.type === "choice") {
+    area = `<div class="choices" role="group" aria-label="选一个">
+      ${choices.map((c) => {
+        const isWrong = wrong.includes(c.id), isRight = right === c.id;
+        return `<button type="button" class="choice ${isWrong ? "wrong" : ""} ${isRight ? "right" : ""}" data-choice="${esc(c.id)}" ${off || isWrong || right ? "disabled" : ""}>${rich(c.text)}${isWrong ? '<span class="sr">，选过了，不对</span>' : ""}</button>`;
+      }).join("")}
+    </div>`;
+  } else if (shown !== null) {
+    // 这道题已经有结果：只读地显示答案
+    area = `<div class="ansrow done"><span class="ansval ${shown.ok ? "right" : ""}">${rich(shown.text)}</span></div>`;
+  } else if (a.type === "number") {
+    area = `<form class="ansrow" data-form data-item="${esc(itemId)}" autocomplete="off">
+      <label class="sr" for="ans-n">写一个数</label>
+      <input id="ans-n" name="n" class="numbox" type="text" inputmode="decimal" enterkeyhint="done" maxlength="16" value="${esc(draft.n || "")}" ${inAttr}>
+      ${typeof a.unit === "string" && a.unit ? `<span class="unit">${esc(a.unit)}</span>` : ""}
+      <button class="btn ink big" type="submit" ${off ? "disabled" : ""}>确定</button>
+    </form>`;
+  } else if (a.type === "fraction") {
+    area = `<form class="ansrow" data-form data-item="${esc(itemId)}" autocomplete="off">
+      <div class="fracbox" role="group" aria-label="写一个分数">
+        <label class="sr" for="ans-a">分子（横线上面）</label>
+        <input id="ans-a" name="a" class="numbox" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" value="${esc(draft.a || "")}" ${inAttr}>
+        <span class="fracline" aria-hidden="true"></span>
+        <label class="sr" for="ans-b">分母（横线下面）</label>
+        <input id="ans-b" name="b" class="numbox" type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="done" maxlength="6" value="${esc(draft.b || "")}" ${inAttr}>
+      </div>
+      <button class="btn ink big" type="submit" ${off ? "disabled" : ""}>确定</button>
+    </form>`;
+  }
   return `<div class="q">
     ${item.figure ? `<div class="figbox">${figureSvg(item.figure, 9)}</div>` : ""}
     <p class="stem">${rich(item.stem)}</p>
-    <div class="choices" role="group" aria-label="选一个">
-      ${choices.map((c) => {
-        const isWrong = wrong.includes(c.id), isRight = right === c.id;
-        return `<button type="button" class="choice ${isWrong ? "wrong" : ""} ${isRight ? "right" : ""}" data-choice="${esc(c.id)}" ${disabled || isWrong || right ? "disabled" : ""}>${rich(c.text)}${isWrong ? '<span class="sr">，选过了，不对</span>' : ""}</button>`;
-      }).join("")}
-    </div>
+    ${area}
   </div>`;
+}
+
+/** 已存好的提示，按顺序。 */
+function hintsHtml(hints) {
+  if (!hints.length) return "";
+  return `<ol class="hints" aria-label="提示">${hints.map((h, i) => `<li class="bub hint" tabindex="-1"><span class="tag">提示 ${i + 1}</span><p>${rich(h)}</p></li>`).join("")}</ol>`;
 }
 
 function statusHtml(z) {
@@ -535,17 +627,41 @@ function renderQuiz() {
   if (z.q.phase === "starting") {
     body = `<div class="q"><p class="stem">准备好了吗？</p></div>`;
   } else if (solvedItem && (z.q.phase !== "answering" || v.item_id !== z.solved)) {
-    // 刚答对的题：先看反馈，再点「下一题」
-    const right = solvedItem.answer.choices.find((c) => c.correct === true).id;
-    const fb = v.feedback && v.feedback.item_id === z.solved ? v.feedback.text : "";
+    // 刚有结果的题（答对存好，或看过答案）：先看反馈，再点「下一题」
+    const fbo = v.feedback && v.feedback.item_id === z.solved ? v.feedback : null;
+    const revealed = !!(fbo && fbo.revealed);
+    const a = solvedItem.answer;
+    const right = a.type === "choice" ? a.choices.find((c) => c.correct === true).id : null;
+    const shown = a.type === "choice" ? null : revealed ? { ok: true, text: fbo.answer_text } : { ok: true, text: z.lastResponse[z.solved] + (a.unit ? " " + a.unit : "") };
     const last = z.q.phase !== "answering";
-    body = itemHtml(solvedItem, { wrong: z.wrongBy[z.solved] || [], right, disabled: true }) +
-      `<div class="bub good" role="status">${starMini()}<p>${rich(fb)}</p></div>
-       <div class="btns"><button class="btn ink big" type="button" data-act="next" ${last && z.q.phase !== "done" ? "disabled" : ""}>${last ? "看看结果" : "下一题"}</button></div>`;
+    const bubble = revealed
+      ? `<div class="bub reveal" role="status"><p><b>答案是 ${rich(fbo.answer_text)}</b></p><p>${rich(fbo.text)}</p></div>`
+      : `<div class="bub good" role="status">${starMini()}<p>${rich(fbo ? fbo.text : "")}</p></div>`;
+    body = itemHtml(solvedItem, { wrong: z.wrongBy[z.solved] || [], right, disabled: true, shown }) + bubble +
+      `<div class="btns"><button class="btn ink big" type="button" data-act="next" ${last && z.q.phase !== "done" ? "disabled" : ""}>${last ? "看看结果" : "下一题"}</button></div>`;
   } else if (z.q.phase === "answering" && v.item) {
+    const item = z.def.body.items.find((it) => it.id === v.item_id);
     const fb = v.feedback && v.feedback.item_id === v.item_id && !v.feedback.correct ? v.feedback : null;
-    body = itemHtml(v.item, { wrong: v.wrong_choices, disabled: v.waiting || app.mode !== "writable" }) +
-      (fb ? `<div class="bub bad" role="status" tabindex="-1"><p>${rich(fb.text)}</p><p class="muted small">再选一个试试。</p></div>` : "");
+    const off = v.waiting || app.mode !== "writable";
+    // 默认的话已经说了「再试一次」时，下面不再加小字
+    const again = fb && fb.text === DEFAULT_FEEDBACK.wrong ? "" : v.answer_type === "choice" ? "再选一个试试。" : "改一改，再试试。";
+    // 有过一次已存好的作答以后，才出现「要个提示」「看答案」（等存储时先变灰，不跳来跳去）
+    const hintMax = Math.min(Array.isArray(item.hints) ? item.hints.length : 0, 3);
+    const tools = z.answered[v.item_id]
+      ? `<div class="btns tools">
+          ${hintMax > 0 ? `<button class="btn big" type="button" data-act="hint" ${v.can_hint ? "" : "disabled"}>${hintIcon()}${v.hints.length >= hintMax ? "提示用完了" : "要个提示"}</button>` : ""}
+          <button class="btn big" type="button" data-act="reveal" ${v.can_reveal ? "" : "disabled"}>看答案</button>
+        </div>` : "";
+    const after = (fb ? `<div class="bub bad" tabindex="-1"><p>${rich(fb.text)}</p>${again ? `<p class="muted small">${again}</p>` : ""}</div>` : "") +
+      hintsHtml(v.hints) + tools;
+    // 数字题、分数题：同一道题里只换输入框周围的部分，不重建输入框，焦点和平板上的输入法都不丢
+    const formNow = /** @type {HTMLFormElement|null} */ (main.querySelector("[data-form]"));
+    if (formNow && v.answer_type !== "choice" && formNow.dataset.item === v.item_id && !z.solved) {
+      patchTyped(z, formNow, after);
+      return;
+    }
+    body = itemHtml(item, { wrong: v.wrong_choices, disabled: app.mode !== "writable", busy: off, draft: z.draft[v.item_id] || {}, choices: v.choices || undefined, itemId: v.item_id }) +
+      `<div class="after">${after}</div>`;
   } else if (z.q.phase === "done") {
     body = resultHtml(z);
   } else {
@@ -558,18 +674,60 @@ function renderQuiz() {
     </div>
     ${z.q.phase !== "done" ? progressHtml(z) : ""}
     ${body}
-    ${statusHtml(z)}
+    <div class="statusbox">${statusHtml(z)}</div>
   </section>`;
   main.querySelectorAll("[data-choice]").forEach((b) => b.addEventListener("click", () => answer(/** @type {HTMLElement} */ (b).dataset.choice || "")));
-  main.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => {
+  const form = /** @type {HTMLFormElement|null} */ (main.querySelector("[data-form]"));
+  if (form) {
+    const id = z.q.view.item_id || "";
+    const sync = () => {
+      const d = {};
+      for (const el of /** @type {any} */ (form.elements)) if (el.name) d[el.name] = el.value;
+      z.draft[id] = d;
+      const empty = [...form.querySelectorAll("input")].some((el) => !/** @type {HTMLInputElement} */ (el).value.trim());
+      /** @type {HTMLButtonElement} */ (form.querySelector("[type=submit]")).disabled = empty || z.q.view.waiting || app.mode !== "writable";
+    };
+    form.addEventListener("input", sync);
+    form.addEventListener("submit", (e) => { e.preventDefault(); submitTyped(form); });
+    // 分子写好按回车，跳到分母
+    const top = form.querySelector("[name=a]");
+    if (top) top.addEventListener("keydown", (e) => { if (/** @type {KeyboardEvent} */ (e).key === "Enter") { e.preventDefault(); /** @type {HTMLElement} */ (form.querySelector("[name=b]")).focus(); } });
+    sync();
+  }
+  bindActs(z, main);
+  focusQuiz(z);
+}
+
+/** 只更新输入框周围：进度、反馈、提示、按钮、保存状态；输入框本身只改可不可写。 */
+function patchTyped(z, form, after) {
+  const main = /** @type {HTMLElement} */ (document.querySelector("#main"));
+  const v = z.q.view;
+  const busy = v.waiting || app.mode !== "writable";
+  form.querySelectorAll("input").forEach((el) => { /** @type {HTMLInputElement} */ (el).readOnly = busy; });
+  const prog = main.querySelector(".prog");
+  if (prog) prog.outerHTML = progressHtml(z);
+  const a = /** @type {HTMLElement} */ (main.querySelector(".after"));
+  a.innerHTML = after;
+  const st = /** @type {HTMLElement} */ (main.querySelector(".statusbox"));
+  st.innerHTML = statusHtml(z);
+  form.dispatchEvent(new Event("input")); // 重新算「确定」能不能点
+  bindActs(z, a);
+  bindActs(z, st);
+  focusQuiz(z);
+}
+
+/** 给 root 里的 data-act 按钮绑事件。 */
+function bindActs(z, root) {
+  root.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => {
     const act = /** @type {HTMLElement} */ (b).dataset.act;
     if (act === "back") { renderChart(); }
     else if (act === "retry") retry();
     else if (act === "reload") location.reload();
     else if (act === "next") { z.solved = null; renderQuiz(); }
+    else if (act === "hint") askHint();
+    else if (act === "reveal") revealAnswer();
     else if (act === "again") { const node = z.node, def = z.def; app.quiz = null; startChallenge(node, def); }
   }));
-  focusQuiz(z);
 }
 
 /**
@@ -579,17 +737,33 @@ function renderQuiz() {
 function focusQuiz(z) {
   const main = /** @type {HTMLElement} */ (document.querySelector("#main"));
   const v = z.q.view;
+  const hint = z.focusHint;
+  z.focusHint = false;
+  const typedQ = v.answer_type === "number" || v.answer_type === "fraction";
+  const wrongNow = !!(v.feedback && v.feedback.item_id === v.item_id && !v.feedback.correct);
+  if (z.announce) {
+    const live = document.getElementById("live");
+    const text = z.announce;
+    z.announce = null;
+    if (live) { live.textContent = ""; setTimeout(() => { live.textContent = text; }, 50); }
+  }
   const sel = v.failed ? "[data-act='retry'], [data-act='reload']"
     : z.q.phase === "done" && !z.solved ? ".result h2"
     : z.solved ? "[data-act='next']:not([disabled])"
     : v.waiting ? null
-    : v.feedback && v.feedback.item_id === v.item_id && !v.feedback.correct ? ".bub.bad"
-    : ".choice:not([disabled])";
+    : typedQ && (hint || wrongNow) ? "#ans-n, #ans-a"
+    : hint ? ".hints li:last-child"
+    : wrongNow ? ".bub.bad"
+    : ".choice:not([disabled]), .numbox:not([disabled])";
   const key = `${z.q.phase}|${z.solved || v.item_id}`;
   if (key !== z.lastKey) { main.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }); z.lastKey = key; }
   if (!sel) return;
   const f = /** @type {HTMLElement|null} */ (main.querySelector(sel));
-  if (f) f.focus({ preventScroll: true });
+  if (f) {
+    f.focus({ preventScroll: true });
+    // 回到输入框时选中里面的数，孩子直接改；平板上输入法不收起
+    if (f instanceof HTMLInputElement) f.select();
+  }
 }
 
 function resultHtml(z) {
@@ -601,8 +775,11 @@ function resultHtml(z) {
   if (st === "lit" && !z.litBefore) line = "星星亮起来了！";
   else if (st === "lit") line = "星星还亮着。";
   else line = `第一次就答对 ${need} 道，星星就会亮。再来一遍试试？`;
+  // 点亮动效只放一次；reduced-motion 时不加这个类，CSS 里也只在 no-preference 下才有动画
+  const play = z.lit && !reducedMotion();
+  z.lit = false;
   return `<div class="result">
-    <div class="result-star" data-state="${st}">${starSvg(st, 11, 150)}</div>
+    <div class="result-star ${play ? "lighting" : ""}" data-state="${st}">${starSvg(st, 11, 150)}</div>
     <h2 tabindex="-1">第一次就答对了 ${r.first_try_correct} 道，一共 ${r.total} 道</h2>
     <p>${esc(line)}</p>
     <div class="btns center"><button class="btn big" type="button" data-act="again">再来一遍</button><button class="btn ink big" type="button" data-act="back">回到星图</button></div>
@@ -610,6 +787,7 @@ function resultHtml(z) {
 }
 
 const starMini = () => `<svg class="mini" viewBox="0 0 100 100" aria-hidden="true"><path class="star-fill" d="${Sk.area(starPoints(52, 55, 38, 16))}"/><path class="k" d="${Sk.poly(starPoints(50, 52, 38, 16), 3, true, .6)}"/></svg>`;
+const hintIcon = () => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="k1" d="${Sk.ellipse(12, 10, 6, 6, 8, .4) + Sk.line(9.5, 17, 14.5, 17, 9, .2) + Sk.line(10, 20, 14, 20, 10, .2)}"/></svg>`;
 const backIcon = () => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="k" d="${Sk.line(19, 12, 5, 12, 2, .3) + Sk.line(5, 12, 11, 6, 3, .3) + Sk.line(5, 12, 11, 18, 4, .3)}"/></svg>`;
 
 /* ============================================================
