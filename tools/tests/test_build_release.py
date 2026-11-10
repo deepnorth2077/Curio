@@ -351,6 +351,30 @@ class TestSlice1aFixture(unittest.TestCase):
         self.assertGreater(len(set(positions)), 1, "正确选项的位置要分散")
 
 
+class TestSlice1bFixture(unittest.TestCase):
+    """切片规格 6.4：1b 的演示夹具能构建；挑战是 version 2，有数字题、分数题，每道题 1～3 条提示且不泄露答案。"""
+
+    def test_fixture_builds_with_number_fraction_and_hints(self):
+        import ci_checks
+        root = TOOLS / "tests/fixtures/slice-1b/content"
+        manifest = build_release.build(root, COMMIT)
+        self.assertEqual([a["id"] for a in manifest["activities"]], ["act.explain.fraction-intro-01", "act.quiz.fraction-intro-01"])
+        quiz = yaml.safe_load((root / QUIZ_PATH).read_text(encoding="utf-8"))
+        self.assertEqual(quiz["version"], 2)
+        self.assertIs(quiz["body"]["shuffle"], False)
+        items = quiz["body"]["items"]
+        self.assertEqual(len(items), 5)
+        self.assertEqual(sorted(item["answer"]["type"] for item in items), ["choice", "choice", "choice", "fraction", "number"])
+        for item in items:
+            self.assertTrue(1 <= len(item.get("hints", [])) <= 3, item["id"])
+            self.assertEqual(list(ci_checks.hint_leaks(item)), [], item["id"])
+
+    def test_leaky_hint_would_be_caught(self):
+        import ci_checks
+        item = {"id": "q", "answer": {"type": "number", "value": 6}, "hints": ["看看 1/6 横线下面写的是几。"]}
+        self.assertNotEqual(list(ci_checks.hint_leaks(item)), [])
+
+
 class TestWriteFromSnapshot(BuildCase):
     """第 2 轮审阅第 4 条：写出只用构建时的字节快照，先写临时目录，全部核对通过再改名。"""
 

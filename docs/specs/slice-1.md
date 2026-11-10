@@ -2,7 +2,7 @@
 
 - 状态：已接受，第 3 稿（两轮外部审阅的意见都已处理，见 `docs/reviews/pr-60.md`；2026-11-08 Luka 授权处理完即合入）
 - 依据：内容规格（`docs/specs/content.md` 3.3、3.4、6.3）、事件规格（`docs/specs/events.md` 第 2、5、6、9 节）、ADR-001（内核与外壳）、ADR-003（发布不可变）、ADR-004（事件是事实来源）、ADR-008（不打包）、ADR-009（竖切片、验收用例先行）
-- 实现任务：分两份交付。**1a**（CURIO-SL1a）：发布包 → 五道选择题 → 作答事件存好 → 点亮 → 刷新重放。**1b**（CURIO-SL1b）：提示、看答案、数字和分数输入框、点亮动效。两份都属于 #24
+- 实现任务：分两份交付。**1a**（CURIO-SL1a）：发布包 → 五道选择题 → 作答事件存好 → 点亮 → 刷新重放。**1b**（CURIO-SL1b）：提示、看答案、数字和分数输入框、点亮动效（细则 6.4）。两份都属于 #24
 
 ## 问题
 
@@ -193,7 +193,7 @@ q.pending                              // 要写的事件意图 {id, verb, paylo
 
 - 「每道题都有作答」只看**已存好**（收到过对应 `saved`）的作答，不看界面上点过什么。
 - `done` 以后不再产出任何意图；结果「第一次就答对了 X 道，一共 Y 道」里 Y 是活动的题数，X 是 try=1 答对的题数。
-- 1b 再加 `{type: "hint"}`、`{type: "reveal"}`：「看答案」只有这道题已有一次**已存好**的作答后才出现，看过答案的题算「有结果」，但不写事件、不改分母。
+- 1b 再加 `{type: "hint"}`、`{type: "reveal"}`：「看答案」只有这道题已有一次**已存好**的作答后才出现，看过答案的题算「有结果」，但不写事件、不改分母。细则见 6.4。
 
 **验收测试**（`engine/test/quiz.test.js`，Claude 派发前写好，见第 7 节）：缺任何一道已存好的作答都不完成；只存好了一次答错的作答时停在这道题；最后一道正确作答存好后只产出一次完成；完成存好后结果的分母是活动题数；失败、重试时 `pending` 不变；等待存储时再作答、过期的 `saved` 都不产生新意图；`order` 不是完整排列时抛错。
 
@@ -263,6 +263,35 @@ committer.nextSeq                               // 下一条本机事件该用�
 
 **验收测试**（`app/test/resume.test.js`，Claude 派发前写好，用假存储和假时钟）：发布 R1 的活动 v1 做到一半关掉，用发布 R2（活动 v2，或者干脆没有这个活动）启动：补一条 `abandoned`，复制的是 v1 的 `content`，这次尝试合法放弃、没有规则 3 的冲突；再启动一次，不重复补。
 
+#### 6.4 1b：提示、看答案、数字题和分数题（2026-11-10 补，派发 1b 前）
+
+**提示**（`{type: "hint"}`）
+
+- 只在 `phase` 是 `answering`、没有 `pending`、**这道题已有至少一次已存好的作答**、并且这道题的提示还没用完时接受，否则原样返回。先作答再给提示：「第一次就答对」才有意义，也符合「卡住时」用提示（用户故事 2）。
+- 接受时产出 `hint.used` 意图，`payload: {item_id, level}`，`level` 是这道题已存好的提示条数 + 1（第一条是 1，最多到这道题 `hints` 的条数，不超过 3）。
+- 存好以后这条提示才显示出来：`view.hints` 是当前这道题已存好的提示原文，按顺序。没存上时按 6.1 的 `failed`、`retry` 处理，提示不显示。
+- 之后这道题的 `item.answered` 里，`hints_used` 是这道题**已存好**的 `hint.used` 条数（累计，不是这一次之前新增的条数）。
+
+**看答案**（`{type: "reveal"}`）
+
+- 只在 `phase` 是 `answering`、没有 `pending`、这道题已有至少一次已存好的作答时接受（这时这道题一定还没答对，答对就已经进入下一题了），否则原样返回。不要求提示用完。
+- **不写事件、不产生意图**。这道题记为「看过答案」，进入下一题，和答对存好以后一样；`view.feedback` 是 `{item_id, correct: false, revealed: true, answer_text, text}`：`answer_text` 是正确答案的写法（选择题是正确选项的 `text`；数字题是 `value` 的最短十进制写法，有 `unit` 时后面空一格加单位；分数题是 `分子/分母`），`text` 是给孩子看的一句话（非空字符串）。
+- 看答案的是最后一道题时，和最后一道答对存好以后一样：进入 `finishing`，产出一次 `attempt.completed` 意图。
+- 结果的分母仍是活动题数；看过答案的题没有 try=1 答对，不计入分子（它第一次作答已经错了）。
+
+**数字题和分数题**
+
+- `startQuiz` 接受三种题型。数字题的 `value`、`tolerance`、`common_wrong[].value` 必须是有限的数，满足事件规格第 2 节的数值规则（第 5 节），`tolerance` 不能是负数；分数题的 `numerator`、`denominator`（含 `common_wrong` 里的）必须是 1～999999 的整数（判分只认 1～6 位，写不出来的答案孩子永远答不对）。不满足就抛错，外壳显示「这个挑战暂时不能玩」。
+- 作答一律是字符串，交给 `grade`。分数题的界面是上下两个数字框，外壳拼成 `分子/分母` 再作为 `response` 交给状态机；数字题是一个框，有 `unit` 时框后面显示单位。框是空的时不提交。
+- `response` 超过 32 个码点（事件里 `response` 的上限）时原样返回，不判分、不产生意图。
+- 当前题给界面的信息：`view.answer_type` 是 `choice`、`number`、`fraction` 之一；选择题 `view.choices` 是 `[{id, text}]`（不带 `correct`、`misconception`，界面不该知道答案）；数字题有 `unit` 时 `view.unit` 是它，没有时是 `null`；`view.can_hint`、`view.can_reveal` 是布尔值，按上面的条件算。
+
+**点亮动效**：完成存好、星星从暗变亮时，外壳放一段不超过 1.5 秒的动效；`prefers-reduced-motion: reduce` 时直接换成亮的样子，不放动效。
+
+**夹具**：`tools/tests/fixtures/slice-1b/content/`，同一个知识点和挑战 `act.quiz.fraction-intro-01` 的 **version 2**：五道题里有一道数字题、一道分数题，每道题 1～3 条提示（不说出答案）。演示部署改用它（第 8 节），Luka 设备上 1a 时没做完的尝试会按 6.3 用旧 `content` 合法放弃。1a 的夹具不动。
+
+**验收测试**（`engine/test/quiz-1b.test.js`，Claude 派发前写好）：提示只在作答存好以后、用完前接受；`level` 递增；没存好的提示不显示、不计入 `hints_used`；看答案不产生意图、进入下一题、最后一题时产出一次完成、不改分母；三种题型的 `view`；数字、分数题判分走 `grade`；数不合规则时抛错；超长作答原样返回。
+
 ### 7. 黄金向量
 
 **掌握度和摄入**：`kernel/vectors/<名字>.json`，每个文件：
@@ -326,7 +355,7 @@ committer.nextSeq                               // 下一条本机事件该用�
 
 ### 8. 演示部署（整合时 Claude 做）
 
-`pages.yml` 改成：用 `tools/build_release.py` 把 `tools/tests/fixtures/content/` 构建成发布包放进 `release/`（1a 用 `tools/tests/fixtures/slice-1a/content/`；不改现有的通用夹具），连同 `app/`、`kernel/`、`engine/` 按仓库里的目录结构一起发布，原型仍在根目录。演示地址 `https://deepnorth2077.github.io/Curio/app/`。CI 加一步 `node --test kernel/test/*.test.js engine/test/*.test.js app/test/*.test.js`（不加引号，由 shell 展开成文件名；`node --test <目录>` 在 Node 20 和 22 上行为不同，不用）。
+`pages.yml` 改成：用 `tools/build_release.py` 把 `tools/tests/fixtures/content/` 构建成发布包放进 `release/`（1a 用 `tools/tests/fixtures/slice-1a/content/`，1b 起用 `tools/tests/fixtures/slice-1b/content/`；不改现有的通用夹具），连同 `app/`、`kernel/`、`engine/` 按仓库里的目录结构一起发布，原型仍在根目录。演示地址 `https://deepnorth2077.github.io/Curio/app/`。CI 加一步 `node --test kernel/test/*.test.js engine/test/*.test.js app/test/*.test.js`（不加引号，由 shell 展开成文件名；`node --test <目录>` 在 Node 20 和 22 上行为不同，不用）。
 
 ## 测试接缝
 

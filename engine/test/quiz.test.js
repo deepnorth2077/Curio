@@ -262,14 +262,13 @@ test("order 不是活动全部 item_id 的一个排列：抛错", () => {
   assert.throws(() => startQuiz(act(), [], "first"), undefined, "空");
 });
 
-test("1a 只支持选择题：有数字题或分数题时抛错", () => {
-  assert.doesNotThrow(() => startQuiz(act(), ORDER, "first"), "全是选择题不抛错");
+test("1b 起数字题、分数题也能开始（细则见 quiz-1b.test.js）", () => {
   const a = act();
   a.body.items[2].answer = { type: "number", value: 3 };
-  assert.throws(() => startQuiz(a, ORDER, "first"));
+  assert.doesNotThrow(() => startQuiz(a, ORDER, "first"));
   const b = act();
   b.body.items[0].answer = { type: "fraction", numerator: 1, denominator: 4, accept_equivalent: false };
-  assert.throws(() => startQuiz(b, ORDER, "first"));
+  assert.doesNotThrow(() => startQuiz(b, ORDER, "first"));
 });
 
 /** 只留前 n 道题的活动。 */

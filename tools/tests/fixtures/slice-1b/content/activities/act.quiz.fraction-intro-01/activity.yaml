@@ -1,0 +1,104 @@
+# 竖切片 1b 的演示夹具（切片规格 6.4）：同一个挑战的第 2 版，加了数字题、分数题和提示。只给演示页用，不是正式内容。
+id: act.quiz.fraction-intro-01
+schema: activity-def/1
+kind: quiz
+version: 2
+title: 分数小挑战
+targets: [math.number.fraction-intro]
+age_band: G3-4
+duration_min: 6
+review: approved
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版三年级上册“分数的初步认识”
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: 涂色部分是这个圆的几分之几？
+      figure: {type: pie, parts: 4, shaded: 1}
+      answer:
+        type: choice
+        choices:
+          - id: c
+            text: 4/1
+            misconception: flip
+            feedback: 总份数写在横线下面，涂色份数写在横线上面。
+          - {id: a, text: 1/4, correct: true}
+          - id: b
+            text: 1/3
+            misconception: part-vs-rest
+            feedback: 涂色的 1 份要和整个圆的 4 份相比，不是和没涂色的 3 份比。
+      hints:
+        - 先数一数，这个圆一共被平均分成了几份。
+        - 涂色的有几份？它要和整个圆的份数比。
+      feedback:
+        correct: 平均分成 4 份，涂了 1 份，就是 1/4。
+    - id: q2
+      stem: 长方形被分成三份，涂色部分能直接用 1/3 表示吗？
+      figure: {type: rect-unequal, widths: [1, 2, 1], shaded: [0]}
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 不能，因为三份不一样大
+            correct: true
+          - id: b
+            text: 能，因为一共分成三份
+            misconception: equal-parts
+            feedback: 只有平均分时，其中一份才是整体的 1/3。
+          - id: c
+            text: 能，涂色的就是三份里的一份
+            misconception: equal-parts
+            feedback: 三份大小不一样，涂色的这份不是整个长方形的 1/3。
+      hints:
+        - 看看这三份，大小一样吗？
+        - 几分之一要先「平均分」。
+    - id: q3
+      stem: 一张纸条平均分成 4 份，涂了其中 3 份。涂色部分是这张纸条的几分之几？
+      figure: {type: rect, parts: 4, shaded: 3}
+      answer:
+        type: fraction
+        numerator: 3
+        denominator: 4
+        accept_equivalent: false
+        common_wrong:
+          - {numerator: 4, denominator: 3, misconception: flip, feedback: 分母是平均分成的总份数，写在横线下面。}
+          - {numerator: 3, denominator: 1, misconception: part-vs-rest, feedback: 涂色的份数要和整张纸条的总份数比。}
+      hints:
+        - 横线下面写平均分成的总份数。
+        - 横线上面写涂色的份数。
+        - 数一数：一共几份？涂了几份？
+      feedback:
+        wrong: 先数总份数，再数涂色的份数。
+    - id: q4
+      stem: 一个蛋糕平均切成几块，每块是这个蛋糕的 1/6。这个蛋糕一共切成了几块？
+      answer:
+        type: number
+        value: 6
+        tolerance: 0
+        unit: 块
+        common_wrong:
+          - {value: 1, misconception: flip, feedback: 1 是分子，表示其中的 1 块；分母才是一共切成的块数。}
+      hints:
+        - 分数横线下面的数，表示一共平均分成了几份。
+        - 每块是整个蛋糕的「几分之一」，蛋糕就一共平均切成了几块。
+    - id: q5
+      stem: 一个正方形平均分成 2 份，涂了 1 份。涂色部分是这个正方形的几分之几？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 2/1
+            misconception: flip
+            feedback: 总份数 2 写在横线下面。
+          - id: b
+            text: 1/1
+            misconception: part-vs-rest
+            feedback: 涂色的 1 份要和整个正方形的 2 份相比。
+          - {id: c, text: 1/2, correct: true}
+      hints:
+        - 正方形一共平均分成了几份？
+        - 涂色的 1 份，和整个正方形的份数比。
+# END OF FILE
