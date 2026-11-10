@@ -131,11 +131,14 @@ export function grade(answer, response) {
 export function checkAnswerNumbers(answer) {
   if (answer.type === "number") {
     microOf(answer.value);
+    if (answer.unit !== undefined && typeof answer.unit !== "string") throw new TypeError("unit 要是字符串");
     if (answer.tolerance !== undefined && microOf(answer.tolerance) < 0n) throw new RangeError("tolerance 不能是负数");
     for (const w of answer.common_wrong || []) microOf(w.value);
   } else if (answer.type === "fraction") {
-    intOf(answer.numerator);
-    if (intOf(answer.denominator) === 0n) throw new RangeError("分母不能是 0");
-    for (const w of answer.common_wrong || []) { intOf(w.numerator); intOf(w.denominator); }
+    // 判分只认 1～6 位的分子分母，写不出来的答案孩子永远答不对（6.4）
+    // 分子可以是 0（比如数轴上的 0/4），分母不能是 0
+    const part = (n, min) => { if (typeof n !== "number" || !Number.isInteger(n) || n < min || n > 999999) throw new RangeError(`分数里的数要是 ${min}～999999 的整数：${String(n)}`); };
+    part(answer.numerator, 0); part(answer.denominator, 1);
+    for (const w of answer.common_wrong || []) { part(w.numerator, 0); part(w.denominator, 1); }
   }
 }

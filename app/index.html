@@ -133,6 +133,23 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 .bub .mini{width:30px;height:30px;flex:none}
 .save{margin-top:12px;font-size:15px}
 .save.bad{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--bad-soft);color:var(--ink);border-radius:14px;padding:10px 14px}
+/* 1b：数字框、分数框、提示、看答案 */
+.ansrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.numbox{width:132px;font:inherit;font-size:22px;font-variant-numeric:tabular-nums;text-align:center;padding:8px 10px;min-height:52px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink)}
+.numbox:disabled{opacity:.6}
+.unit{font-size:20px;color:var(--ink)}
+.fracbox{display:inline-flex;flex-direction:column;align-items:center;gap:6px}
+.fracbox .numbox{width:96px}
+.fracline{display:block;width:112px;height:0;border-top:2px solid var(--ink);border-radius:2px}
+.ansrow.done{min-height:52px}
+.ansval{display:inline-flex;align-items:center;gap:6px;font-size:22px;padding:6px 16px;min-height:52px;border-radius:12px;border:1.5px solid var(--good);background:var(--good-soft);color:var(--ink);font-weight:600}
+.hints{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.bub.hint{background:var(--c-sky);display:block}
+.bub.hint .tag{display:block;font-size:13px;color:var(--muted);margin-bottom:2px}
+.bub.reveal{background:var(--wash);display:block}
+.btns.tools{justify-content:flex-start}
+.btns.tools .btn{gap:6px}
+
 .result{text-align:center;background:var(--pane);border:1px solid var(--rule);border-radius:20px;padding:24px 18px;margin-top:16px;box-shadow:var(--shadow)}
 .result-star{display:flex;justify-content:center;margin-bottom:6px}
 .result h2{font-size:22px;margin-bottom:6px}
@@ -143,7 +160,14 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 
 @media (prefers-reduced-motion:no-preference){
   .choice,.btn,.star,.back{transition:background-color .15s ease,border-color .15s ease}
+  /* 点亮动效：一共 1.2 秒（规格 6.4：不超过 1.5 秒）；reduced-motion 时没有这些规则，直接是亮的样子 */
+  .result-star.lighting svg{animation:light-pop 1.2s cubic-bezier(.2,.8,.3,1) both;transform-origin:50% 52%}
+  .result-star.lighting .star-fill{animation:light-fill .8s ease-out .15s both}
+  .result-star.lighting .ray{animation:light-ray .45s ease-out .75s both}
 }
+@keyframes light-pop{0%{transform:scale(.72) rotate(-10deg)}55%{transform:scale(1.12) rotate(3deg)}100%{transform:none}}
+@keyframes light-fill{from{fill:var(--pane)}to{fill:var(--gold)}}
+@keyframes light-ray{from{opacity:0}to{opacity:1}}
 @media (min-width:760px){
   .chart-head h1{font-size:28px}
   .stem{font-size:20px}
