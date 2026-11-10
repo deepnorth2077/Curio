@@ -32,7 +32,7 @@ body:
             feedback: 涂色的 1 份要和整个圆的 4 份相比，不是和没涂色的 3 份比。
       hints:
         - 先数一数，这个圆一共被平均分成了几份。
-        - 涂色的有几份？它要和整个圆的份数比。
+        - 涂色的有几份？涂色的份数要和整个圆的份数比。
       feedback:
         correct: 平均分成 4 份，涂了 1 份，就是 1/4。
     - id: q2
@@ -53,8 +53,8 @@ body:
             misconception: equal-parts
             feedback: 三份大小不一样，涂色的这份不是整个长方形的 1/3。
       hints:
-        - 看看这三份，大小一样吗？
-        - 几分之一要先「平均分」。
+        - 先看一看，这三份各占多大？
+        - 想一想：说「1/3」之前，这几份要满足什么条件？
       feedback:
         correct: 三份不一样大，没有平均分，所以涂色部分不能直接用 1/3 表示。
     - id: q3
@@ -69,9 +69,9 @@ body:
           - {numerator: 4, denominator: 3, misconception: flip, feedback: 分母是平均分成的总份数，写在横线下面。}
           - {numerator: 3, denominator: 1, misconception: part-vs-rest, feedback: 涂色的份数要和整张纸条的总份数比。}
       hints:
+        - 数一数：一共几份？涂了几份？
         - 横线下面写平均分成的总份数。
         - 横线上面写涂色的份数。
-        - 数一数：一共几份？涂了几份？
       feedback:
         correct: 平均分成 4 份，涂了 3 份，就是 3/4。
         wrong: 先数总份数，再数涂色的份数。
@@ -85,8 +85,8 @@ body:
         common_wrong:
           - {value: 1, misconception: flip, feedback: 1 是分子，表示其中的 1 块；分母才是一共切成的块数。}
       hints:
+        - 找到题目里的那个分数，看看横线下面的数是多少。
         - 分数横线下面的数，表示一共平均分成了几份。
-        - 每块是整个蛋糕的「几分之一」，蛋糕就一共平均切成了几块。
       feedback:
         correct: 每块是 1/6，说明蛋糕平均切成了 6 块。
     - id: q5
