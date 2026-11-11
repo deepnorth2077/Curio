@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curio 设计稿 · 星图首屏</title>
+<script>document.documentElement.className = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";</script>
+<style>
+/* Curio 设计稿共用：颜色取自 prototype/index.html，字体只用系统字体 */
+:root,.light{
+  --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --c-math:#ECCDB6; --c-math-bg:#F2E1D3; --c-sci:#CCD6C0; --c-sci-bg:#DCE3D2; --c-sky:#CFDCE6; --wash:#EFE4D6;
+  --f-serif:"Songti SC","Source Han Serif SC","Noto Serif CJK SC",Georgia,serif;
+  --f-sans:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+.dark{
+  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --c-math:#5A4536; --c-math-bg:#33291F; --c-sci:#3C4836; --c-sci-bg:#28301F; --c-sky:#2D3B47; --wash:#2A2738;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-serif);color:var(--ink);font-weight:600;margin:0}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.note{color:var(--muted);font-size:14px}
+a{color:inherit}
+
+.wrap{max-width:940px;margin:0 auto;padding:14px 16px 40px}
+.top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.top h1{font-size:30px}
+.top .sub{color:var(--muted);margin:0}
+.legend{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.legend svg{width:18px;height:18px}
+svg#map{display:block;width:100%;height:auto;margin-top:6px;user-select:none;-webkit-user-select:none}
+.ln{fill:none;stroke:var(--muted);stroke-width:1.3;stroke-linecap:round}
+.edge{fill:none;stroke:var(--muted);stroke-width:1.4;stroke-linecap:round}
+.nm{font-family:var(--f-sans);font-weight:600;font-size:16.5px;fill:var(--ink);text-anchor:middle}
+.ct{font-family:var(--f-sans);font-size:14px;fill:var(--muted);text-anchor:middle}
+.here{font-family:var(--f-sans);font-size:15px;fill:var(--accent);text-anchor:middle}
+.subj{font-family:var(--f-serif);font-size:17px;font-weight:600;fill:var(--ink)}
+.con{cursor:pointer;outline:none}
+.con .wash{opacity:.5;transition:opacity .15s}
+.con:hover .wash,.con:focus-visible .wash{opacity:.85}
+.con .sel{display:none}
+.con.on .sel{display:block}
+.con.on .wash{opacity:.85}
+.con:focus-visible .sel{display:block}
+.card{margin-top:8px;min-height:64px;background:var(--pane);border:1px solid var(--rule);border-radius:16px;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--ink)}
+.card .msg{flex:1 1 220px}
+.btn{font:inherit;font-weight:600;border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:8px 18px;min-height:48px;cursor:pointer}
+details{margin-top:22px}
+summary{cursor:pointer;color:var(--muted)}
+@media (max-width:520px){
+  .wrap{padding:10px 0 96px}
+  .top,.card,details{margin-left:14px;margin-right:14px}
+  .top h1{font-size:24px} .top .sub{font-size:15px} .legend{margin-left:0;width:100%}
+  .nm{font-size:14.5px} .ct{font-size:13px} .here{font-size:13.5px} .subj{font-size:14px}
+}
+@media (prefers-reduced-motion:reduce){ .con .wash{transition:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>星图</h1><p class="sub">点一个星座，飞进去看看。</p>
+    <div class="legend" id="legend"></div>
+  </div>
+  <svg id="map" role="group" aria-label="星图"></svg>
+  <div class="card" id="card" aria-live="polite"></div>
+  <details>
+    <summary>设计说明（给大人看）</summary>
+    <ul id="notes"></ul>
+    <p class="note" id="check"></p>
+    <p class="note">这是一张设计稿：数字是示例，不保存任何东西。<a href="./index.html">回到设计稿目录</a></p>
+  </details>
+</div>
+<script>
+"use strict";
+/* 手绘线条：和 references/starter.html 里的 sketchLib 逐字相同 */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function blob(cx,cy,rx,ry,seed){ const r=R(seed), N=9, p=[]; for(let i=0;i<N;i++){ const t=i/N*Math.PI*2, k=1+(r()-.5)*.1; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); } return cr(p,true)+"Z"; }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,blob,curve,cr,R};
+}
+const Sk = sketchLib();
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+const dot = (x, y, r, fill) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill || "var(--ink)"}"/>`;
+// 椭圆上的一段弧（角度用度，rot 是整体旋转），画成手绘曲线
+function arc(cx, cy, rx, ry, a0, a1, rot, seed, j){
+  const n = 10, pts = [], c = Math.cos(rot * Math.PI / 180), s = Math.sin(rot * Math.PI / 180);
+  for (let i = 0; i <= n; i++){ const t = (a0 + (a1 - a0) * i / n) * Math.PI / 180, x = Math.cos(t) * rx, y = Math.sin(t) * ry; pts.push([cx + x * c - y * s, cy + x * s + y * c]); }
+  return Sk.curve(pts, seed, j == null ? .3 : j);
+}
+// 火箭的标准画法：viewBox 0 0 48 64。small 为 true 时去掉细节（24 px 以下用）
+function rocket(small){
+  const body = Sk.cr([[24,4],[29.5,10],[33,20],[33.5,32],[31.5,43.5],[16.5,43.5],[14.5,32],[15,20],[18.5,10]], true) + "Z";
+  let s = `<path d="M15.2 31L7.5 45.5L16 42.5Z" fill="var(--wash)"/><path d="M32.8 31L40.5 45.5L32 42.5Z" fill="var(--wash)"/>` +
+    P(Sk.curve([[15.2,31],[7.5,45.5],[16,42.5]],31,.25)) + P(Sk.curve([[32.8,31],[40.5,45.5],[32,42.5]],32,.25)) +
+    `<path d="${body}" fill="var(--c-sky)"/>` + P(body) +
+    `<path d="M19.5 46.5C19.5 53 23 57 24 61.5C25 57 28.5 53 28.5 46.5Z" fill="var(--accent)"/>`;
+  s += `<circle cx="24" cy="22.5" r="${small ? 4.6 : 5}" fill="var(--pane)"/>` + P(Sk.ellipse(24, 22.5, small ? 4.6 : 5, small ? 4.6 : 5, 33), small ? "k" : "k1");
+  if (!small) s += P(Sk.curve([[19.3,12.4],[24,13.8],[28.7,12.4]],34,.2),"k1") + P(Sk.curve([[17.2,38.5],[24,39.8],[30.8,38.5]],35,.2),"k1");
+  return s;
+}
+
+
+/* ============ 示例数据：取自原型的示例星图（舰长所在的这一圈） ============ */
+const DATA = [
+  { id:"num",    name:"数与运算",   lit:3, total:13, side:"math", shape:"stairs",   like:"一段台阶：数一级一级往上走" },
+  { id:"rel",    name:"数量关系",   lit:1, total:4,  side:"math", shape:"scale",    like:"一架天平：两边一样多才平" },
+  { id:"geo",    name:"图形与测量", lit:6, total:13, side:"math", shape:"kite",     like:"一只风筝：四条边，两条对角线，拖着尾巴" },
+  { id:"stat",   name:"统计与概率", lit:0, total:3,  side:"math", shape:"bars",     like:"三根柱子：数一数，比一比，谁多谁少" },
+  { id:"matter", name:"物质",       lit:1, total:5,  side:"sci",  shape:"icecream", like:"一支冰淇淋：会化，化了还是它" },
+  { id:"energy", name:"能量与运动", lit:0, total:2,  side:"sci",  shape:"plane",    like:"一架纸飞机：轻轻一推就飞出去" },
+  { id:"life",   name:"生命",       lit:0, total:3,  side:"sci",  shape:"fish",     like:"一条小鱼，有眼睛，有尾巴" },
+  { id:"earth",  name:"地球与宇宙", lit:0, total:2,  side:"sci",  shape:"moon",     like:"一弯月牙" }
+];
+// 每个轮廓：p 是点（第三项为 0 表示只是拐角，不画星），e 是连线。点的顺序就是点亮的顺序。
+const SHAPES = {
+  stairs:   { p:[[-46,44],[-46,20],[-16,20],[-16,-4],[14,-4],[14,-28],[44,-28],[44,44]], e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,0]] },
+  scale:    { p:[[0,40],[0,-22],[-36,-22],[36,-22],[-47,10],[-25,10],[25,10],[47,10]], e:[[0,1],[2,1],[1,3],[2,4],[2,5],[4,5],[3,6],[3,7],[6,7]] },
+  kite:     { p:[[0,-46],[25,-18],[0,12],[-25,-18],[10,29],[-4,44]], e:[[0,1],[1,2],[2,3],[3,0],[2,4],[4,5],[0,2],[3,1]] },
+  bars:     { p:[[-44,40],[-36,10],[-18,10],[-9,-32],[9,-32],[18,-10],[36,-10],[44,40],[-36,40,0],[-18,40,0],[-9,40,0],[9,40,0],[18,40,0],[36,40,0]], e:[[0,7],[8,1],[1,2],[2,9],[10,3],[3,4],[4,11],[12,5],[5,6],[6,13]] },
+  icecream: { p:[[0,44],[-15,2],[15,2],[-25,-6],[-20,-28],[0,-40],[20,-28],[25,-6]], e:[[0,1],[0,2],[1,2],[1,3],[3,4],[4,5],[5,6],[6,7],[7,2]] },
+  plane:    { p:[[44,-32],[-44,-8],[-10,6],[-18,38],[2,14]], e:[[0,1],[1,2],[2,0],[2,3],[3,4],[4,0],[2,4]] },
+  fish:     { p:[[-46,0],[-20,-20],[8,-16],[24,0],[8,16],[-20,20],[44,-18],[44,18],[-28,-5]], e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[3,6],[3,7]] },
+  moon:     { p:[[25,-44],[-9,-30],[-25,0],[-9,30],[25,44],[9,24],[-1,0],[9,-24]], e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,0]] }
+};
+
+// 盲猜模式：网址后面加 ?blind=1，名字换成编号，轮廓上的星全部画出来。用来试一试：不看名字，认不认得出每个星座。
+const BLIND = new URLSearchParams(location.search).has("blind");
+const map = document.getElementById("map");
+const phone = () => document.documentElement.clientWidth <= 520;
+let SEGS = [], BOXES = [];
+
+// 手绘的圆角大圈（超椭圆）
+function loop(cx, cy, rx, ry, n, seed, j){
+  const r = Sk.R(seed), N = 30, pts = [];
+  for (let i = 0; i < N; i++){ const t = i / N * Math.PI * 2, c = Math.cos(t), s = Math.sin(t);
+    pts.push([cx + Math.sign(c) * Math.pow(Math.abs(c), 2 / n) * rx + (r() - .5) * 2 * j, cy + Math.sign(s) * Math.pow(Math.abs(s), 2 / n) * ry + (r() - .5) * 2 * j]); }
+  for (let i = 0; i < N; i++) SEGS.push([pts[i], pts[(i + 1) % N]]);
+  return Sk.cr(pts, true) + "Z";
+}
+// 亮了的星：手绘的四角星芒
+function sparkle(x, y, r, seed){
+  const q = Sk.R(seed), k = r * (.9 + q() * .2), a = k * .2, rot = (q() - .5) * 16;
+  return `<path transform="rotate(${rot.toFixed(1)} ${x} ${y})" d="M${x} ${y - k}Q${x + a} ${y - a} ${x + k} ${y}Q${x + a} ${y + a} ${x} ${y + k}Q${x - a} ${y + a} ${x - k} ${y}Q${x - a} ${y - a} ${x} ${y - k}Z" fill="var(--ink)"/>`;
+}
+function constellation(c, i, cx, cy, s){
+  const sh = SHAPES[c.shape], pts = sh.p.map(p => [cx + p[0] * s, cy + p[1] * s, p[2] !== 0]);
+  const stars = pts.filter(p => p[2]).length, real = BLIND ? stars : Math.min(c.total, stars), lit = BLIND ? 0 : Math.min(c.lit, stars);
+  let g = `<path class="wash" d="${Sk.blob(cx, cy, 60 * s, 57 * s, 300 + i)}" fill="var(${c.side === "math" ? "--c-math" : "--c-sci"})"/>`;
+  g += `<path class="sel" d="${Sk.ellipse(cx, cy, 62 * s, 54 * s, 320 + i, .8)}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/>`;
+  sh.e.forEach(([a, b], k) => {
+    const A = pts[a], B = pts[b], L = Math.hypot(B[0] - A[0], B[1] - A[1]), ga = A[2] ? 8 * s : 0, gb = B[2] ? 8 * s : 0;
+    const ux = (B[0] - A[0]) / L, uy = (B[1] - A[1]) / L;
+    g += `<path class="edge" d="${Sk.line(A[0] + ux * ga, A[1] + uy * ga, B[0] - ux * gb, B[1] - uy * gb, 340 + i * 20 + k, .5)}"/>`;
+    SEGS.push([A, B]);
+  });
+  let n = 0;
+  pts.forEach((p, k) => { if (!p[2]) return;
+    if (n < lit){ g += sparkle(p[0], p[1], 8 * s, 500 + i * 20 + k); BOXES.push({ x:p[0] - 8 * s, y:p[1] - 8 * s, w:16 * s, h:16 * s }); }
+    else if (n < real){ g += `<circle cx="${p[0]}" cy="${p[1]}" r="${4.4 * s}" fill="var(--bg)" stroke="var(--ink)" stroke-width="1.5"/>`; BOXES.push({ x:p[0] - 5 * s, y:p[1] - 5 * s, w:10 * s, h:10 * s }); }
+    else { g += `<circle cx="${p[0]}" cy="${p[1]}" r="${1.8 * s}" fill="var(--muted)"/>`; BOXES.push({ x:p[0] - 2, y:p[1] - 2, w:4, h:4 }); }
+    n++; });
+  // 这个星座的星比轮廓上的点多：多出来的画在连线中间，都是还没亮的
+  for (let k = 0; !BLIND && k < c.total - stars && k < sh.e.length; k++){ const [a, b] = sh.e[k], x = (pts[a][0] + pts[b][0]) / 2, y = (pts[a][1] + pts[b][1]) / 2;
+    g += `<circle cx="${x}" cy="${y}" r="${2.8 * s}" fill="var(--bg)" stroke="var(--ink)" stroke-width="1.2"/>`; BOXES.push({ x:x - 4, y:y - 4, w:8, h:8 }); }
+  const ly = cy + 46 * s + (phone() ? 26 : 30);
+  g += BLIND ? `<text class="nm" x="${cx}" y="${ly}">${i + 1}</text>` : `<text class="nm" x="${cx}" y="${ly}">${c.name}</text><text class="ct" x="${cx}" y="${ly + 20}">${c.lit ? `亮了 ${c.lit} 颗` : "还没亮"}</text>`;
+  g += `<rect x="${cx - 62 * s}" y="${cy - 56 * s}" width="${124 * s}" height="${112 * s + 50}" fill="transparent"/>`;
+  return `<g class="con" data-i="${i}" tabindex="0" role="button" aria-label="${c.name}，${c.lit ? "亮了 " + c.lit + " 颗" : "还没亮"}">${g}</g>`;
+}
+
+function draw(){
+  SEGS = []; BOXES = [];
+  const ph = phone(), W = ph ? 390 : 900, H = ph ? 760 : 700, cx = W / 2, cy = H / 2, s = ph ? .8 : .92;
+  map.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const pos = ph
+    ? [[92,118],[92,262],[92,482],[92,626],[298,118],[298,262],[298,482],[298,626]]
+    : [[335,165],[150,273],[150,427],[335,535],[565,165],[750,273],[750,427],[565,535]];
+  let g = "";
+  // 别的圈：外面一道淡淡的虚线，里面一个小圆，不画星，不写字
+  g += `<path class="kf" d="${loop(cx, cy, ph ? 192 : 434, ph ? 374 : 334, ph ? 4 : 2.6, 201, 1)}"/>`;
+  // 舰长所在的这一圈
+  const band = loop(cx, cy, ph ? 186 : 412, ph ? 365 : 310, ph ? 4 : 2.6, 202, 1.4);
+  g += `<path d="${band}" fill="var(--wash)" opacity=".45"/><path class="ln" d="${band}"/>`;
+  const rin = ph ? 38 : 52, inner = [];
+  for (let k = 0; k < 24; k++){ const t = k / 24 * Math.PI * 2; inner.push([cx + Math.cos(t) * rin, cy + Math.sin(t) * rin]); }
+  for (let k = 0; k < 24; k++) SEGS.push([inner[k], inner[(k + 1) % 24]]);
+  g += `<circle cx="${cx}" cy="${cy}" r="${rin}" fill="var(--bg)"/><path class="ln" d="${Sk.ellipse(cx, cy, rin, rin, 203, .6)}"/>`;
+  const rh = ph ? 50 : 68;
+  g += `<svg x="${cx - rh * .375}" y="${cy - rh / 2 + 2}" width="${rh * .75}" height="${rh}" viewBox="0 0 48 64">${rocket(false)}</svg>`;
+  DATA.forEach((c, i) => { g += constellation(c, i, pos[i][0], pos[i][1], s); });
+  g += `<text class="here" x="${cx}" y="${ph ? 50 : 92}">你在这一圈</text>`;
+  g += ph ? `<text class="subj" x="14" y="24">数学</text><text class="subj" x="376" y="24" text-anchor="end">科学</text>`
+          : `<text class="subj" x="40" y="46">数学</text><text class="subj" x="860" y="46" text-anchor="end">科学</text>`;
+  map.innerHTML = g;
+  select(-1);
+}
+
+/* ============ 点一个星座 ============ */
+const card = document.getElementById("card");
+function select(i){
+  map.querySelectorAll(".con").forEach(el => el.classList.toggle("on", +el.dataset.i === i));
+  if (BLIND){ card.innerHTML = `<span class="msg">盲猜模式：不看名字，猜猜每个星座像什么。</span>`; return; }
+  if (i < 0){ card.innerHTML = `<span class="msg">点一个星座看看。</span>`; return; }
+  const c = DATA[i], rest = c.total - c.lit;
+  card.innerHTML = `<span class="msg"><b>${c.name}</b>　${c.lit ? `亮了 ${c.lit} 颗，还有 ${rest} 颗没亮。` : `${c.total} 颗星都还没亮，等你来。`}</span><button class="btn" type="button">飞进去</button>`;
+  card.querySelector("button").addEventListener("click", () => { card.querySelector(".msg").innerHTML = `<b>${c.name}</b>　设计稿到这里为止：正式版会从这里飞进星座。`; });
+}
+map.addEventListener("click", e => { const el = e.target.closest(".con"); select(el ? +el.dataset.i : -1); });
+map.addEventListener("keydown", e => { const el = e.target.closest(".con"); if (el && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); select(+el.dataset.i); } });
+
+/* ============ 规则 6 的检查：没有任何字压在线、点或别的字上 ============ */
+function overlaps(){
+  const texts = [...map.querySelectorAll("text")].map(t => { const b = t.getBBox(); return { t:t.textContent, x:b.x, y:b.y, w:b.width, h:b.height }; });
+  const rr = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  const sr = ([p, q], r) => { let t0 = 0, t1 = 1; const dx = q[0] - p[0], dy = q[1] - p[1];
+    for (const [pp, qq] of [[-dx, p[0] - r.x], [dx, r.x + r.w - p[0]], [-dy, p[1] - r.y], [dy, r.y + r.h - p[1]]]){
+      if (pp === 0){ if (qq < 0) return false; } else { const t = qq / pp; if (pp < 0){ if (t > t1) return false; if (t > t0) t0 = t; } else { if (t < t0) return false; if (t < t1) t1 = t; } } }
+    return true; };
+  const hits = [];
+  texts.forEach((a, i) => {
+    texts.forEach((b, j) => { if (j > i && rr(a, b)) hits.push(`「${a.t}」压着「${b.t}」`); });
+    if (BOXES.some(b => rr(a, b))) hits.push(`「${a.t}」压着星`);
+    if (SEGS.some(sg => sr(sg, a))) hits.push(`「${a.t}」压着线`);
+  });
+  const k = map.getBoundingClientRect().width / map.viewBox.baseVal.width;
+  const minPx = Math.min(...[...map.querySelectorAll("text")].map(t => parseFloat(getComputedStyle(t).fontSize) * k));
+  return { hits, minPx: +minPx.toFixed(1) };
+}
+function report(){
+  const r = overlaps();
+  console.log("[星图检查] 重叠：" + r.hits.length + " 处", r.hits, "最小的字：" + r.minPx + " px");
+  document.getElementById("check").textContent = `自动检查：字和线、星、别的字重叠 ${r.hits.length} 处；画面里最小的字 ${r.minPx} px。` + (r.hits.length ? " " + r.hits.join("；") : "");
+  window.__check = r;
+}
+
+const SPARK = `<svg viewBox="0 0 18 18" aria-hidden="true">${sparkle(9, 9, 7.5, 9)}</svg>`, OPEN = `<svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="4.4" fill="var(--bg)" stroke="var(--ink)" stroke-width="1.5"/></svg>`;
+document.getElementById("legend").innerHTML = `${SPARK}亮了　${OPEN}还没亮　·　这一圈亮了 ${DATA.reduce((a, c) => a + c.lit, 0)} 颗`;
+document.getElementById("notes").innerHTML = DATA.map(c => `<li><b>${c.name}</b>：${c.like}。</li>`).join("") +
+  `<li>首屏只画舰长所在的这一圈。别的圈退成外面一道虚线和中间的小圆，不写年级。</li>` +
+  `<li>轮廓上的点比这个星座现有的星多时，多出来的点画成小灰点：那里以后会有新的星。星比点多时，多出来的星画在连线中间。</li>` +
+  `<li>手机上是另一种排法：两列四排，不是把平板的图缩小。</li>` +
+  `<li>想试试孩子认不认得出：<a href="?blind=1">打开盲猜模式</a>，名字会换成编号。</li>`;
+let wasPhone = phone();
+draw(); report();
+addEventListener("resize", () => { if (phone() !== wasPhone){ wasPhone = phone(); draw(); } report(); });
+</script>
+</body>
+</html>

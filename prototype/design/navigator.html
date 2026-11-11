@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curio 设计稿 · 领航员</title>
+<style>
+/* Curio 设计稿共用：颜色取自 prototype/index.html，字体只用系统字体 */
+:root,.light{
+  --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --c-math:#ECCDB6; --c-math-bg:#F2E1D3; --c-sci:#CCD6C0; --c-sci-bg:#DCE3D2; --c-sky:#CFDCE6; --wash:#EFE4D6;
+  --f-serif:"Songti SC","Source Han Serif SC","Noto Serif CJK SC",Georgia,serif;
+  --f-sans:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+.dark{
+  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --c-math:#5A4536; --c-math-bg:#33291F; --c-sci:#3C4836; --c-sci-bg:#28301F; --c-sky:#2D3B47; --wash:#2A2738;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-serif);color:var(--ink);font-weight:600;margin:0}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.note{color:var(--muted);font-size:14px}
+a{color:inherit}
+
+.wrap{max-width:1000px;margin:0 auto;padding:18px 16px 60px}
+.lead{margin:6px 0 18px}
+.dir{margin:26px 0 8px}
+.dir h2{font-size:22px}
+.panel{background:var(--bg);border:1px solid var(--rule);border-radius:18px;padding:16px;margin:12px 0}
+.row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.tile{background:var(--pane);border:1px solid var(--rule);border-radius:14px;padding:10px 6px 8px;text-align:center}
+.tile svg{width:96px;height:96px;display:block;margin:0 auto}
+.tile span{font-size:14px;color:var(--muted)}
+.use{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.talk{display:flex;gap:10px;align-items:flex-start}
+.talk svg{flex:none;width:42px;height:42px}
+.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:9px 14px;color:var(--ink);flex:1;font-size:16px}
+.big{display:flex;align-items:center;gap:18px;margin-top:12px}
+.big svg{width:240px;height:240px;flex:none}
+.big p{margin:0}
+@media (max-width:700px){ .row{grid-template-columns:repeat(3,1fr)} .use{grid-template-columns:1fr} .tile svg{width:84px;height:84px} .big{flex-direction:column;align-items:flex-start} .big svg{width:200px;height:200px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>领航员 · 两个方向</h1>
+  <p class="lead">领航员是飞船上陪舰长探索的向导。它好奇、平等，可以先算错一次，让舰长帮它找出错在哪里。下面两个方向各画了五个表情，加一个「算错了」。每个方向都放了三种大小：42 px 是它在气泡旁边的真实大小。浅色、深色各一组。</p>
+  <div id="out"></div>
+  <h2 style="font-size:20px;margin-top:30px">设计说明</h2>
+  <ul id="notes"></ul>
+  <p class="note">每个表情是一个 viewBox 为 0 0 48 48 的图，不超过 14 笔。选定方向以后，另开任务把它换进模块骨架。<a href="./index.html">回到设计稿目录</a></p>
+</div>
+<script>
+"use strict";
+/* 手绘线条：和 references/starter.html 里的 sketchLib 逐字相同 */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function blob(cx,cy,rx,ry,seed){ const r=R(seed), N=9, p=[]; for(let i=0;i<N;i++){ const t=i/N*Math.PI*2, k=1+(r()-.5)*.1; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); } return cr(p,true)+"Z"; }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,blob,curve,cr,R};
+}
+const Sk = sketchLib();
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+const dot = (x, y, r, fill) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill || "var(--ink)"}"/>`;
+// 椭圆上的一段弧（角度用度，rot 是整体旋转），画成手绘曲线
+function arc(cx, cy, rx, ry, a0, a1, rot, seed, j){
+  const n = 10, pts = [], c = Math.cos(rot * Math.PI / 180), s = Math.sin(rot * Math.PI / 180);
+  for (let i = 0; i <= n; i++){ const t = (a0 + (a1 - a0) * i / n) * Math.PI / 180, x = Math.cos(t) * rx, y = Math.sin(t) * ry; pts.push([cx + x * c - y * s, cy + x * s + y * c]); }
+  return Sk.curve(pts, seed, j == null ? .3 : j);
+}
+// 火箭的标准画法：viewBox 0 0 48 64。small 为 true 时去掉细节（24 px 以下用）
+function rocket(small){
+  const body = Sk.cr([[24,4],[29.5,10],[33,20],[33.5,32],[31.5,43.5],[16.5,43.5],[14.5,32],[15,20],[18.5,10]], true) + "Z";
+  let s = `<path d="M15.2 31L7.5 45.5L16 42.5Z" fill="var(--wash)"/><path d="M32.8 31L40.5 45.5L32 42.5Z" fill="var(--wash)"/>` +
+    P(Sk.curve([[15.2,31],[7.5,45.5],[16,42.5]],31,.25)) + P(Sk.curve([[32.8,31],[40.5,45.5],[32,42.5]],32,.25)) +
+    `<path d="${body}" fill="var(--c-sky)"/>` + P(body) +
+    `<path d="M19.5 46.5C19.5 53 23 57 24 61.5C25 57 28.5 53 28.5 46.5Z" fill="var(--accent)"/>`;
+  s += `<circle cx="24" cy="22.5" r="${small ? 4.6 : 5}" fill="var(--pane)"/>` + P(Sk.ellipse(24, 22.5, small ? 4.6 : 5, small ? 4.6 : 5, 33), small ? "k" : "k1");
+  if (!small) s += P(Sk.curve([[19.3,12.4],[24,13.8],[28.7,12.4]],34,.2),"k1") + P(Sk.curve([[17.2,38.5],[24,39.8],[30.8,38.5]],35,.2),"k1");
+  return s;
+}
+
+
+/* ============ 方向一「小灯」：圆脑袋，头顶一盏小灯；灯和天线的样子就是它的心情 ============ */
+function nav1(e){
+  const lamp = (x, y) => dot(x, y, 2.4, "var(--accent)");
+  const head = `<circle cx="24" cy="28" r="15" fill="var(--c-sky)"/>` + P(Sk.ellipse(24, 28, 15.3, 15.3, 11));
+  let ant = "", face = "", extra = "", tilt = 0;
+  if (e === "curious"){ tilt = -7;
+    ant = P(Sk.curve([[24,13],[25,8.5],[28,5.5]],21,.2),"k1") + lamp(29,4.2);
+    face = dot(18.5,26.2,2.1) + dot(29.6,25.6,2.9) + P(Sk.curve([[26.4,20.4],[29.6,19.2],[32.6,20.4]],22,.15),"k1") + P(Sk.curve([[19.6,33],[24,35.6],[28.4,33]],23,.15),"k1");
+  } else if (e === "waiting"){ tilt = 4;
+    ant = P(Sk.curve([[24,13],[26,7.5],[31.5,6.5],[35,10.5]],24,.2),"k1") + lamp(35.6,12.2);
+    face = dot(19,26.4,2.1) + dot(30,26.4,2.1) + P(Sk.line(20.5,34,27.5,34,25,.4),"k1") + P(Sk.line(16.2,22.6,21.6,22.9,26,.3),"k1") + P(Sk.line(27.2,22.9,32.6,22.6,27,.3),"k1");
+  } else if (e === "surprised"){
+    ant = P(Sk.line(24,13,24,6,28,.3),"k1") + lamp(24,4) + P(Sk.line(18.6,5.2,16,3.4,29,.3),"k1") + P(Sk.line(29.4,5.2,32,3.4,30,.3),"k1");
+    face = `<circle cx="18.2" cy="25.6" r="3.5" fill="var(--pane)"/><circle cx="29.8" cy="25.6" r="3.5" fill="var(--pane)"/>` +
+      P(Sk.ellipse(18.2,25.6,3.5,3.5,31,.6),"k1") + P(Sk.ellipse(29.8,25.6,3.5,3.5,32,.6),"k1") + dot(18.2,25.6,1.5) + dot(29.8,25.6,1.5) +
+      `<ellipse cx="24" cy="35" rx="2.5" ry="3.1" fill="var(--ink)"/>`;
+  } else if (e === "clap"){
+    ant = P(Sk.curve([[24,13],[23.2,9],[24,6]],33,.2),"k1") + lamp(24,4.2) + P(Sk.line(19,3.6,16.6,1.8,34,.3),"k1") + P(Sk.line(29,3.6,31.4,1.8,35,.3),"k1");
+    face = P(Sk.curve([[15.8,26.8],[18.5,24],[21.2,26.8]],36,.15),"k1") + P(Sk.curve([[26.8,26.8],[29.5,24],[32.2,26.8]],37,.15),"k1") +
+      `<path d="M18.6 31.2Q24 39.4 29.4 31.2Z" fill="var(--ink)"/>`;
+    extra = P(Sk.curve([[10.4,33.6],[7,29.6],[5.4,24.6]],38,.15)) + P(Sk.curve([[37.6,33.6],[41,29.6],[42.6,24.6]],39,.15)) +
+      dot(5.2,22.6,2.5,"var(--pane)") + dot(42.8,22.6,2.5,"var(--pane)") + P(Sk.ellipse(5.2,22.6,2.5,2.5,40,.5),"k1") + P(Sk.ellipse(42.8,22.6,2.5,2.5,41,.5),"k1");
+  } else if (e === "think"){ tilt = 6;
+    ant = P(Sk.curve([[24,13],[23.6,8.5],[26.5,5.2],[30,6.4],[30,9.6],[27.4,10]],42,.15),"k1") + lamp(26.6,9.6);
+    face = dot(17.4,24.2,2.1) + dot(28.4,24.2,2.1) + P(Sk.line(14.8,20.6,19.8,19.6,43,.3),"k1") + P(Sk.curve([[20.6,34],[22.8,32.8],[25,34.4],[27.2,33.2]],44,.12),"k1");
+  } else { tilt = -3;   // wrong：算错了
+    ant = P(Sk.line(24,13,20.8,9.6,45,.3),"k1") + P(Sk.line(20.8,9.6,24.6,7.6,46,.3),"k1") + P(Sk.line(24.6,7.6,20.6,5.2,47,.3),"k1") + lamp(19.4,4.4);
+    face = P(Sk.curve([[16.2,23.8],[20.2,26],[16.2,28.2]],48,.1),"k1") + P(Sk.curve([[31.8,23.8],[27.8,26],[31.8,28.2]],49,.1),"k1") +
+      P(Sk.curve([[19,34],[21.5,32.6],[24,34.4],[26.5,32.6],[29,34]],50,.12),"k1");
+    extra = `<path d="M38.6 13.4C40.8 16.6 41.2 18.4 38.6 19.4C36 18.4 36.4 16.6 38.6 13.4Z" fill="var(--c-sky)" stroke="var(--ink)" stroke-width=".9"/>`;
+  }
+  return `<g transform="rotate(${tilt} 24 30)">${ant}${head}${face}</g>${extra}`;
+}
+
+/* ============ 方向二「小环」：一颗带环的小星球；环的位置和歪斜就是它的心情，环上有一颗小卫星 ============ */
+function nav2(e){
+  const body = (cy) => `<circle cx="24" cy="${cy}" r="12.6" fill="var(--c-math)"/>` + P(Sk.ellipse(24, cy, 12.8, 12.8, 61));
+  const moon = (x, y) => dot(x, y, 2.3, "var(--accent)");
+  const ring = (cy, rot, seed, rx, ry) => ({ back: P(arc(24, cy, rx || 20, ry || 5.2, 180, 360, rot, seed), "k1"), front: P(arc(24, cy, rx || 20, ry || 5.2, 0, 180, rot, seed + 1), "k") });
+  const on = (cy, rot, deg, rx, ry) => { const t = deg * Math.PI / 180, c = Math.cos(rot * Math.PI / 180), s = Math.sin(rot * Math.PI / 180), x = Math.cos(t) * (rx || 20), y = Math.sin(t) * (ry || 5.2); return [24 + x * c - y * s, cy + x * s + y * c]; };
+  let cy = 26, r, face = "", extra = "", m;
+  if (e === "curious"){ r = ring(31, -16, 62); m = on(31, -16, 12);
+    face = dot(19.6,24,2) + dot(28.6,23.4,2.7) + P(Sk.curve([[25.6,18.6],[28.6,17.4],[31.4,18.6]],64,.15),"k1") + P(Sk.curve([[20.6,29],[24,30.8],[27.4,29]],65,.12),"k1");
+  } else if (e === "waiting"){ r = ring(31, 0, 66); m = on(31, 0, 96);
+    face = dot(19.8,24,2) + dot(28.2,24,2) + P(Sk.line(21,29.4,27,29.4,68,.3),"k1");
+  } else if (e === "surprised"){ cy = 30; r = ring(9.4, 0, 69, 13, 3.4); m = on(9.4, 0, 270, 13, 3.4);
+    face = `<circle cx="19.2" cy="27.6" r="3.2" fill="var(--pane)"/><circle cx="28.8" cy="27.6" r="3.2" fill="var(--pane)"/>` +
+      P(Sk.ellipse(19.2,27.6,3.2,3.2,71,.6),"k1") + P(Sk.ellipse(28.8,27.6,3.2,3.2,72,.6),"k1") + dot(19.2,27.6,1.4) + dot(28.8,27.6,1.4) +
+      `<ellipse cx="24" cy="35.2" rx="2.2" ry="2.8" fill="var(--ink)"/>`;
+    extra = P(Sk.line(7.6,12.6,4.8,14.4,73,.3),"k1") + P(Sk.line(40.4,12.6,43.2,14.4,74,.3),"k1");
+  } else if (e === "clap"){ r = ring(31, 11, 75); m = on(31, 11, 168);
+    face = P(Sk.curve([[17,24.6],[19.6,22],[22.2,24.6]],77,.12),"k1") + P(Sk.curve([[25.8,24.6],[28.4,22],[31,24.6]],78,.12),"k1") + `<path d="M19.4 27.6Q24 34.6 28.6 27.6Z" fill="var(--ink)"/>`;
+    extra = P(arc(24,31,20,5.2,10,170,-11,79),"k1") + P(Sk.line(44.4,30.6,46.6,28.6,80,.3),"k1") + P(Sk.line(44.8,35.4,47,37,81,.3),"k1") + P(Sk.line(3.6,30.6,1.4,28.6,82,.3),"k1");
+  } else if (e === "think"){ r = ring(31, 20, 83); m = [9.4, 9.2];
+    face = dot(18.6,22.6,2) + dot(27.4,22.2,2) + P(Sk.curve([[20.8,29.4],[22.8,28.2],[24.8,29.8],[26.8,28.6]],85,.1),"k1");
+    extra = dot(14.6,14.4,1.3,"var(--muted)");
+  } else { r = ring(36, -24, 86); m = on(36, -24, 150);   // wrong：算错了，环滑下来了
+    face = P(Sk.curve([[17,21.8],[20.8,24],[17,26.2]],88,.1),"k1") + P(Sk.curve([[31,21.8],[27.2,24],[31,26.2]],89,.1),"k1") + P(Sk.curve([[19.6,30],[21.8,28.8],[24,30.4],[26.2,28.8],[28.4,30]],90,.1),"k1");
+    extra = `<path d="M39.4 9.6C41.6 12.8 42 14.6 39.4 15.6C36.8 14.6 37.2 12.8 39.4 9.6Z" fill="var(--c-sky)" stroke="var(--ink)" stroke-width=".9"/>`;
+  }
+  return r.back + body(cy) + face + r.front + moon(m[0], m[1]) + extra;
+}
+
+const EXPR = [["curious","好奇"],["waiting","等你"],["surprised","惊讶"],["clap","鼓掌"],["think","想一想"],["wrong","算错了"]];
+const LINES = { curious:"舰长，这里面藏着什么？", waiting:"不着急，你慢慢想。", surprised:"原来右边也有 5 排。", clap:"你找到了，一块都不少。", think:"嗯，这个我也不太确定。", wrong:"咦，我好像少算了 16 块。" };
+const DIRS = [
+  { name:"方向一 · 小灯", fn:nav1, idea:"从现在的圆脸加天线长出来。头顶多了一盏小灯：好奇时往前探，等你时垂在一边，惊讶时笔直竖起，想事情时卷成一个圈，算错了就折成几折耷拉下来。" },
+  { name:"方向二 · 小环", fn:nav2, idea:"一颗带环的小星球，环上有一颗小卫星。环歪向哪边、高还是低，就是它的心情：惊讶时环跳到头顶，算错了环滑到脚边，想事情时小卫星飘到了头顶上。" }
+];
+const svg = (inner, cls) => `<svg viewBox="0 0 48 48" ${cls || ""} aria-hidden="true">${inner}</svg>`;
+function panel(d, scheme){
+  const tiles = EXPR.map(([k, n]) => `<div class="tile">${svg(d.fn(k))}<span>${n}</span></div>`).join("");
+  const use = EXPR.map(([k]) => `<div class="talk">${svg(d.fn(k))}<div class="bubble">${LINES[k]}</div></div>`).join("");
+  const big = scheme === "light" ? `<div class="big">${svg(d.fn("curious"))}<p class="note">240 px：放大以后线条的抖动看得更清楚。平时不会这么大，只在开场或星卡上出现。</p></div>` : "";
+  return `<div class="panel ${scheme}"><div class="row">${tiles}</div><div class="use">${use}</div>${big}</div>`;
+}
+document.getElementById("out").innerHTML = DIRS.map(d => `<div class="dir"><h2>${d.name}</h2><p class="note">${d.idea}</p></div>` + panel(d, "light") + panel(d, "dark")).join("");
+document.getElementById("notes").innerHTML = [
+  "两个方向都只用三样东西表达心情：眼睛、嘴，和一个会动的小零件（小灯，或者环）。42 px 时眼睛和嘴看不清，靠的是小零件的轮廓。",
+  "强调色只给一处：方向一是那盏小灯，方向二是那颗小卫星。",
+  "没有性别和年龄的特征；不是老师，也不是机器人管家。",
+  "「算错了」不是难过：它有点不好意思，还冒了一滴汗。舰长帮它找到错以后，下一个表情是鼓掌。"
+].map(s => `<li>${s}</li>`).join("");
+</script>
+</body>
+</html>

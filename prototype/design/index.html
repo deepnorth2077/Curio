@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curio 设计稿</title>
+<style>
+/* Curio 设计稿共用：颜色取自 prototype/index.html，字体只用系统字体 */
+:root,.light{
+  --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --c-math:#ECCDB6; --c-math-bg:#F2E1D3; --c-sci:#CCD6C0; --c-sci-bg:#DCE3D2; --c-sky:#CFDCE6; --wash:#EFE4D6;
+  --f-serif:"Songti SC","Source Han Serif SC","Noto Serif CJK SC",Georgia,serif;
+  --f-sans:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+.dark{
+  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --c-math:#5A4536; --c-math-bg:#33291F; --c-sci:#3C4836; --c-sci-bg:#28301F; --c-sky:#2D3B47; --wash:#2A2738;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-serif);color:var(--ink);font-weight:600;margin:0}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.note{color:var(--muted);font-size:14px}
+a{color:inherit}
+
+.wrap{max-width:720px;margin:0 auto;padding:22px 16px 60px}
+.list{display:grid;gap:12px;margin-top:16px}
+.list a{display:block;background:var(--pane);border:1px solid var(--rule);border-radius:16px;padding:14px 18px;text-decoration:none;color:var(--ink)}
+.list a b{font-family:var(--f-serif);font-size:20px}
+.list a span{display:block;color:var(--muted);font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Curio 设计稿</h1>
+  <p>这里是给大人和舰长一起看的设计稿，还没有换进正式的页面。看完告诉 Claude 选哪个、哪里不喜欢。</p>
+  <div class="list">
+    <a href="./navigator.html"><b>领航员</b><span>两个方向，各五个表情，加一个「算错了」。请舰长挑一个。</span></a>
+    <a href="./rocket.html"><b>火箭</b><span>一个标准画法，三种大小。</span></a>
+    <a href="./starmap.html"><b>星图首屏</b><span>只画舰长所在的这一圈；每个星座有自己的轮廓。可以点。</span></a>
+    <a href="./starmap.html?blind=1"><b>星图 · 盲猜模式</b><span>名字换成编号，猜猜每个星座像什么。</span></a>
+  </div>
+  <p class="note" style="margin-top:18px">和舰长一起看时，可以问两个问题：「你觉得它现在在想什么？」「你最想先飞去哪个星座？」</p>
+</div>
+</body>
+</html>
