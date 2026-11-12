@@ -1,0 +1,31 @@
+{
+  "name": "mastery-revealed-control",
+  "about": "mastery-revealed 的对照：同样的作答（q1～q4 一次答对，q5 答错、要提示、再答错），但不看答案，直接完成。mastery 必须和 mastery-revealed 完全相同（CURIO-013 第 1 条）。事件规格 6.4；竖切片 1 规格第 4 节。",
+  "order_free": true,
+  "base": {"schema": "event/2", "learner_id": "lrn_01JC00000000000000000000K1", "device_id": "dev_01JC00000000000000000000D1", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K1"}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}},
+  "inputs": [
+    {"event": {"event_id": "evt_01JC00000000000000000000E1", "device_seq": 1, "occurred_at": "2026-11-08T02:00:01.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E2", "device_seq": 2, "occurred_at": "2026-11-08T02:00:02.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E3", "device_seq": 3, "occurred_at": "2026-11-08T02:00:03.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E4", "device_seq": 4, "occurred_at": "2026-11-08T02:00:04.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E5", "device_seq": 5, "occurred_at": "2026-11-08T02:00:05.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E6", "device_seq": 6, "occurred_at": "2026-11-08T02:00:06.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E7", "device_seq": 7, "occurred_at": "2026-11-08T02:00:07.000Z", "verb": "hint.used", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "level": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E8", "device_seq": 8, "occurred_at": "2026-11-08T02:00:08.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "response": "c", "correct": false, "try": 2, "hints_used": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E9", "device_seq": 9, "occurred_at": "2026-11-08T02:00:09.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"duration_ms": 60000}}, "expect": "accepted"}
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {
+      "math.number.fraction-intro": {
+        "state": "lit",
+        "best": {
+          "correct": 4,
+          "answered": 5
+        }
+      }
+    },
+    "conflicts": []
+  },
+  "worked": "A1 合法：started 在首、completed 在末；q5 的 try 是 1、2；没有 answer.revealed，第 6 条无事可查。answered：q1～q5 → 5；try=1 答对 q1～q4 → 4。4×5=20 ≥ 20 → lit。和 mastery-revealed 的 mastery 逐字相同。"
+}

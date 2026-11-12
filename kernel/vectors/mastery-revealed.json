@@ -1,0 +1,32 @@
+{
+  "name": "mastery-revealed",
+  "about": "看答案不改掌握度（CURIO-013 第 1 条：mastery/1 不读 answer.revealed）。q1～q4 一次答对；最后一题 q5 答错、要提示、再答错，然后看答案，接着完成（「最后一题看答案时，先存它，再产出 attempt.completed」）。对照向量 mastery-revealed-control 是同样的作答、不看答案，两者的 mastery 必须完全相同：都是 4/5、lit。事件规格 6.3、6.4；竖切片 1 规格第 4 节。",
+  "order_free": true,
+  "base": {"schema": "event/2", "learner_id": "lrn_01JC00000000000000000000K1", "device_id": "dev_01JC00000000000000000000D1", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K1"}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}},
+  "inputs": [
+    {"event": {"event_id": "evt_01JC00000000000000000000E1", "device_seq": 1, "occurred_at": "2026-11-08T02:00:01.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"mode": "first"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E2", "device_seq": 2, "occurred_at": "2026-11-08T02:00:02.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E3", "device_seq": 3, "occurred_at": "2026-11-08T02:00:03.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q2", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E4", "device_seq": 4, "occurred_at": "2026-11-08T02:00:04.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q3", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E5", "device_seq": 5, "occurred_at": "2026-11-08T02:00:05.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q4", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E6", "device_seq": 6, "occurred_at": "2026-11-08T02:00:06.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E7", "device_seq": 7, "occurred_at": "2026-11-08T02:00:07.000Z", "verb": "hint.used", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "level": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E8", "device_seq": 8, "occurred_at": "2026-11-08T02:00:08.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5", "response": "c", "correct": false, "try": 2, "hints_used": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E9", "device_seq": 9, "occurred_at": "2026-11-08T02:00:09.000Z", "verb": "answer.revealed", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q5"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E10", "device_seq": 10, "occurred_at": "2026-11-08T02:00:10.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"duration_ms": 60000}}, "expect": "accepted"}
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {
+      "math.number.fraction-intro": {
+        "state": "lit",
+        "best": {
+          "correct": 4,
+          "answered": 5
+        }
+      }
+    },
+    "conflicts": []
+  },
+  "worked": "A1 合法：第 1～3 条满足；第 4 条：started 在首、completed 在末（answer.revealed 在 completed 之前）；第 5 条：q5 的 try 是 1、2；第 6 条：q5 的 answer.revealed（device_seq 9）之前有 q5 的作答（6、8），只一条，之后没有 q5 的作答。hint.used 不影响合法性。作答过的题 q1～q5 → answered 5（answer.revealed 不是作答，不增加题数）；try=1 答对的是 q1～q4 → correct 4（q5 的 try1 错；看答案不把它变成对）。4×5=20 ≥ 5×4=20 → lit。和 mastery-revealed-control 的 mastery 逐字相同。"
+}

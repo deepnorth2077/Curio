@@ -1,0 +1,42 @@
+{
+  "name": "ingest-grader",
+  "about": "attempt.started 的可选字段 grader（CURIO-013 第 2 条：字符串，最多 32 个字符）：带 grade/1、不带、正好 32 个字符都接收；33 个字符、数字、null、数组都不合格；grader 写在 item.answered 里也不合格。被拒的 started 让那次尝试缺开头、按第 4 条不一致（CURIO-013 第 4 条说的风险）。事件规格第 2 节、3.1 节、6.3 节；竖切片 1 规格第 3 节第 4、6 步。",
+  "order_free": false,
+  "base": {"schema": "event/2", "learner_id": "lrn_01JC00000000000000000000K1", "device_id": "dev_01JC00000000000000000000D1", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K1"}, "content": {"node_id": "math.number.fraction-intro", "activity_id": "act.quiz.fraction-intro-01", "activity_kind": "quiz", "activity_version": 1, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}},
+  "inputs": [
+    {"event": {"event_id": "evt_01JC00000000000000000000E1", "device_seq": 1, "occurred_at": "2026-11-08T02:00:01.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"mode": "first", "grader": "grade/1"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E2", "device_seq": 2, "occurred_at": "2026-11-08T02:00:02.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E3", "device_seq": 3, "occurred_at": "2026-11-08T02:00:03.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A1", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E4", "device_seq": 4, "occurred_at": "2026-11-08T02:00:04.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"mode": "retry"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E5", "device_seq": 5, "occurred_at": "2026-11-08T02:00:05.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q1", "response": "b", "correct": false, "try": 1, "hints_used": 0, "misconception": "part-vs-rest"}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E6", "device_seq": 6, "occurred_at": "2026-11-08T02:00:06.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 2, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E7", "device_seq": 7, "occurred_at": "2026-11-08T02:00:07.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A2", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E8", "device_seq": 8, "occurred_at": "2026-11-08T02:00:08.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"mode": "retry", "grader": "grade/12345678901234567890123456"}}, "expect": "accepted", "why": "grader 正好 32 个字符，边界上合格"},
+    {"event": {"event_id": "evt_01JC00000000000000000000E9", "device_seq": 9, "occurred_at": "2026-11-08T02:00:09.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A4", "payload": {"mode": "retry", "grader": "grade/123456789012345678901234567"}}, "expect": "quarantined:invalid", "why": "grader 33 个字符，超过 32"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E10", "device_seq": 10, "occurred_at": "2026-11-08T02:00:10.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A4", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E11", "device_seq": 11, "occurred_at": "2026-11-08T02:00:11.000Z", "verb": "attempt.completed", "attempt_id": "att_01JC00000000000000000000A4", "payload": {"duration_ms": 60000}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E12", "device_seq": 12, "occurred_at": "2026-11-08T02:00:12.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A5", "payload": {"mode": "first", "grader": 1}}, "expect": "quarantined:invalid", "why": "grader 是数字，不是字符串"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E13", "device_seq": 13, "occurred_at": "2026-11-08T02:00:13.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A5", "payload": {"mode": "first", "grader": null}}, "expect": "quarantined:invalid", "why": "grader 是 null，不是字符串（可选字段要么不写，要么是字符串）"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E14", "device_seq": 14, "occurred_at": "2026-11-08T02:00:14.000Z", "verb": "attempt.started", "attempt_id": "att_01JC00000000000000000000A5", "payload": {"mode": "first", "grader": ["grade/1"]}}, "expect": "quarantined:invalid", "why": "grader 是数组，不是字符串"},
+    {"event": {"event_id": "evt_01JC0000000000000000000E15", "device_seq": 15, "occurred_at": "2026-11-08T02:00:15.000Z", "verb": "item.answered", "attempt_id": "att_01JC00000000000000000000A3", "payload": {"item_id": "q1", "response": "a", "correct": true, "try": 1, "hints_used": 0, "grader": "grade/1"}}, "expect": "quarantined:invalid", "why": "grader 只加在 attempt.started 上，item.answered 的 payload 多了它仍不合格"}
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {
+      "math.number.fraction-intro": {
+        "state": "lit",
+        "best": {
+          "correct": 1,
+          "answered": 1
+        }
+      }
+    },
+    "conflicts": [
+      {
+        "attempt_id": "att_01JC00000000000000000000A4",
+        "rule": 4
+      }
+    ]
+  },
+  "worked": "接收的：A1 started（带 grade/1）、q1 对、completed；A2 started（不带 grader）、q1 错 try1、q1 对 try2、completed；A3 started（grader 32 个字符）；A4 的 q1 对、completed（A4 的 started 因 grader 33 个字符被隔离）。隔离的 A5 三条和 A3 那条带 grader 的作答不进投影。A1 合法已完成：try=1 答对 q1 → 1/1。A2 合法已完成：q1 的 try 是 1、2，try=1 错 → 0/1。A3 只有 started，合法但没结束，不算完成也不算不一致。A4 按 device_seq 排序后第一条是 item.answered → 第 4 条不满足（第 1、2、3 条都满足：同设备同孩子、actor 本人、content 相同）→ 不一致，记 4。best：1/1 和 0/1 交叉相乘 1×1 > 0×1 → 1/1；1×5=5 ≥ 1×4=4 → lit。conflicts 只有 A4。"
+}

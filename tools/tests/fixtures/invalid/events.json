@@ -1013,5 +1013,136 @@
         "value": "private-text/2"
       }
     ]
+  },
+  {
+    "name": "answer.revealed-missing-item-id",
+    "why": "answer.revealed 必须有 item_id",
+    "base": "events.json#answer.revealed",
+    "patch": [
+      {
+        "op": "remove",
+        "path": "/payload/item_id"
+      }
+    ]
+  },
+  {
+    "name": "answer.revealed-item-id-type",
+    "why": "item_id 是字符串",
+    "base": "events.json#answer.revealed",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/item_id",
+        "value": 1
+      }
+    ]
+  },
+  {
+    "name": "answer.revealed-extra-key",
+    "why": "answer.revealed 的 payload 只有 item_id",
+    "base": "events.json#answer.revealed",
+    "patch": [
+      {
+        "op": "add",
+        "path": "/payload/level",
+        "value": 1
+      }
+    ]
+  },
+  {
+    "name": "attempt.started-grader-pattern",
+    "why": "grader 形如 grade/1",
+    "base": "events.json#attempt.started-grader",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/grader",
+        "value": "Grade-1"
+      }
+    ]
+  },
+  {
+    "name": "attempt.started-grader-too-long",
+    "why": "grader 最多 32 个字符",
+    "base": "events.json#attempt.started-grader",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/grader",
+        "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/1"
+      }
+    ]
+  },
+  {
+    "name": "attempt.started-grader-empty",
+    "why": "grader 至少 1 个字符",
+    "base": "events.json#attempt.started-grader",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/grader",
+        "value": ""
+      }
+    ]
+  },
+  {
+    "name": "poe.predicted-step-too-long",
+    "why": "step 最多 32 个字符",
+    "base": "events.json#poe.predicted-step",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/step",
+        "value": "sssssssssssssssssssssssssssssssss"
+      }
+    ]
+  },
+  {
+    "name": "poe.predicted-misconception-type",
+    "why": "misconception 是字符串",
+    "base": "events.json#poe.predicted-step",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/misconception",
+        "value": 1
+      }
+    ]
+  },
+  {
+    "name": "attempt.started-grader-zero",
+    "why": "grader 的版本号从 1 起，不许 0 和前导 0",
+    "base": "events.json#attempt.started-grader",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/grader",
+        "value": "grade/0"
+      }
+    ]
+  },
+  {
+    "name": "attempt.started-grader-leading-zero",
+    "why": "grader 的版本号不许前导 0",
+    "base": "events.json#attempt.started-grader",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/grader",
+        "value": "grade/01"
+      }
+    ]
+  },
+  {
+    "name": "poe.predicted-step-empty",
+    "why": "step 至少 1 个字符",
+    "base": "events.json#poe.predicted-step",
+    "patch": [
+      {
+        "op": "replace",
+        "path": "/payload/step",
+        "value": ""
+      }
+    ]
   }
 ]

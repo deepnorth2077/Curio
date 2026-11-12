@@ -22,7 +22,10 @@ KERNEL_VECTORS = REPO / "kernel/vectors"
 GRADING = REPO / "engine/vectors/grading.json"
 EVENT_SCHEMA = json.loads((REPO / "schemas/event.schema.json").read_text(encoding="utf-8"))
 VALIDATOR = Draft202012Validator(EVENT_SCHEMA)
-SLICE_VERBS = {"attempt.started", "item.answered", "hint.used", "attempt.completed", "attempt.abandoned"}
+SLICE_VERBS = {"attempt.started", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned"}
+# attempt.started 的 grader（CURIO-013）：整串匹配，最多 32 个字符。schema 也查，这里再用 fullmatch 查一遍，
+# 因为 jsonschema 的 pattern 用 re.search，「$」会放过末尾的换行。
+GRADER = re.compile(r"[a-z][a-z0-9-]*/[1-9][0-9]*")
 EXPECTS = {"accepted", "duplicate", "quarantined:invalid", "quarantined:conflict"}
 MAX_SAFE = 2**53 - 1
 
@@ -78,6 +81,15 @@ def same(a, b):
     return a == b
 
 
+def _slice_payload_ok(event):
+    """schema 之外、本切片还要查的 payload 规则。answer.revealed 的 {item_id} 由 schema 查全。"""
+    payload = event["payload"]
+    if event["verb"] == "attempt.started" and "grader" in payload:
+        grader = payload["grader"]
+        return isinstance(grader, str) and len(grader) <= 32 and GRADER.fullmatch(grader) is not None
+    return True
+
+
 class RefLog:
     def __init__(self):
         self.by_id, self.by_seq, self.accepted, self.raws = {}, {}, [], []
@@ -94,6 +106,8 @@ class RefLog:
         if not all(_number_ok(x) for x in _numbers(event)):
             return "quarantined:invalid"
         if not VALIDATOR.is_valid(event) or event["verb"] not in SLICE_VERBS:
+            return "quarantined:invalid"
+        if not _slice_payload_ok(event):
             return "quarantined:invalid"
         old = self.by_id.get(event["event_id"])
         if old is not None:
@@ -123,9 +137,9 @@ def _order(events):
 
 def violated_rule(events):
     if VARIANT["pick"] == "max":
-        broken = [r for r in range(1, 6) if _check_rule(events, r)]
+        broken = [r for r in range(1, 7) if _check_rule(events, r)]
         return broken[-1] if broken else None
-    for rule in range(1, 6):
+    for rule in range(1, 7):
         if _check_rule(events, rule):
             return rule
     return None
@@ -149,6 +163,20 @@ def _check_rule(events, rule):
         starts = [i for i, e in enumerate(evs) if e["verb"] == "attempt.started"]
         ends = [i for i, e in enumerate(evs) if e["verb"] in END]
         return starts != [0] or len(ends) > 1 or bool(ends and ends[0] != len(evs) - 1)
+    if rule == 6:
+        # answer.revealed：之前已有同题 item.answered；同一 item_id 最多一条；之后不再有同题 item.answered
+        answered, revealed = set(), set()
+        for e in evs:
+            item = e["payload"].get("item_id")
+            if e["verb"] == "item.answered":
+                if item in revealed:
+                    return True
+                answered.add(item)
+            elif e["verb"] == "answer.revealed":
+                if item not in answered or item in revealed:
+                    return True
+                revealed.add(item)
+        return False
     tries = {}
     for e in evs:
         if e["verb"] == "item.answered":
@@ -372,6 +400,20 @@ class TestKernelVectors(unittest.TestCase):
         original = violated_rule
         try:
             violated_rule = lambda evs: (None if original(evs) == 5 else original(evs))  # noqa: E731
+            self.assertNotEqual(ref_mastery(log.accepted), v["mastery"])
+        finally:
+            violated_rule = original
+
+    def test_reference_catches_a_missing_rule_6(self):
+        """把第 6 条去掉，attempt-revealed-rule6 就对不上。"""
+        v = json.loads((KERNEL_VECTORS / "attempt-revealed-rule6.json").read_text(encoding="utf-8"))
+        log = RefLog()
+        for item in v["inputs"]:
+            log.ingest(raw_of(v, item))
+        global violated_rule
+        original = violated_rule
+        try:
+            violated_rule = lambda evs: (None if original(evs) == 6 else original(evs))  # noqa: E731
             self.assertNotEqual(ref_mastery(log.accepted), v["mastery"])
         finally:
             violated_rule = original
