@@ -98,7 +98,8 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 .star svg{display:block}
 .star-name{font-family:var(--f-serif);font-weight:600;color:var(--ink);font-size:19px}
 .chart-tip{position:relative;margin-top:18px;font-size:15px}
-.toast{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--pane);border-radius:12px;padding:8px 16px;font-size:15px;max-width:90%;text-align:center;box-shadow:var(--shadow)}
+.chart-note{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:12px;padding:0 12px}
+.toast{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--pane);border-radius:12px;padding:8px 16px;font-size:15px;max-width:90%;text-align:center;box-shadow:var(--shadow)}
 
 /* 挑战 */
 .quiz{width:100%;max-width:760px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
@@ -168,6 +169,8 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 @keyframes light-pop{0%{transform:scale(.72) rotate(-10deg)}55%{transform:scale(1.12) rotate(3deg)}100%{transform:none}}
 @keyframes light-fill{from{fill:var(--pane)}to{fill:var(--gold)}}
 @keyframes light-ray{from{opacity:0}to{opacity:1}}
+/* 窄屏上三颗星竖着排，给左上角的「星图」标题留出位置 */
+@media (max-width:759px){.chart{padding-top:84px}}
 @media (min-width:760px){
   .chart-head h1{font-size:28px}
   .stem{font-size:20px}
