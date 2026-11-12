@@ -214,7 +214,7 @@ function starSvg(state, seed, size) {
       body += `<path class="k1 ray" d="${Sk.line(50 + Math.cos(a) * 44, 52 + Math.sin(a) * 44, 50 + Math.cos(a) * 49, 52 + Math.sin(a) * 49, seed + 20 + i, .4)}"/>`;
     }
   } else if (state === "explored") {
-    body += `<path class="star-half" d="${Sk.area(starPoints(50, 52, 38, 16).filter((p) => p[0] <= 50.5).concat([[50, 90], [50, 14]]))}" opacity=".7"/>`;
+    body += `<path class="star-half" d="${Sk.area([0, 9, 8, 7, 6, 5].map((i) => pts[i]))}" opacity=".7"/>`;
     body += `<path class="k" d="${Sk.poly(pts, seed, true, .8)}"/>`;
   } else {
     body += `<path class="fp" d="${Sk.area(pts)}"/>`;
