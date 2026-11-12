@@ -11,6 +11,8 @@ import { FrozenError } from "./commit.js";
 
 /** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。 */
 export const ENGINE_LEVEL = 1;
+/** 这个外壳认得的活动契约版本（内容规格 3.8）。清单的 contracts 里有别的版本时，提示「需要更新」。 */
+export const KNOWN_CONTRACTS = ["activity/1.1"];
 /** 发布包的位置：部署时 release/ 和 app/ 同级（规格第 2、8 节）。 */
 const RELEASE_URL = new URL("../release/release.json", import.meta.url);
 
@@ -74,6 +76,9 @@ export async function verifyManifest(rel) {
   const h = await sha256Hex(new TextEncoder().encode(text));
   if (h !== rel.content_hash) throw new ReleaseError("broken", "content_hash 对不上");
   if (rel.release_id !== "rel_" + rel.content_hash) throw new ReleaseError("broken", "release_id 对不上");
+  if (!Array.isArray(rel.contracts) || !rel.contracts.every((c) => typeof c === "string")) throw new ReleaseError("broken", "contracts 不是字符串列表");
+  const unknown = rel.contracts.filter((c) => !KNOWN_CONTRACTS.includes(c));
+  if (unknown.length) throw new ReleaseError("update", `不认得的契约：${unknown.join("、")}`);
 }
 
 /**
@@ -107,7 +112,6 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
     rel = await res.json();
   } catch { throw new ReleaseError("broken", "读不到 release.json"); }
   await verifyManifest(rel);
-  // TODO：以后按内容规格 3.8 检查 contracts（宿主不支持其中任何一个契约时不切换发布，提示「需要更新」）。1a 不承载自定义实验，先不处理。
   const nodes = [];
   for (const n of rel.nodes) {
     const def = await fetchVerifiedJson(url, n.json, fetchFn);
@@ -351,6 +355,7 @@ function renderChart() {
     <div class="chart-head"><h1 id="chartTitle">星图</h1><p class="sub">点亮了 ${lit} 颗，一共 ${nodes.length} 颗</p></div>
     <ul class="stars">${stars}</ul>
     <p class="chart-tip muted">${app.mode === "writable" ? "点一颗星，开始挑战。" : app.mode === "recovering" ? "正在准备……" : ""}</p>
+    <p class="chart-note muted">试玩记录 · 只在这台设备上 · 还没有备份 · 7 天不打开可能会丢</p>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   </section>`;
   main.querySelectorAll("[data-node]").forEach((b) => b.addEventListener("click", () => openNode(/** @type {HTMLElement} */ (b).dataset.node || "")));
@@ -892,6 +897,8 @@ async function boot() {
     renderStop("请用 https 或 localhost 打开", "这样才能核对内容包。请家长换一个网址打开。");
     return;
   }
+  // 请浏览器别自动清掉这台设备上的记录；没有这个功能或被拒绝时照常往下走
+  try { if (navigator.storage && typeof navigator.storage.persist === "function") navigator.storage.persist().catch(() => {}); } catch { /* 照常往下走 */ }
   try {
     app.pack = await loadRelease();
   } catch (e) {
