@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curio 设计稿 · 第三位领航员</title>
+<style>
+/* Curio 设计稿共用：颜色取自 prototype/index.html，字体只用系统字体 */
+:root,.light{
+  --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --c-math:#ECCDB6; --c-math-bg:#F2E1D3; --c-sci:#CCD6C0; --c-sci-bg:#DCE3D2; --c-sky:#CFDCE6; --wash:#EFE4D6;
+  --f-serif:"Songti SC","Source Han Serif SC","Noto Serif CJK SC",Georgia,serif;
+  --f-sans:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+.dark{
+  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --c-math:#5A4536; --c-math-bg:#33291F; --c-sci:#3C4836; --c-sci-bg:#28301F; --c-sky:#2D3B47; --wash:#2A2738;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-serif);color:var(--ink);font-weight:600;margin:0}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.note{color:var(--muted);font-size:14px}
+a{color:inherit}
+
+.wrap{max-width:1000px;margin:0 auto;padding:18px 16px 60px}
+.lead{margin:6px 0 18px}
+.dir{margin:26px 0 8px}
+.dir h2{font-size:22px}
+.panel{background:var(--bg);border:1px solid var(--rule);border-radius:18px;padding:16px;margin:12px 0}
+.row{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.tile{background:var(--pane);border:1px solid var(--rule);border-radius:14px;padding:10px 6px 8px;text-align:center}
+.tile svg{width:96px;height:96px;display:block;margin:0 auto}
+.tile span{font-size:14px;color:var(--muted)}
+.use{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.talk{display:flex;gap:10px;align-items:flex-start}
+.talk svg{flex:none;width:42px;height:42px}
+.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:9px 14px;color:var(--ink);flex:1;font-size:16px}
+.big{display:flex;align-items:center;gap:18px;margin-top:12px}
+.big svg{width:240px;height:240px;flex:none}
+.big p{margin:0}
+.crew{display:grid;grid-template-columns:auto repeat(6,42px);gap:8px 14px;align-items:center;justify-content:start}
+.crew svg{width:42px;height:42px}
+.crew b{font-weight:400;font-size:14px;color:var(--muted);padding-right:6px}
+#notes li{margin:6px 0}
+@media (max-width:700px){ .row{grid-template-columns:repeat(3,1fr)} .use{grid-template-columns:1fr} .tile svg{width:84px;height:84px} .big{flex-direction:column;align-items:flex-start} .big svg{width:200px;height:200px} .crew{grid-template-columns:auto repeat(6,34px);gap:6px 8px} .crew svg{width:34px;height:34px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>第三位领航员 · 两个候选</h1>
+  <p class="lead">舰长点亮「生命的说明书」星座（细胞、DNA、染色体）以后，会认识一位新伙伴。舰长说：他很勇敢，有时候也很萌。下面两个候选各画了六个表情，放了三种大小：42 px 是它在气泡旁边的真实大小。浅色、深色各一组。</p>
+  <div id="out"></div>
+  <div class="dir"><h2>和小灯、小环站在一起</h2><p class="note">四位领航员的六个表情都是 42 px，从左到右：好奇、等你、惊讶、鼓掌、想一想、算错了。</p></div>
+  <div id="crew"></div>
+  <h2 style="font-size:20px;margin-top:30px">设计说明</h2>
+  <ul id="notes"></ul>
+  <p class="note">每个表情是一个 viewBox 为 0 0 48 48 的图，不超过 14 笔。选定一个候选以后，另开任务把它换进模块骨架。<a href="./index.html">回到设计稿目录</a></p>
+</div>
+<script>
+"use strict";
+/* 手绘线条：和 references/starter.html 里的 sketchLib 逐字相同 */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function blob(cx,cy,rx,ry,seed){ const r=R(seed), N=9, p=[]; for(let i=0;i<N;i++){ const t=i/N*Math.PI*2, k=1+(r()-.5)*.1; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); } return cr(p,true)+"Z"; }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,blob,curve,cr,R};
+}
+const Sk = sketchLib();
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+const dot = (x, y, r, fill) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill || "var(--ink)"}"/>`;
+// 椭圆上的一段弧（角度用度，rot 是整体旋转），画成手绘曲线
+function arc(cx, cy, rx, ry, a0, a1, rot, seed, j){
+  const n = 10, pts = [], c = Math.cos(rot * Math.PI / 180), s = Math.sin(rot * Math.PI / 180);
+  for (let i = 0; i <= n; i++){ const t = (a0 + (a1 - a0) * i / n) * Math.PI / 180, x = Math.cos(t) * rx, y = Math.sin(t) * ry; pts.push([cx + x * c - y * s, cy + x * s + y * c]); }
+  return Sk.curve(pts, seed, j == null ? .3 : j);
+}
+// 火箭的标准画法：viewBox 0 0 48 64。small 为 true 时去掉细节（24 px 以下用）
+function rocket(small){
+  const body = Sk.cr([[24,4],[29.5,10],[33,20],[33.5,32],[31.5,43.5],[16.5,43.5],[14.5,32],[15,20],[18.5,10]], true) + "Z";
+  let s = `<path d="M15.2 31L7.5 45.5L16 42.5Z" fill="var(--wash)"/><path d="M32.8 31L40.5 45.5L32 42.5Z" fill="var(--wash)"/>` +
+    P(Sk.curve([[15.2,31],[7.5,45.5],[16,42.5]],31,.25)) + P(Sk.curve([[32.8,31],[40.5,45.5],[32,42.5]],32,.25)) +
+    `<path d="${body}" fill="var(--c-sky)"/>` + P(body) +
+    `<path d="M19.5 46.5C19.5 53 23 57 24 61.5C25 57 28.5 53 28.5 46.5Z" fill="var(--accent)"/>`;
+  s += `<circle cx="24" cy="22.5" r="${small ? 4.6 : 5}" fill="var(--pane)"/>` + P(Sk.ellipse(24, 22.5, small ? 4.6 : 5, small ? 4.6 : 5, 33), small ? "k" : "k1");
+  if (!small) s += P(Sk.curve([[19.3,12.4],[24,13.8],[28.7,12.4]],34,.2),"k1") + P(Sk.curve([[17.2,38.5],[24,39.8],[30.8,38.5]],35,.2),"k1");
+  return s;
+}
+
+
+/* ============ 方向一「小灯」：圆脑袋，头顶一盏小灯；灯和天线的样子就是它的心情 ============ */
+function nav1(e){
+  const lamp = (x, y) => dot(x, y, 2.4, "var(--accent)");
+  const head = `<circle cx="24" cy="28" r="15" fill="var(--c-sky)"/>` + P(Sk.ellipse(24, 28, 15.3, 15.3, 11));
+  let ant = "", face = "", extra = "", tilt = 0;
+  if (e === "curious"){ tilt = -7;
+    ant = P(Sk.curve([[24,13],[25,8.5],[28,5.5]],21,.2),"k1") + lamp(29,4.2);
+    face = dot(18.5,26.2,2.1) + dot(29.6,25.6,2.9) + P(Sk.curve([[26.4,20.4],[29.6,19.2],[32.6,20.4]],22,.15),"k1") + P(Sk.curve([[19.6,33],[24,35.6],[28.4,33]],23,.15),"k1");
+  } else if (e === "waiting"){ tilt = 4;
+    ant = P(Sk.curve([[24,13],[26,7.5],[31.5,6.5],[35,10.5]],24,.2),"k1") + lamp(35.6,12.2);
+    face = dot(19,26.4,2.1) + dot(30,26.4,2.1) + P(Sk.line(20.5,34,27.5,34,25,.4),"k1") + P(Sk.line(16.2,22.6,21.6,22.9,26,.3),"k1") + P(Sk.line(27.2,22.9,32.6,22.6,27,.3),"k1");
+  } else if (e === "surprised"){
+    ant = P(Sk.line(24,13,24,6,28,.3),"k1") + lamp(24,4) + P(Sk.line(18.6,5.2,16,3.4,29,.3),"k1") + P(Sk.line(29.4,5.2,32,3.4,30,.3),"k1");
+    face = `<circle cx="18.2" cy="25.6" r="3.5" fill="var(--pane)"/><circle cx="29.8" cy="25.6" r="3.5" fill="var(--pane)"/>` +
+      P(Sk.ellipse(18.2,25.6,3.5,3.5,31,.6),"k1") + P(Sk.ellipse(29.8,25.6,3.5,3.5,32,.6),"k1") + dot(18.2,25.6,1.5) + dot(29.8,25.6,1.5) +
+      `<ellipse cx="24" cy="35" rx="2.5" ry="3.1" fill="var(--ink)"/>`;
+  } else if (e === "clap"){
+    ant = P(Sk.curve([[24,13],[23.2,9],[24,6]],33,.2),"k1") + lamp(24,4.2) + P(Sk.line(19,3.6,16.6,1.8,34,.3),"k1") + P(Sk.line(29,3.6,31.4,1.8,35,.3),"k1");
+    face = P(Sk.curve([[15.8,26.8],[18.5,24],[21.2,26.8]],36,.15),"k1") + P(Sk.curve([[26.8,26.8],[29.5,24],[32.2,26.8]],37,.15),"k1") +
+      `<path d="M18.6 31.2Q24 39.4 29.4 31.2Z" fill="var(--ink)"/>`;
+    extra = P(Sk.curve([[10.4,33.6],[7,29.6],[5.4,24.6]],38,.15)) + P(Sk.curve([[37.6,33.6],[41,29.6],[42.6,24.6]],39,.15)) +
+      dot(5.2,22.6,2.5,"var(--pane)") + dot(42.8,22.6,2.5,"var(--pane)") + P(Sk.ellipse(5.2,22.6,2.5,2.5,40,.5),"k1") + P(Sk.ellipse(42.8,22.6,2.5,2.5,41,.5),"k1");
+  } else if (e === "think"){ tilt = 6;
+    ant = P(Sk.curve([[24,13],[23.6,8.5],[26.5,5.2],[30,6.4],[30,9.6],[27.4,10]],42,.15),"k1") + lamp(26.6,9.6);
+    face = dot(17.4,24.2,2.1) + dot(28.4,24.2,2.1) + P(Sk.line(14.8,20.6,19.8,19.6,43,.3),"k1") + P(Sk.curve([[20.6,34],[22.8,32.8],[25,34.4],[27.2,33.2]],44,.12),"k1");
+  } else { tilt = -3;   // wrong：算错了
+    ant = P(Sk.line(24,13,20.8,9.6,45,.3),"k1") + P(Sk.line(20.8,9.6,24.6,7.6,46,.3),"k1") + P(Sk.line(24.6,7.6,20.6,5.2,47,.3),"k1") + lamp(19.4,4.4);
+    face = P(Sk.curve([[16.2,23.8],[20.2,26],[16.2,28.2]],48,.1),"k1") + P(Sk.curve([[31.8,23.8],[27.8,26],[31.8,28.2]],49,.1),"k1") +
+      P(Sk.curve([[19,34],[21.5,32.6],[24,34.4],[26.5,32.6],[29,34]],50,.12),"k1");
+    extra = `<path d="M38.6 13.4C40.8 16.6 41.2 18.4 38.6 19.4C36 18.4 36.4 16.6 38.6 13.4Z" fill="var(--c-sky)" stroke="var(--ink)" stroke-width=".9"/>`;
+  }
+  return `<g transform="rotate(${tilt} 24 30)">${ant}${head}${face}</g>${extra}`;
+}
+
+/* ============ 方向二「小环」：一颗带环的小星球；环的位置和歪斜就是它的心情，环上有一颗小卫星 ============ */
+function nav2(e){
+  const body = (cy) => `<circle cx="24" cy="${cy}" r="12.6" fill="var(--c-math)"/>` + P(Sk.ellipse(24, cy, 12.8, 12.8, 61));
+  const moon = (x, y) => dot(x, y, 2.3, "var(--accent)");
+  const ring = (cy, rot, seed, rx, ry) => ({ back: P(arc(24, cy, rx || 20, ry || 5.2, 180, 360, rot, seed), "k1"), front: P(arc(24, cy, rx || 20, ry || 5.2, 0, 180, rot, seed + 1), "k") });
+  const on = (cy, rot, deg, rx, ry) => { const t = deg * Math.PI / 180, c = Math.cos(rot * Math.PI / 180), s = Math.sin(rot * Math.PI / 180), x = Math.cos(t) * (rx || 20), y = Math.sin(t) * (ry || 5.2); return [24 + x * c - y * s, cy + x * s + y * c]; };
+  let cy = 26, r, face = "", extra = "", m;
+  if (e === "curious"){ r = ring(31, -16, 62); m = on(31, -16, 12);
+    face = dot(19.6,24,2) + dot(28.6,23.4,2.7) + P(Sk.curve([[25.6,18.6],[28.6,17.4],[31.4,18.6]],64,.15),"k1") + P(Sk.curve([[20.6,29],[24,30.8],[27.4,29]],65,.12),"k1");
+  } else if (e === "waiting"){ r = ring(31, 0, 66); m = on(31, 0, 96);
+    face = dot(19.8,24,2) + dot(28.2,24,2) + P(Sk.line(21,29.4,27,29.4,68,.3),"k1");
+  } else if (e === "surprised"){ cy = 30; r = ring(9.4, 0, 69, 13, 3.4); m = on(9.4, 0, 270, 13, 3.4);
+    face = `<circle cx="19.2" cy="27.6" r="3.2" fill="var(--pane)"/><circle cx="28.8" cy="27.6" r="3.2" fill="var(--pane)"/>` +
+      P(Sk.ellipse(19.2,27.6,3.2,3.2,71,.6),"k1") + P(Sk.ellipse(28.8,27.6,3.2,3.2,72,.6),"k1") + dot(19.2,27.6,1.4) + dot(28.8,27.6,1.4) +
+      `<ellipse cx="24" cy="35.2" rx="2.2" ry="2.8" fill="var(--ink)"/>`;
+    extra = P(Sk.line(7.6,12.6,4.8,14.4,73,.3),"k1") + P(Sk.line(40.4,12.6,43.2,14.4,74,.3),"k1");
+  } else if (e === "clap"){ r = ring(31, 11, 75); m = on(31, 11, 168);
+    face = P(Sk.curve([[17,24.6],[19.6,22],[22.2,24.6]],77,.12),"k1") + P(Sk.curve([[25.8,24.6],[28.4,22],[31,24.6]],78,.12),"k1") + `<path d="M19.4 27.6Q24 34.6 28.6 27.6Z" fill="var(--ink)"/>`;
+    extra = P(arc(24,31,20,5.2,10,170,-11,79),"k1") + P(Sk.line(44.4,30.6,46.6,28.6,80,.3),"k1") + P(Sk.line(44.8,35.4,47,37,81,.3),"k1") + P(Sk.line(3.6,30.6,1.4,28.6,82,.3),"k1");
+  } else if (e === "think"){ r = ring(31, 20, 83); m = [9.4, 9.2];
+    face = dot(18.6,22.6,2) + dot(27.4,22.2,2) + P(Sk.curve([[20.8,29.4],[22.8,28.2],[24.8,29.8],[26.8,28.6]],85,.1),"k1");
+    extra = dot(14.6,14.4,1.3,"var(--muted)");
+  } else { r = ring(36, -24, 86); m = on(36, -24, 150);   // wrong：算错了，环滑下来了
+    face = P(Sk.curve([[17,21.8],[20.8,24],[17,26.2]],88,.1),"k1") + P(Sk.curve([[31,21.8],[27.2,24],[31,26.2]],89,.1),"k1") + P(Sk.curve([[19.6,30],[21.8,28.8],[24,30.4],[26.2,28.8],[28.4,30]],90,.1),"k1");
+    extra = `<path d="M39.4 9.6C41.6 12.8 42 14.6 39.4 15.6C36.8 14.6 37.2 12.8 39.4 9.6Z" fill="var(--c-sky)" stroke="var(--ink)" stroke-width=".9"/>`;
+  }
+  return r.back + body(cy) + face + r.front + moon(m[0], m[1]) + extra;
+}
+
+
+
+/* ---------- 共用：一条会变粗细的手绘飘带（彗星尾巴用） ---------- */
+// 沿中心线 pts 取样，根部宽 w0，往尖上收细；返回一个闭合的色块路径
+function ribbon(pts, w0, seed){
+  const r = Sk.R(seed), n = pts.length, S = [];
+  for (let i = 0; i < n - 1; i++){
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(n - 1, i + 2)];
+    for (let k = 0; k < 6; k++){ const t = k / 6, t2 = t * t, t3 = t2 * t;
+      S.push([0, 1].map(j => .5 * ((2 * p1[j]) + (-p0[j] + p2[j]) * t + (2 * p0[j] - 5 * p1[j] + 4 * p2[j] - p3[j]) * t2 + (-p0[j] + 3 * p1[j] - 3 * p2[j] + p3[j]) * t3))); }
+  }
+  S.push(pts[n - 1]);
+  const L = [], Rr = [], m = S.length;
+  for (let i = 0; i < m; i++){
+    const a = S[Math.max(0, i - 1)], b = S[Math.min(m - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1;
+    const t = i / (m - 1), w = (w0 * Math.pow(Math.sin(Math.PI * (.2 + .8 * t)), .75) + .5) / 2 * (1 + (r() - .5) * .12);
+    L.push([S[i][0] - dy / d * w, S[i][1] + dx / d * w]); Rr.push([S[i][0] + dy / d * w, S[i][1] - dx / d * w]);
+  }
+  const pick = A => A.filter((_, i) => i % 3 === 0 || i === A.length - 1);
+  const poly = pick(L).concat(pick(Rr).reverse().slice(1));
+  return Sk.cr(poly, true) + "Z";
+}
+
+/* ============ 候选 A「小彗」：一颗往前冲的小彗星；尾巴扬起、垂下、卷起来，就是它的胆量 ============ */
+function navA(e){
+  const tail = (pts, w, off) => `<path d="${ribbon(pts, w, 300 + pts.length)}" fill="var(--accent)"/>` + (off ? streak(pts, off, 330 + pts.length) : "");
+  // 彗核：一大一小两块连在一起的「脏雪球」，大的一块是脸
+  const core = [[28.4,17.4],[35.2,19.4],[38.6,26],[36.8,33.4],[30.2,36.8],[24,35.2],[18.4,36.2],[12.8,33.2],[11.6,27.6],[14.6,22.6],[19.8,22.4],[23.2,19.4]];
+  const body = (cx, cy, s) => { const r = Sk.R(s), j = core.map(q => [q[0] + (r() - .5) * .9, q[1] + (r() - .5) * .9]);
+    return `<path d="${Sk.cr(core, true)}Z" fill="var(--wash)"/>` + P(Sk.cr(j.concat([j[0], j[1]]), false)); };
+  // 尾巴旁边的一道细线：让它读成彗星的尾迹，不是头发
+  const streak = (pts, off, seed) => { const q = [];
+    for (let i = 1; i < pts.length; i++){ const a = pts[i - 1], b = pts[Math.min(pts.length - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1, k = off * (i === pts.length - 1 ? .6 : 1);
+      q.push([pts[i][0] - dy / d * k, pts[i][1] + dx / d * k]); }
+    return P(Sk.curve(q, seed, .15), "k1"); };
+  const blush = (x, y) => `<ellipse cx="${x}" cy="${y}" rx="2.3" ry="1.4" fill="var(--c-math)"/>`;
+  let back = "", front = "", face = "", extra = "", g = "";
+  if (e === "curious"){            // 往前凑：身子前倾，尾巴平平地拖在身后，像一面旗
+    g = "rotate(10 26 28)";
+    back = tail([[14,27],[8.4,23.6],[3.6,22.2],[.6,22.6]], 9, -6);
+    face = dot(27.6,25.4,2) + dot(34,24.8,2.6) + P(Sk.curve([[31.2,19.8],[34,18.8],[36.6,20.2]],302,.12),"k1") + P(Sk.curve([[27.6,30.6],[30.6,32.6],[33.6,30.4]],303,.12),"k1");
+    extra = P(Sk.line(6.4,33,12,33.2,304,.3),"k1") + P(Sk.line(3.6,37.6,9.6,37.6,305,.3),"k1");
+  } else if (e === "waiting"){     // 等你：坐在自己的尾巴上，尾巴在身子底下绕到前面
+    g = "translate(0 -3)";
+    back = tail([[14,32],[12,38.6],[17.6,44],[27.6,45.2],[35.6,42.6],[39,38.6]], 8, 5.6);
+    face = dot(25.2,25.4,2) + dot(32.4,25.4,2) + P(Sk.line(26.6,31.4,31,31.4,306,.3),"k1");
+  } else if (e === "surprised"){   // 惊讶：尾巴一下子绷直，斜着竖在身后
+    g = "translate(1 3) rotate(-8 26 28)";
+    back = tail([[14.4,26],[10.4,19],[7.4,12],[5.6,4.6]], 9, 6);
+    face = `<circle cx="25.4" cy="25" r="3.2" fill="var(--pane)"/><circle cx="33" cy="25" r="3.2" fill="var(--pane)"/>` +
+      P(Sk.ellipse(25.4,25,3.2,3.2,307,.6),"k1") + P(Sk.ellipse(33,25,3.2,3.2,308,.6),"k1") + dot(25.6,25,1.4) + dot(33.2,25,1.4) +
+      `<ellipse cx="29.4" cy="32" rx="2" ry="2.5" fill="var(--ink)"/>`;
+    extra = P(Sk.line(41,15.6,44,13.2,309,.3),"k1") + P(Sk.line(43,21,46.8,20.2,310,.3),"k1");
+  } else if (e === "clap"){        // 做到了：蹦起来，尾巴在身后甩成一个大大的波浪
+    g = "translate(2 4)";
+    back = tail([[14,27],[8.6,24.6],[5.6,18.4],[8,11.6],[4.6,5.2],[.4,3.6]], 8.6, 5.6);
+    face = P(Sk.curve([[23.6,25.4],[26,22.8],[28.4,25.4]],311,.12),"k1") + P(Sk.curve([[30.6,25.4],[33,22.8],[35.4,25.4]],312,.12),"k1") +
+      `<path d="M25.4 28.8Q29.6 36.2 33.8 28.8Z" fill="var(--ink)"/>` + blush(22.4,30.2);
+    extra = P(Sk.line(40.4,13.4,43,9.8,313,.3),"k1") + P(Sk.line(44,18.4,47.4,17,314,.3),"k1") + P(Sk.line(34.6,11.4,35,7.4,315,.3),"k1");
+  } else if (e === "think"){       // 想一想：尾巴在身后卷成一个旋
+    g = "translate(2 0) rotate(-5 26 28)";
+    back = tail([[14,30],[8,32.6],[3.6,28],[4.6,21],[10,19.4],[12,23.6],[9.2,25.4]], 8.4);
+    face = dot(26.4,24.2,2) + dot(33,23.6,2) + P(Sk.line(30.4,19.6,35.4,18.8,316,.3),"k1") + P(Sk.curve([[27,31],[29,29.8],[31,31.4],[33,30.2]],317,.1),"k1");
+  } else {                         // 算错了：尾巴卷上来，抱住自己的腰
+    g = "translate(-2 -1) rotate(-4 26 28)";
+    front = tail([[11.6,31],[12,24.6],[16.6,22],[20.8,25.8],[21,33.4],[18,40]], 6.4);
+    face = P(Sk.curve([[25.8,22.8],[29,25],[25.8,27.2]],318,.1),"k1") + P(Sk.curve([[36,22.8],[32.8,25],[36,27.2]],319,.1),"k1") +
+      P(Sk.curve([[27.6,31.2],[29.4,30],[31.2,31.6],[33,30.4]],321,.1),"k1") + blush(25.4,30.4);
+  }
+  return `<g transform="${g}">${back}${body(26, 28, 301)}${face}${front}</g>${extra}`;
+}
+
+/* ============ 候选 B「小荚」：一粒站着的豆子，肚子上长着一根卷须；碰到没见过的东西，卷须先伸过去 ============ */
+function navB(e){
+  // 豆子：竖着的腰果形，凹口朝前（右），卷须从凹口里长出来
+  const shape = [[20.6,11.4],[27.6,12.6],[31.6,18],[31,24.4],[28.8,30.2],[31.6,35.6],[29.4,41.4],[21.6,43.4],[13.8,41.2],[10.2,32.4],[10.4,21.4],[13.8,14]];
+  const bean = (s) => { const d = Sk.cr(shape, true) + "Z", r = Sk.R(s), j = shape.map(q => [q[0] + (r() - .5) * .9, q[1] + (r() - .5) * .9]);
+    return `<path d="${d}" fill="var(--c-sci)"/>` + P(Sk.cr(j.concat([j[0], j[1]]), false)); };
+  const root = [29.6, 30.4];
+  const vine = (pts, seed) => P(Sk.curve([root].concat(pts), seed, .15), "k");
+  // 花苞：一颗小小的水滴，ang 是它朝的方向（度）
+  const bud = (x, y, ang) => { const a = ang * Math.PI / 180, c = Math.cos(a) * 1.2, s = Math.sin(a) * 1.2, T = (u, v) => `${(x + u * c - v * s).toFixed(1)} ${(y + u * s + v * c).toFixed(1)}`;
+    return `<path d="M${T(-2,0)}C${T(-2,-3)} ${T(1.4,-2.6)} ${T(4.2,0)}C${T(1.4,2.6)} ${T(-2,3)} ${T(-2,0)}Z" fill="var(--accent)"/>`; };
+  const blush = (x, y) => `<ellipse cx="${x}" cy="${y}" rx="2.2" ry="1.3" fill="var(--c-math)"/>`;
+  let g = "", face = "", tend = "", extra = "", behind = "";
+  if (e === "curious"){            // 往前凑：身子前倾，卷须平平地伸出去，先替它摸一摸
+    g = "rotate(8 21 44)";
+    tend = vine([[34.6,28.6],[39.4,27.4],[42.4,24.6],[43,21.6]], 401) + bud(42.8,19.4,-84);
+    face = dot(19.4,22.6,1.9) + dot(25.8,22,2.5) + P(Sk.curve([[23.2,17.2],[25.8,16.2],[28.2,17.4]],402,.12),"k1") + P(Sk.curve([[20.4,27.6],[23,29.4],[25.6,27.4]],403,.12),"k1");
+  } else if (e === "waiting"){     // 等你：卷须松下来，在脚边盘成一小圈
+    tend = vine([[33.6,33],[36,38.6],[39.6,42],[42.6,40.4],[41.4,37.6],[38.6,38.6]], 404) + bud(37.4,41.4,150);
+    face = dot(18.8,23,1.9) + dot(25.4,23,1.9) + P(Sk.line(20.2,28.6,24.2,28.6,405,.3),"k1");
+  } else if (e === "surprised"){   // 惊讶：卷须一下子绷直，竖到头顶上面
+    g = "rotate(-6 21 44)";
+    tend = vine([[33.4,25],[35.8,17],[37.2,10.6],[37.8,7.6]], 406) + bud(38,5.4,-86);
+    face = `<circle cx="18.4" cy="22.4" r="3" fill="var(--pane)"/><circle cx="25.6" cy="22.4" r="3" fill="var(--pane)"/>` +
+      P(Sk.ellipse(18.4,22.4,3,3,407,.6),"k1") + P(Sk.ellipse(25.6,22.4,3,3,408,.6),"k1") + dot(18.6,22.4,1.3) + dot(25.8,22.4,1.3) +
+      `<ellipse cx="22" cy="29.4" rx="1.8" ry="2.3" fill="var(--ink)"/>`;
+  } else if (e === "clap"){        // 做到了：蹦起来，卷须甩成一个大圈挥着
+    g = "translate(0 -3)";
+    tend = vine([[35.6,29],[41.4,24.6],[43.6,17],[40,11.6],[35,13.6],[36.6,18]], 412) + bud(38.6,18.2,30);
+    face = P(Sk.curve([[16.4,22.8],[18.8,20.2],[21.2,22.8]],413,.12),"k1") + P(Sk.curve([[23.4,22.8],[25.8,20.2],[28.2,22.8]],414,.12),"k1") +
+      `<path d="M18.4 25.8Q22.4 32.6 26.4 25.8Z" fill="var(--ink)"/>` + blush(14.8,27.4);
+    extra = P(Sk.line(6,10.6,3.4,7.6,415,.3),"k1") + P(Sk.line(10.6,6.4,9.8,2.6,416,.3),"k1") + P(Sk.line(4.4,16.6,1.2,15.8,417,.3),"k1");
+  } else if (e === "think"){       // 想一想：卷须弯回来，花苞抵着下巴
+    g = "rotate(-4 21 44)";
+    tend = vine([[35.4,32.4],[38.6,29],[38,24.6],[34.4,24],[31.4,26.4]], 418) + bud(29.4,27.6,160);
+    face = dot(17.6,21.4,1.9) + dot(24,21,1.9) + P(Sk.line(14.8,17,19.8,16.4,419,.3),"k1") + P(Sk.curve([[17.8,27.4],[19.6,26.4],[21.4,27.8],[23.2,26.8]],420,.1),"k1");
+  } else {                         // 算错了：卷须绕到脑后，挠一挠头
+    g = "translate(-1 0) rotate(-3 21 44)";
+    tend = vine([[34.4,25.6],[36,18],[32,12.6],[24,13.6],[14,14.6],[8.6,12.6]], 421);
+    behind = bud(6.6,11.6,200);
+    tend = "";
+    behind = vine([[34.4,25.6],[36,18],[32,12.6],[24,13.6],[14,14.6],[8.6,12.6]], 421) + bud(6.8,11.8,200);
+    face = P(Sk.curve([[16,20.6],[19.2,22.8],[16,25]],422,.1),"k1") + P(Sk.curve([[27.4,20.6],[24.2,22.8],[27.4,25]],423,.1),"k1") +
+      P(Sk.curve([[18.6,28.8],[20.6,27.6],[22.6,29.2],[24.6,27.8]],424,.1),"k1") + blush(14.6,27.6);
+  }
+  return `<g transform="${g}">${behind}${bean(400)}${face}${tend}</g>${extra}`;
+}
+
+
+const EXPR = [["curious","好奇"],["waiting","等你"],["surprised","惊讶"],["clap","鼓掌"],["think","想一想"],["wrong","算错了"]];
+const LINES = { curious:"舰长，这里面藏着什么？", waiting:"不着急，你慢慢想。", surprised:"原来右边也有 5 排。", clap:"你找到了，一块都不少。", think:"嗯，这个我也不太确定。", wrong:"咦，我好像少算了 16 块。" };
+const DIRS = [
+  { name:"候选 A · 小彗", fn:navA, idea:"一颗往前冲的小彗星。真的彗核不是圆球，是一大一小两块连在一起的「脏雪球」，它也是。尾巴就是它的胆量：往前凑时尾巴平平地拖在身后，等你时坐在尾巴上，惊讶时尾巴斜着绷直，做到了甩成一个大波浪，想事情时卷成一个旋，算错了就把尾巴卷上来抱住自己的腰。" },
+  { name:"候选 B · 小荚", fn:navB, idea:"一粒站着的豆子，肚子上的凹口里长出一根卷须，卷须尖上是一颗花苞。真的豌豆卷须碰到东西就会先伸过去、再缠上去；它也一样：遇到没见过的东西，卷须第一个伸出去摸，等你时盘在脚边，想事情时抵着下巴，算错了就绕到脑后挠挠头。" }
+];
+const svg = (inner, cls) => `<svg viewBox="0 0 48 48" ${cls || ""} aria-hidden="true">${inner}</svg>`;
+function panel(d, scheme){
+  const tiles = EXPR.map(([k, n]) => `<div class="tile">${svg(d.fn(k))}<span>${n}</span></div>`).join("");
+  const use = EXPR.map(([k]) => `<div class="talk">${svg(d.fn(k))}<div class="bubble">${LINES[k]}</div></div>`).join("");
+  const big = scheme === "light" ? `<div class="big">${svg(d.fn("curious"))}<p class="note">240 px：放大以后线条的抖动看得更清楚。平时不会这么大，只在开场或星卡上出现。</p></div>` : "";
+  return `<div class="panel ${scheme}"><div class="row">${tiles}</div><div class="use">${use}</div>${big}</div>`;
+}
+document.getElementById("out").innerHTML = DIRS.map(d => `<div class="dir"><h2>${d.name}</h2><p class="note">${d.idea}</p></div>` + panel(d, "light") + panel(d, "dark")).join("");
+const CREW = [["小灯", nav1], ["小环", nav2], ["小彗", navA], ["小荚", navB]];
+document.getElementById("crew").innerHTML = ["light", "dark"].map(s => `<div class="panel ${s}"><div class="crew">` +
+  CREW.map(([n, fn]) => `<b>${n}</b>` + EXPR.map(([k]) => svg(fn(k))).join("")).join("") + `</div></div>`).join("");
+document.getElementById("notes").innerHTML = [
+  "<b>候选 A · 小彗像什么：</b>一颗往前冲的小彗星：身子是一大一小两块连着的「脏雪球」（真的彗核就是这样坑坑洼洼的），大的一块是脸，身后拖着一条会变形的尾巴和一道细细的尾迹。",
+  "<b>小彗的勇敢：</b>好奇时整个身子往前倾、身后拖出两道风痕，尾巴像一面拉平的旗；惊讶时尾巴绷直，但身子没有往后躲。<b>萌：</b>个子比小灯、小环都小，身子是歪歪的两块；做到了尾巴甩成大波浪、脸上红一块；算错了把尾巴卷上来抱住自己，不好意思，但没有哭。",
+  "<b>候选 B · 小荚像什么：</b>一粒竖着站的豆子，肚子的凹口里长出一根卷须，卷须尖上一颗小花苞。它是从「生命的说明书」那片星座里来的：孟德尔就是用豌豆找到了遗传的规律。",
+  "<b>小荚的勇敢：</b>遇到没见过的东西，卷须第一个伸出去摸，整个身子跟着往前倾；惊讶时卷须绷直竖起来，身子只是往后仰一点，没有躲。<b>萌：</b>个子小，腰果一样圆鼓鼓的身子；做到了蹦起来、脸红；算错了用卷须挠挠后脑勺。",
+  "<b>会动的小零件：</b>小彗是那条尾巴，小荚是那根卷须和尖上的花苞。42 px 时眼睛和嘴看不清，六个表情靠的是这个零件的位置和形状：小彗是后面、底下、斜上、大波浪、身后一个旋、抱在腰上；小荚是前面、脚边、头顶、甩一个圈、抵着下巴、绕到脑后。",
+  "<b>强调色只给一处：</b>小彗是尾巴，小荚是花苞。线只有粗、细两种，色块不描边，没有渐变、阴影和文字。",
+  "<b>和小灯、小环的区别：</b>小灯、小环都是正面的圆脸，零件在头顶或腰上；小彗是侧着往前飞的，轮廓是横着的花生形加一条长尾巴；小荚是竖着的腰果形，零件从肚子的凹口里长出来。",
+  "没有性别和年龄的特征；不是老师，也不是机器人管家。「算错了」都是不好意思，不是难过；舰长帮它找到错以后，下一个表情是鼓掌。"
+].map(s => `<li>${s}</li>`).join("");
+</script>
+</body>
+</html>
