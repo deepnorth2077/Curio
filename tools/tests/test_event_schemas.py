@@ -32,7 +32,7 @@ VERBS = [
     "attempt.started", "attempt.completed", "attempt.abandoned",
     "poe.predicted", "poe.explained",
     "sim.adjusted", "sim.observed",
-    "item.answered", "hint.used", "reflection.written",
+    "item.answered", "hint.used", "answer.revealed", "reflection.written",
     "question.asked", "question.answered",
     "repair.opened", "repair.linked", "repair.practiced", "repair.resolved",
     "plan.created", "plan.task_done", "plan.task_undone",
@@ -54,6 +54,7 @@ ACTOR_ALLOWED = {
     "sim.observed": ("learner",),
     "item.answered": ("learner",),
     "hint.used": ("learner",),
+    "answer.revealed": ("learner",),
     "reflection.written": ("learner",),
     "question.asked": ("learner",),
     "question.answered": ("learner", "caregiver"),
@@ -90,6 +91,7 @@ SCOPE = {
     "sim.observed": dict(attempt=True, content=True),
     "item.answered": dict(attempt=True, content=True),
     "hint.used": dict(attempt=True, content=True),
+    "answer.revealed": dict(attempt=True, content=True),
     "reflection.written": dict(attempt=True, content=True),
     "question.asked": dict(attempt=None, content=None),
     "question.answered": dict(attempt=False, content=False),
@@ -121,6 +123,7 @@ VERB_VALID_FIXTURE = {
     "sim.observed": "sim.observed",
     "item.answered": "item.answered",
     "hint.used": "hint.used",
+    "answer.revealed": "answer.revealed",
     "reflection.written": "reflection.written",
     "question.asked": "question.asked",
     "question.answered": "question.answered",
@@ -364,7 +367,7 @@ class CurioSchemaFixtureTests(unittest.TestCase):
                             validator.validate(data)
                     checked_present += 1
         # 防止以后悄悄跳过：实际检查次数必须等于按 SCOPE 表手算的数。
-        self.assertEqual(checked_missing, 20, "「必须有却缺了」检查次数不对")
+        self.assertEqual(checked_missing, 22, "「必须有却缺了」检查次数不对")
         self.assertEqual(checked_present, 30, "「不该有却带了」检查次数不对")
 
     # ------------------------------------------------ 按表驱动：多余字段

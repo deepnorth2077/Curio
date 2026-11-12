@@ -1205,5 +1205,89 @@
         "reason": "lost"
       }
     }
+  },
+  {
+    "name": "answer.revealed",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001J",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 139,
+      "occurred_at": "2026-11-12T08:31:20.100Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "answer.revealed",
+      "attempt_id": "att_0000000000000000000000001W",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.quiz.fraction-intro-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "item_id": "q1"
+      }
+    }
+  },
+  {
+    "name": "attempt.started-grader",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001K",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 140,
+      "occurred_at": "2026-11-12T08:40:00.000Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "attempt.started",
+      "attempt_id": "att_0000000000000000000000001W",
+      "content": {
+        "node_id": "math.number.fraction-intro",
+        "activity_id": "act.quiz.fraction-intro-01",
+        "activity_kind": "quiz",
+        "activity_version": 1,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "mode": "first",
+        "grader": "grade/1"
+      }
+    }
+  },
+  {
+    "name": "poe.predicted-step",
+    "data": {
+      "schema": "event/2",
+      "event_id": "evt_0000000000000000000000001M",
+      "learner_id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC",
+      "device_id": "dev_03J7Q2W5E8R7T4V6Y0XCA2BDFH",
+      "device_seq": 141,
+      "occurred_at": "2026-11-12T09:10:44.380Z",
+      "actor": {
+        "type": "learner",
+        "id": "lrn_01H8ZK6P3M9Q2W5E8R7T4VY0XC"
+      },
+      "verb": "poe.predicted",
+      "attempt_id": "att_0000000000000000000000001X",
+      "content": {
+        "node_id": "science.physical.sink-float",
+        "activity_id": "act.experiment.sink-float-01",
+        "activity_kind": "experiment",
+        "activity_version": 2,
+        "content_release": "rel_5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f5e1f0c9a8b7d6e4f"
+      },
+      "payload": {
+        "choice": "b",
+        "step": "s1",
+        "misconception": "heavy-sinks"
+      }
+    }
   }
 ]
