@@ -25,7 +25,9 @@ PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "prompts/*", "AGENTS
              "relay/test/cases.json", "relay/test/cases.test.js", "relay/src/navigator.js",
              # 竖切片 1 的黄金向量和验收测试（规格第 7 节）：同上，实现者不能改期望值
              "kernel/vectors/*", "engine/vectors/*", "kernel/test/vectors.test.js", "engine/test/grading.test.js",
-             "engine/test/quiz.test.js", "engine/test/quiz-1b.test.js", "app/test/commit.test.js", "app/test/resume.test.js", "app/test/fake-store.js"]
+             "engine/test/quiz.test.js", "engine/test/quiz-1b.test.js", "app/test/commit.test.js", "app/test/resume.test.js", "app/test/fake-store.js",
+             # 竖切片 6a 的黄金向量、样例文件和验收测试（docs/specs/backup.md）
+             "app/vectors/*", "tests/fixtures/*", "app/test/backup.test.js", "app/test/restore.test.js", "app/test/fake-backup-store.js"]
 ACT_PROMPT = re.compile(r"^prompts/(act\.[A-Za-z0-9._-]+?)(\.task)?\.md$")
 TASK_ARCHIVE = re.compile(r"^prompts/[A-Za-z0-9][A-Za-z0-9._-]*\.task\.md$")
 # kp/ 分支可以新增、修改本知识点活动的审查记录，以及本知识点自己的审查记录（ADR-009 增补 1）；不能删除

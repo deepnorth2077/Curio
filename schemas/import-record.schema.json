@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deepnorth2077/curio/schemas/import-record.schema.json",
+  "title": "import-record/1 · 导入记录",
+  "description": "从备份恢复一次写一条（docs/specs/backup.md 第 5.3 节，计数的意思见 6.2）。写的时候字段按 schema, batch_id, imported_at, source, partial, file_created_at, file_device_id, file_salt, accepted, duplicate, not_yet_known, quarantined_new, quarantined_skipped, archived, releases 的顺序（3.7），顺序不在 schema 里表达。partial: true 是点了「不恢复了」写的（6.3），计数全为 0。source: backup 的批次不能用 import.voided 作废（5.3）。",
+  "type": "object",
+  "required": ["schema", "batch_id", "imported_at", "source", "partial", "file_created_at", "file_device_id", "file_salt",
+               "accepted", "duplicate", "not_yet_known", "quarantined_new", "quarantined_skipped", "archived", "releases"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "import-record/1" },
+    "batch_id": { "type": "string", "pattern": "^imp_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "imported_at": { "$ref": "#/$defs/timestamp" },
+    "source": { "enum": ["backup"] },
+    "partial": { "type": "boolean" },
+    "file_created_at": { "$ref": "#/$defs/timestamp" },
+    "file_device_id": { "type": "string", "pattern": "^dev_[0-7][0-9A-HJKMNP-TV-Z]{25}$" },
+    "file_salt": {
+      "description": "备份文件头的 salt：16 字节的标准 Base64，带 = 补位，规范写法（第 22 个字符的低 4 位是 0）",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{21}[AQgw]==$"
+    },
+    "accepted": { "$ref": "#/$defs/count" },
+    "duplicate": { "$ref": "#/$defs/count" },
+    "not_yet_known": { "$ref": "#/$defs/count" },
+    "quarantined_new": { "$ref": "#/$defs/count" },
+    "quarantined_skipped": { "$ref": "#/$defs/count" },
+    "archived": { "$ref": "#/$defs/count" },
+    "releases": { "$ref": "#/$defs/count" }
+  },
+  "$defs": {
+    "count": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$"
+    }
+  }
+}
