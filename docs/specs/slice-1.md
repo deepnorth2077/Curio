@@ -254,7 +254,7 @@ committer.nextSeq                               // 下一条本机事件该用�
 
   第 1～3 步在 `app/session.js` 里：`openSession(store, {ids, now})` → `{identity, log, committer, abandoned}`。`ids` 生成 `lrn_`、`dev_`、`evt_` 等 ID，`now()` 给 `occurred_at` 用的 UTC 时间；收据照事件规格 5.3 写成 `{event_id, recorded_at, source: "local"}`；`abandoned` 是补写的 `event_id` 列表。全部补写存好以后才 resolve，所以外壳拿到会话之前开始不了挑战。它不读发布包。（第 3 稿合入后、派发前按验收测试补写，PR #97。）
 - **写事件**：外壳把状态机的意图组装成 event/2 信封（`device_seq` 取 `committer.nextSeq`、`occurred_at` 取当前 UTC 时间、完成事件补 `duration_ms`、`content` 用这次挑战开始时冻结的那一份），`JSON.stringify` 一次得到原始文字，交给 `committer.submit`。`accepted` 或 `duplicate` → 给状态机发 `saved`；抛错 → 发 `failed`，留着这条原始文字，「再试」时原样再提交。
-- **开始一次挑战**：冻结当前发布的 `content`（`node_id`、`activity_id`、`activity_kind`、`activity_version`、`content_release`），这次尝试的每条事件都用它。`mode` 是 `first`（这台设备上这个活动从没完成过）或 `retry`。题目顺序按活动的 `shuffle` 决定。
+- **开始一次挑战**：冻结当前发布的 `content`（`node_id`、`activity_id`、`activity_kind`、`activity_version`、`content_release`），这次尝试的每条事件都用它。`mode` 是 `first` 或 `retry`：这个孩子在**任何设备**上有一次合法、已完成的这个活动的尝试（掌握度投影的定义，第 4 节；被判不一致的、被放弃的不算）就是 `retry`，否则 `first`（`docs/specs/backup.md` 第 11 节改，原来只看这台设备）。题目顺序按活动的 `shuffle` 决定。
 - **作答**：点一个选项就是一次作答，交给状态机。答对显示 `feedback.correct`（没有就用默认的话）；答错显示这个错误选项的 `feedback`，没有就用 `feedback.wrong` 或默认的话，可以再答。
 - **完成**：完成意图存好以后显示结果，重新算掌握度，星星从暗变亮（1a 直接换样子，1b 加动效，尊重 `prefers-reduced-motion`）。
 - **刷新**：星星的亮暗只由收件表重放出来的事件决定。
