@@ -8,6 +8,8 @@
 //   view.can_hint、view.can_reveal   布尔值
 //   看答案时 view.feedback = {item_id, correct: false, revealed: true, answer_text, text}，text 是这道题的
 //   feedback.correct，没有时是默认的话（非空）
+// 看答案先存再显示（CURIO-013，docs/specs/evidence.md 第 1 条）：reveal 被接受时产出 answer.revealed 意图
+//   {item_id}，和 hint.used 走同一套 saved / failed / retry；存好以后才显示答案、进入下一题
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { startQuiz, step } from "../js/quiz.js";
@@ -53,6 +55,7 @@ const snap = (x) => structuredClone(x);
 const save = (q) => { assert.ok(q.pending, "这里应该有 pending"); return step(q, { type: "saved", id: q.pending.id }); };
 const answerSaved = (q, r) => { q = step(q, { type: "answer", response: r }); assert.equal(q.pending?.verb, "item.answered"); return save(q); };
 const hintSaved = (q) => { q = step(q, { type: "hint" }); assert.equal(q.pending?.verb, "hint.used"); return save(q); };
+const revealSaved = (q) => { q = step(q, { type: "reveal" }); assert.equal(q.pending?.verb, "answer.revealed"); return save(q); };
 const begun = (a = act(), order = ORDER) => save(startQuiz(a, order, "first"));
 /** 前面几题一次答对，停在 id 这一题。 */
 function at(id) {
@@ -168,48 +171,112 @@ test("换到下一题：提示清空，下一题一开始不能要提示", () =>
   assert.equal(q.view.can_reveal, false);
 });
 
-test("看答案：不产生意图，进入下一题；feedback 带 revealed 和 answer_text", () => {
+test("看答案：产出 answer.revealed 意图 {item_id}；存好以后进入下一题，feedback 带 revealed 和 answer_text", () => {
   let q = begun();
   q = answerSaved(q, WRONG.q1);
   q = step(q, { type: "reveal" });
-  assert.equal(q.pending, null, "看答案不写事件");
+  assert.equal(q.pending?.verb, "answer.revealed", "看答案要先写事件");
+  assert.deepEqual(q.pending.payload, { item_id: "q1" });
+  q = save(q);
+  assert.equal(q.pending, null);
   assert.equal(q.phase, "answering");
   assert.equal(q.view.item_id, "q2");
-  assert.equal(q.view.feedback.item_id, "q1");
-  assert.equal(q.view.feedback.correct, false);
-  assert.equal(q.view.feedback.revealed, true);
-  assert.equal(q.view.feedback.answer_text, "1/4");
-  assert.equal(q.view.feedback.text, "平均分成 4 份，涂了 1 份，就是 1/4。", "有 feedback.correct 时用它");
+  assert.deepEqual(q.view.feedback, { item_id: "q1", correct: false, revealed: true, answer_text: "1/4",
+    text: "平均分成 4 份，涂了 1 份，就是 1/4。" }, "有 feedback.correct 时用它");
   assert.deepEqual(q.view.hints, [], "下一题的提示是空的");
   assert.equal(q.view.can_hint, false);
   assert.equal(q.view.can_reveal, false);
 });
 
+test("看答案等存储时：还停在这道题，答案不显示；answer、hint、reveal 都原样返回", () => {
+  let q = begun();
+  q = answerSaved(q, WRONG.q1);
+  const before = snap(q.view.feedback);
+  assert.equal(before.item_id, "q1", "前提：feedback 是那次答错的反馈");
+  assert.equal(before.revealed, undefined);
+  assert.equal(before.answer_text, undefined);
+  q = step(q, { type: "reveal" });
+  assert.equal(q.pending?.verb, "answer.revealed");
+  assert.equal(q.phase, "answering");
+  assert.equal(q.view.item_id, "q1", "没存好之前不进入下一题");
+  assert.equal(q.view.waiting, true);
+  assert.equal(q.view.failed, false);
+  assert.equal(q.view.can_hint, false);
+  assert.equal(q.view.can_reveal, false);
+  assert.deepEqual(q.view.feedback, before, "没存好之前答案不显示，feedback 还是那次答错的");
+  const s = snap(q);
+  assert.deepEqual(step(q, { type: "answer", response: RIGHT.q1 }), s, "等存储时作答原样返回");
+  assert.deepEqual(step(q, { type: "hint" }), s, "等存储时要提示原样返回");
+  assert.deepEqual(step(q, { type: "reveal" }), s, "等存储时再看答案原样返回");
+  assert.deepEqual(step(q, { type: "saved", id: q.pending.id + 1 }), s, "过期或不对的 saved 原样返回");
+});
+
+test("看答案没存上：failed 后答案仍不显示；retry 不改状态；再 saved 才显示、进入下一题", () => {
+  let q = begun();
+  q = answerSaved(q, WRONG.q1);
+  const before = snap(q.view.feedback);
+  q = step(q, { type: "reveal" });
+  const p = snap(q.pending);
+  assert.equal(p.verb, "answer.revealed");
+  q = step(q, { type: "failed", id: p.id });
+  assert.deepEqual(q.pending, p, "pending 原样保留");
+  assert.equal(q.view.failed, true);
+  assert.equal(q.view.waiting, true);
+  assert.equal(q.view.item_id, "q1");
+  assert.deepEqual(q.view.feedback, before, "没存上，答案不显示");
+  const s = snap(q);
+  assert.deepEqual(step(q, { type: "answer", response: RIGHT.q1 }), s);
+  assert.deepEqual(step(q, { type: "hint" }), s);
+  assert.deepEqual(step(q, { type: "reveal" }), s);
+  q = step(q, { type: "retry" });
+  assert.deepEqual(q, s, "retry 不改状态");
+  q = step(q, { type: "saved", id: p.id });
+  assert.equal(q.pending, null);
+  assert.equal(q.view.failed, false);
+  assert.equal(q.view.item_id, "q2");
+  assert.deepEqual(q.view.feedback, { item_id: "q1", correct: false, revealed: true, answer_text: "1/4",
+    text: "平均分成 4 份，涂了 1 份，就是 1/4。" });
+});
+
 test("看答案的 answer_text：分数题是「分子/分母」，数字题带单位，没有单位时只有数", () => {
   let q = at("q3");
   q = answerSaved(q, WRONG.q3);
-  q = step(q, { type: "reveal" });
+  q = revealSaved(q);
   assert.equal(q.view.feedback.answer_text, "3/4");
   assert.ok(typeof q.view.feedback.text === "string" && q.view.feedback.text.length > 0, "没有 feedback.correct 时用默认的话");
   q = answerSaved(q, WRONG.q4);
-  q = step(q, { type: "reveal" });
+  q = revealSaved(q);
   assert.equal(q.view.feedback.answer_text, "6 块");
   q = answerSaved(q, WRONG.q5);
-  q = step(q, { type: "reveal" });
+  q = revealSaved(q);
   assert.equal(q.view.feedback.answer_text, "2.5");
 });
 
-test("最后一题看答案：进入 finishing，只产出一次完成；分母不变，看过答案的题不计入分子", () => {
+test("最后一题看答案：先存 answer.revealed，再进入 finishing、只产出一次完成；分母不变，看过答案的题不计入分子", () => {
   let q = begun();
   q = answerSaved(q, WRONG.q1);
-  q = step(q, { type: "reveal" }); // q1 看答案
+  q = revealSaved(q); // q1 看答案
   for (const id of ["q2", "q3", "q4"]) q = answerSaved(q, RIGHT[id]);
   q = answerSaved(q, WRONG.q5);
   q = hintSaved(q);
   q = step(q, { type: "reveal" });
+  assert.equal(q.phase, "answering", "answer.revealed 没存好之前不进入 finishing");
+  assert.equal(q.pending?.verb, "answer.revealed");
+  assert.deepEqual(q.pending.payload, { item_id: "q5" });
+  assert.equal(q.view.item_id, "q5");
+  assert.equal(q.view.feedback?.revealed, undefined, "没存好之前答案不显示");
+  const p = snap(q.pending);
+  q = step(q, { type: "failed", id: p.id });
+  assert.equal(q.phase, "answering", "没存上也不进入 finishing");
+  assert.equal(q.view.feedback?.revealed, undefined);
+  q = step(q, { type: "saved", id: p.id });
   assert.equal(q.phase, "finishing");
   assert.equal(q.pending.verb, "attempt.completed");
   assert.deepEqual(q.pending.payload, {});
+  assert.equal(q.pending.id, p.id + 1, "完成的意图 id 紧接着 answer.revealed");
+  const fb = q.view.feedback;
+  assert.deepEqual({ ...fb, text: undefined }, { item_id: "q5", correct: false, revealed: true, answer_text: "2.5", text: undefined }, "存好以后才显示答案");
+  assert.ok(typeof fb.text === "string" && fb.text.length > 0, "没有 feedback.correct 时用默认的话");
   const s = snap(q);
   assert.deepEqual(step(q, { type: "reveal" }), s, "finishing 时看答案原样返回");
   assert.deepEqual(step(q, { type: "hint" }), s);
@@ -217,6 +284,38 @@ test("最后一题看答案：进入 finishing，只产出一次完成；分母�
   assert.equal(q.phase, "done");
   assert.deepEqual(q.view.result, { first_try_correct: 3, total: 5 });
   assert.equal(q.pending, null);
+});
+
+test("带看答案做完：意图依次是 started、answered、revealed……completed，id 从 1 连续递增，completed 只有一次", () => {
+  let q = startQuiz(act(), ORDER, "first");
+  const seen = [snap(q.pending)];
+  q = save(q);
+  const push = (x) => { seen.push(snap(x.pending)); return save(x); };
+  q = push(step(q, { type: "answer", response: WRONG.q1 }));
+  q = push(step(q, { type: "reveal" }));
+  q = push(step(q, { type: "answer", response: RIGHT.q2 }));
+  q = push(step(q, { type: "answer", response: WRONG.q3 }));
+  q = push(step(q, { type: "hint" }));
+  q = push(step(q, { type: "reveal" }));
+  q = push(step(q, { type: "answer", response: RIGHT.q4 }));
+  q = push(step(q, { type: "answer", response: WRONG.q5 }));
+  q = push(step(q, { type: "reveal" }));
+  assert.equal(q.phase, "finishing");
+  seen.push(snap(q.pending));
+  q = save(q);
+  assert.equal(q.phase, "done");
+  assert.equal(q.pending, null);
+  assert.deepEqual(seen.map((p) => [p.id, p.verb]), [
+    [1, "attempt.started"],
+    [2, "item.answered"], [3, "answer.revealed"],
+    [4, "item.answered"],
+    [5, "item.answered"], [6, "hint.used"], [7, "answer.revealed"],
+    [8, "item.answered"],
+    [9, "item.answered"], [10, "answer.revealed"],
+    [11, "attempt.completed"],
+  ]);
+  assert.deepEqual(seen.filter((p) => p.verb === "answer.revealed").map((p) => p.payload), [{ item_id: "q1" }, { item_id: "q3" }, { item_id: "q5" }]);
+  assert.deepEqual(q.view.result, { first_try_correct: 2, total: 5 });
 });
 
 test("数字题：view 有 unit；判分走 grade，误区来自 common_wrong；全角数字也认", () => {
