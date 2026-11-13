@@ -1,5 +1,5 @@
 // Curio · 竖切片 1 的外壳（规格第 2 节、6.3、6.4）：读发布包 → 拿写锁 → 恢复 → 画星图 → 挑战（选择题、数字题、分数题，
-// 提示和看答案）→ 点亮（带动效，尊重 reduced-motion）。
+// 提示和看答案，都是先存好事件再显示）→ 点亮（带动效，尊重 reduced-motion）。
 // 读写 IndexedDB、取当前时间、生成 ULID、洗牌都在这里做，结果作为参数交给内核和引擎。
 import { createLog } from "../kernel/js/log.js";
 import { projectMastery, groupAttempts } from "../kernel/js/mastery.js";
@@ -467,6 +467,9 @@ async function pump() {
       else z.solved = pl.item_id;
     } else if (cur.verb === "hint.used") {
       z.focusHint = true;
+    } else if (cur.verb === "answer.revealed") {
+      // 存好了才显示答案（CURIO-013）：这道题记为「看过答案」，画面换成答案和「下一题」
+      z.solved = /** @type {any} */ (cur.payload).item_id;
     }
     z.q = step(z.q, { type: "saved", id: cur.id });
     // 读屏器：答错的反馈、新提示用常驻的 aria-live 区域读出来（焦点会回到输入框）
@@ -512,17 +515,14 @@ function askHint() {
   pump();
 }
 
-/** 看答案（6.4）：不写事件，这道题记为「看过答案」，进入下一题；是最后一题时产出完成。 */
+/** 看答案（6.4，CURIO-013）：状态机接受了才写 answer.revealed，存好以后答案才显示；是最后一题时接着写完成。 */
 function revealAnswer() {
   const z = app.quiz;
   if (!z || app.mode !== "writable") return;
-  const id = z.q.view.item_id;
   const before = z.q;
   z.q = step(z.q, { type: "reveal" });
   if (z.q === before) return;
-  z.solved = id;
-  renderQuiz();
-  if (z.q.pending) pump();
+  pump();
 }
 
 /** 数字框、分数框交上来的作答；框是空的时不提交。 */
@@ -632,7 +632,7 @@ function renderQuiz() {
   if (z.q.phase === "starting") {
     body = `<div class="q"><p class="stem">准备好了吗？</p></div>`;
   } else if (solvedItem && (z.q.phase !== "answering" || v.item_id !== z.solved)) {
-    // 刚有结果的题（答对存好，或看过答案）：先看反馈，再点「下一题」
+    // 刚有结果的题（答对存好，或 answer.revealed 存好）：先看反馈，再点「下一题」
     const fbo = v.feedback && v.feedback.item_id === z.solved ? v.feedback : null;
     const revealed = !!(fbo && fbo.revealed);
     const a = solvedItem.answer;
