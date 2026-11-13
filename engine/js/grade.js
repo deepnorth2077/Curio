@@ -3,6 +3,12 @@ import { numberOk } from "../../kernel/js/validate.js";
 
 /** @typedef {{correct: boolean, misconception: string|null}} Grade */
 
+/**
+ * 判分程序的版本，写进 attempt.started 的 grader（docs/specs/evidence.md 第 2 条）。
+ * 判分结果只要可能变（修一个判分的错误也算），版本号就加一；和发布包的 engine_min（引擎能力等级）是两回事。
+ */
+export const GRADER = "grade/1";
+
 /** 规整时去掉的 7 种空白：U+0009、U+000A、U+000B、U+000C、U+000D、U+0020、U+3000。 */
 const WS = new Set(["\t", "\n", "\u000b", "\f", "\r", " ", "　"]);
 

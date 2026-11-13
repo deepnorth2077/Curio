@@ -6,6 +6,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { grade } from "../js/grade.js";
+// GRADER 用命名空间读：旧实现没有这个导出时只让下面那一条失败，不让整份文件加载不了
+import * as gradeModule from "../js/grade.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const v = JSON.parse(readFileSync(join(here, "..", "vectors", "grading.json"), "utf8"));
@@ -19,3 +21,7 @@ for (const [i, c] of v.cases.entries()) {
     assert.deepEqual(answer, before, "grade 不能改传进来的 answer");
   });
 }
+
+test("grade.js 导出判分程序版本 GRADER = \"grade/1\"（docs/specs/evidence.md 第 2 条）", () => {
+  assert.equal(gradeModule.GRADER, "grade/1");
+});
