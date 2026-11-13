@@ -85,7 +85,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 .pill.lit{background:var(--ink);color:var(--pane)}
 
 /* 星图 */
-.chart{position:relative;flex:1;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 40px;overflow:hidden;background:var(--pane)}
+.chart{position:relative;flex:1;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 8px;overflow:hidden;background:var(--pane)}
 .sky{position:absolute;inset:0;width:100%;height:100%}
 .sky-dot{fill:var(--muted);opacity:.45}
 .sky-line{opacity:.22}
@@ -98,8 +98,54 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 .star svg{display:block}
 .star-name{font-family:var(--f-serif);font-weight:600;color:var(--ink);font-size:19px}
 .chart-tip{position:relative;margin-top:18px;font-size:15px}
-.chart-note{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:12px;padding:0 12px}
-.toast{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--pane);border-radius:12px;padding:8px 16px;font-size:15px;max-width:90%;text-align:center;box-shadow:var(--shadow)}
+/* 底部的「家长」和小字跟在内容后面（不叠在上面）；上下两个弹性空白让星星在高屏幕上照旧居中 */
+.chart::before{content:"";flex:1 1 0}
+.chart-foot{position:relative;flex:1 1 0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;margin-top:18px;padding:0 12px max(0px,env(safe-area-inset-bottom,0px))}
+.chart-note{text-align:center;font-size:12px}
+.parent-link{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:0 14px;border-radius:10px;color:var(--muted);font-size:14px;text-decoration:none}
+.parent-link:hover{background:var(--hover);color:var(--ink)}
+.parent-link .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.clean-hint{position:relative;margin-top:14px;font-size:16px;text-align:center}
+.clean-hint a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:4px;text-decoration-thickness:2px}
+.banner-btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* 家长页（backup.md 第 10 节） */
+.parent{width:100%;max-width:720px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.p-head{display:flex;align-items:center;gap:12px}
+.p-head h1{font-size:24px}
+.p-head h1:focus{outline:none}
+a.back{text-decoration:none}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;padding:18px 20px;margin-top:14px;box-shadow:var(--shadow);color:var(--ink)}
+.card h2{font-size:20px;margin-bottom:8px}
+.card p+p{margin-top:6px}
+.card.main-card{border:1.5px solid var(--ink)}
+.card.warn-card{background:var(--bad-soft);border-color:transparent}
+.card.good-card{background:var(--good-soft);border-color:transparent}
+.btns.start{justify-content:flex-start}
+.card .btns+p{margin-top:10px}
+a.btn{text-decoration:none}
+.p-stat{font-size:18px}
+.p-stat .loud{color:var(--bad)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.p-msg{margin-top:12px;background:var(--bad-soft);color:var(--ink);border-radius:12px;padding:10px 14px;font-weight:600}
+.p-ok{margin-top:12px;background:var(--good-soft);color:var(--ink);border-radius:12px;padding:10px 14px}
+.p-busy{font-size:18px;padding:12px 0}
+.p-note{margin-top:18px;line-height:1.7}
+.p-form{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.p-label{font-weight:600;color:var(--ink);margin-top:8px}
+.p-input{font:inherit;font-family:var(--f-mono);font-size:24px;letter-spacing:.08em;max-width:280px;min-height:52px;padding:8px 14px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink)}
+.p-file{font:inherit;font-size:16px;max-width:100%;padding:8px 0;color:var(--ink)}
+.p-file::file-selector-button{font:inherit;min-height:44px;padding:0 16px;margin-right:12px;border-radius:12px;border:1.5px solid var(--ink);background:var(--pane);color:var(--ink);cursor:pointer}
+.p-list{margin:8px 0 0;padding-left:1.3em;font-size:17px}
+.keybig{font-size:clamp(46px,13vw,76px);line-height:1.2;letter-spacing:.06em;text-align:center;color:var(--ink);background:var(--bg);border:2px dashed var(--muted);border-radius:16px;padding:18px 8px;margin-bottom:12px;white-space:nowrap}
+#printSheet{display:none}
+@media print{
+  .app{display:none!important}
+  #printSheet{display:block;color:#000;font-family:var(--f-sans);padding:24px}
+  #printSheet h1{font-size:22px;color:#000}
+  #printSheet .print-key{font-family:var(--f-mono);font-size:56px;letter-spacing:.08em;margin:18px 0}
+}
+.toast{position:absolute;bottom:72px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--pane);border-radius:12px;padding:8px 16px;font-size:15px;max-width:90%;text-align:center;box-shadow:var(--shadow)}
 
 /* 挑战 */
 .quiz{width:100%;max-width:760px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
@@ -160,7 +206,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 .stop h1{font-size:22px;margin-bottom:8px}
 
 @media (prefers-reduced-motion:no-preference){
-  .choice,.btn,.star,.back{transition:background-color .15s ease,border-color .15s ease}
+  .choice,.btn,.star,.back,.parent-link{transition:background-color .15s ease,border-color .15s ease}
   /* 点亮动效：一共 1.2 秒（规格 6.4：不超过 1.5 秒）；reduced-motion 时没有这些规则，直接是亮的样子 */
   .result-star.lighting svg{animation:light-pop 1.2s cubic-bezier(.2,.8,.3,1) both;transform-origin:50% 52%}
   .result-star.lighting .star-fill{animation:light-fill .8s ease-out .15s both}
@@ -192,6 +238,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
   <div id="live" class="sr" aria-live="polite" aria-atomic="true"></div>
   <main id="main"><section class="stop"><p class="muted">正在打开……</p></section></main>
 </div>
+<div id="printSheet" aria-hidden="true"></div>
 <script type="module" src="./app.js"></script>
 </body>
 </html>

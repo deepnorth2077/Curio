@@ -1,5 +1,6 @@
 // Curio · 竖切片 1 的外壳（规格第 2 节、6.3、6.4）：读发布包 → 拿写锁 → 恢复 → 画星图 → 挑战（选择题、数字题、分数题，
 // 提示和看答案，都是先存好事件再显示）→ 点亮（带动效，尊重 reduced-motion）。
+// 竖切片 6b（docs/specs/backup.md）：存发布包、「上次恢复没做完」、家长页入口（家长页本身在 parent.js）。
 // 读写 IndexedDB、取当前时间、生成 ULID、洗牌都在这里做，结果作为参数交给内核和引擎。
 import { createLog } from "../kernel/js/log.js";
 import { projectMastery, groupAttempts } from "../kernel/js/mastery.js";
@@ -8,6 +9,7 @@ import { startQuiz, step, DEFAULT_FEEDBACK } from "../engine/js/quiz.js";
 import { openStore } from "./store.js";
 import { openSession, localReceipt, assemble, guardDeps, LockLostError } from "./session.js";
 import { FrozenError } from "./commit.js";
+import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT } from "./parent.js";
 
 /** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。 */
 export const ENGINE_LEVEL = 1;
@@ -102,14 +104,16 @@ async function fetchVerifiedJson(base, j, fetchFn) {
  * 读发布包并逐个核对。任何一处对不上都抛 ReleaseError。
  * @param {URL} [url]
  * @param {typeof fetch} [fetchFn]
- * @returns {Promise<{release: any, nodes: any[], activities: Map<string, {entry: any, def: any|null}>}>}
+ * @returns {Promise<{release: any, raw: string, nodes: any[], activities: Map<string, {entry: any, def: any|null}>}>}
  */
 export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
-  let rel;
+  let rel, raw;
   try {
     const res = await fetchFn(url, { cache: "no-cache" });
     if (!res.ok) throw new Error(String(res.status));
-    rel = await res.json();
+    // 留着原文：拿着写锁时原样存进 releases（backup.md 5.1）
+    raw = new TextDecoder("utf-8", { fatal: true }).decode(await res.arrayBuffer());
+    rel = JSON.parse(raw);
   } catch { throw new ReleaseError("broken", "读不到 release.json"); }
   await verifyManifest(rel);
   const nodes = [];
@@ -130,7 +134,7 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
     if (def && def.id !== a.id) throw new ReleaseError("broken", `活动 ${a.id} 对不上`);
     activities.set(a.id, { entry: a, def });
   }
-  return { release: rel, nodes, activities };
+  return { release: rel, raw, nodes, activities };
 }
 
 /* ============================================================
@@ -270,7 +274,7 @@ function figureSvg(fig, seed = 7) {
    ============================================================ */
 const STATE_WORD = { untouched: "还没点亮", explored: "探索过", lit: "已点亮" };
 const app = {
-  /** @type {"loading"|"readonly"|"recovering"|"writable"|"stopped"} */ mode: "loading",
+  /** @type {"loading"|"readonly"|"recovering"|"writable"|"unfinished"|"stopped"} */ mode: "loading",
   /** @type {null|"busy"|"nolock"|"lost"|"nostore"} */ why: null,
   /** @type {Awaited<ReturnType<typeof loadRelease>>|null} */ pack: null,
   /** @type {Awaited<ReturnType<typeof openStore>>|null} */ store: null,
@@ -281,9 +285,30 @@ const app = {
   /** 「再试一次」正在进行 */ relocking: false,
   /** @type {any} */ mastery: null,
   /** 正在做的挑战 */ quiz: /** @type {null|{q: any, def: any, node: any, content: any, attempt_id: string, startedMs: number, cur: null|{id: number, raw: string, receipt: object}, busy: boolean, error: any, solved: string|null, wrongBy: Record<string, string[]>, litBefore: boolean}} */ (null),
-  view: /** @type {"chart"|"quiz"} */ ("chart"),
+  view: /** @type {"chart"|"quiz"|"parent"} */ ("chart"),
   notice: /** @type {string|null} */ (null),
+  /** 打开时读到的：干净的设备（backup.md 6.1）、上次备份、最早一条记录的时间（家长入口的小圆点） */
+  clean: false,
+  /** @type {{at: string, file_name: string}|null} */ lastBackup: null,
+  /** @type {string|null} */ firstEventAt: null,
 };
+
+/** 拿着写锁、可以写存储（「上次恢复没做完」时也拿着锁，只是不能开始挑战）。 */
+const holdsLock = () => (app.mode === "writable" || app.mode === "unfinished") && !app.lockLost;
+
+/** 给家长页的外壳接口。 */
+const parentEnv = () => ({
+  app, main: $("#main"), esc, now, holdsLock,
+  newBatchId: () => "imp_" + ulid(Date.now(), rand10()),
+  reload: (toParent) => { if (toParent) location.hash = "#parent"; location.reload(); },
+});
+
+/** 按当前的 view 重画。 */
+function renderCurrent() {
+  if (app.view === "quiz" && app.quiz) renderQuiz();
+  else if (app.view === "parent") renderParent(parentEnv());
+  else renderChart();
+}
 
 function recompute() {
   app.mastery = app.log ? projectMastery(app.log.events()) : null;
@@ -301,6 +326,9 @@ function renderBanner() {
     else if (app.why === "nolock") html = `<p><b>这个浏览器不能记录。</b>这里只能看，换一个新一点的浏览器试试。</p>`;
     else if (app.why === "nostore") html = `<p><b>这个浏览器不能记录。</b>可能开着无痕模式，请家长看一看。</p>`;
     else if (app.why === "lost") html = `<p><b>请刷新页面。</b>刚才离开了一会儿，刷新以后接着玩，星星不会变。</p><button class="btn ink" data-act="reload" type="button">刷新</button>`;
+  } else if (app.mode === "unfinished") {
+    // backup.md 6.3：上次恢复没做完，不进「可以写」
+    html = `<p><b>${PTEXT.unfinished}。</b>请家长选一个：</p><span class="banner-btns"><button class="btn ink" data-act="reRestore" type="button">再恢复一次</button><button class="btn" data-act="abandon" type="button">不恢复了，就用现在这些</button></span><p id="bannerMsg" class="small" role="alert" hidden></p>`;
   }
   b.innerHTML = html;
   b.hidden = !html;
@@ -308,6 +336,14 @@ function renderBanner() {
   if (r) r.addEventListener("click", relock);
   const l = b.querySelector('[data-act="reload"]');
   if (l) l.addEventListener("click", () => location.reload());
+  const rr = b.querySelector('[data-act="reRestore"]');
+  if (rr) rr.addEventListener("click", () => {
+    resetParent({ restoreOpen: true });
+    app.view = "parent"; // 先设好：hashchange 看到已经在家长页，就不再把表单收起来
+    if (location.hash === "#parent") renderCurrent(); else location.hash = "#parent";
+  });
+  const ab = b.querySelector('[data-act="abandon"]');
+  if (ab) ab.addEventListener("click", () => abandonUnfinished(parentEnv(), (m) => { const e = document.getElementById("bannerMsg"); if (e) { e.textContent = m; e.hidden = false; } }));
 }
 
 /** 整页的提示（内容包坏了、需要更新、出错）。 */
@@ -355,11 +391,18 @@ function renderChart() {
     <div class="chart-head"><h1 id="chartTitle">星图</h1><p class="sub">点亮了 ${lit} 颗，一共 ${nodes.length} 颗</p></div>
     <ul class="stars">${stars}</ul>
     <p class="chart-tip muted">${app.mode === "writable" ? "点一颗星，开始挑战。" : app.mode === "recovering" ? "正在准备……" : ""}</p>
-    <p class="chart-note muted">试玩记录 · 只在这台设备上 · 还没有备份 · 7 天不打开可能会丢</p>
+    ${showCleanHint() ? `<p class="clean-hint"><a href="#parent">${esc(PTEXT.cleanHint)}</a></p>` : ""}
+    <div class="chart-foot">
+      ${app.store && app.hasIdentity ? `<a class="parent-link" href="#parent">家长${needsDot({ clean: app.clean, lastBackup: app.lastBackup, firstEventAt: app.firstEventAt }, Date.now()) ? `<span class="dot" role="img" aria-label="很久没备份了"></span>` : ""}</a>` : ""}
+      <p class="chart-note muted">试玩记录 · 只在这台设备上</p>
+    </div>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   </section>`;
   main.querySelectorAll("[data-node]").forEach((b) => b.addEventListener("click", () => openNode(/** @type {HTMLElement} */ (b).dataset.node || "")));
 }
+
+/** 干净的设备（打开时读到的，而且之后没有新记录）：首页提示可以从备份恢复。 */
+const showCleanHint = () => app.clean && !!app.log && app.log.raw().length === 0 && app.log.quarantined().length === 0;
 
 let toastTimer = 0;
 function toast(text) {
@@ -376,7 +419,7 @@ function toast(text) {
    ============================================================ */
 function openNode(nodeId) {
   if (app.mode !== "writable" || !app.session) {
-    toast(app.mode === "recovering" ? "正在准备，等一下再点。" : app.why === "lost" ? "请刷新页面。" : "这里只能看，不能开始挑战。");
+    toast(app.mode === "recovering" ? "正在准备，等一下再点。" : app.mode === "unfinished" ? "请家长先看一看上面的提示。" : app.why === "lost" ? "请刷新页面。" : "这里只能看，不能开始挑战。");
     return;
   }
   if (app.quiz && app.quiz.node.id === nodeId && pendingQuiz(app.quiz)) { app.view = "quiz"; renderQuiz(); return; }
@@ -390,14 +433,19 @@ function openNode(nodeId) {
 /** 这次挑战还没做完，或者做完了但孩子还没看到结果（最后一道存好前回了星图）。 */
 const pendingQuiz = (z) => z.q.phase !== "done" || !z.resultSeen;
 
-/** 这台设备上这个活动有没有合法完成过。 */
-function completedBefore(activityId) {
-  const s = /** @type {any} */ (app.session);
-  const bad = new Set(projectMastery(s.log.events()).conflicts.map((c) => c.attempt_id));
-  for (const [att, evs] of groupAttempts(s.log.events())) {
+/**
+ * 这个孩子在任何设备上有没有一次合法、已完成的这个活动的尝试（backup.md 第 11 节；slice-1 6.3「开始一次挑战」）。
+ * 被判不一致的、被放弃的不算。
+ * @param {any[]} events 日志里被接收的事件
+ * @param {string} learnerId
+ * @param {string} activityId
+ */
+export function completedBefore(events, learnerId, activityId) {
+  const bad = new Set(projectMastery(events).conflicts.map((c) => c.attempt_id));
+  for (const [att, evs] of groupAttempts(events)) {
     if (bad.has(att)) continue;
     const f = evs[0];
-    if (f.device_id === s.identity.device_id && f.content.activity_id === activityId && evs[evs.length - 1].verb === "attempt.completed") return true;
+    if (f.learner_id === learnerId && f.content && f.content.activity_id === activityId && evs[evs.length - 1].verb === "attempt.completed") return true;
   }
   return false;
 }
@@ -405,7 +453,8 @@ function completedBefore(activityId) {
 function startChallenge(node, def) {
   const ids0 = (def.body && Array.isArray(def.body.items) ? def.body.items : []).map((it) => it && it.id);
   const order = def.body && def.body.shuffle ? shuffled(ids0) : ids0;
-  const mode = completedBefore(def.id) ? "retry" : "first";
+  const s0 = /** @type {any} */ (app.session);
+  const mode = completedBefore(s0.log.events(), s0.identity.learner_id, def.id) ? "retry" : "first";
   let q;
   try { q = startQuiz(def, order, mode); }
   catch { toast("这个挑战暂时不能玩。"); return; }
@@ -491,7 +540,7 @@ async function pump() {
   }
   if (app.quiz !== z) return;
   if (app.view === "quiz") renderQuiz();
-  else if (z.q.phase === "done") renderChart(); // 存好时孩子已经回到星图：重画，星星换样子
+  else if (z.q.phase === "done" && app.view === "chart") renderChart(); // 存好时孩子已经回到星图：重画，星星换样子
   if (z.q.pending && !z.q.view.failed) pump();
 }
 
@@ -725,7 +774,7 @@ function patchTyped(z, form, after) {
 function bindActs(z, root) {
   root.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => {
     const act = /** @type {HTMLElement} */ (b).dataset.act;
-    if (act === "back") { renderChart(); }
+    if (act === "back") { app.view = "chart"; renderChart(); }
     else if (act === "retry") retry();
     else if (act === "reload") location.reload();
     else if (act === "next") { z.solved = null; renderQuiz(); }
@@ -828,7 +877,19 @@ function lostLock() {
   app.mode = "readonly";
   app.why = "lost";
   renderBanner();
-  if (app.view === "quiz") renderQuiz(); else renderChart();
+  renderCurrent();
+}
+
+/** 打开时读一次：干净不干净、上次备份、最早的记录（家长入口用）。只读事务。 */
+async function readDeviceFacts() {
+  if (!app.store) return null;
+  const snap = await app.store.snapshot();
+  app.clean = isClean(snap);
+  app.lastBackup = snap.lastBackup || null;
+  let first = null;
+  for (const e of app.log ? app.log.events() : []) if (first === null || e.occurred_at < first) first = e.occurred_at;
+  app.firstEventAt = first;
+  return snap;
 }
 
 /** 只读窗口：照样 loadAll 并重放（只读事务，不写任何东西）。 */
@@ -842,11 +903,12 @@ async function enterReadonly(why) {
       const log = createLog();
       for (const raw of d.inbox) log.ingest(raw);
       app.log = log;
+      await readDeviceFacts();
     } catch { app.hasIdentity = false; }
   }
   recompute();
   renderBanner();
-  renderChart();
+  renderCurrent();
 }
 
 /** 拿到锁以后：正在恢复 → 可以写。 */
@@ -854,7 +916,7 @@ async function recover() {
   app.mode = "recovering";
   app.why = null;
   renderBanner();
-  renderChart();
+  renderCurrent();
   let s;
   try {
     // 失锁以后，openSession 再要 ID 或时间就抛错，于是不再建身份、不再补写（规格 6.3「失去写锁」）
@@ -870,9 +932,20 @@ async function recover() {
   app.log = app.session.log;
   app.hasIdentity = true;
   recompute();
-  app.mode = "writable";
+  let snap;
+  try { snap = await readDeviceFacts(); }
+  catch (e) { console.error(e); s.committer.freeze(); renderStop("出错了", "请刷新页面。还不行的话，请家长看一看。"); return; }
+  if (app.lockLost) { s.committer.freeze(); await enterReadonly("lost"); return; }
+  // backup.md 5.1：拿着写锁时，把核对过的发布包存进 releases（没有才存；失败不要紧，下次再存）
+  const rel = app.pack && app.pack.release;
+  if (rel && !snap.releases.some((r) => r.release_id === rel.release_id)) {
+    try { await /** @type {any} */ (app.store).putRelease(/** @type {any} */ (app.pack).raw, rel.release_id); } catch (e) { console.warn("发布包没存上，下次再存", e); }
+  }
+  if (app.lockLost) { s.committer.freeze(); await enterReadonly("lost"); return; }
+  // backup.md 6.3：上次恢复没做完时，不进「可以写」
+  app.mode = snap.restoring ? "unfinished" : "writable";
   renderBanner();
-  renderChart();
+  renderCurrent();
 }
 
 async function relock() {
@@ -892,6 +965,14 @@ async function relock() {
    ============================================================ */
 async function boot() {
   window.addEventListener("pageshow", (e) => { if (e.persisted) lostLock(); });
+  // 家长页用 #parent，浏览器的「返回」也能回到星图
+  app.view = location.hash === "#parent" ? "parent" : "chart";
+  window.addEventListener("hashchange", () => {
+    if (location.hash === "#parent") { if (app.view !== "parent") resetParent(); app.view = "parent"; }
+    else if (app.view === "parent") app.view = "chart";
+    else return;
+    if (app.mode !== "loading" && app.mode !== "stopped") renderCurrent();
+  });
   if (!globalThis.crypto || !crypto.subtle || typeof crypto.getRandomValues !== "function") {
     // crypto.subtle 只在安全的网址（https 或 localhost）下有；没有它核对不了内容包，不能误报「内容包不完整」
     renderStop("请用 https 或 localhost 打开", "这样才能核对内容包。请家长换一个网址打开。");
@@ -907,10 +988,13 @@ async function boot() {
     return;
   }
   try {
-    app.store = await openStore();
+    // 别的页面要升级数据库时，按失去写锁处理（backup.md 5.1）
+    app.store = await openStore({ onVersionChange: () => lostLock() });
   } catch (e) {
     console.error(e);
     app.store = null;
+    // 设备上的数据库比这一版新（演示页回退到旧提交时）：停在错误页，不建身份，数据不丢
+    if (e && /** @type {any} */ (e).name === "VersionError") { renderStop("需要更新", "这台设备上的记录是新一点的 Curio 存的。请家长更新 Curio，再打开。记录不会丢。"); return; }
     await enterReadonly("nostore");
     return;
   }
