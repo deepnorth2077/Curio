@@ -40,9 +40,9 @@ export async function decodeBackup(file, digits, {maxPlain} = {})
      | {ok:false, error:"not_curio"|"update"|"corrupt"|"wrong_key"|"incomplete"|"too_big"} */;
 
 // 第 4 节。snapshot 见下；返回明文文档字节
-export function writeManifestDoc(snapshot, {createdAt, appCommit}) /* → Uint8Array */;
+export async function writeManifestDoc(snapshot, {createdAt, appCommit}) /* → Uint8Array（要算 end 行的 SHA-256，所以是异步的） */;
 // 第 4 节的读和全部检查（3.8 第 9～11 步）。header 是 decodeBackup 给的文件头（核对 created_at）
-export function readManifestDoc(doc, header)
+export async function readManifestDoc(doc, header)
   /* → {ok:true, manifest, inbox:[raw], receipt:[obj], import:[obj], archive:[{kind, v}], release:[raw]}
      | {ok:false, error:"corrupt"|"update"} */;
 
@@ -97,7 +97,7 @@ export function planRestore(existing, {header, backup}, {batchId, now, inputKey}
         report: {accepted, duplicate, not_yet_known, quarantined_new, quarantined_skipped, archived, releases,
                  fingerprint /* 恢复后，8 位十六进制 */, ownEarlier /* 备份里有本机以前的记录 */, noReceipt /* 被接收事件里一条收据都没有的条数 */}
        } */;
-// 注意：planRestore 是同步函数，fingerprint 需要 SHA-256，所以 report.fingerprint 由 runRestore 算好再填，planRestore 里给 null。
+// 注意：planRestore 是同步函数，fingerprint 需要 SHA-256，所以 report.fingerprint 给 null；恢复后的指纹由外壳重新加载以后自己算（6.3 第 4 步）。
 
 // 6.3：store 有规格 5.2 的方法；deps.lockLost() 返回 true 时停
 export async function runRestore(store, plan, {lockLost})

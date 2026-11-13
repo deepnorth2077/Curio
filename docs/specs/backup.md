@@ -150,7 +150,7 @@ v1 里设备把这 6 个数字存在本机 `meta.recoveryKey`（第 5 节）：`
 - **每一块**单独用 AES-256-GCM 加密：
   - 随机数（12 字节）= `nonce_prefix`（7 字节）+ 块序号（4 字节，大端无符号，从 0 开始）+ 末块标记（1 字节：最后一块是 `0x01`，其他是 `0x00`）；
   - 密文块 = 密文 + 16 字节认证标签。所以除最后一块外，每个密文块都正好是 `chunk_size + 16` 字节。
-- **读的时候认末块**：从第三行起，每次读 `chunk_size + 16` 字节；读满一整块以后，看后面还有没有字节，没有了它就是末块（用 `0x01` 解），还有就不是（用 `0x00` 解）。最后剩下不足一整块的，就是末块。剩下 0 字节、或末块不足 17 字节 →「文件坏了」。文件被截断在块的边界上时，最后一块会用 `0x01` 去解一个当初用 `0x00` 加密的块，必然失败，所以截断一定能发现。
+- **读的时候认末块**：从第三行起，每次读 `chunk_size + 16` 字节；读满一整块以后，看后面还有没有字节，没有了它就是末块（用 `0x01` 解），还有就不是（用 `0x00` 解）。最后剩下不足一整块的，就是末块。剩下 0 字节、或末块不足 17 字节 →「坏了或不完整」（3.8 第 6 步）。文件被截断在块的边界上时，最后一块会用 `0x01` 去解一个当初用 `0x00` 加密的块，必然失败，所以截断一定能发现。
 - 块的总数不超过 2^32 − 1。
 
 #### 3.3 gzip 的约定
@@ -280,7 +280,7 @@ v1 里设备把这 6 个数字存在本机 `meta.recoveryKey`（第 5 节）：`
 | `confirmRecoveryKey(at)` | 写 `confirmed_at`；没有密钥就中止 | 一个 |
 | `setLastBackup({at, file_name})` | | 一个 |
 | `restoreBegin(marker, identity?, recoveryKey?)` | 没有 `restoring` 时：写 `restoring`；要换身份时一起写身份；需要时按第 2.3 节写恢复密钥。已经有 `restoring` 时：**不重写**，只核对 `marker` 的 `file_created_at`、`file_device_id`、`file_salt`、`file_learner_id` 和存着的一样，不一样就中止 | 一个 |
-| `restoreBatch(items, ownSeqMax)` | `items` 按顺序：`{inbox: raw, receipt?}`、`{archive: …}`、`{release: raw}`。一条原始文字和它的收据**在同一个事务里**。`ownSeqMax` 是这一批里本机 `device_id` 的**被接收**事件的最大 `device_seq`（没有就是 0），同一个事务里把 `meta.nextSeq` 推进到 max(当前值, `ownSeqMax` + 1) | 一个，最多 500 项 |
+| `restoreBatch(items, ownSeqMax)` | `items` 按顺序：`{inbox: raw, receipt?}`、`{archive: {kind, v}}`、`{release: {release_id, raw}}`。一条原始文字和它的收据**在同一个事务里**。`ownSeqMax` 是这一批里本机 `device_id` 的**被接收**事件的最大 `device_seq`（没有就是 0），同一个事务里把 `meta.nextSeq` 推进到 max(当前值, `ownSeqMax` + 1) | 一个，最多 500 项 |
 | `restoreEnd(record)` | 写导入记录，删掉 `restoring` | 一个 |
 | `restoreAbandon(record)` | 写 `partial: true` 的导入记录，删掉 `restoring`（第 6.3 节） | 一个 |
 
@@ -437,8 +437,10 @@ Claude 把结果写进 `docs/retros/<日期>-restore-drill.md`，在 #8 关闭�
 | 密钥 `123456`、`iterations: 600000`、`salt` 全零、`nonce_prefix` 全零、`compression: none`、`chunk_size: 64`、`created_at` `2026-11-13T10:30:00.000Z`，只有清单和 `end` 两行的明文 | 整个文件逐字节等于期望值（写向量的人用 Python 和 Node 的 Web Crypto 各算一遍，对上才用） |
 | 同上，明文正好 2 个整块 | 末块是满块时也对 |
 | 截断在块边界；删掉最后一个字节；末块不足 17 字节；尾部多出整整一块；交换两块；改一块里一个字节 | 全部是「文件坏了或不完整」 |
-| 改文件头一个字节；改第一行；文件头重复键、多一个空格、不规范的 Base64；`salt` 15 字节；`iterations` 是 99999 或 `600000.5`；文件头里多一个 `key_id`；第一行 `/1` 而 `format` 是 `/2`；文件头超过 4096 字节；`chunk_size` 是 100 | 全部是「文件坏了」 |
+| 改坏文件头一个字节（改完文件头本身不合格）；文件头重复键、多一个空格、不规范的 Base64；`salt` 15 字节；`iterations` 是 99999 或 `600000.5`；文件头里多一个 `key_id`；第一行 `/1` 而 `format` 是 `/2`；文件头超过 4096 字节；`chunk_size` 是 100 | 全部是「文件坏了」 |
 | 第一行 `/2`；清单 `backup-manifest/9` | 「请先更新 Curio」 |
+| 改第一行（例如 `CURIO-BACKUP/x`） | 「不是 Curio 的备份文件」 |
+| 改文件头里的值，改完仍然合格（例如 `created_at` 的一位数字） | 「坏了或不完整」（3.8：要到第 6 步解密时才发现） |
 | 清单 `backup-manifest/9`，而且末块也坏了 | 「坏了或不完整」（3.8：先解完全部块） |
 | 文件头写法不对，而且密钥也不对 | 「文件坏了」（3.8：第 4 步在第 5 步之前） |
 | 错的密钥，而且密文也坏了 | 「恢复密钥不对」，不是「文件坏了」 |
