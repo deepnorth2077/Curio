@@ -34,7 +34,8 @@ export function parseKey(input) /* → {ok:true, digits:"482105"} | {ok:false, e
 // 3.1～3.3：明文文档字节 ↔ 文件字节
 export async function encodeBackup(doc, {digits, createdAt, salt /*16B*/, noncePrefix /*7B*/, iterations = WRITE_ITERATIONS, chunkSize = WRITE_CHUNK_SIZE, compression /*"gzip"|"none"*/})
   /* → Uint8Array 文件字节 */;
-// 3.8 第 2～9 步。maxPlain：解压后大小上限（字节），默认 1 GiB
+// 3.8 第 2～9 步。maxPlain：解压后大小上限（字节），默认 1 GiB。超过上限以后不再保留解出的字节（内存不涨），但把流解完：
+// 3.8 第 7 步（gzip 坏了）在第 8 步（太大）之前，坏文件要报 incomplete 而不是 too_big
 export async function decodeBackup(file, digits, {maxPlain} = {})
   /* → {ok:true, header /*解析出的文件头对象*/, headerLine /*第二行原始字节，不含 \n*/, doc /*明文 Uint8Array*/}
      | {ok:false, error:"not_curio"|"update"|"corrupt"|"wrong_key"|"incomplete"|"too_big"} */;
