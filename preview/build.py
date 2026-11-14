@@ -3,12 +3,13 @@
 用法：
     python preview/build.py --root <内容根目录> [--root <另一个根目录> ...] --out <输出文件>
     python preview/build.py --root . --bundle prototype/content.js
+    python preview/build.py --root . --constellation zero-to-one --out prototype/preview/zero-to-one/index.html
 
 --bundle：把所有 status: published 的知识点、它们卡片里列的已批准（review: approved）活动和配图打成一个 JS 文件，
 原型（prototype/index.html）用 <script src="content.js"> 读。content/ 改了就重新生成一次。
 
 每个根目录下应当有 content/nodes/、content/activities/、content/assets/。
-可以给多个根目录（例如三个 kp/ 分支各导出一份），按 STARS 里列的顺序取知识点和活动。
+可以给多个根目录（例如三个 kp/ 分支各导出一份），按 CONSTELLATIONS 里列的顺序取知识点和活动。
 页面不联网、不保存进度：刷新就从头开始。
 """
 import argparse
@@ -18,19 +19,24 @@ from pathlib import Path
 
 import yaml
 
-CONSTELLATION = "生命的说明书"
-# 星座里的星，按顺序；每颗星下面的活动也按这个顺序显示。
+# 每个星座一张试玩页。星座里的星按顺序列；每颗星下面的活动也按这个顺序显示。
 # 动手探索的模块（manifest.yaml + index.html）排在最前面；找不到的活动会跳过。
-STARS = [
-    ("biology.cell.cell-intro", ["act.simulation.cell-zoom-01", "act.explain.cell-intro-01", "act.quiz.cell-intro-01"]),
-    ("biology.genetics.dna-intro", ["act.simulation.dna-book-01", "act.explain.dna-intro-01", "act.quiz.dna-intro-01"]),
-    ("biology.genetics.chromosome-intro", [
-        "act.simulation.chromosome-pack-01",
-        "act.explain.chromosome-intro-01",
-        "act.quiz.chromosome-intro-01",
-        "act.reflection.chromosome-intro-01",
+CONSTELLATIONS = {
+    "life-manual": ("生命的说明书", [
+        ("biology.cell.cell-intro", ["act.simulation.cell-zoom-01", "act.explain.cell-intro-01", "act.quiz.cell-intro-01"]),
+        ("biology.genetics.dna-intro", ["act.simulation.dna-book-01", "act.explain.dna-intro-01", "act.quiz.dna-intro-01"]),
+        ("biology.genetics.chromosome-intro", [
+            "act.simulation.chromosome-pack-01",
+            "act.explain.chromosome-intro-01",
+            "act.quiz.chromosome-intro-01",
+            "act.reflection.chromosome-intro-01",
+        ]),
     ]),
-]
+    # 「0 和 1 之间」：分数、小数、比与百分数（docs/constellations/zero-to-one/index.md）。做完一颗加一颗
+    "zero-to-one": ("0 和 1 之间", [
+        ("math.fraction.unit-fraction", ["act.simulation.fair-cut-01", "act.quiz.unit-fraction-01"]),
+    ]),
+}
 
 TEMPLATE = Path(__file__).with_name("template.html")
 
@@ -135,9 +141,10 @@ def build_bundle(roots):
     return {"nodes": nodes, "activities": acts, "figures": figures}
 
 
-def build(roots):
+def build(roots, constellation="life-manual"):
+    name, star_list = CONSTELLATIONS[constellation]
     stars, figures = [], {}
-    for node_id, act_ids in STARS:
+    for node_id, act_ids in star_list:
         node = yaml.safe_load(find_node(roots, node_id).read_text(encoding="utf-8"))
         acts = [a for a in (load_activity(roots, aid, figures) for aid in act_ids) if a]
         stars.append({
@@ -147,7 +154,7 @@ def build(roots):
             "misconceptions": {m["id"]: m.get("text", "") for m in node.get("misconceptions", [])},
             "activities": acts,
         })
-    return {"constellation": CONSTELLATION, "stars": stars, "figures": figures}
+    return {"constellation": name, "stars": stars, "figures": figures}
 
 
 def main():
@@ -155,11 +162,12 @@ def main():
     ap.add_argument("--root", action="append", required=True, type=Path)
     ap.add_argument("--out", type=Path, help="试玩页（单个 HTML 文件）")
     ap.add_argument("--bundle", type=Path, help="原型读的内容包（JS 文件）")
+    ap.add_argument("--constellation", default="life-manual", choices=sorted(CONSTELLATIONS), help="试玩页做哪个星座")
     a = ap.parse_args()
     if not a.out and not a.bundle:
         ap.error("--out 和 --bundle 至少要给一个")
     if a.out:
-        data = build(a.root)
+        data = build(a.root, a.constellation)
         blob = json.dumps(data, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
         html = TEMPLATE.read_text(encoding="utf-8").replace("/*__DATA__*/null", blob)
         a.out.write_text(html, encoding="utf-8")
