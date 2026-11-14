@@ -9,6 +9,7 @@
   --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
   --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
   --accent:#C2603F; --accent-soft:#F3E0D6;
+  --grip:#2A7F7C; --grip-soft:#D3E8E5;   /* 圆钮（「可抓」记号）专用，见 docs/constellations/zero-to-one/g1.md A.4 */
   --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
   --dad:#4F7FA8; --mom:#C2603F; --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
   --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
@@ -20,6 +21,7 @@
   --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;
   --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
   --accent:#E0876A; --accent-soft:#3A2A24;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
   --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;
   --dad:#7FA9CF; --mom:#E0876A; --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
   color-scheme:dark;
@@ -39,7 +41,7 @@ h1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);ma
 .readout b{color:var(--accent);font-weight:600}
 svg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 svg#stage:focus{outline:none}
-svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+svg#stage:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
 .k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
 .kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
@@ -59,7 +61,7 @@ svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
 .btn.ghost{background:var(--pane);color:var(--ink)}
 .btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
 .btn.choice:hover{background:var(--hover)}
-.btn.hold{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.hold{background:var(--grip);border-color:var(--grip);color:var(--bg)}   /* 按住按钮不用强调色（教训 33） */
 .btn.hold.on{filter:brightness(.9)}
 .btn:disabled{opacity:.4;cursor:default}
 .btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500}
@@ -95,7 +97,9 @@ svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
 
 <script>
 "use strict";
-/* Curio · 动手探索模块骨架（来自 act.simulation.chromosome-pack-01）。复制本文件，把 {{…}} 换成具体内容。 */
+/* Curio · 动手探索模块骨架（来自 act.simulation.chromosome-pack-01）。复制本文件，把 {{…}} 换成具体内容。
+   圆钮、分数写法、「1」记号、提醒环、按场景缩放的 viewBox、状态变了才重画：先照抄 act.simulation.fair-cut-01 里带 kit: 记号的几段，
+   等切分机验收通过再抽进这里（g1.md A.4 G8）。 */
 
 /* ============ 1. 真相模型：页面上的每个数字都从这里算，每个值旁边写出处 ============ */
 const MODEL = {
@@ -295,8 +299,8 @@ function tick(now){
   }
   requestAnimationFrame(tick);
 }
+Host.ready();      // 必须先于任何 state、event（教训 31）
 enter1();
-Host.ready();
 requestAnimationFrame(tick);
 </script>
 </body>
