@@ -1,0 +1,16 @@
+id: act.simulation.fair-cut-01
+contract: activity/1.1
+type: simulation
+version: 1
+title: 切分机
+targets: [math.fraction.unit-fraction]
+age_band: G3-4
+entry: index.html
+duration_min: 8
+pedagogy: explain
+capabilities: [pointer, keyboard]
+misconceptions: [bigger-denominator-bigger, numerator-only, unequal-parts, part-to-part]
+emits: [predicted, observed]
+author: {model: Claude Fable 5.2 (claude-fable-5-2), prompt_ref: docs/constellations/zero-to-one/g1.md}
+review: claude-reviewed
+# END OF FILE
