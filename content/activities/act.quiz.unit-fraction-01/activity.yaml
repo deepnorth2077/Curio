@@ -1,0 +1,122 @@
+id: act.quiz.unit-fraction-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: "切分机大挑战"
+targets: [math.fraction.unit-fraction]
+age_band: G3-4
+duration_min: 5
+review: claude-reviewed
+engine: 1
+sources:
+  - type: textbook
+    ref: "人教版小学数学三年级上册（2024 年新教材，2025 年秋起用）第六单元「分数的初步认识」"
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: "同一张饼，一种切法拿到它的五分之一，另一种拿到它的九分之一。哪一块大？"
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: "九分之一那块大"
+            misconception: bigger-denominator-bigger
+            feedback: "9 确实比 5 大。可 9 说的是切成 9 份，份数多，每一份反而小。"
+          - id: b
+            text: "五分之一那块大"
+            correct: true
+          - id: c
+            text: "一样大，都只拿了 1 份"
+            misconception: numerator-only
+            feedback: "都拿了 1 份没错。可一个是 5 份里的 1 份，一个是 9 份里的 1 份。"
+      feedback:
+        correct: "对。同一张饼，切成 5 份的每一份，比切成 9 份的每一份大。"
+        wrong: "想想切分盘：从 5 拧到 9，取出来的那一份是变大还是变小？"
+      hints:
+        - "想想切分盘从 5 拧到 9 时，取出来的那一份怎么变。"
+        - "同一张饼，切的份数越多，每一份会怎样？"
+    - id: q2
+      stem: "一条蛋糕卷切成了 4 段，涂色的是其中 1 段。涂色的这段是这条蛋糕卷的四分之一吗？"
+      figure: {type: rect-unequal, widths: [3, 2, 4, 1], shaded: [1]}
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: "是，4 段里涂了 1 段"
+            misconception: unequal-parts
+            feedback: "4 段里涂了 1 段，数得没错。可这 4 段有长有短，不是平均分。"
+          - id: b
+            text: "不是，它是三分之一"
+            misconception: part-to-part
+            feedback: "你拿它和剩下的 3 段比了。分数比的是这一段和一整条。"
+          - id: c
+            text: "不是，4 段不一样大"
+            correct: true
+      feedback:
+        correct: "对。每份一样大才叫平均分，平均分出来的一份才能叫四分之一。"
+        wrong: "把这 4 段放上天平想一想：它们一样重吗？"
+      hints:
+        - "先看看这 4 段是不是一样长。"
+        - "想想天平：放不平的时候，刀落下来了吗？"
+    - id: q3
+      stem: "一块长方形的糕平均分成了 6 份，涂色的是 1 份。涂色的是这块糕的几分之几？"
+      figure: {type: rect, parts: 6, shaded: 1, direction: h}
+      answer:
+        type: fraction
+        numerator: 1
+        denominator: 6
+        accept_equivalent: false
+        common_wrong:
+          - numerator: 1
+            denominator: 5
+            misconception: part-to-part
+            feedback: "5 是没涂色的份数。下面的数要写一共平均分成了几份。"
+          - numerator: 6
+            denominator: 1
+            misconception: swap-top-bottom
+            feedback: "两个数都找对了，位置反了。下面写一共几份，上面写拿了几份。"
+      feedback:
+        correct: "对。平均分成 6 份，拿了 1 份，就是这块糕的六分之一。"
+        wrong: "先数一共平均分成了几份，写在下面；再数涂了几份，写在上面。"
+      hints:
+        - "先数一数，这块糕一共平均分成了几份。"
+        - "分母是一共几份，分子是涂了几份。"
+    - id: q4
+      stem: "一张饼平均切成 7 份，每块是这张饼的七分之一。要拼回一整张饼，需要几块？"
+      answer:
+        type: number
+        value: 7
+        tolerance: 0
+        unit: 块
+        common_wrong:
+          - value: 6
+            misconception: part-to-part
+            feedback: "6 是剩下的块数。拼回一整张，手里这 1 块也要算进去。"
+      feedback:
+        correct: "对。7 个七分之一，正好拼回一整张饼。"
+        wrong: "想想那根面包：10 个十分之一才排满 1 米。七分之一呢？"
+      hints:
+        - "想想 1 米长的面包：十分之一那么长的一段，要几段才排满？"
+        - "这张饼一共切成了几块，就要几块才拼得回去。"
+    - id: q5
+      stem: "一张纸对折 1 次，再对折 1 次，再对折 1 次，一共折了 3 次。打开以后，每一小块是这张纸的几分之几？"
+      answer:
+        type: fraction
+        numerator: 1
+        denominator: 8
+        accept_equivalent: false
+        common_wrong:
+          - numerator: 1
+            denominator: 6
+            feedback: "你算的是 3 个 2。可每折一次，原来的每一块都变成 2 块。"
+          - numerator: 1
+            denominator: 3
+            feedback: "折了 3 次没错。可折一次是 2 块，再折一次，每块又变成 2 块。"
+      feedback:
+        correct: "对。折一次 2 块，两次 4 块，三次 8 块，每块是这张纸的八分之一。"
+        wrong: "一次一次来：折 1 次有几块？再折 1 次，每一块又变成几块？"
+      hints:
+        - "先想折 1 次有几块，再想折第 2 次以后有几块。"
+        - "切蛋糕卷时，一半的一半是四分之一。再来一半呢？"
+# END OF FILE

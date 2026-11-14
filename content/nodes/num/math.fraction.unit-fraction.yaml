@@ -45,7 +45,7 @@ lenses:
     approach: 把几分之一叫作分数单位，一个分数就是若干个分数单位；整体可以是一个东西、一堆东西或一个计量单位，统一叫单位「1」。
   - band: G7-9
     approach: 对正数 n，n 越大 1/n 越小，可以任意接近 0 但总比 0 大；这是反比例函数 y = 1/x 在 x > 0 时的样子。（倒数的说法小学六年级已经学过，这里接着用。）
-activities: [act.simulation.fair-cut-01]
+activities: [act.simulation.fair-cut-01, act.quiz.unit-fraction-01]
 status: draft
 version: 1
 # END OF FILE
