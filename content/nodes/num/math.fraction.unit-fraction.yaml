@@ -1,0 +1,51 @@
+id: math.fraction.unit-fraction
+schema: knode/1
+title: 几分之一：越分越小
+subjects: [math]
+theme: num
+grade: G3
+unit: 三上 · 第六单元 分数的初步认识（人教版 2024 年新教材，2025 年秋起用；以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第二学段「数与运算」内容要求第（2）条：结合具体情境，初步认识小数和分数，感悟分数单位（措辞来自二手转录，待对照纸本）
+  - textbook: 人教版小学数学三年级上册（2024 年新教材，2025 年秋起用）
+    unit: 第六单元 分数的初步认识
+prerequisites: []
+related: []
+driving_question: 8 比 3 大，为什么 1/8 张饼反而比 1/3 张小？
+objectives:
+  - 知道把一个东西平均分成几份，其中一份就是它的几分之一，会读、会写。
+  - 知道分母是平均分成了几份，分子是拿了几份。
+  - 知道只有每份一样大才叫平均分，没有平均分的一份不能叫几分之一。
+  - 知道同一个东西，分的份数越多，每一份越小：1/2 比 1/3 大，1/3 比 1/8 大。
+  - 知道几个几分之一能拼回一整个：8 个 1/8 是 1。
+misconceptions:
+  - id: bigger-denominator-bigger
+    text: 觉得分母大的分数大，例如认为 1/8 比 1/3 大，因为 8 比 3 大。
+  - id: numerator-only
+    text: 只看分子，觉得分子都是 1 的分数一样大，例如认为 1/8 和 1/3 一样大。
+  - id: unequal-parts
+    text: 没有平均分，也把其中一份叫几分之一，例如切成大小不同的 3 块，把一块叫 1/3。
+  - id: part-to-part
+    text: 拿「这一份」和「剩下的几份」比，例如 4 份里的 1 份说成 1/3，或者认为 6 个 1/5 才拼成一整个。
+  - id: swap-top-bottom
+    text: 把分子和分母写反，例如把四份里的一份写成 4/1。
+sources:
+  - type: curriculum
+    ref: 《义务教育数学课程标准（2022 年版）》第二学段「数与运算」
+  - type: textbook
+    ref: 人教版小学数学三年级上册（2024 年新教材，2025 年秋起用）第六单元「分数的初步认识」；第三单元「毫米、分米和千米」
+  - type: reference
+    ref: Siegler 等（2010）Developing Effective Fractions Instruction for Kindergarten Through 8th Grade，建议 1
+    url: https://ies.ed.gov/ncee/wwc/PracticeGuide/15
+lenses:
+  - band: G3-4
+    approach: 不讲定义，先切。转盘切饼，看同一张饼切得越多每份越小；拖刀切蛋糕卷，天平放平才算平均分；把 1 米长的面包按 1/10、1/100、1/1000 一段段拼回去，发现它们就是分米、厘米、毫米。
+  - band: G5-6
+    approach: 把几分之一叫作分数单位，一个分数就是若干个分数单位；整体可以是一个东西、一堆东西或一个计量单位，统一叫单位「1」。
+  - band: G7-9
+    approach: 对正数 n，n 越大 1/n 越小，可以任意接近 0 但总比 0 大；这是反比例函数 y = 1/x 在 x > 0 时的样子。（倒数的说法小学六年级已经学过，这里接着用。）
+activities: [act.simulation.fair-cut-01]
+status: draft
+version: 1
+# END OF FILE
