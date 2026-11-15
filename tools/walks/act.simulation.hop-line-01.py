@@ -141,7 +141,7 @@ def play(w):
     check("重玩第 3 站：第一屏 1 个圆钮", grips() == 1, grips())
     page.locator("#stage").focus()
     for n in [2, 3, 4, 5, 6, 8, 10, 12, 20, 50, 100]:
-        w.step(f"重玩拧到 {n}"); page.keyboard.press("ArrowRight"); page.wait_for_timeout(200)
+        w.step(f"重玩拧到 {n}"); page.keyboard.press("ArrowRight"); page.wait_for_timeout(760 if n in (2, 4, 100) else 200)   # 和第一次一样，至少停 3 档才出「看一看」
     page.wait_for_timeout(600); check("重玩第 3 站：读数 n=100", readout() == "平均分成 100 段 · 0 和 1 之间多出 99 个数", readout())
     btn("看一看"); page.wait_for_timeout(400); btn("再密呢")
     check("重玩一站揭晓完是「回星卡」", w.buttons() == ["回星卡"], w.buttons())
