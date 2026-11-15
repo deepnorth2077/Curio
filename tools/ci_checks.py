@@ -43,6 +43,8 @@ KID_FACING_ACT = ["title", "predict", "explain"]
 FORBIDDEN_WORD = "学习"
 PUBLISH_REQUIRED_TYPES = ["explain", "quiz"]
 PATH_SEGMENT = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
+# 孩子会碰到的外壳页面：样式里要有「长按不选字、不弹菜单」那两条（#156，module_lint.NOSELECT_CSS）。文件不在就不查
+NOSELECT_SHELLS = ["preview/template.html", "app/index.html", "prototype/index.html"]
 
 # 每增加一种能力，就在这里登记它所需的最低引擎等级。
 ENGINE_REQUIREMENTS = {
@@ -648,6 +650,14 @@ def run(repo, base="origin/main", branch="", labels=()):
         if any(p.startswith(rel(repo, f.parent) + "/") for p in changed):
             for message in warnings:
                 r.warn(message, rel(repo, html))
+
+    # ---------- 4c. 外壳页面长按不选字（#156） ----------
+    for shell in NOSELECT_SHELLS:
+        f = repo / shell
+        if not f.is_file():
+            continue
+        for desc in module_lint.noselect_missing(f.read_text(encoding="utf-8")):
+            r.err(f"样式里少了「{desc}」：iPad 上长按会选中文字、弹出拷贝菜单（#156）。照 tools/module_lint.py 的 NOSELECT_CSS 抄", shell)
 
     # ---------- 5. 署名提醒 ----------
     log = git(repo, "log", f"{base}..HEAD", "--format=%h%x00%s%x00%B%x1e").stdout

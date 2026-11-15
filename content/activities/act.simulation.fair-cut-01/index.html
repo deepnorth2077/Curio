@@ -6,6 +6,9 @@
 <title>切分机</title>
 <style>
 /* kit:base 2026-11-14 —— 这一段和 references/starter.html 相同，改它就同步改骨架 */
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 :root{
   --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
   --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;

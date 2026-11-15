@@ -5,7 +5,7 @@
 这样质量不靠接手的模型记得逐条对照（#140）。
 
 规则分三档：
-- 所有模块（错误）：不联网、不碰存储、不引外部资源；Host.ready() 先于第一站；代码里发的 verb 都写进了 emits；
+- 所有模块（错误）：不联网、不碰存储、不引外部资源；长按不选字、不弹菜单（#156）；Host.ready() 先于第一站；代码里发的 verb 都写进了 emits；
   代码里的误区 id 都写进了 manifest 的 misconceptions。
 - 新一代模块，也就是样式里定义了 --grip 的模块（错误）：强调色不上控件，圆钮色不外借（圆钮规格 G8）；
   SVG 元素上不写 font-size 属性（教训 14）；给孩子看的字符串里没有斜杠写的分数（g1.md A.4）；感叹号不超过 3 个。
@@ -47,6 +47,18 @@ MIS_IN_CODE = re.compile(r"\b(?:mis|misconception)\s*:\s*[\"']([a-z0-9-]+)[\"']"
 KIT_MARK = re.compile(r"kit:([a-z0-9-]+)")
 SECTION_BREAK = re.compile(r"/\* =+|</style>|</script>")
 
+# 长按不选字、不弹菜单（#156）：孩子会碰到的页面都要有这两条，ci_checks 也拿它查三个外壳文件
+NOSELECT_CSS = (
+    "html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}\n"
+    "input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}\n"
+)
+NOSELECT_RULES = [
+    ({"html"}, {"-webkit-user-select:none", "user-select:none", "-webkit-touch-callout:none"},
+     "html 上的 -webkit-user-select:none、user-select:none、-webkit-touch-callout:none"),
+    ({"input", "textarea", "select", "[contenteditable]"}, {"-webkit-user-select:text", "user-select:text", "-webkit-touch-callout:default"},
+     "input,textarea,select,[contenteditable] 上的 -webkit-user-select:text、user-select:text、-webkit-touch-callout:default"),
+]
+
 
 def _strip_comments(text):
     text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
@@ -80,6 +92,20 @@ def _kit_segments(text):
     return out
 
 
+def noselect_missing(html):
+    """页面样式里缺的「长按不选字」规则（#156），返回缺的那几条的说明；都有就返回空列表。
+    选择器要在同一条规则里（顺序不限），声明多写别的也行；@media 里面的不算。"""
+    css = re.sub(r"/\*.*?\*/", "", "\n".join(_blocks(html, "style")), flags=re.S)
+    css = re.sub(r"@media[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}", "", css)
+    have = []
+    for sel, body in _css_rules(css):
+        sels = {s.strip() for s in sel.split(",")}
+        decls = {re.sub(r"\s+", "", d).lower() for d in body.split(";") if d.strip()}
+        have.append((sels, decls))
+    return [desc for need_sel, need_decl, desc in NOSELECT_RULES
+            if not any(need_sel <= sels and need_decl <= decls for sels, decls in have)]
+
+
 def is_new_generation(html):
     """样式里定义了 --grip 的是新一代模块。"""
     return bool(re.search(r"--grip\s*:", "\n".join(_blocks(html, "style"))))
@@ -107,8 +133,11 @@ def lint(html, manifest=None, node_misconceptions=None, starter=None):
         if re.search(pattern, code, flags=re.I):
             errors.append(f"模块不能联网、读写存储或引用外部资源：发现 {name}（活动契约「硬性约束」，教训 10）")
 
+    for desc in noselect_missing(html):
+        errors.append(f"样式里少了「{desc}」：iPad 上长按会选中文字、弹出拷贝菜单（#156）。照骨架 kit:base 开头的两条抄")
+
     scripts = "\n".join(_blocks(html, "script"))
-    has_code = bool(_strip_comments(scripts).strip())   # 脚本里只有注释的不算
+    has_code =bool(_strip_comments(scripts).strip())   # 脚本里只有注释的不算
     if has_code:
         ready = HOST_READY.search(scripts)
         entry = ENTRY_CALL.search(scripts)

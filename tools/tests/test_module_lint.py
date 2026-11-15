@@ -12,10 +12,12 @@ import module_lint  # noqa: E402
 
 GRIP_CSS = ":root{ --accent:#C2603F; --grip:#2A7F7C; --grip-soft:#D3E8E5; }\n.btn.hold{background:var(--grip)}\n.gfill{fill:var(--grip)}\n.lead{fill:var(--accent)}\n"
 MANIFEST = {"emits": ["predicted", "observed"], "misconceptions": ["bigger-denominator-bigger"]}
+NOSELECT = module_lint.NOSELECT_CSS   # 长按不选字（#156），每个样例模块都带上
 
 
-def page(script=None, css="", body=""):
-    """拼一个最小模块页。script 不给时用一段合格的脚本。"""
+def page(script=None, css="", body="", noselect=True):
+    """拼一个最小模块页。script 不给时用一段合格的脚本；noselect=False 时不带长按不选字那两条。"""
+    css = (NOSELECT if noselect else "") + css
     if script is None:
         script = (
             'const Host = { ready(){}, event(){} };\n'
@@ -46,10 +48,30 @@ class TestAllModules(Lint):
         self.ok(page())
 
     def test_page_without_script_is_not_checked_for_ready(self):
-        self.ok("<!doctype html><html><body><p>分蛋糕</p></body></html>", {"emits": ["answered"]})
+        self.ok(f"<!doctype html><html><head><style>{NOSELECT}</style></head><body><p>分蛋糕</p></body></html>", {"emits": ["answered"]})
 
     def test_script_with_only_comments_is_not_checked_for_ready(self):
-        self.ok("<!doctype html><html><body><script>// 只有一行注释</script></body></html>", {"emits": []})
+        self.ok(f"<!doctype html><html><head><style>{NOSELECT}</style></head><body><script>// 只有一行注释</script></body></html>", {"emits": []})
+
+    def test_noselect_present_passes(self):
+        """长按不选字（#156）：两条都在就通过；选择器顺序、空格、多写别的声明都不要紧。"""
+        self.ok(page())
+        self.ok(page(noselect=False, css="html { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; color-scheme: light }\n"
+                                         "textarea, input, [contenteditable], select { user-select:text; -webkit-user-select:text; -webkit-touch-callout:default }\n"))
+
+    def test_noselect_missing_fails(self):
+        self.fails(page(noselect=False), "长按会选中文字")
+        html_rule, input_rule = NOSELECT.splitlines()
+        for css, which in [(input_rule, "html 上的"), (html_rule, "input,textarea,select,[contenteditable] 上的"),
+                           (html_rule.replace("-webkit-touch-callout:none", ""), "html 上的"),          # 少了不弹菜单
+                           (html_rule.replace("-webkit-user-select:none;", ""), "html 上的"),          # 少了 -webkit- 写法
+                           (html_rule.replace("html{", "body{"), "html 上的"),                       # 不在 html 上
+                           ("@media (hover:none){" + html_rule + "}\n" + input_rule, "html 上的"),   # 只在 @media 里
+                           ("/* " + html_rule + " */\n" + input_rule, "html 上的"),                  # 注释掉了
+                           (html_rule + "\ninput,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}", "input,textarea,select,[contenteditable] 上的")]:
+            with self.subTest(css=css):
+                self.fails(page(noselect=False, css=css), which)
+        self.fails(page(noselect=False, body=f"<p style='x'>{NOSELECT}</p>"), "#156")    # 写在样式表外面不算
 
     def test_network_and_storage(self):
         for bad, name in [("fetch('/x');", "fetch("), ("new XMLHttpRequest();", "XMLHttpRequest"), ("localStorage.setItem('a', 1);", "localStorage"),
