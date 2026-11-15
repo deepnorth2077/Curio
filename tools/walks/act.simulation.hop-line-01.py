@@ -129,8 +129,39 @@ def play(w):
     check("predicted 三次带误区", [(e[1]["station"], e[1]["misconception"]) for e in evs if e[0] == "predicted"] == [(1, "no-numbers-between"), (2, "whole-line-as-one"), (3, "count-ticks-not-steps")], evs)
     check("observed 三次", [e[1]["station"] for e in evs if e[0] == "observed"] == [1, 2, 3], evs)
     check("没有 answered", all(e[0] in ("predicted", "observed") for e in evs), evs); check("complete 一次", len(sent("complete")) == 1, len(sent("complete")))
-    btn("再玩一次"); page.wait_for_timeout(300)
-    check("再玩一次回到第 1 站", ev("S.station") == 1 and ev("S.steps") == 0 and ev("S.scene") == "s1", [ev("S.station"), ev("S.steps"), ev("S.scene")]); shot("5-replay")
+    # ---------- 选站重玩（#154）：跳过开场和猜测，直接动手；揭晓完「回星卡」；事件每站只记第一次 ----------
+    def events():
+        evs = [(m["payload"]["verb"], m["payload"]["result"]["station"]) for m in sent("event")]
+        return [e for e in evs if e[0] == "predicted"], [e for e in evs if e[0] == "observed"]
+    before = events()
+    check("星卡上能选站重玩", w.buttons() == ["从头玩", "第1站", "第2站", "第3站"], w.buttons())
+    # 重玩第 3 站
+    btn("第 3 站"); page.wait_for_timeout(400); shot("5a-replay3-first")
+    check("重玩第 3 站：不问猜测题，直接动手", ev("S.station") == 3 and ev("S.mode") == "act3" and ev("document.querySelectorAll('#actions .choice').length") == 0, [ev("S.station"), ev("S.mode")])
+    check("重玩第 3 站：第一屏 1 个圆钮", grips() == 1, grips())
+    page.locator("#stage").focus()
+    for n in [2, 3, 4, 5, 6, 8, 10, 12, 20, 50, 100]:
+        w.step(f"重玩拧到 {n}"); page.keyboard.press("ArrowRight"); page.wait_for_timeout(200)
+    page.wait_for_timeout(600); check("重玩第 3 站：读数 n=100", readout() == "平均分成 100 段 · 0 和 1 之间多出 99 个数", readout())
+    btn("看一看"); page.wait_for_timeout(400); btn("再密呢")
+    check("重玩一站揭晓完是「回星卡」", w.buttons() == ["回星卡"], w.buttons())
+    btn("回星卡"); page.wait_for_timeout(300); check("回到星卡", ev("S.mode") == "end", ev("S.mode"))
+    # 重玩第 1 站：换成 1/3 跳到 1，星卡第一层跟着变
+    btn("第 1 站"); page.wait_for_timeout(400); shot("5b-replay1-first")
+    check("重玩第 1 站：不问猜测题，直接动手，这一站复位", ev("S.station") == 1 and ev("S.mode") == "act1" and ev("S.steps") == 0 and ev("S.den") == 4 and ev("document.querySelectorAll('#actions .choice').length") == 0, [ev("S.mode"), ev("S.steps"), ev("S.den")])
+    hop(4)
+    cx, cy = pt(*ev("(()=>{const c=chipPos(1);return [c.x,c.y]})()"))
+    if touch: page.touchscreen.tap(cx, cy)
+    else: page.mouse.click(cx, cy)
+    page.wait_for_timeout(300); check("重玩第 1 站：选了每步 1/3", ev("S.den") == 3, ev("S.den"))
+    hop(3); btn("看明白了"); btn("我来说"); btn("3"); btn("还有呢")
+    check("重玩一站揭晓完是「回星卡」（第 1 站）", w.buttons() == ["回星卡"], w.buttons())
+    btn("回星卡"); page.wait_for_timeout(300); shot("5c-card-again")
+    card = ev("[...document.querySelectorAll('#dyn text')].map(t=>t.textContent).join('')")
+    check("星卡换成这次的步长：跳了 3 步到 1", ev("S.lastDen") == 3 and "跳了 3 步到 1" in card, [ev("S.lastDen"), card[:80]])
+    check("重玩一站不多记猜测和完成", events() == before, [before, events()]); check("重玩一站不再发 complete", len(sent("complete")) == 1, len(sent("complete")))
+    btn("从头玩"); page.wait_for_timeout(300)
+    check("从头玩回到第 1 站", ev("S.station") == 1 and ev("S.steps") == 0 and ev("S.scene") == "s1", [ev("S.station"), ev("S.steps"), ev("S.scene")]); shot("5-replay")
     check("页面没有横向溢出", ev("document.documentElement.scrollWidth <= innerWidth"), ev("document.documentElement.scrollWidth"))
 
 
