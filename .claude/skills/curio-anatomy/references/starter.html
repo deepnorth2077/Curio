@@ -70,7 +70,7 @@ svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
 .btn.hold.on{filter:brightness(.82)}
 .btn.hold svg{width:18px;height:18px;flex:none}
 .btn.hold svg path{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
-.gfill{fill:var(--grip)}
+.gfill{fill:var(--grip)} .gsoft{fill:var(--grip-soft)}
 .gring{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
 .gring.on{stroke-width:3.2}
 .gridge{fill:none;stroke:var(--bg);stroke-width:2.2;stroke-linecap:round}
@@ -97,6 +97,7 @@ body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{
 .big{fill:var(--ink);font-family:var(--f-mono);font-size:44px}
 .ttl{fill:var(--ink);font-family:var(--f-serif);font-size:26px}
 .sign{fill:var(--ink);font-family:var(--f-serif);font-size:24px}
+.tk{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round} .tkd{fill:none;stroke:var(--accent);stroke-width:1.1}
 body.narrow .lb{font-size:21px} body.narrow .lbg{font-size:20px} body.narrow .lbm{font-size:20px}
 body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .sign{font-size:28px}
 </style>
@@ -197,8 +198,9 @@ function arcD(cx, cy, r, a0, a1, seed){   // 手绘的一段圆弧
 /* ============ 4. 共用零件：分数、「1」记号、圆钮、数线条  kit:parts ============ */
 const narrow = () => document.body.classList.contains("narrow");
 // 4.1 分数：HTML 里的 .frac（带读法）和 SVG 里的 fracS（上下结构，手绘分数线）。任何地方都不用斜杠写法
-const CN = { 1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七", 8: "八", 9: "九", 10: "十", 11: "十一", 12: "十二", 100: "百", 1000: "千" };   // 用到别的数先补这张表
-const cnFrac = (a, b) => `${CN[b]}分之${CN[a]}`;                 // 读法：3/4 读作四分之三
+const CN1 = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+const cnNum = n => (n = +n, n === 100 ? "百" : n === 1000 ? "千" : !Number.isInteger(n) || n < 1 || n > 99 ? undefined : n <= 10 ? CN1[n] : n < 20 ? "十" + CN1[n - 10] : CN1[Math.floor(n / 10)] + "十" + (n % 10 ? CN1[n % 10] : ""));   // 认 1 到 99、100（百）、1000（千）；别的数（含 0）不认，读出来是 undefined，用到先补这里
+const cnFrac = (a, b) => `${cnNum(b)}分之${cnNum(a)}`;                // 读法：3/4 读作四分之三
 const F = (a, b) => `<span class="frac" role="img" aria-label="${cnFrac(a, b)}"><span aria-hidden="true">${a}</span><span aria-hidden="true">${b}</span></span>`;
 const FSZ = { fs: [16, 20], fm: [22, 26], fb: [34, 38] };
 function fracS(x, y, a, b, cls, seed){   // x 是中线，y 是分数线的高度
@@ -206,8 +208,8 @@ function fracS(x, y, a, b, cls, seed){   // x 是中线，y 是分数线的高�
   return `<g role="img" aria-label="${cnFrac(a, b)}">` + TC(x, r1(y - sz * .3), a, cls) + P(Sk.line(x - w / 2, y, x + w / 2, y, seed || 7, .45), "fl") + TC(x, r1(y + sz * .98), b, cls) + `</g>`;
 }
 // 4.2 「1」记号：整体外面一圈手绘虚线框，左上角挂一块写着 1 的纸色小牌
-function oneMark(x, y, w, h, seed){
-  const tx = x + 4, ty = y - 15;
+function oneMark(x, y, w, h, seed, o){   // o.below：牌子挂在左下角（框上面要留给别的东西时用）
+  const tx = x + 4, ty = o && o.below ? y + h - 15 : y - 15;
   return P(box(x, y, w, h, seed, .8), "one") +
     `<g transform="rotate(-5 ${tx + 14} ${ty + 14})"><rect x="${tx}" y="${ty}" width="28" height="30" rx="4" class="papr"/>` + P(box(tx, ty, 28, 30, seed + 9, .4), "k1") + TC(tx + 14, ty + 22, "1", "fm") + `</g>`;
 }
@@ -321,7 +323,7 @@ let cuePos = null, cueTimer = 0;
 function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; S.dirty = true; } }, 1500); }
 function disarmCue(){ clearTimeout(cueTimer); cuePos = null; cueEl.style.display = "none"; }
 function touched(){ if (cuePos || cueTimer) disarmCue(); cueTimer = 0; }
-function placeCue(){ if (!cuePos) return; const [x, y] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1(gripR() + 2)); cueEl.style.display = ""; }
+function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }   // 第三个数是被提醒的东西的半径（托里的一个）
 
 // 窄屏：viewBox 缩到中间 600 宽的操作区，字号类放大（教训 13、28）。每个场景写明自己用到的高度
 // 排版规矩：要紧的东西都画在 x = 110～690 之间；每个场景在这里写 [起始 y, 高度]
