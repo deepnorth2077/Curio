@@ -8,7 +8,7 @@ Luka 在 claude.ai 的 Curio 项目里开新对话，第一句发：
 
 > 接手 Curio。先读仓库里的 `docs/handoff.md`，再按它说的去看 issue。然后告诉我：现在卡在哪里、下一步你打算做什么。
 
-新对话里的 Claude 应该：准备环境（第 2 节）→ 读第 1 节列的东西 → 用一两句话回答「卡在哪里、下一步做什么」→ 等 Luka 发「交付 #<号>」「审阅 #<号>」或新的要求。
+新对话里的 Claude 应该：准备环境（第 2 节）→ 先列一遍没合入的半成品（`git ls-remote --heads origin "wip/*"`，每个分支里的 `README.md` 写着做到哪）→ 读第 1 节列的东西 → 用一两句话回答「卡在哪里、下一步做什么」→ 等 Luka 发「交付 #<号>」「审阅 #<号>」或新的要求。
 
 **现在的做法**（2026-11-12 起，ADR-009 增补 2）：全部规则在 `AGENTS.md`「协作方式」一节，一页读完，照着做。Claude 写需求和规格、审查、整合，实现交给 Opus 子 agent；只有存下来的数据格式和科学事实要另一个子 agent 独立审；画面由 Luka 和舰长看。外部通道已冻结，`curio-intake-review`、`curio-dispatch-task`、`curio-arch-change` 三个技能和第 3 节是那时的做法，不再用。
 
