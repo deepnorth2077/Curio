@@ -341,7 +341,7 @@ function viewHome(){
   setTop("Curio", false); dock();
   const hero = el("div", {class:"hero"},
     el("div", {}, el("div", {class:"eyebrow"}, "Curio · 星座"), el("h1", {}, DATA.constellation),
-      el("p", {}, "三颗星，按顺序飞：" + DATA.stars.map(s => s.title.split("：")[0]).join(" → ") + "。")),
+      el("p", {}, (["", "一", "两", "三", "四", "五", "六", "七", "八", "九", "十"][DATA.stars.length] || DATA.stars.length) + "颗星，按顺序飞：" + DATA.stars.map(s => s.title.split("：")[0]).join(" → ") + "。")),
     svgEl(SHIP));
   const line = el("div", {class:"line"});
   DATA.stars.forEach((st, i) => {
