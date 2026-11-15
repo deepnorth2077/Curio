@@ -6,6 +6,9 @@
 <meta name="color-scheme" content="light dark">
 <title>Curio</title>
 <style>
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 /* 和原型同一套颜色：浅色是暖纸面加手绘墨线，深色是 Obsidian 风格（prototype/index.html 的 CSS 变量） */
 :root{
   --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
@@ -110,6 +113,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 .banner-btns{display:flex;gap:10px;flex-wrap:wrap}
 
 /* 家长页（backup.md 第 10 节） */
+.parent{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default} /* 家长页照常能选字（复制恢复密钥等，#156） */
 .parent{width:100%;max-width:720px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
 .p-head{display:flex;align-items:center;gap:12px}
 .p-head h1{font-size:24px}

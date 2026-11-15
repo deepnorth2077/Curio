@@ -9,6 +9,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;600&family=ZCOOL+KuaiLe&display=swap">
 <style>
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改；指挥中心（#groundPage）照常能选字 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+#groundPage{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 /* Layout: one navigation only — ribbon (tablet/desktop) or bottom bar (phone). Explorer = knowledge index. Centre = star chart / metro / tools. Note pane = the planet.
    Light = warm paper with ink drawings; dark = Obsidian night. */
 :root{

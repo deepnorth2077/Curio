@@ -160,6 +160,7 @@ class Repo:
 N1, N2 = "math.number.division-meaning", "math.number.fraction-intro"
 SVG_OK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="#CCD6C0"/></svg>\n'
 NODE_DIR = "content/nodes/num"
+NOSELECT = ci_checks.module_lint.NOSELECT_CSS   # 长按不选字（#156），样例页面都带上
 
 
 class Base(unittest.TestCase):
@@ -181,7 +182,7 @@ class Base(unittest.TestCase):
         return sorted(f for f, message in result.errors if "不能改这个文件" in message)
 
     def add_html(self, aid, body="<p>分蛋糕</p>"):
-        self.r.write(f"content/activities/{aid}/index.html", f"<!doctype html><html><body>{body}</body></html>\n")
+        self.r.write(f"content/activities/{aid}/index.html", f"<!doctype html><html><head><style>{NOSELECT}</style></head><body>{body}</body></html>\n")
 
     def add_structured(self, doc, nid=N2, status="draft", mis=("denominator-bigger",)):
         aid = doc["id"]
@@ -278,7 +279,7 @@ class TestBranches(Base):
         self.assertEqual(ci_checks.ACT_PROMPT.match("prompts/act.quiz.frac.task.md").group(1), "act.quiz.frac")
 
     def test_feat_may_touch_prototype(self):
-        self.r.baseline(); self.r.branch("feat/x"); self.r.write("prototype/index.html", "<html></html>"); self.r.commit()
+        self.r.baseline(); self.r.branch("feat/x"); self.r.write("prototype/index.html", f"<html><style>{NOSELECT}</style></html>"); self.r.commit()
         self.ok(self.r.check())
 
     def test_override_label_turns_error_into_warning(self):
@@ -726,7 +727,7 @@ class TestModuleLint(Base):
     def module(self, script):
         self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=[self.AID], mis=("denominator-bigger",)))
         self.r.write(f"content/activities/{self.AID}/manifest.yaml", activity(self.AID, [N2], type_="simulation", mis=("denominator-bigger",)))
-        self.r.write(f"content/activities/{self.AID}/index.html", f"<!doctype html><html><body><script>\nconst Host={{ready(){{}}}};\nfunction enter1(){{}}\n{script}</script></body></html>\n")
+        self.r.write(f"content/activities/{self.AID}/index.html", f"<!doctype html><html><head><style>{NOSELECT}</style></head><body><script>\nconst Host={{ready(){{}}}};\nfunction enter1(){{}}\n{script}</script></body></html>\n")
 
     def test_errors_are_reported(self):
         self.module("Host.ready();\nenter1();\n"); self.r.baseline()
@@ -752,6 +753,35 @@ class TestModuleLint(Base):
         self.fails(self.r.check(), f"tools/walks/{self.AID}.py")
         self.r.write(f"tools/walks/{self.AID}.py", "# 走查\n"); self.r.commit()
         self.ok(self.r.check())
+
+    def test_module_without_noselect_fails(self):
+        self.module("Host.ready();\nenter1();\n"); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        html = f"content/activities/{self.AID}/index.html"
+        self.r.write(html, (self.r.dir / html).read_text(encoding="utf-8").replace(f"<style>{NOSELECT}</style>", "")); self.r.commit()
+        self.fails(self.r.check(), "长按会选中文字")
+
+
+class TestNoselectShells(Base):
+    """三个外壳页面要有「长按不选字、不弹菜单」那两条（#156）。"""
+
+    def test_shells_with_rules_pass(self):
+        self.r.baseline(); self.r.branch("arch/shell")
+        for shell in ci_checks.NOSELECT_SHELLS:
+            self.r.write(shell, f"<!doctype html><html><head><style>\n{NOSELECT}:root{{--bg:#F5F4EE}}\n</style></head><body></body></html>\n")
+        self.r.commit()
+        self.ok(self.r.check())
+
+    def test_shell_missing_rules_fails(self):
+        html_rule, input_rule = NOSELECT.splitlines()
+        for shell in ci_checks.NOSELECT_SHELLS:
+            for css, which in [("", "html 上的"), (input_rule, "html 上的"), (html_rule, "input,textarea,select,[contenteditable] 上的")]:
+                with self.subTest(shell=shell, css=css):
+                    self.r.close(); self.r = Repo(); self.r.baseline(); self.r.branch("arch/shell")   # 每个组合一个干净的仓库
+                    self.r.write(shell, f"<!doctype html><html><head><style>{css}</style></head><body></body></html>\n"); self.r.commit()
+                    result = self.r.check()
+                    self.fails(result, which)
+                    self.assertTrue(any(f == shell and "#156" in m for f, m in result.errors), result.errors)
 
 
 class TestPathsAndEngine(Base):
