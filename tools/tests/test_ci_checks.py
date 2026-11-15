@@ -719,6 +719,32 @@ class TestSvgWhitelist(Base):
                 self.assertTrue(self.r.check().errors, f"本应拦截：{name}")
 
 
+class TestModuleLint(Base):
+    """动手探索模块的静态检查接进了 ci_checks（tools/module_lint.py 自己的规则测试在 test_module_lint.py）。"""
+    AID = "act.simulation.frac-cut"
+
+    def module(self, script):
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=[self.AID], mis=("denominator-bigger",)))
+        self.r.write(f"content/activities/{self.AID}/manifest.yaml", activity(self.AID, [N2], type_="simulation", mis=("denominator-bigger",)))
+        self.r.write(f"content/activities/{self.AID}/index.html", f"<!doctype html><html><body><script>\nconst Host={{ready(){{}}}};\nfunction enter1(){{}}\n{script}</script></body></html>\n")
+
+    def test_errors_are_reported(self):
+        self.module("Host.ready();\nenter1();\n"); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.module("enter1();\nHost.ready();\n"); self.r.commit()
+        self.fails(self.r.check(), "Host.ready() 必须先于第一站")
+
+    def test_warnings_only_for_changed_modules(self):
+        self.module("Host.ready();\nenter1();\n"); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=[self.AID], mis=("denominator-bigger",), dq="一块饼平均分给 4 个人，每人分到多少？")); self.r.commit()
+        quiet = self.r.check()
+        self.ok(quiet)
+        self.assertFalse(any("宿主不认" in m for _, m in quiet.warnings), quiet.warnings)
+        self.module("Host.ready();\nenter1();\n// 改一下\n"); self.r.commit()
+        self.assertTrue(any("宿主不认" in m for _, m in self.r.check().warnings))
+
+
 class TestPathsAndEngine(Base):
     def setUp(self):
         super().setUp(); self.r.baseline(); self.r.branch("arch/paths")

@@ -17,6 +17,9 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import module_lint  # noqa: E402  动手探索模块的静态检查（#140）
+
 # fnmatch 的 * 会跨过 /，所以 "prompts/*" 覆盖整个 prompts/ 目录。例外只有两条，见地盘检查：
 # kp/ 分支改自己活动的提示词和任务文件；feat/、fix/、chore/ 分支新增任务文件留档（*.task.md）。
 # relay/ 里 Claude 手算的验收用例、跑用例的脚本和领航员说明也只能在 arch/ 改：实现者不能为了通过去改期望值。
@@ -627,6 +630,23 @@ def run(repo, base="origin/main", branch="", labels=()):
             visible = re.sub(r"<[^>]+>", " ", visible)
             if FORBIDDEN_WORD in visible:
                 r.err(f"页面文字里出现了「{FORBIDDEN_WORD}」", rel(repo, html))
+
+    # ---------- 4b. 动手探索模块的静态检查（tools/module_lint.py，#140） ----------
+    starter_path = repo / ".claude/skills/curio-anatomy/references/starter.html"
+    starter = starter_path.read_text(encoding="utf-8") if starter_path.exists() else None
+    for aid, (f, doc) in acts.items():
+        html = f.parent / "index.html"
+        if f.name != "manifest.yaml" or not html.exists():
+            continue
+        targets = doc.get("targets") or []
+        mis = {m["id"] for t in targets if t in nodes for m in nodes[t][1].get("misconceptions", []) if isinstance(m, dict) and "id" in m}
+        errors, warnings = module_lint.lint(html.read_text(encoding="utf-8"), doc, mis if all(t in nodes for t in targets) else None, starter)
+        for message in errors:
+            r.err(message, rel(repo, html))
+        # 提醒只对这次改过的模块报，免得每个 PR 都刷同样的提醒
+        if any(p.startswith(rel(repo, f.parent) + "/") for p in changed):
+            for message in warnings:
+                r.warn(message, rel(repo, html))
 
     # ---------- 5. 署名提醒 ----------
     log = git(repo, "log", f"{base}..HEAD", "--format=%h%x00%s%x00%B%x1e").stdout
