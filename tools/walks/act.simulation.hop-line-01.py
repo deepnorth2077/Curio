@@ -93,6 +93,15 @@ def play(w):
     f = ev("S.planted[2]"); check("3/4 插在 0.78：正中，滑到 0.75", f["grade"] == "hit" and f["drop"] == 0.78 and abs(f["px"] - .75) < .005, f)
     shot("2g-three"); n_q = ev("document.querySelectorAll('#dyn g[aria-label=\"四分之二\"]').length")
     check("三面旗后 2/4 的标签在 1/2 的旗下面", n_q == 1, n_q)
+    # 容差边界（g1.md C.2 验收表）：压在边界上的值，两边要判得一样。直接调页面里的评级函数，不用再插旗
+    got = ev("[grade(0.54, .5), grade(0.46, .5), grade(0.55, .5), grade(0.45, .5), grade(0.62, .5), grade(0.38, .5), grade(0.63, .5), grade(0.37, .5)]")
+    check("容差边界：0.54/0.46 正中，0.55/0.45/0.62/0.38 差一点，0.63/0.37 差得远", got == ["hit", "hit", "near", "near", "near", "near", "far", "far"], got)
+    bad = ev("""(() => { const bad = [], r2 = v => Math.round(v * 100) / 100;
+      for (const t of [0.25, 0.5, 0.75]) for (let k = -20; k <= 20; k++) { const drop = r2(t + k / 100); if (drop < 0 || drop > 2) continue;
+        const di = Math.abs(Math.round(drop * 100) - Math.round(t * 100)), want = di <= 4 ? "hit" : di <= 12 ? "near" : "far", g = grade(drop, t);
+        if (g !== want) bad.push([t, drop, g, want]); }
+      return bad; })()""")
+    check("容差边界：0.25、0.5、0.75 各 ±0.20 内每个插法的评级和整数比较一致", bad == [], bad[:5])
     btn("看一看"); shot("2h-reveal"); btn("还有呢"); check("埋了伏笔", "同一个地方" in said(), said()); btn("去第 3 站")
     # ---------- 第 3 站 ----------
     shot("3a-intro"); btn("然后呢"); shot("3b-ask"); btn("100 个"); btn("动手拧"); page.wait_for_timeout(300); shot("3c-act-first", first=True)
