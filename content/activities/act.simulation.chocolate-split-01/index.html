@@ -781,8 +781,8 @@ function tick(now){
   requestAnimationFrame(tick);
 }
 fitView();
+Host.ready();   // 必须先于任何 state、event（教训 31）
 enter1();
-Host.ready();
 requestAnimationFrame(tick);
 </script>
 </body>
