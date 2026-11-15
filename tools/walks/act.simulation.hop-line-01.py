@@ -54,7 +54,9 @@ def play(w):
     page.locator("#stage").focus(); page.keyboard.press("ArrowRight"); page.wait_for_timeout(200)
     check("键盘 → 换步长", ev("S.den") == 6, ev("S.den"))
     page.keyboard.press("Enter"); page.wait_for_timeout(600); check("键盘回车跳一步", ev("S.steps") == 1, ev("S.steps"))
-    last_den = ev("S.lastDen")
+    # 走到这里：1/5 跳到了 1，又换成 1/6 只跳了一步。星卡只能画孩子真做到的事（教训 12）：
+    # 用最后一种「跳到 1」的步长，也就是 1/5；1/6 没跳完，不能画成「跳了 6 步到 1」
+    last_den = 5
     btn("看明白了"); btn("我来说"); shot("1j-say"); btn("3"); btn("还有呢"); shot("1k-reveal"); btn("去第 2 站")
     # ---------- 第 2 站 ----------
     shot("2a-intro"); btn("然后呢"); shot("2b-ask")
@@ -120,7 +122,9 @@ def play(w):
     w.mouse_drag(path, step_ms=15); page.wait_for_timeout(800); check("拖圆钮退到 100", ev("gearN()") == 100, ev("gearN()"))
     btn("看一看"); page.wait_for_timeout(400); shot("3e-wow"); check("揭晓后没有圆钮", grips() == 0, grips()); btn("再密呢"); shot("3f-wow2"); btn("看我的星卡"); page.wait_for_timeout(300); shot("4-card")
     got = [ev("S.lastDen"), ev("S.planted.length"), ev("S.best")]
-    check("星卡：自己选的步长、三面旗、拧到的最密一档", got == [last_den, 3, 1000], got)
+    check("星卡：最后一种跳到 1 的步长（1/5，不是只跳了一步的 1/6）、三面旗、拧到的最密一档", got == [last_den, 3, 1000], got)
+    card = ev("[...document.querySelectorAll('#dyn text')].map(t=>t.textContent).join('')")
+    check("星卡第一层写的是 5 步到 1", "跳了 5 步到 1" in card, card[:120])
     evs = [(m["payload"]["verb"], m["payload"]["result"]) for m in sent("event")]
     check("predicted 三次带误区", [(e[1]["station"], e[1]["misconception"]) for e in evs if e[0] == "predicted"] == [(1, "no-numbers-between"), (2, "whole-line-as-one"), (3, "count-ticks-not-steps")], evs)
     check("observed 三次", [e[1]["station"] for e in evs if e[0] == "observed"] == [1, 2, 3], evs)
