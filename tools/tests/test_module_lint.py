@@ -129,6 +129,35 @@ class TestKitSegments(Lint):
         self.warns(html, "kit:grip 这一段和骨架", {}, starter=self.STARTER)
 
 
+class TestWalkRequired(unittest.TestCase):
+    """新一代模块要有专属走查 tools/walks/<活动 id>.py。"""
+
+    def setUp(self):
+        import tempfile
+        self.repo = Path(tempfile.mkdtemp(prefix="curio-walk-"))
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.repo, ignore_errors=True)
+
+    def test_new_generation_without_walk_fails(self):
+        msg = module_lint.missing_walk(page(css=GRIP_CSS), "act.simulation.x-01", self.repo)
+        self.assertIn("tools/walks/act.simulation.x-01.py", msg or "")
+
+    def test_new_generation_with_walk_passes(self):
+        (self.repo / "tools/walks").mkdir(parents=True)
+        (self.repo / "tools/walks/act.simulation.x-01.py").write_text("# 走查\n", encoding="utf-8")
+        self.assertIsNone(module_lint.missing_walk(page(css=GRIP_CSS), "act.simulation.x-01", self.repo))
+
+    def test_old_module_needs_no_walk(self):
+        self.assertIsNone(module_lint.missing_walk(page(css=":root{--accent:#C2603F}"), "act.simulation.x-01", self.repo))
+
+    def test_real_new_generation_modules_have_walks(self):
+        for d in sorted((REPO / "content/activities").glob("act.simulation.*")):
+            with self.subTest(module=d.name):
+                self.assertIsNone(module_lint.missing_walk((d / "index.html").read_text(encoding="utf-8"), d.name, REPO))
+
+
 class TestRealModules(unittest.TestCase):
     """仓库里现有的每个动手探索模块都要通过（防止检查规则写错，误伤已经验收过的模块）。"""
 

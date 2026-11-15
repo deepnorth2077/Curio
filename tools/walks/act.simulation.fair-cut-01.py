@@ -1,28 +1,18 @@
-# Curio · 切分机走查脚本。用法：python walk.py <index.html 路径> <截图目录> [只跑哪个：tablet|phone|desk]
-# 三种屏幕从头玩到尾，逐站截图；g1.md C.1 第 2 节的验收用例写成断言；收集 console 错误和契约消息。
-import sys, json, math, pathlib
-from playwright.sync_api import sync_playwright
-URL = pathlib.Path(sys.argv[1]).resolve().as_uri(); OUT = pathlib.Path(sys.argv[2]); OUT.mkdir(parents=True, exist_ok=True)
-ONLY = sys.argv[3] if len(sys.argv) > 3 else None
-errs, fails = [], []
-def check(name, ok, got=None):
-    if not ok: fails.append(f"{name}: {got}")
-    print(("  ok  " if ok else "  FAIL") + " " + name + ("" if ok else f" -> {got}"))
-def run(p, name, vp, scheme, rm, touch):
-    b = p.chromium.launch(); ctx = b.new_context(viewport=vp, color_scheme=scheme, reduced_motion=rm, has_touch=touch, device_scale_factor=2)
-    page = ctx.new_page()
-    page.on("console", lambda m: m.type in ("error", "warning") and errs.append(f"{name}: {m.text}"))
-    page.on("pageerror", lambda e: errs.append(f"{name}: {e}"))
-    ev = lambda js: page.evaluate(js)
-    def shot(n): page.screenshot(path=str(OUT / f"{name}-{n}.png"), full_page=True)
-    def btn(text): page.wait_for_timeout(430); page.locator("#actions button", has_text=text).first.click(); page.wait_for_timeout(150)   # 教训 24：等够 0.4 秒
-    def pt(x, y): return ev(f"(()=>{{const s=document.getElementById('stage');const p=s.createSVGPoint();p.x={x};p.y={y};const q=p.matrixTransform(s.getScreenCTM());return [q.x,q.y]}})()")
-    def readout(): return ev("document.getElementById('readout').innerText.replace(/\\s+/g,' ')")
-    def said(): return ev("document.getElementById('say').innerText.replace(/\\s+/g,' ')")
-    def sent(kind): return ev(f"(window.__sent||[]).filter(m=>m.type==='{kind}')")
-    def grips(): return ev("document.querySelectorAll('#dyn .gfill').length")
-    def cue(): return ev("document.getElementById('cue').style.display !== 'none'")
-    page.goto(URL); page.wait_for_timeout(400)
+# Curio · 切分机走查。用法：python tools/walks/act.simulation.fair-cut-01.py <index.html> <截图目录> [--only tablet|phone|desk]
+# 三种屏幕从头玩到尾，逐站截图；g1.md C.1 第 2 节的验收用例写成断言。期望值不能为了通过去改（受保护路径）。
+import math
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import walklib  # noqa: E402
+
+
+def play(w):
+    name, rm, touch, page = w.name, w.rm, w.touch, w.page
+    ev, check, btn, shot, pt = w.ev, w.check, w.btn, w.shot, w.pt
+    readout, said, sent, grips, cue = w.readout, w.said, w.sent, w.grips, w.cue
+    w.open()
     first = ev("window.__sent[0].type"); check("ready 先于别的消息", first == "ready", first)
     # ---------- 第 1 站 ----------
     shot("1a-intro"); btn("然后呢"); btn("是吗"); shot("1b-ask")
@@ -30,21 +20,21 @@ def run(p, name, vp, scheme, rm, touch):
     labels = ev("[...document.querySelectorAll('#actions .choice')].map(b=>b.innerText.replace(/\\s+/g,''))"); print("  选项", labels)
     btn("那块大")   # 第一个：1/8 那块大（误区）
     check("猜错用中性气泡", "hmm" in ev("document.getElementById('say').className"), None); shot("1c-wrong")
-    btn("动手切"); page.wait_for_timeout(300); shot("1d-act-first")
+    btn("动手切"); page.wait_for_timeout(300); shot("1d-act-first", first=True)
     check("动手第一屏有 1 个圆钮", grips() == 1, grips())
     if rm == "no-preference":
         check("1.5 秒内不提醒", not cue()); page.wait_for_timeout(1500); check("1.5 秒后提醒", cue()); shot("1e-cue")
     page.locator("#stage").focus()
+
     def turn_to(n):
+        w.step(f"拧到 {n}")
         cur = ev("S.n")
         for _ in range(abs(n - cur)): page.keyboard.press("ArrowRight" if n > cur else "ArrowLeft"); page.wait_for_timeout(30)
         page.wait_for_timeout(760)
     # 用手拖一次圆钮：从 1 拖到 3
-    gx, gy = pt(*ev("dialGrip()")); tx, ty = pt(*ev("pol(DIAL.x,DIAL.y,dialGripR(),90)"))
-    page.mouse.move(gx, gy); page.mouse.down(); page.wait_for_timeout(60)
-    for i in range(1, 13):
-        a = math.radians(30 + 60 * i / 12); cx, cy = pt(*ev(f"pol(DIAL.x,DIAL.y,dialGripR(),{30 + 60 * i / 12})")); page.mouse.move(cx, cy); page.wait_for_timeout(15)
-    shot("1f-dragging"); page.mouse.up(); page.wait_for_timeout(800)
+    gx, gy = pt(*ev("dialGrip()"))
+    path = [(gx, gy)] + [tuple(pt(*ev(f"pol(DIAL.x,DIAL.y,dialGripR(),{30 + 60 * i / 12})"))) for i in range(1, 13)]
+    w.mouse_drag(path, down_wait=60, step_ms=15, before_release=lambda: shot("1f-dragging")); page.wait_for_timeout(800)
     check("拖圆钮到 3 份", ev("S.n") == 3, ev("S.n")); check("碰过以后不再提醒", not cue())
     check("读数 n=3", readout() == "切成 3 份 · 这一份是这张饼的 1 3", readout())
     check("第一次停住说出分数", "分数" in said() and "三分之一" in said(), said()); shot("1g-n3")
@@ -64,22 +54,18 @@ def run(p, name, vp, scheme, rm, touch):
     btn("所以呢"); shot("1k-reveal2"); btn("去第 2 站")
     # ---------- 第 2 站 ----------
     shot("2a-intro"); btn("然后呢"); shot("2b-ask"); check("提问时没有圆钮", grips() == 0, grips())
-    btn("3 块里拿了 1 块"); btn("动手切"); shot("2c-talk"); btn("明白"); page.wait_for_timeout(300); shot("2d-act-first")
+    btn("3 块里拿了 1 块"); btn("动手切"); shot("2c-talk"); btn("明白"); page.wait_for_timeout(300); shot("2d-act-first", first=True)
     check("第 2 站第一屏 1 个圆钮", grips() == 1, grips())
+
     def drag_knife(to, steps=14, release=True, mid=None):
         kx, ky = pt(*ev("[cellX(S.knifeP)-KN.off, KN.grip]")); tx, _ = pt(*ev(f"[cellX({to})-KN.off, KN.grip]"))
-        if touch and name == "phone":   # 真实触摸事件（教训 25）：用 CDP 触摸
-            cdp = ctx.new_cdp_session(page); y0 = ev("scrollY")
-            cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": kx, "y": ky}]})
-            for i in range(1, steps + 1): cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": kx + (tx - kx) * i / steps, "y": ky + 30 * math.sin(i)}]}); page.wait_for_timeout(16)
-            if mid: page.wait_for_timeout(250); shot(mid)
-            if release: cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
-            check("拖刀时页面不滚", ev("scrollY") == y0, ev("scrollY"))
+        before = (lambda: (page.wait_for_timeout(250), shot(mid))) if mid else None
+        if touch and name == "phone":   # 真实触摸事件（教训 25）
+            path = [(kx, ky)] + [(kx + (tx - kx) * i / steps, ky + 30 * math.sin(i)) for i in range(1, steps + 1)]
+            w.touch_drag(path, before_release=before, release=release, no_scroll="拖刀时页面不滚")
         else:
-            page.mouse.move(kx, ky); page.mouse.down()
-            for i in range(1, steps + 1): page.mouse.move(kx + (tx - kx) * i / steps, ky); page.wait_for_timeout(16)
-            if mid: page.wait_for_timeout(250); shot(mid)
-            if release: page.mouse.up()
+            path = [(kx, ky)] + [(kx + (tx - kx) * i / steps, ky) for i in range(1, steps + 1)]
+            w.mouse_drag(path, before_release=before, release=release)
         page.wait_for_timeout(250)
     drag_knife(46, mid="2e-dragging")
     check("46 格：不落刀", ev("S.cuts.length") == 0 and ev("S.knife") == 46, [ev("S.cuts"), ev("S.knife")])
@@ -97,9 +83,11 @@ def run(p, name, vp, scheme, rm, touch):
     page.wait_for_timeout(1500); shot("2j-stack"); btn("开场那 3 块呢"); page.wait_for_timeout(900); shot("2k-weigh"); check("开场三块一头沉", abs(ev("S.wtilt")) > 10, ev("S.wtilt"))
     btn("所以呢"); shot("2l-reveal"); btn("还有呢"); btn("去第 3 站")
     # ---------- 第 3 站 ----------
-    shot("3a-intro"); btn("然后呢"); shot("3b-ask"); btn("那段"); btn("动手排"); page.wait_for_timeout(200); shot("3c-act-first")
+    shot("3a-intro"); btn("然后呢"); shot("3b-ask"); btn("那段"); btn("动手排"); page.wait_for_timeout(200); shot("3c-act-first", first=True)
     hb = page.locator("#actions button.hold"); check("按住按钮在", hb.count() == 1, hb.count())
+
     def hold(ms, mid=None, midshot=None):
+        w.step(f"按住 {ms} 毫秒")
         bb = hb.bounding_box(); page.mouse.move(bb["x"] + bb["width"] / 2, bb["y"] + bb["height"] / 2); page.mouse.down()
         if mid: page.wait_for_timeout(mid); shot(midshot); page.wait_for_timeout(max(0, ms - mid))
         else: page.wait_for_timeout(ms)
@@ -125,10 +113,7 @@ def run(p, name, vp, scheme, rm, touch):
     btn("再玩一次"); page.wait_for_timeout(300); shot("5-replay"); check("再玩一次回到第 1 站", ev("S.station") == 1 and ev("S.scene") == "s1q")
     btn("然后呢"); btn("是吗"); btn("一样大"); btn("动手切"); check("复位：托盘空、没切", ev("S.tray.length") == 0 and ev("S.n") == 1, None); check("再玩不再发 complete", len(sent("complete")) == 1)
     check("页面没有横向溢出", ev("document.documentElement.scrollWidth <= innerWidth"), ev("document.documentElement.scrollWidth"))
-    b.close()
-with sync_playwright() as p:
-    for cfg in [("tablet", {"width": 820, "height": 1180}, "light", "no-preference", True), ("phone", {"width": 390, "height": 844}, "dark", "no-preference", True), ("desk", {"width": 1280, "height": 900}, "light", "reduce", False)]:
-        if ONLY and cfg[0] != ONLY: continue
-        print("==", cfg[0]); run(p, *cfg)
-print("console:", errs); print("FAILS:", json.dumps(fails, ensure_ascii=False, indent=1))
-sys.exit(1 if fails or errs else 0)
+
+
+if __name__ == "__main__":
+    walklib.main(play)

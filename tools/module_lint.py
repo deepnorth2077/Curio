@@ -9,6 +9,7 @@
   代码里的误区 id 都写进了 manifest 的 misconceptions。
 - 新一代模块，也就是样式里定义了 --grip 的模块（错误）：强调色不上控件，圆钮色不外借（圆钮规格 G8）；
   SVG 元素上不写 font-size 属性（教训 14）；给孩子看的字符串里没有斜杠写的分数（g1.md A.4）；感叹号不超过 3 个。
+- 新一代模块必须有专属走查 tools/walks/<活动 id>.py（missing_walk，由 ci_checks 调用）。
 - 提醒（只对这次改过的模块报）：emits 里写了却没发、宿主不认的 verb；manifest 里的误区代码里没针对；
   带 kit: 记号的段落和骨架不一样。
 
@@ -79,6 +80,18 @@ def _kit_segments(text):
     return out
 
 
+def is_new_generation(html):
+    """样式里定义了 --grip 的是新一代模块。"""
+    return bool(re.search(r"--grip\s*:", "\n".join(_blocks(html, "style"))))
+
+
+def missing_walk(html, aid, repo):
+    """新一代模块没有 tools/walks/<活动 id>.py 时返回错误说明，否则返回 None。"""
+    if is_new_generation(html) and not (Path(repo) / "tools/walks" / f"{aid}.py").is_file():
+        return f"新一代模块要有专属走查 tools/walks/{aid}.py：验收用例写成断言，CI 的「走查」会跑它（#140）"
+    return None
+
+
 def lint(html, manifest=None, node_misconceptions=None, starter=None):
     """检查一个模块。返回 (errors, warnings)，都是字符串列表。
 
@@ -125,7 +138,7 @@ def lint(html, manifest=None, node_misconceptions=None, starter=None):
 
     # ---------- 新一代模块（定义了 --grip） ----------
     styles = "\n".join(_blocks(html, "style"))
-    if re.search(r"--grip\s*:", styles):
+    if is_new_generation(html):
         for sel, body in _css_rules(styles):
             if ":root" in sel or sel.startswith("@"):
                 continue
@@ -165,7 +178,9 @@ def main(argv):
     for arg in argv:
         d = Path(arg)
         manifest = yaml.safe_load((d / "manifest.yaml").read_text(encoding="utf-8")) if (d / "manifest.yaml").exists() else {}
-        errs, warns = lint((d / "index.html").read_text(encoding="utf-8"), manifest, None, starter)
+        html = (d / "index.html").read_text(encoding="utf-8")
+        errs, warns = lint(html, manifest, None, starter)
+        errs += [m for m in [missing_walk(html, d.resolve().name, repo)] if m]
         for e in errs:
             print(f"[错误] {d}：{e}")
         for w in warns:

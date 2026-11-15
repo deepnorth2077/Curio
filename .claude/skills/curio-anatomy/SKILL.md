@@ -84,7 +84,7 @@ description: Curio 里设计、拆解或审核任何一个知识点的活动（�
 | `starter.html` | 新模块从它起步，不要从零写。卡片、领航员气泡、「我有个问题」、activity/1.1 契约、手绘线、按住按钮（含松手防误点）、缓动和完成判定 `fin()` 都写好了，只要换掉 `{{…}}` 和两个示例站。 |
 | `brief-template.md` | 给实现者的设计说明（提示词）模板，以及派给子 agent 时附上的话。实现用 Opus。 |
 | `review-template.md` | 给审查者的提示词模板，以及收到审查后怎么处理。审查用 Sonnet，和实现者不是同一个模型。 |
-| `walk.py` | Playwright 走查脚本的样例（染色体模块）。改出每个模块自己的版本：平板、手机、电脑三种宽度，浅色深色，reduced-motion，逐站截图。 |
+| `tools/walks/` | 走查脚本（不在本目录）。新一代模块要有专属走查 `tools/walks/<活动 id>.py`，照 `act.simulation.fair-cut-01.py` 写，公共部分在 `tools/walklib.py`；旧模块用 `smoke.py` 冒烟。CI 的「走查」会跑。 |
 
 三个标杆模块（风格和质量以它们为准）：`content/activities/act.simulation.chromosome-pack-01/`（Claude 自己做的第一个）、`act.simulation.cell-zoom-01/`、`act.simulation.dna-book-01/`。它们的设计说明在 `prompts/` 下同名文件，审查记录在 `docs/reviews/`。
 
