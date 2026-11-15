@@ -744,6 +744,15 @@ class TestModuleLint(Base):
         self.module("Host.ready();\nenter1();\n// 改一下\n"); self.r.commit()
         self.assertTrue(any("宿主不认" in m for _, m in self.r.check().warnings))
 
+    def test_new_generation_needs_walk(self):
+        self.module("Host.ready();\nenter1();\n"); self.r.baseline()
+        self.r.branch("arch/walk")
+        html = f"content/activities/{self.AID}/index.html"
+        self.r.write(html, (self.r.dir / html).read_text(encoding="utf-8").replace("<body>", "<style>:root{--grip:#2A7F7C}</style><body>")); self.r.commit()
+        self.fails(self.r.check(), f"tools/walks/{self.AID}.py")
+        self.r.write(f"tools/walks/{self.AID}.py", "# 走查\n"); self.r.commit()
+        self.ok(self.r.check())
+
 
 class TestPathsAndEngine(Base):
     def setUp(self):

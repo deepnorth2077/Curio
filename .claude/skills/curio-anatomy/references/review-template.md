@@ -7,7 +7,7 @@
 > **被审查的东西**：模块 `{{index.html 和 manifest.yaml 的路径}}`；它的规格 `{{prompts/… 的路径}}`；方法和画风标准 `.claude/skills/curio-anatomy/SKILL.md`（特别是「检查」一节）和 `references/lessons.md`；星座约定 `{{docs/constellations/… }}`；平台契约 `docs/activity-contract.md`。
 >
 > **怎么审**
-> 1. 亲手玩：复制 `references/walk.py` 改成走这个模块的脚本，截图到 `{{目录}}`，从头玩到尾，逐张看截图。再加别的走法：只用键盘、乱点、错很多次、中途「再玩一次」。
+> 1. 亲手玩：先跑这个模块的走查 `tools/walks/<活动 id>.py`（没有就照 `act.simulation.fair-cut-01.py` 写一份临时的），截图到 `{{目录}}`，从头玩到尾，逐张看截图。再加别的走法：只用键盘、乱点、错很多次、中途「再玩一次」。
 > 2. 科学准确：读 MODEL 和领航员的每句话，拿不准的用 WebSearch 核对；注意会让孩子形成错误观念的简化。
 > 3. 规格和标准：规格的验收清单逐条；SKILL.md「检查」七个问题逐条；lessons.md 每条；契约（ready、complete、emits 覆盖实际发出的 verb、不联网不存储）。
 > 4. 孩子视角：会不会卡住、看不懂、觉得无聊？动作是否真的改变了画面？有没有「哇」？成就感够不够？

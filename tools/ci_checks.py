@@ -641,7 +641,8 @@ def run(repo, base="origin/main", branch="", labels=()):
         targets = doc.get("targets") or []
         mis = {m["id"] for t in targets if t in nodes for m in nodes[t][1].get("misconceptions", []) if isinstance(m, dict) and "id" in m}
         errors, warnings = module_lint.lint(html.read_text(encoding="utf-8"), doc, mis if all(t in nodes for t in targets) else None, starter)
-        for message in errors:
+        no_walk = module_lint.missing_walk(html.read_text(encoding="utf-8"), aid, repo)
+        for message in errors + ([no_walk] if no_walk else []):
             r.err(message, rel(repo, html))
         # 提醒只对这次改过的模块报，免得每个 PR 都刷同样的提醒
         if any(p.startswith(rel(repo, f.parent) + "/") for p in changed):
