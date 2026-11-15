@@ -1403,7 +1403,7 @@ const Player=(()=>{
 })();
 
 /* ---------- modules (each runs isolated in its own sandbox) ---------- */
-const MOD_BASE_CSS=`*{box-sizing:border-box}:root{--bg:#F5F4EE;--pane:#FBFAF6;--hover:#E7E4D9;--rule:#E0DCD0;--ink:#1F1E1C;--text:#3B3833;--muted:#7A766D;--accent:#C2603F;--accentSoft:#F3E0D6;--sci:#CCD6C0;--sci2:#93A982;--sciBg:#DCE3D2;--math:#ECCDB6;--math2:#D59E7A;--mathBg:#F2E1D3;--good:#3B7A56;--bad:#B4432E}
+const MOD_BASE_CSS=`*{box-sizing:border-box}html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}:root{--bg:#F5F4EE;--pane:#FBFAF6;--hover:#E7E4D9;--rule:#E0DCD0;--ink:#1F1E1C;--text:#3B3833;--muted:#7A766D;--accent:#C2603F;--accentSoft:#F3E0D6;--sci:#CCD6C0;--sci2:#93A982;--sciBg:#DCE3D2;--math:#ECCDB6;--math2:#D59E7A;--mathBg:#F2E1D3;--good:#3B7A56;--bad:#B4432E}
   body{margin:0;background:var(--pane);color:var(--text);font:15px/1.6 "Noto Sans SC","PingFang SC",system-ui,sans-serif}
   .k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}.kq{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round}
   .hand{font-family:"ZCOOL KuaiLe","Noto Sans SC",sans-serif}.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
