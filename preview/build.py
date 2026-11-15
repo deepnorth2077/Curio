@@ -35,6 +35,7 @@ CONSTELLATIONS = {
     # 「0 和 1 之间」：分数、小数、比与百分数（docs/constellations/zero-to-one/index.md）。做完一颗加一颗
     "zero-to-one": ("0 和 1 之间", [
         ("math.fraction.unit-fraction", ["act.simulation.fair-cut-01", "act.quiz.unit-fraction-01"]),
+        ("math.fraction.count-on-line", ["act.simulation.hop-line-01"]),
     ]),
 }
 
