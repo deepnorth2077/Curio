@@ -110,7 +110,24 @@ def play(w):
     check("predicted 带误区", [e[1]["misconception"] for e in evs if e[0] == "predicted"] == ["bigger-denominator-bigger", "unequal-parts", None], evs)
     check("observed 三次", [e[1]["station"] for e in evs if e[0] == "observed"] == [1, 2, 3], evs)
     check("没有 answered", all(e[0] in ("predicted", "observed") for e in evs), evs); check("complete 一次", len(sent("complete")) == 1, len(sent("complete")))
-    btn("再玩一次"); page.wait_for_timeout(300); shot("5-replay"); check("再玩一次回到第 1 站", ev("S.station") == 1 and ev("S.scene") == "s1q")
+    # ---------- 选站重玩（#154）：跳过开场和猜测，直接动手；揭晓完「回星卡」；事件每站只记第一次 ----------
+    def events():
+        evs = [(m["payload"]["verb"], m["payload"]["result"]["station"]) for m in sent("event")]
+        return [e for e in evs if e[0] == "predicted"], [e for e in evs if e[0] == "observed"]
+    before = events()
+    check("星卡上能选站重玩", w.buttons() == ["从头玩", "第1站", "第2站", "第3站"], w.buttons())
+    btn("第 1 站"); page.wait_for_timeout(400); shot("5a-replay1-first")
+    check("重玩第 1 站：不问猜测题，直接动手", ev("S.station") == 1 and ev("S.mode").startswith("act") and ev("document.querySelectorAll('#actions .choice').length") == 0, [ev("S.station"), ev("S.mode")])
+    check("重玩第 1 站：这一站复位（托盘空、没切）", ev("S.tray.length") == 0 and ev("S.n") == 1, [ev("S.tray.length"), ev("S.n")])
+    check("重玩第 1 站：第一屏 1 个圆钮", grips() == 1, grips())
+    page.locator("#stage").focus()
+    for n in (3, 8, 5, 7): turn_to(n)
+    btn("看托盘"); page.wait_for_timeout(1700); btn("所以呢"); shot("5b-replay1-reveal")
+    check("重玩一站揭晓完是「回星卡」", w.buttons() == ["回星卡"], w.buttons())
+    btn("回星卡"); page.wait_for_timeout(300); shot("5c-card-again")
+    check("回到星卡", ev("S.mode") == "end", ev("S.mode")); check("星卡换成这次停的份数", ev("S.lastN") == 7, ev("S.lastN"))
+    check("重玩一站不多记猜测和完成", events() == before, [before, events()]); check("重玩一站不再发 complete", len(sent("complete")) == 1, len(sent("complete")))
+    btn("从头玩"); page.wait_for_timeout(300); shot("5-replay"); check("从头玩回到第 1 站", ev("S.station") == 1 and ev("S.scene") == "s1q")
     btn("然后呢"); btn("是吗"); btn("一样大"); btn("动手切"); check("复位：托盘空、没切", ev("S.tray.length") == 0 and ev("S.n") == 1, None); check("再玩不再发 complete", len(sent("complete")) == 1)
     check("页面没有横向溢出", ev("document.documentElement.scrollWidth <= innerWidth"), ev("document.documentElement.scrollWidth"))
 

@@ -60,7 +60,7 @@ svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
 .btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
 .btn.choice:hover{background:var(--hover)}
 .btn:disabled{opacity:.4;cursor:default}
-.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500}
+.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500} .btn.tight{padding:9px 12px}
 .qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
 .qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
@@ -301,6 +301,18 @@ function ask(question, options, onAnswer){
   }})));
 }
 function next(label, go, cls){ actions([{ label, go, cls }]); }
+// 星卡上选站重玩（#154）：replay 是正在重玩的站号，0 是从头往下走。重玩一站跳过开场和猜测题，直接进这一站的动手；
+// 揭晓完，原来「去第 k+1 站」「看我的星卡」的按钮换成「回星卡」（用 nextOr）。不出猜测题就不发 predicted；
+// observed 靠 observedOnce、complete 靠 completed，都只记第一次。每站怎么复位、怎么进动手是模块自己的事，写在 REPLAY[站号] 里
+let replay = 0;
+const REPLAY = {};
+function nextOr(label, go, cls){ if (replay) next("回星卡", enterEnd); else next(label, go, cls); }
+function replayAt(k){ replay = k; gen++; S.station = k; hint(""); readout(""); disarmCue(); REPLAY[k](); }
+function restart(){ replay = 0; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }   // 从头玩：和以前的「再玩一次」一样
+function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站。enterEnd() 最后调它
+  replay = 0;
+  actions([{ label: "从头玩", go: restart, cls: "ghost tight" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1), cls: "tight" }))));   // tight：手机上一行排得下
+}
 
 (function(){   // 「我有个问题」：随时可以问，发到信号站
   const area = $("qarea");
@@ -358,12 +370,13 @@ function enter1(){
 }
 function act1(){
   S.mode = "act1"; S.t1 = S.p1 = 0; scene("s1"); actions([]); readout1(); hint("拖动圆钮");
-  say("带圆钮的地方，都能用手抓。{{领航员说怎么做}}");   // 「带圆钮的地方，都能用手抓」整个模块只说这一次（G8）
+  say((replay ? "" : "带圆钮的地方，都能用手抓。") + "{{领航员说怎么做}}");   // 「带圆钮的地方，都能用手抓」整个模块只说这一次（G8），重玩一站时不再说
   svg.focus({ preventScroll: true }); armCue(knob1);
 }
+REPLAY[1] = () => { head(1, "{{第 1 站标题}}"); act1(); };   // 重玩第 1 站：act1() 自己复位这一站（t1、p1），跳过开场和猜测题
 function done1(){
   S.mode = "talk"; hint(""); disarmCue(); observedOnce(1); const g = S.guess && S.guess[1];
-  say("{{揭晓 + 一个从 MODEL 算出来的「哇」}}" + (g && g.correct ? "{{你一开始就猜对了}}" : ""), "good"); next("去第 2 站", enter2);
+  say("{{揭晓 + 一个从 MODEL 算出来的「哇」}}" + (g && g.correct ? "{{你一开始就猜对了}}" : ""), "good"); nextOr("去第 2 站", enter2);
 }
 
 /* ============ 7. 第 2 站（示例：按住） ============ */
@@ -373,7 +386,8 @@ function enter2(){
   hint("按住「{{动作}}」"); readout(""); say("{{领航员说怎么做}}");
   actions([{ label: "按住 {{动作}}", cls: "hold", hold: true }]); svg.focus({ preventScroll: true });
 }
-function done2(){ S.hold = false; S.mode = "talk"; hint(""); observedOnce(2); say("{{揭晓}}", "good"); next("看我的星卡", enterEnd); }
+REPLAY[2] = enter2;   // 第 2 站没有猜测题，enter2() 本来就直接进动手并复位 t2、p2
+function done2(){ S.hold = false; S.mode = "talk"; hint(""); observedOnce(2); say("{{揭晓}}", "good"); nextOr("看我的星卡", enterEnd); }
 
 /* ============ 8. 星卡：孩子亲手做出来的东西 + 三个读数，按固定排版画（教训 12） ============ */
 function drawEnd(){
@@ -384,8 +398,8 @@ function drawEnd(){
 function enterEnd(){
   gen++; S.station = STATIONS + 1; S.mode = "end"; head(0, "{{星卡标题}}"); hint(""); readout(""); disarmCue(); scene("end");
   say("{{收尾的话}}", "good");
-  if (!completed){ completed = true; Host.complete({}); }          // complete 只发一次；「再玩一次」不再发（教训 15）
-  next("再玩一次", () => { sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }, "ghost");
+  if (!completed){ completed = true; Host.complete({}); }          // complete 只发一次；「从头玩」和重玩一站都不再发（教训 15）
+  endActions();                                                     // 从头玩 + 第 1 站…第 N 站（kit:shell）
 }
 
 /* ============ 9. 画面和输入 ============ */

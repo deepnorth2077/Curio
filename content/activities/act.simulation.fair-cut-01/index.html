@@ -60,7 +60,7 @@ svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
 .btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
 .btn.choice:hover{background:var(--hover)}
 .btn:disabled{opacity:.4;cursor:default}
-.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500}
+.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500} .btn.tight{padding:9px 12px}
 .qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
 .qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
@@ -247,7 +247,8 @@ const RIDGES = `<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 3v12M9 3
 const $ = id => document.getElementById(id);
 const svg = $("stage"), gDyn = $("dyn"), cueEl = $("cue");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const STATIONS = 3;
+const STATIONS = 3;   // 一共几站
+// t 是孩子操作推到的进度（0～1），p 是画面上缓动跟随的进度；读数和画面都用 p（教训 2）
 const S = { station: 1, mode: "talk", scene: "s1q", hold: false, press: false, kbd: false, dirty: true };
 let gen = 0;          // 每换一站加一：延时回调先确认还在原来的状态（教训 11）
 const later = (ms, f) => { const g = gen; setTimeout(() => { if (g === gen) f(); }, reduced ? Math.min(ms, 60) : ms); };
@@ -301,6 +302,18 @@ function ask(question, options, onAnswer){
   }})));
 }
 function next(label, go, cls){ actions([{ label, go, cls }]); }
+// 星卡上选站重玩（#154）：replay 是正在重玩的站号，0 是从头往下走。重玩一站跳过开场和猜测题，直接进这一站的动手；
+// 揭晓完，原来「去第 k+1 站」「看我的星卡」的按钮换成「回星卡」（用 nextOr）。不出猜测题就不发 predicted；
+// observed 靠 observedOnce、complete 靠 completed，都只记第一次。每站怎么复位、怎么进动手是模块自己的事，写在 REPLAY[站号] 里
+let replay = 0;
+const REPLAY = {};
+function nextOr(label, go, cls){ if (replay) next("回星卡", enterEnd); else next(label, go, cls); }
+function replayAt(k){ replay = k; gen++; S.station = k; hint(""); readout(""); disarmCue(); REPLAY[k](); }
+function restart(){ replay = 0; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }   // 从头玩：和以前的「再玩一次」一样
+function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站。enterEnd() 最后调它
+  replay = 0;
+  actions([{ label: "从头玩", go: restart, cls: "ghost tight" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1), cls: "tight" }))));   // tight：手机上一行排得下
+}
 
 (function(){   // 「我有个问题」：随时可以问，发到信号站
   const area = $("qarea");
@@ -323,9 +336,10 @@ let cuePos = null, cueTimer = 0;
 function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; S.dirty = true; } }, 1500); }
 function disarmCue(){ clearTimeout(cueTimer); cuePos = null; cueEl.style.display = "none"; }
 function touched(){ if (cuePos || cueTimer) disarmCue(); cueTimer = 0; }
-function placeCue(){ if (!cuePos) return; const [x, y] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1(gripR() + 2)); cueEl.style.display = ""; }
+function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }   // 第三个数是被提醒的东西的半径（托里的一个）
 
 // 窄屏：viewBox 缩到中间 600 宽的操作区，字号类放大（教训 13、28）。每个场景写明自己用到的高度
+// 排版规矩：要紧的东西都画在 x = 110～690 之间；每个场景在这里写 [起始 y, 高度]
 const VIEW = { s1q: [80, 440], s1: [56, 554], s2q: [96, 330], s2: [16, 560], s2stack: [76, 330], s2weigh: [200, 330], s3q: [150, 300], s3: [84, 500], s3r: [84, 540], end: [8, 596] };
 function fitView(){
   const nar = (svg.clientWidth || 800) < 600, [y, h] = VIEW[S.scene] || [0, 610];
@@ -441,9 +455,10 @@ function enter1(){
 function act1(){
   S.mode = "act1"; Object.assign(S, { n: 1, wd: 360, out: 0, ang: 30, tray: [], settles: 0, settled: true, lastN: 0, s1ready: false });
   scene("s1"); actions([]); readout1(); hint1();
-  say("带圆钮的地方，都能用手抓。转一转切分盘，看这张饼被切成几份。");
+  say((replay ? "" : "带圆钮的地方，都能用手抓。") + "转一转切分盘，看这张饼被切成几份。");   // 这句整个模块只说一次（G8），重玩一站时不再说
   svg.focus({ preventScroll: true }); armCue(dialGrip);
 }
+REPLAY[1] = () => { head(1, "转：切成几份"); act1(); };   // 重玩第 1 站：act1() 清空托盘、转盘回到 1 份，跳过开场两张饼和猜测题
 function done1(){
   S.mode = "talk"; hint(""); disarmCue(); observedOnce(1);
   const have = kinds(); let d = 0, filled = false;
@@ -452,7 +467,7 @@ function done1(){
   next("所以呢", () => {
     const g = S.guess && S.guess[1];
     say(`8 比 3 大，${F(1, 8)} 反而比 ${F(1, 3)} 小。` + (g && g.correct ? "你没上我的当。" : "我也想错了，是这张饼帮我们改过来的。"), "good");
-    next("去第 2 站", enter2);
+    nextOr("去第 2 站", enter2);
   });
 }
 
@@ -571,10 +586,11 @@ function act2(){
   say("换一条新的。这条蛋糕卷粗细都一样，所以一样长就是一样多。");
   next("明白", () => { S.mode = "act2"; actions([]); hint("拖动圆钮，天平放平了再松手"); say("先切成一样大的 2 份。拖动刀上的圆钮，天平放平了再松手。"); readout2(); svg.focus({ preventScroll: true }); armCue(() => [cellX(S.knifeP) - KN.off, KN.grip]); S.dirty = true; });
 }
+REPLAY[2] = () => { head(2, "切：天平放平"); act2(); };   // 重玩第 2 站：act2() 换一条新蛋糕卷（刀回到 30 格、没有刀口、天平放平），跳过开场三块和猜测题
 function done2(){
   observedOnce(2); const g = S.guess && S.guess[2];
   say("每份一样大，才叫平均分。平均分出来的一份，才能叫几分之一。" + (g && g.correct ? "你一开始就看出来了。" : ""), "good");
-  next("还有呢", () => { say(`刚才你把一半又切成两半。一半的一半，就是 ${F(1, 4)}。`, "good"); next("去第 3 站", enter3); });
+  next("还有呢", () => { say(`刚才你把一半又切成两半。一半的一半，就是 ${F(1, 4)}。`, "good"); nextOr("去第 3 站", enter3); });
 }
 
 /* ============ 8. 第 3 站 · 拼：1000 个千分之一才拼回 1 米 ============ */
@@ -666,10 +682,11 @@ function enter3(){
     { label: "一样长", mis: "numerator-only", feedback: "上面都是 1，看着一样。可下面的数差得很远，排一排看。" }
   ], () => next("动手排", () => { scene("s3"); startRound(0); })));
 }
+REPLAY[3] = () => { head(3, "拼：排满 1 米"); scene("s3"); startRound(0); };   // 重玩第 3 站：从第一轮（分米）排起，计数归零，跳过开场面包和猜测题
 function done3(){
   scene("s3r"); observedOnce(3);
   say(`你尺子上的分米、厘米、毫米，就是 1 米的 ${F(1, 10)}、${F(1, 100)}、${F(1, 1000)}。`, "good");
-  next("有多薄", () => { say("1000 份里的一份，差不多只有一张卡片那么薄。份数越多，每一份越小。", "good"); next("看我的星卡", enterEnd); });
+  next("有多薄", () => { say("1000 份里的一份，差不多只有一张卡片那么薄。份数越多，每一份越小。", "good"); nextOr("看我的星卡", enterEnd); });
 }
 
 /* ============ 9. 星卡 · 我的切分记录：按固定排版画，用的是舰长自己停的份数、自己切的刀口（教训 12） ============ */
@@ -703,7 +720,7 @@ function enterEnd(){
   readout(`切过 ${kinds().length} 种 · 三刀切平 · ${MODEL.mmPerMetre} 段`);
   say("这是你的切分记录。数线上的每颗钉子，都是你亲手切出来的一份。", "good");
   if (!completed){ completed = true; Host.complete({}); }
-  next("再玩一次", () => { sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }, "ghost");
+  endActions();   // 从头玩 + 第 1 站…第 3 站（kit:shell）
 }
 
 /* ============ 10. 画面和输入 ============ */
