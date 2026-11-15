@@ -260,7 +260,7 @@ const RIDGES = `<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 3v12M9 3
 const $ = id => document.getElementById(id);
 const svg = $("stage"), gDyn = $("dyn"), cueEl = $("cue");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const STATIONS = 3;
+const STATIONS = 3;   // 一共几站
 // t 是孩子操作推到的进度（0～1），p 是画面上缓动跟随的进度；读数和画面都用 p（教训 2）
 const S = { station: 1, mode: "talk", scene: "s1", hold: false, press: false, kbd: false, dirty: true };
 let gen = 0;          // 每换一站加一：延时回调先确认还在原来的状态（教训 11）
@@ -315,6 +315,18 @@ function ask(question, options, onAnswer){
   }})));
 }
 function next(label, go, cls){ actions([{ label, go, cls }]); }
+// 星卡上选站重玩（#154）：replay 是正在重玩的站号，0 是从头往下走。重玩一站跳过开场和猜测题，直接进这一站的动手；
+// 揭晓完，原来「去第 k+1 站」「看我的星卡」的按钮换成「回星卡」（用 nextOr）。不出猜测题就不发 predicted；
+// observed 靠 observedOnce、complete 靠 completed，都只记第一次。每站怎么复位、怎么进动手是模块自己的事，写在 REPLAY[站号] 里
+let replay = 0;
+const REPLAY = {};
+function nextOr(label, go, cls){ if (replay) next("回星卡", enterEnd); else next(label, go, cls); }
+function replayAt(k){ replay = k; gen++; S.station = k; hint(""); readout(""); disarmCue(); REPLAY[k](); }
+function restart(){ replay = 0; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }   // 从头玩：和以前的「再玩一次」一样
+function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站。enterEnd() 最后调它
+  replay = 0;
+  actions([{ label: "从头玩", go: restart, cls: "ghost" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1) }))));
+}
 
 (function(){   // 「我有个问题」：随时可以问，发到信号站
   const area = $("qarea");
@@ -443,6 +455,9 @@ function enter1(){
   ], () => next("让火箭跳", act1)));
 }
 function act1(){ S.mode = "act1"; acts1(); readout1(); hint1(); say(`这枚小火箭每步跳这一段的 ${F(1, 4)}。按「跳一步」。`); svg.focus({ preventScroll: true }); }
+REPLAY[1] = () => {   // 重玩第 1 站：火箭回到 0、步长回到 1/4、清掉上一趟的影子和托，跳过开场和猜测题。lastDen 留着，跳到 1 时才换成新的
+  head(1, "跳：一步一个"); Object.assign(S, { den: MODEL.firstDen, steps: 0, hop: 1, trip: 1, ghost: null, done4: false, done2: false, overSaid: false }); scene("s1"); act1();
+};
 function done1(){
   S.mode = "talk"; hint(""); disarmCue(); observedOnce(1);
   say("分数也能像 1、2、3 那样一个一个数。数了几个，上面就写几。", "good");
@@ -450,7 +465,7 @@ function done1(){
     say(`你来说：火箭每步 ${F(1, 5)}，跳了 3 步。它落在哪个数上？`);
     actions([[5, 3, false], [3, 5, true], [1, 5, false]].map(([a, b, ok]) => ({ label: F(a, b), cls: "choice", go: () => {
       say(ok ? "对。跳了 3 步，上面写 3；每步是五分之一，下面写 5。" : `是 ${F(3, 5)}。跳了 3 步，上面写 3；每步是五分之一，下面写 5。`, ok ? "good" : "hmm");
-      next("还有呢", () => { const g = S.guess && S.guess[1]; say("火箭每次落脚的地方，都是 0 和 1 之间的一个数。" + (g && g.correct ? "你猜得没错，不止一个。" : "那一小段一点也不空。"), "good"); next("去第 2 站", enter2); });
+      next("还有呢", () => { const g = S.guess && S.guess[1]; say("火箭每次落脚的地方，都是 0 和 1 之间的一个数。" + (g && g.correct ? "你猜得没错，不止一个。" : "那一小段一点也不空。"), "good"); nextOr("去第 2 站", enter2); });
     }})));
   });
 }
@@ -485,7 +500,7 @@ function plant(){
 function nextFlag(){
   S.fi = S.planted.length; S.fv = S.fp = MODEL.flagStart; S.mode = "act2"; actions([]); readout("旗还在手里"); hint("拖动圆钮，松手插下");
   const [a, b] = curFlag();
-  say(S.fi === 0 ? `带圆钮的地方，都能用手抓。把 ${F(1, 2)} 这面旗拖到你觉得对的地方，松手插下。` : S.fi === 1 ? `这面是 ${F(a, b)}。它该插在哪儿？` : `最后一面，${F(a, b)}。`);
+  say(S.fi === 0 ? (replay ? "" : "带圆钮的地方，都能用手抓。") + `把 ${F(1, 2)} 这面旗拖到你觉得对的地方，松手插下。` : S.fi === 1 ? `这面是 ${F(a, b)}。它该插在哪儿？` : `最后一面，${F(a, b)}。`);
   svg.focus({ preventScroll: true }); if (S.fi === 0) armCue(() => [X(S.fp), FY + gripR() * .2]);
 }
 function enter2(){
@@ -498,10 +513,13 @@ function enter2(){
     { label: "丙", mis: "two-numbers", feedback: "旗上有 1 和 2，丙正好在 1 和 2 之间。可这面旗是一个数，不是两个。" }
   ], () => next("我来插", () => { S.s2q = false; nextFlag(); })));
 }
+REPLAY[2] = () => {   // 重玩第 2 站：拔掉三面旗，第一面旗回到手里，跳过开场和猜测题
+  head(2, "插旗：它在哪儿"); Object.assign(S, { planted: [], fi: 0, fv: MODEL.flagStart, fp: MODEL.flagStart, s2q: false }); scene("s2"); nextFlag();
+};
 function done2(){
   observedOnce(2); const g = S.guess && S.guess[2];
   say(`先找到 1 在哪儿。${F(1, 2)} 是 0 到 1 的正中间，不是整条线的正中间。` + (g && g.correct ? "你一开始就找对了。" : ""), "good");
-  next("还有呢", () => { say(`咦，${F(2, 4)} 和 ${F(1, 2)} 落在了同一个地方。这个秘密，后面有一颗星专门讲。`); next("去第 3 站", enter3); });
+  next("还有呢", () => { say(`咦，${F(2, 4)} 和 ${F(1, 2)} 落在了同一个地方。这个秘密，后面有一颗星专门讲。`); nextOr("去第 3 站", enter3); });
 }
 
 /* ============ 9. 第 3 站 · 拧：0 和 1 之间的数数不完 ============ */
@@ -542,7 +560,8 @@ function settle3(){
   else if (n >= MODEL.crowd && !S.saidCrowd){ S.saidCrowd = true; say("挤成一片了。放大圈里看，还是一条一条分得开。"); }
   else if (S.seen.length === 1) say(`平均分成 ${n} 段，0 和 1 之间多出 ${between(n)} 个数。接着拧。`);
   else if (!S.s3ready && !far && S.seen.length >= 2) say(`${n} 段，中间 ${between(n)} 个数。一直拧到 ${MODEL.mustReach[0]} 看看。`);
-  if (!S.s3ready && far && S.seen.length >= MODEL.minGears){ S.s3ready = true; if (n < 1000 || S.seen.length > MODEL.minGears) say("还能接着拧。看够了点「看一看」。"); next("看一看", done3); }
+  // 重玩这一站：第一次已经停过 3 档了，这回拧到 100 或 1000 就能看
+  if (!S.s3ready && far && S.seen.length >= (replay ? 1 : MODEL.minGears)){ S.s3ready = true; if (n < 1000 || S.seen.length > MODEL.minGears) say("还能接着拧。看够了点「看一看」。"); next("看一看", done3); }
   hint3();
 }
 function enter3(){
@@ -558,11 +577,12 @@ function act3(){
   Object.assign(S, { mode: "act3", gi: -1, ang: 0, seen: [], settled: true, s3ready: false, saidCrowd: false, said1000: false }); scene("s3"); actions([]); readout3(); hint3();
   say("转一转加密盘。先分成 2 段、3 段，数数中间多出几个数。"); svg.focus({ preventScroll: true }); armCue(dialGrip);
 }
+REPLAY[3] = () => { head(3, "拧：越分越密"); act3(); };   // 重玩第 3 站：act3() 把加密盘拧回「还没分」、清掉停过的档，跳过开场和猜测题
 function done3(){
   S.mode = "talk"; hint(""); disarmCue(); observedOnce(3); S.best = Math.max(...S.seen); S.gi = MODEL.gears.indexOf(100); S.settled = true; S.dirty = true; readout3();   // 先停在 100：画面和第一句话说的是同一个数
   const g = S.guess && S.guess[3];
   say("分成 100 段，中间是 99 个数：两头的 0 和 1 本来就在。" + (g && g.correct ? "你猜对了。" : ""), "good");
-  next("再密呢", () => { S.gi = MODEL.gears.length - 1; S.dirty = true; readout3(); say("分成 1000 段，就有 999 个数挤在 0 和 1 之间。还能接着分，永远分不完。光是分数，就数也数不完。", "good"); next("看我的星卡", enterEnd); });
+  next("再密呢", () => { S.gi = MODEL.gears.length - 1; S.dirty = true; readout3(); say("分成 1000 段，就有 999 个数挤在 0 和 1 之间。还能接着分，永远分不完。光是分数，就数也数不完。", "good"); nextOr("看我的星卡", enterEnd); });
 }
 
 /* ============ 10. 星卡 · 我的数线：舰长自己选的步长、自己插的三个位置、自己拧到的档位（教训 12） ============ */
@@ -586,7 +606,7 @@ function enterEnd(){
   readout(`每步 ${F(1, S.lastDen || MODEL.dens[0])} · ${S.planted.filter(f => f.grade === "hit").length} 面正中 · ${between(S.best || MODEL.mustReach[0])} 个数`);
   say("这是你的数线。0 和 1 之间的这些数，都是你自己找出来的。", "good");
   if (!completed){ completed = true; Host.complete({}); }
-  next("再玩一次", () => { sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }, "ghost");
+  endActions();   // 从头玩 + 第 1 站…第 3 站（kit:shell）
 }
 
 /* ============ 11. 画面和输入 ============ */
