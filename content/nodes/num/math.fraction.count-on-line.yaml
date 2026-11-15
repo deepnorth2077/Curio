@@ -1,0 +1,53 @@
+id: math.fraction.count-on-line
+schema: knode/1
+title: 几分之几：分数也能数
+subjects: [math]
+theme: num
+grade: G3
+unit: 三上 · 第六单元 分数的初步认识（人教版 2024 年新教材，2025 年秋起用；以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第二学段「数与运算」内容要求第（2）条：结合具体情境，初步认识小数和分数，感悟分数单位（措辞来自二手转录，待对照纸本）
+  - textbook: 人教版小学数学三年级上册（2024 年新教材，2025 年秋起用）
+    unit: 第六单元 分数的初步认识
+prerequisites: [math.fraction.unit-fraction]
+related: []
+driving_question: 尺子上 0 后面是 1，0 和 1 中间真的是空的吗？
+objectives:
+  - 知道几个几分之一合起来是几分之几：3 个 1/4 是 3/4。
+  - 知道分数能像 1、2、3 那样一个一个数，4 个 1/4 正好是 1。
+  - 会在数线上找到一个分数的位置：先找到 0 和 1，再看 0 到 1 平均分成了几段。
+  - 知道分母一样的分数，分子大的那个大，在数线上离 0 更远。
+  - 知道 0 和 1 之间有很多数，分得越细，找到的数越多，永远分不完。
+misconceptions:
+  - id: no-numbers-between
+    text: 觉得 0 和 1 之间没有数，或者只有「一半」这一个数；分数只是饼的一块，不是数。
+  - id: whole-line-as-one
+    text: 把画出来的整条线当成 1，例如在 0 到 2 的数线上把 1/2 标在 1 的位置。
+  - id: two-numbers
+    text: 把分数看成上下两个互不相干的整数，例如因为 1/2 里有 1 和 2，就把它标在 1 和 2 之间。
+  - id: count-ticks-not-steps
+    text: 数刻度线的条数，不数一段一段，例如 0 到 1 平均分成 4 段，说成 5 份，或者把第 3 条线当成 3/4；或者反过来，把段数当成中间的点数。
+sources:
+  - type: curriculum
+    ref: 《义务教育数学课程标准（2022 年版）》第二学段「数与运算」
+  - type: textbook
+    ref: 人教版小学数学三年级上册（2024 年新教材，2025 年秋起用）第六单元「分数的初步认识」
+  - type: reference
+    ref: Siegler 等（2010）Developing Effective Fractions Instruction for Kindergarten Through 8th Grade，建议 2：帮助学生认识到分数是数，把数线当作核心表示工具（证据等级「中等」）
+    url: https://ies.ed.gov/ncee/wwc/PracticeGuide/15
+  - type: reference
+    ref: Mitchell & Horne（2008）Fraction Number Line Tasks and the Additivity Concept of Length Measurement，MERGA 31 论文集 353–360 页（整条线当整体、数线不数段）
+  - type: reference
+    ref: Gabriel 等（2013）A componential view of children's difficulties in learning fractions，Frontiers in Psychology 4:715（把分子分母当成两个整数）
+lenses:
+  - band: G3-4
+    approach: 让一枚小火箭在数线上一步一个 1/4 地跳，跳几步分子就是几；在没有刻度的线上插旗，再让刻度显形；把刻度越拧越密，看 0 和 1 之间挤进多少个数。
+  - band: G5-6
+    approach: 认识真分数、假分数和带分数；知道同一个点可以有很多个分数名字（1/2、2/4、3/6 是同一个点）；用数线比较异分母分数。
+  - band: G7-9
+    approach: 有理数都能表示成数轴上的点（七年级上册），任意两个不相等的有理数之间还有有理数；再引出数轴上还有写不成「整数比整数」的点，比如 √2 对应的点（七年级下册「实数」）。
+activities: [act.simulation.hop-line-01]
+status: draft
+version: 1
+# END OF FILE
