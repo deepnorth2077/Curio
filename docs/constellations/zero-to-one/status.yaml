@@ -8,7 +8,7 @@ updated: 2026-11-16
 issue: 127
 total: 19
 preview: https://deepnorth2077.github.io/Curio/preview/zero-to-one/
-now: 第 3 颗星「谁的几分之几」在做（`stars/03-the-whole.md`）：走查脚本先合入（先红），模块、挑战、知识点卡接着在 `kp/math.fraction.the-whole` 合入。知识点都还是 `draft`，等第 4 步定讲解。
+now: 等 Luka 在 iPad 上验收第 3 颗星「谁的几分之几」（动手探索「谁的一半」和挑战）；通过后做第 4 颗星（`stars/04-tenths.md`）。知识点都还是 `draft`，等第 4 步定讲解。
 stars:
   - n: 1
     title: 几分之一：越分越小
@@ -20,6 +20,6 @@ stars:
     prs: [151, 159]
   - n: 3
     title: 谁的几分之几
-    state: 在做
-    prs: []
-    waiting: Claude 合入模块和挑战
+    state: 等验收
+    prs: [163, 164]
+    waiting: Luka 在 iPad 上验收动手探索和挑战

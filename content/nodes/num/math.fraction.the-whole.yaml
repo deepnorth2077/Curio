@@ -1,0 +1,60 @@
+id: math.fraction.the-whole
+schema: knode/1
+title: 谁的几分之几
+subjects: [math]
+theme: num
+grade: G3
+unit: 三上 · 第六单元 分数的初步认识（人教版 2024 年新教材，2025 年秋起用）；「把一些物体看作一个整体」在哪一节，待对照实体书（可能在第 3 节「进一步认识分数」，只见到标题）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第二学段「数与运算」内容要求第（2）条：结合具体情境，初步认识小数和分数，感悟分数单位（措辞来自二手转录，待对照纸本）
+  - textbook: 人教版小学数学三年级上册（2024 年新教材，2025 年秋起用）
+    unit: 第六单元 分数的初步认识
+prerequisites: [math.fraction.unit-fraction]
+related: [math.fraction.count-on-line]
+driving_question: 吃了 1/4 的人，怎么会比吃了 1/2 的人吃得还多？
+objectives:
+  - 知道分数说的是占整体的多少，整体变大，同样的 1/4 也跟着变大。
+  - 知道同一个整体里 1/2 比 1/4 多；整体不同，要先看整体有多大。
+  - 知道一堆东西也能当成一个整体：12 颗糖平均分成 4 份，一份 3 颗，是这袋糖的 1/4，3 份是 3/4。
+  - 会由一份找回整体：5 颗是一袋的 1/3，一整袋有 15 颗。
+misconceptions:
+  - id: ignore-the-whole
+    text: 不看整体，只比分数，例如认为吃了 1/2 的人一定比吃了 1/4 的人吃得多，或者都是 1/2 就一样多。
+  - id: numerator-as-count
+    text: 把分子直接当成个数，例如认为 12 颗糖的 1/4 是 1 颗。
+  - id: denominator-as-count
+    text: 把分母直接当成个数，例如认为 12 颗糖的 1/4 是 4 颗，或者 5 颗是一袋的 1/3，就说一袋有 3 颗。
+  - id: add-instead-of-copy
+    text: 由一份找整体时把两个数加起来，例如 5 颗是一袋的 1/3，说一袋有 8 颗。
+sources:
+  - type: curriculum
+    ref: 《义务教育数学课程标准（2022 年版）》第二学段「数与运算」
+  - type: textbook
+    ref: 人教版小学数学三年级上册（2024 年新教材，2025 年秋起用）第六单元「分数的初步认识」（待对照实体书，看「把一些物体看作一个整体」在哪一节）；旧版（2013 年起的通行版）为第八单元，小节名待对照实体书
+  - type: reference
+    ref: NOAA Fisheries「Blue Whale」物种页：北大西洋、北太平洋的约 90 英尺，南极的最长约 110 英尺（原文用英尺）
+    url: https://www.fisheries.noaa.gov/species/blue-whale
+  - type: reference
+    ref: NOAA Fisheries「Fun Facts About Wonderful Whales」：蓝鲸最长 31 米（100 英尺）
+    url: https://www.fisheries.noaa.gov/national/outreach-and-education/fun-facts-about-wonderful-whales
+  - type: reference
+    ref: WS/T 612—2018《7 岁～18 岁儿童青少年身高发育等级评价》附录 A 表 A.1、A.2（8、9 岁身高中位数；「8 岁」是一点还是一段，待对照标准原文）
+    url: http://m.chinacdc.cn/jkyj/yyyjk2/jswj13949/201807/P020240905519507376411.pdf
+  - type: reference
+    ref: AAMT「Make It Count · Top Drawer」Fractions · Misunderstandings · Different wholes（比较分数要假定整体一样大；半个小比萨不等于半个大比萨）
+    url: https://makeitcount.aamt.edu.au/Topdrawer/Fractions/Misunderstandings/Different-wholes
+  - type: reference
+    ref: AAMT「Top Drawer」Fractions as a double count（把分数看成一对整数，各记一种东西的个数）
+    url: https://topdrawer.aamt.edu.au/Fractions/Misunderstandings/Fractions-as-a-double-count
+lenses:
+  - band: G3-4
+    approach: 拉长一条蛋糕卷，看同样的 1/4 跟着变长；把 12 颗糖发到盘子里，一盘就是这袋糖的 1/4；拿着一份，一份份摆出一整袋。
+  - band: G5-6
+    approach: 把整体叫作单位「1」；解决「求一个数的几分之几是多少」和「已知一个数的几分之几是多少，求这个数」，会找准谁是单位「1」。
+  - band: G7-9
+    approach: 增长率、浓度、概率这类题，都要先说清拿谁当 1（基准）；同一个量换了基准，数就变了。（百分数、比在小学高年级已经学过，到初中是接着用。）
+activities: [act.simulation.whose-half-01, act.quiz.the-whole-01]
+status: draft
+version: 1
+# END OF FILE
