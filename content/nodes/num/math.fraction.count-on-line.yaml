@@ -47,7 +47,7 @@ lenses:
     approach: 认识真分数、假分数和带分数；知道同一个点可以有很多个分数名字（1/2、2/4、3/6 是同一个点）；用数线比较异分母分数。
   - band: G7-9
     approach: 有理数都能表示成数轴上的点（七年级上册），任意两个不相等的有理数之间还有有理数；再引出数轴上还有写不成「整数比整数」的点，比如 √2 对应的点（七年级下册「实数」）。
-activities: [act.simulation.hop-line-01]
+activities: [act.simulation.hop-line-01, act.quiz.count-on-line-01]
 status: draft
 version: 1
 # END OF FILE
