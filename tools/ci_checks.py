@@ -19,6 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import module_lint  # noqa: E402  动手探索模块的静态检查（#140）
+import status_gen  # noqa: E402  状态只写一处（#140 第 5 条）
 
 # fnmatch 的 * 会跨过 /，所以 "prompts/*" 覆盖整个 prompts/ 目录。例外只有两条，见地盘检查：
 # kp/ 分支改自己活动的提示词和任务文件；feat/、fix/、chore/ 分支新增任务文件留档（*.task.md）。
@@ -36,6 +37,10 @@ TASK_ARCHIVE = re.compile(r"^prompts/[A-Za-z0-9][A-Za-z0-9._-]*\.task\.md$")
 # kp/ 分支可以新增、修改本知识点活动的审查记录，以及本知识点自己的审查记录（ADR-009 增补 1）；不能删除
 ACT_REVIEW = re.compile(r"^docs/reviews/(act\.[A-Za-z0-9._-]+?)\.md$")
 NODE_REVIEW = re.compile(r"^docs/reviews/([a-z]+(?:\.[a-z0-9-]+)+)\.md$")
+# 星座进度（#140 第 5 条）：任何分支都能改 status.yaml；index.md 和 handoff.md 只能改被 status:begin/end 包起来的生成段落。
+# 这样做完一步，状态跟着那一步的 PR 一起走，不用另开 arch/ 分支。
+STATUS_YAML = re.compile(r"^docs/constellations/[a-z0-9-]+/status\.yaml$")
+STATUS_DOCS = re.compile(r"^docs/(handoff\.md|constellations/[a-z0-9-]+/index\.md)$")
 BRANCH_KINDS = ["kp/", "arch/", "feat/", "fix/", "chore/"]
 OVERRIDE_LABEL = "越界-已批准"
 KID_FACING_NODE = ["title", "driving_question", "lenses"]
@@ -332,6 +337,15 @@ def run(repo, base="origin/main", branch="", labels=()):
             return doc.get("targets", []) if isinstance(doc, dict) else None
         return None
 
+    def status_only(p, st):
+        """这个改动是不是只动了星座进度（status.yaml，或 index.md / handoff.md 的生成段落）。"""
+        if STATUS_YAML.match(p):
+            return st != "D"
+        if STATUS_DOCS.match(p) and st == "M":
+            old = base_text(p)
+            return old is not None and status_gen.strip_blocks(old) == status_gen.strip_blocks((repo / p).read_text(encoding="utf-8"))
+        return False
+
     # ---------- 1. 地盘检查 ----------
     prefix = branch.split("/", 1)[0] + "/" if "/" in branch else branch
     if prefix not in BRANCH_KINDS:
@@ -380,6 +394,8 @@ def run(repo, base="origin/main", branch="", labels=()):
                 ok = not match(p, PROTECTED) and not p.startswith("content/")
                 if not ok and TASK_ARCHIVE.match(p) and status_of.get(p) == "A":
                     ok = True   # 整合时新增任务文件留档；改动或删除已有的提示词仍然只能走 arch/
+            if not ok and status_only(p, status_of.get(p)):
+                ok = True
             if not ok and shared:
                 msg = (f"这是共享活动，同时影响 {'、'.join(shared)}。kp/ 分支只能改只针对 {node_id} 的活动；"
                        f"共享活动要单独开 PR，覆盖所有受影响知识点的审核和试玩，并在征得 Luka 同意后加「{OVERRIDE_LABEL}」标签")
@@ -658,6 +674,11 @@ def run(repo, base="origin/main", branch="", labels=()):
             continue
         for desc in module_lint.noselect_missing(f.read_text(encoding="utf-8")):
             r.err(f"样式里少了「{desc}」：iPad 上长按会选中文字、弹出拷贝菜单（#156）。照 tools/module_lint.py 的 NOSELECT_CSS 抄", shell)
+
+    # ---------- 4d. 星座进度：status.yaml 合法，生成段落和它对得上（#140 第 5 条） ----------
+    status_errors, _ = status_gen.sync(repo, write=False)
+    for message in status_errors:
+        r.err(message, "docs/constellations")
 
     # ---------- 5. 署名提醒 ----------
     log = git(repo, "log", f"{base}..HEAD", "--format=%h%x00%s%x00%B%x1e").stdout
