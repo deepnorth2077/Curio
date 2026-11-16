@@ -270,7 +270,7 @@ function figureSvg(fig, seed = 7) {
     const from = Number(fig.from), to = Number(fig.to), stp = Number(fig.step) || 1;
     const x = (v) => 20 + (v - from) / ((to - from) || 1) * 160;
     vb = "0 0 200 70";
-    inner += `<path class="k" d="${Sk.line(14, 34, 188, 34, seed, .4)}"/><path class="k1" d="${Sk.line(188, 34, 181, 30, seed + 1, .3) + Sk.line(188, 34, 181, 38, seed + 2, .3)}"/>`;
+    inner += `<path class="k" d="${Sk.line(14, 34, 196, 34, seed, .4)}"/><path class="k1" d="${Sk.line(196, 34, 190, 30, seed + 1, .3) + Sk.line(196, 34, 190, 38, seed + 2, .3)}"/>`;   // 箭头在最后一个刻度（x=180）右边，不挨着
     const n = Math.min(60, Math.round((to - from) / stp));
     for (let i = 0; i <= n; i++) inner += `<path class="k1" d="${Sk.line(x(from + i * stp), 29, x(from + i * stp), 39, seed + 5 + i, .3)}"/>`;
     for (const m of fig.marks || []) inner += `<text x="${x(Number(m.at)).toFixed(1)}" y="58" text-anchor="middle" class="fig-txt">${esc(m.label ?? m.at)}</text>`;
