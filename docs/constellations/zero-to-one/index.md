@@ -90,15 +90,15 @@
 <!-- status:begin zero-to-one -->
 _这一段由 `tools/status_gen.py` 按 `docs/constellations/zero-to-one/status.yaml` 生成，不要手改。_
 
-**状态（2026-11-16）**：19 颗星：完成 2、等验收 0、在做 1、草案 16。主 issue #127。试玩页 https://deepnorth2077.github.io/Curio/preview/zero-to-one/
+**状态（2026-11-16）**：19 颗星：完成 2、等验收 1、在做 0、草案 16。主 issue #127。试玩页 https://deepnorth2077.github.io/Curio/preview/zero-to-one/
 
 | 星 | 状态 | 主要 PR | 在等什么 |
 | --- | --- | --- | --- |
 | 第 1 颗「几分之一：越分越小」 | 完成 | #136、#138 | — |
 | 第 2 颗「几分之几：分数也能数」 | 完成 | #151、#159 | — |
-| 第 3 颗「谁的几分之几」 | 在做 | — | Claude 合入模块和挑战 |
+| 第 3 颗「谁的几分之几」 | 等验收 | #163、#164 | Luka 在 iPad 上验收动手探索和挑战 |
 
-**现在**：第 3 颗星「谁的几分之几」在做（`stars/03-the-whole.md`）：走查脚本先合入（先红），模块、挑战、知识点卡接着在 `kp/math.fraction.the-whole` 合入。知识点都还是 `draft`，等第 4 步定讲解。
+**现在**：等 Luka 在 iPad 上验收第 3 颗星「谁的几分之几」（动手探索「谁的一半」和挑战）；通过后做第 4 颗星（`stars/04-tenths.md`）。知识点都还是 `draft`，等第 4 步定讲解。
 <!-- status:end zero-to-one -->
 
 - **假设**：拆解文档第 6 节的五个问题，Luka 还没有明确回答；我按推荐答案写完了全部 TASK（星座名「0 和 1 之间」、六组十九颗星、新开 `math.*` 的 id、第 1 组先上试玩页、同分母加减不单独成星）。任何一条改了，受影响的只是名字和 id，设计不用重做。
