@@ -720,6 +720,66 @@ class TestSvgWhitelist(Base):
                 self.assertTrue(self.r.check().errors, f"本应拦截：{name}")
 
 
+class TestStatusSingleSource(Base):
+    """星座进度只写一处（#140 第 5 条）：任何分支都能改 status.yaml 和 index.md、handoff.md 的生成段落，别处不行。"""
+    MD = "# 标题\n\n前文\n\n<!-- status:begin demo -->\n<!-- status:end demo -->\n\n后文\n"
+    YAML = ("constellation: demo\ntitle: 示例\nupdated: 2026-11-16\nissue: 7\ntotal: 5\nnow: 现在做第 3 颗。\n"
+            "stars:\n  - {n: 1, title: 甲, state: 完成, prs: [1]}\n")
+
+    def setUp(self):
+        super().setUp()
+        self.r.write("docs/constellations/demo/status.yaml", self.YAML)
+        self.r.write("docs/constellations/demo/index.md", self.MD)
+        self.r.write("docs/handoff.md", self.MD)
+        ci_checks.status_gen.sync(self.r.dir, write=True)
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.baseline()
+
+    def regenerate(self):
+        ci_checks.status_gen.sync(self.r.dir, write=True)
+
+    def test_kp_branch_updating_status_and_generated_blocks_passes(self):
+        self.r.branch(f"kp/{N2}")
+        self.r.write("docs/constellations/demo/status.yaml", self.YAML.replace("现在做第 3 颗", "现在做第 4 颗")); self.regenerate(); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_chore_branch_may_update_status_too(self):
+        self.r.branch("chore/status")
+        self.r.write("docs/constellations/demo/status.yaml", self.YAML.replace("现在做第 3 颗", "现在做第 4 颗")); self.regenerate(); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_status_yaml_changed_without_regenerating_fails(self):
+        self.r.branch(f"kp/{N2}")
+        self.r.write("docs/constellations/demo/status.yaml", self.YAML.replace("现在做第 3 颗", "现在做第 4 颗")); self.r.commit()
+        self.fails(self.r.check(), "对不上")
+
+    def test_hand_edited_generated_block_fails(self):
+        self.r.branch(f"kp/{N2}")
+        p = self.r.dir / "docs/handoff.md"
+        self.r.write("docs/handoff.md", p.read_text(encoding="utf-8").replace("完成 1", "完成 4")); self.r.commit()
+        self.fails(self.r.check(), "对不上")
+
+    def test_kp_branch_may_not_edit_prose_outside_generated_block(self):
+        self.r.branch(f"kp/{N2}")
+        p = self.r.dir / "docs/handoff.md"
+        self.r.write("docs/handoff.md", p.read_text(encoding="utf-8").replace("后文", "偷偷改的后文")); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), ["docs/handoff.md"])
+
+    def test_kp_branch_may_still_not_edit_other_docs(self):
+        self.r.branch(f"kp/{N2}")
+        self.r.write("docs/constellations/demo/g1.md", "# 任务说明\n"); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), ["docs/constellations/demo/g1.md"])
+
+    def test_kp_branch_may_not_delete_status_yaml(self):
+        self.r.branch(f"kp/{N2}")
+        self.r.delete("docs/constellations/demo/status.yaml"); self.r.commit()
+        self.assertIn("docs/constellations/demo/status.yaml", self.blocked(self.r.check()))
+
+    def test_invalid_status_yaml_fails_on_arch_branch(self):
+        self.r.branch("arch/status")
+        self.r.write("docs/constellations/demo/status.yaml", self.YAML.replace("state: 完成", "state: 差不多")); self.r.commit()
+        self.fails(self.r.check(), "state 要是")
+
+
 class TestModuleLint(Base):
     """动手探索模块的静态检查接进了 ci_checks（tools/module_lint.py 自己的规则测试在 test_module_lint.py）。"""
     AID = "act.simulation.frac-cut"
