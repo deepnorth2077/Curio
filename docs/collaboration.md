@@ -236,3 +236,18 @@ Claude 收到交付包后，先做自动检查，再沿**两条线**分别审核
 **检查设置有没有被改动**：Claude 可以随时读出规则集的实际配置（`gh api repos/deepnorth2077/curio/rulesets`），和上表对照。
 
 设好之后，Claude 也必须走 PR，并且只有 CI 通过才能合入。
+
+## 附：外部通道的三件最常做的事（2026-11-12 起冻结，原在 handoff.md 第 3 节）
+
+| 要做的事 | 怎么做 |
+| --- | --- |
+| 派发一个任务 | **本地通道（默认）**：写任务说明（基准提交、要读的规格路径；新设计才写设计说明），给子 agent 一个隔离的输出目录，另开一个子 agent 只读冻结的产物做审查。**外部通道**：按模板写 `prompts/<任务 id>.md`（平台任务用 `task-template.md`，讲解、挑战、反思用 `content-template.md`，实验用 `module-template.md`），高风险规则的验收用例自己先算好；开 `arch/` 分支 PR 合入；用 `python tools/make_task.py <任务 id>` 生成任务文件，发给 Luka；在 issue 里记下提交号、文件哈希和收货命令，贴 `待派发` 标签 |
+| 收货和审核 | 本地通道不收货，用提交号绑定被审的版本，按勾选的项做检查，结论写进 PR 的审查记录。外部通道：`python tools/intake.py <交付包> --expect-issue '#<号>' --expect-task <任务 id> --expect-commit <派发时的提交号> --expect-version v1 --write <临时目录>`；在 `main` 的临时副本（`git worktree add`）里放入文件，跑全部测试；在临时副本里故意改坏几处规则，看测试能不能发现；按 `docs/collaboration.md` 的格式写审核评论，分「规格」「规范」两条线，每条标严重程度 |
+| 整合 | 开 `arch/`（改到 `schemas/`、`docs/`、`tools/` 时）或对应前缀的分支；放入通过审核那一轮的文件，核对哈希一致；任务文件留档到 `prompts/`（`feat/`、`fix/`、`chore/` 分支只能新增 `<任务 id>.task.md`，`kp/` 分支只能放自己活动的）；提交末尾写 `Implemented-By:`、`Reviewed-By: Claude`、`Refs:`；开 PR，CI 绿勾后 squash 合入；关闭 issue |
+
+## 附：外部通道时代各模型的特点（原在 handoff.md 第 6 节，供选派参考）
+
+| 模型 | 特点 |
+| --- | --- |
+| Kimi | 交付稳，打回后只改要求改的地方。适合内容和工具类任务。审阅时擅长发现设计层面的大问题 |
+| GLM | 想得深，最会发现规格里没写清的地方，审阅时的系统性很强。交付格式和收尾不够细心，任务文件里要把格式要求写醒目 |
