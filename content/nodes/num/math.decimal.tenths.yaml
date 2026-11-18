@@ -1,0 +1,48 @@
+id: math.decimal.tenths
+schema: knode/1
+title: 小数是什么
+subjects: [math]
+theme: num
+grade: G3
+unit: 三下 · 小数的初步认识；四下 · 小数的意义和性质（人教版旧版册次，新版以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第二学段「数与运算」内容要求第（2）条「结合具体情境，初步认识小数和分数，感悟分数单位」；第三学段「数与运算」内容要求第（2）条「结合具体情境探索并理解小数和分数的意义，感悟计数单位」
+  - textbook: 人教版小学数学三年级下册、四年级下册（旧版）
+    unit: 小数的初步认识；小数的意义和性质
+prerequisites: [math.fraction.unit-fraction, math.fraction.count-on-line]
+related: []
+driving_question: 身高 1 米 3，那个「点 3」到底是 3 个什么？
+objectives:
+  - 知道把 1 平均分成 10 份，一份是 1/10，写成小数是 0.1；把这一份再平均分成 10 份，一小份是 0.01；把一小份再平均分成 10 份，一小格是 0.001。
+  - 知道小数点右边第一格数的是几个 1/10，第二格是几个 1/100，第三格是几个 1/1000。
+  - 会把 1.3 米说成 1 米 3 分米，把 1.03 米说成 1 米 3 厘米。
+  - 会在数线上找到一个小数的位置，知道两个小数之间还能再放大、再找到新的小数。
+misconceptions:
+  - id: tail-as-small-unit
+    text: 把小数点后面的数当成最小单位的个数，例如认为 1.3 米是 1 米 3 厘米。
+  - id: glue-digits
+    text: 不看小数点，把数字连起来读，例如把 1.3 米当成 13 厘米，把 0.5 当成 5。
+  - id: ten-plus-ten
+    text: 两次十等分算成加法，认为分了 10 份再分 10 份，一共是 20 份。
+  - id: still-tenths
+    text: 觉得再放大一次，每一格还是 1/10，没有变小。
+  - id: ignore-place
+    text: 不看数字站在哪一格，认为 1.03 和 1.3 一样，都是「1 和 3」。
+sources:
+  - type: textbook
+    ref: 人教版小学数学三年级下册（旧版）第七单元「小数的初步认识」；四年级下册（旧版）第四单元「小数的意义和性质」
+  - type: curriculum
+    ref: 《义务教育数学课程标准（2022 年版）》第二、第三学段「数与运算」
+    url: https://www.pep.com.cn/xw/zt/rjwy/yjkb2022/202205/P020220512583134605579.pdf
+lenses:
+  - band: G3-4
+    approach: 在身高尺上把 1 米和 2 米之间分成 10 格；在数线上按住放大，一格变十格，连放三次，自己钉下一个三位小数；用米棒、分米棒、厘米棒在位值格里摆出 1.3 和 1.03。
+  - band: G5-6
+    approach: 有限小数可以写成分母为 10、100、1000 等的分数，相邻计数单位之间的进率都是 10，和整数连成一套。
+  - band: G7-9
+    approach: 用 10 的负整数次幂表示小数点右边各数位的计数单位，再引出科学记数法。
+activities: [act.simulation.zoom-line-01, act.quiz.tenths-01]
+status: draft
+version: 1
+# END OF FILE

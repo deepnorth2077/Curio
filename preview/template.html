@@ -365,11 +365,11 @@ function askItem(host, item, say, onDone){
     else say("me", g.shown);
     if (g.ok){
       if (btn) btn.classList.add("right");
-      say("good", g.feedback ? "对了。" + g.feedback : "对了。");
+      say("good", g.feedback ? "对了。" + g.feedback : (item.feedback?.correct || "对了。"));
       finish(rec.tries.length === 1 && usedHints === 0 ? "first" : "later");
     } else {
       if (btn){ btn.classList.add("wrong"); btn.disabled = true; }
-      say("bad", g.feedback || "这个想法很多人都有。再想想看，也可以要个提示。");
+      say("bad", g.feedback || item.feedback?.wrong || "这个想法很多人都有。再想想看，也可以要个提示。");
       if (numInput){ numInput.select(); }
     }
   }
