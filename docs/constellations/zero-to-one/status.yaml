@@ -4,11 +4,11 @@
 # prs 写主要的几个 PR，不用写全；waiting 只有「在做」「等验收」才写，写在等谁、等什么。
 constellation: zero-to-one
 title: 0 和 1 之间
-updated: 2026-11-16
+updated: 2026-11-18
 issue: 127
 total: 19
 preview: https://deepnorth2077.github.io/Curio/preview/zero-to-one/
-now: 等 Luka 在 iPad 上验收第 3 颗星「谁的几分之几」（动手探索「谁的一半」和挑战）；通过后做第 4 颗星（`stars/04-tenths.md`）。知识点都还是 `draft`，等第 4 步定讲解。
+now: 等 Luka 在 iPad 上一起验收第 3 颗星「谁的几分之几」和第 4 颗星「小数是什么」的动手探索和挑战。知识点都还是 `draft`，等第 4 步定讲解。
 stars:
   - n: 1
     title: 几分之一：越分越小
@@ -23,3 +23,7 @@ stars:
     state: 等验收
     prs: [163, 164]
     waiting: Luka 在 iPad 上验收动手探索和挑战
+  - n: 4
+    title: 小数是什么
+    state: 等验收
+    waiting: Luka 在 iPad 上和第 3 颗星一起验收动手探索和挑战

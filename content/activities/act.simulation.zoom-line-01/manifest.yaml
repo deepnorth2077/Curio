@@ -1,0 +1,15 @@
+id: act.simulation.zoom-line-01
+contract: activity/1.1
+type: simulation
+version: 1
+title: 数线放大镜
+targets: [math.decimal.tenths]
+age_band: G3-4
+entry: index.html
+duration_min: 8
+pedagogy: explain
+capabilities: [pointer, keyboard]
+misconceptions: [tail-as-small-unit, glue-digits, ten-plus-ten, still-tenths, ignore-place]
+emits: [predicted, observed]
+author: {model: Codex, prompt_ref: docs/constellations/zero-to-one/stars/04-tenths.md}
+review: pending

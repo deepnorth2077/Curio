@@ -41,6 +41,7 @@ class TestSelect(unittest.TestCase):
 
     def test_script_choice(self):
         self.assertEqual(walk_all.script_for("act.simulation.fair-cut-01").name, "act.simulation.fair-cut-01.py")
+        self.assertEqual(walk_all.script_for("act.simulation.zoom-line-01").name, "act.simulation.zoom-line-01.py")
         self.assertEqual(walk_all.script_for("act.simulation.cell-zoom-01").name, "smoke.py")
 
 

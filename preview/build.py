@@ -37,6 +37,7 @@ CONSTELLATIONS = {
         ("math.fraction.unit-fraction", ["act.simulation.fair-cut-01", "act.quiz.unit-fraction-01"]),
         ("math.fraction.count-on-line", ["act.simulation.hop-line-01", "act.quiz.count-on-line-01"]),
         ("math.fraction.the-whole", ["act.simulation.whose-half-01", "act.quiz.the-whole-01"]),
+        ("math.decimal.tenths", ["act.simulation.zoom-line-01", "act.quiz.tenths-01"]),
     ]),
 }
 

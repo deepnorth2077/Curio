@@ -47,15 +47,16 @@ gh api repos/deepnorth2077/curio/issues/<号>/comments -q '.[-1].body'   # 最�
 <!-- status:begin zero-to-one -->
 _这一段由 `tools/status_gen.py` 按 `docs/constellations/zero-to-one/status.yaml` 生成，不要手改。_
 
-**标杆星座「0 和 1 之间」**（2026-11-16；主 issue #127；完整任务说明从 `docs/constellations/zero-to-one/index.md` 看起）：19 颗星：完成 2、等验收 1、在做 0、草案 16。试玩页 https://deepnorth2077.github.io/Curio/preview/zero-to-one/
+**标杆星座「0 和 1 之间」**（2026-11-18；主 issue #127；完整任务说明从 `docs/constellations/zero-to-one/index.md` 看起）：19 颗星：完成 2、等验收 2、在做 0、草案 15。试玩页 https://deepnorth2077.github.io/Curio/preview/zero-to-one/
 
 | 星 | 状态 | 主要 PR | 在等什么 |
 | --- | --- | --- | --- |
 | 第 1 颗「几分之一：越分越小」 | 完成 | #136、#138 | — |
 | 第 2 颗「几分之几：分数也能数」 | 完成 | #151、#159 | — |
 | 第 3 颗「谁的几分之几」 | 等验收 | #163、#164 | Luka 在 iPad 上验收动手探索和挑战 |
+| 第 4 颗「小数是什么」 | 等验收 | — | Luka 在 iPad 上和第 3 颗星一起验收动手探索和挑战 |
 
-**现在**：等 Luka 在 iPad 上验收第 3 颗星「谁的几分之几」（动手探索「谁的一半」和挑战）；通过后做第 4 颗星（`stars/04-tenths.md`）。知识点都还是 `draft`，等第 4 步定讲解。
+**现在**：等 Luka 在 iPad 上一起验收第 3 颗星「谁的几分之几」和第 4 颗星「小数是什么」的动手探索和挑战。知识点都还是 `draft`，等第 4 步定讲解。
 <!-- status:end zero-to-one -->
 
 **工作顺序**（Luka 2026-11-13 确认；一步做完验收了再开下一步）。第 1、2 步（学习记录补记、导出和恢复）已完成，**第 3 步正在做**，进度在上面。
