@@ -162,10 +162,12 @@ a.btn{text-decoration:none}
 .activity-meta{font-size:14px;color:var(--muted)}
 .activity-go{margin-top:12px}
 .exploration{max-width:900px}
-.exploration .quiz-head{margin-bottom:10px}
+/* 手机上实物比一屏长；退出始终在屏上，免得在滑回页首时错触实物。 */
+main:has(>.exploration){overflow:visible}
+.exploration .quiz-head{position:sticky;top:0;z-index:1;background:var(--bg);padding-block:6px;margin-bottom:10px}
 .workbench iframe{display:block;width:100%;border:0}
 .explore-status{background:var(--pane);border-radius:12px;padding:12px 16px}
-@media (max-width:520px){.exploration{padding-left:0;padding-right:0}.exploration .quiz-head{padding:0 12px}.activity-menu h1{margin:10px 0 16px}}
+@media (max-width:520px){.exploration{padding-left:0;padding-right:0}.exploration .quiz-head{padding:6px 12px}.activity-menu h1{margin:10px 0 16px}}
 
 /* 挑战 */
 .quiz{width:100%;max-width:760px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
