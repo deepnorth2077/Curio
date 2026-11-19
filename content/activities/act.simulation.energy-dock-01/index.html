@@ -436,30 +436,37 @@ function smoothSlope(){
   const slider=document.createElement("input");
   slider.type="range"; slider.min=0; slider.max=MODEL.slopeSteps; slider.step=1; slider.value=0;
   const label=document.createElement("label"); label.append("停格手轮",slider);
+  let buttons;
   function stopAt(position){
     down=position; slider.value=position; const current=drawEnergy();
-    if(down===MODEL.slopeSteps){
+    const atBottom=down===MODEL.slopeSteps;
+    buttons[0].disabled=down===0||atBottom; buttons[1].disabled=atBottom; buttons[2].disabled=!atBottom;
+    if(atBottom){
       bottom=current; observedOnce(1);
       say("到坡底了。坡顶那份重力势能，全能在动能一栏里数到。","good");
-      nextOr("试试水平轨",enter2);
-    }else{
-      actions([{label:"留这格作书签",cls:"ghost",go:()=>{mark=current;say("夹好书签了。再滑到下一道刻线。");}},
-        {label:"滑到下一道刻线",go:()=>stopAt(down+1)}]);
-    }
+    }else say("挪动手轮就能前后看。哪一格最值得留个书签？");
   }
   slider.oninput=()=>stopAt(Number(slider.value));
-  next("松开滑块",()=>{ $("gear").append(label); stopAt(1); });
+  next("松开滑块",()=>{
+    $("gear").append(label);
+    buttons=actions([
+      {label:"留这格作书签",cls:"ghost",go:()=>{mark=drawEnergy();say("夹好书签了。再滑到下一道刻线。");}},
+      {label:"滑到下一道刻线",go:()=>stopAt(down+1)},
+      {label:replay?"回星卡":"试试水平轨",go:replay?enterEnd:enter2}
+    ]).children;
+    stopAt(1);
+  });
 }
 function enter2(){
   bench(2,"在同一条线比一比"); down=MODEL.slopeSteps;across=0;loss=0; drawEnergy();
   say("又从同一坡顶滑到坡底。先看光滑直轨上的滑块，经过比较线时还剩多少动能。");
   next("滑过光滑段",()=>{
     across=1;drawEnergy(); say("它过线了，动能一格也没少。把毛毡铺在滑块会经过的地方，再从同一高度放手。");
-    actions(MODEL.pads.map((per,i)=>({label:i?"铺厚毛毡":"铺薄毛毡",go:()=>roughTrack(per)})));
+    actions(MODEL.pads.map((per,i)=>({label:i?"铺乙号毛毡":"铺甲号毛毡",go:()=>roughTrack(per)})));
   });
 }
 function roughTrack(per){
-  down=0;across=0;loss=per; drawEnergy(); say("毛毡铺好了。从坡顶再松手，在刚才的比较线读一次。");
+  down=0;across=0;loss=per; drawEnergy(); say("毛毡铺好了。在这段模型轨上，它每滑过一格，滑块和垫子就增加 "+loss+" J 内能。从同一坡顶松手看。");
   function advance(){
     if(down<MODEL.slopeSteps) down=MODEL.slopeSteps;
     across++; const current=drawEnergy();
@@ -469,7 +476,7 @@ function roughTrack(per){
       next("再滑一段",advance); return;
     }
     stopped=current; observedOnce(2);
-    say("滑块停住了，滑块和毛毡都可能升温。十二格一个也没走丢。毛毡收到了整张账单。","good");
+    say("滑块停住了，滑块和毛毡都可能升温。十二格一个也没走丢。滑块和毛毡合开了一张收据。","good");
     if(replay) next("回星卡",enterEnd);
     else actions([{label:"换一张毛毡",cls:"ghost",go:enter2},{label:"收好能量账",go:enterEnd}]);
   }
