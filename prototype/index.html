@@ -185,6 +185,11 @@ button.sitem:hover{background:var(--hover);color:var(--ink)}
 .shape-outline,.star-rays{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .shape-mark.untouched .shape-outline{stroke:var(--muted)}
 
+.shape-overview .shape-stroke{stroke-width:1.4;stroke-opacity:.94}
+.shape-overview .shape-point .shape-outline{stroke-width:.9;vector-effect:non-scaling-stroke}
+.shape-overview #gsvg>path.kq{stroke-width:.8;stroke-opacity:.48}
+.shape-overview .cname,.shape-overview .ring-lbl,.shape-overview .ccount,.shape-overview .anno{paint-order:stroke;stroke:var(--pane);stroke-width:2px;stroke-linejoin:round}
+
 /* ---------- metro ---------- */
 .metro{position:absolute;inset:0;display:flex;flex-direction:column}
 .mscroll{flex:1;min-height:0;overflow:auto;position:relative}
@@ -883,12 +888,85 @@ function shapeLegend(){
 const BANDS=[[40,84],[84,216],[216,264],[264,310],[310,350]];   // The original chart gives grades 3–4 the widest ring.
 const C=380, polar=(th,r)=>[C+r*Math.cos(th*Math.PI/180), C-r*Math.sin(th*Math.PI/180)];
 let floatRaf=0;
-function consGeom(c){ const t=THEMES[c.theme], [a,b]=BANDS[c.band], th=(t.sec[0]+t.sec[1])/2, cur=c.band===CURRENT_BAND;
+// Swap the original wide ring with the captain's band, keeping all five rings
+// in grade order and the outside of the chart at the same radius.
+function overviewBands(){
+  if(!shapePreview) return BANDS;
+  const widths=BANDS.map(([a,b])=>b-a);
+  [widths[1],widths[CURRENT_BAND]]=[widths[CURRENT_BAND],widths[1]];
+  let inner=BANDS[0][0];
+  return widths.map(width=>{const band=[inner,inner+width]; inner+=width; return band;});
+}
+
+// Keep text legible when the wide band moves. Measure the actual SVG text,
+// including the progress line, and give priority to the five grade labels.
+function placeChartLabels(svg,geometry){
+  const view=svg.viewBox.baseVal;
+  const occupied=[{x:C-23,y:C-27,w:46,h:54}];
+  const box=(el,x=0,y=0)=>{
+    const b=el.getBBox();
+    return {x:x+b.x,y:y+b.y,w:b.width,h:b.height};
+  };
+  const overlaps=(a,b,pad)=>a.x<b.x+b.w+pad && a.x+a.w>b.x-pad && a.y<b.y+b.h+pad && a.y+a.h>b.y-pad;
+  for(const group of svg.querySelectorAll(".cons")){
+    const {x,y,rr}=geometry[group.dataset.id], figure=group.querySelector(".theme-figure");
+    occupied.push(figure?box(figure,x,y):{x:x-rr,y:y-rr,w:rr*2,h:rr*2});
+  }
+  for(const el of svg.querySelectorAll(".sector-lbl")) occupied.push(box(el));
+
+  const labels=[...svg.querySelectorAll(".grade-caption, .subject-caption"),
+    ...svg.querySelectorAll(".current-caption"),...svg.querySelectorAll(".other-caption")];
+  for(const el of labels){
+    const group=el.closest(".cons"), geo=group?geometry[group.dataset.id]:null;
+    el.removeAttribute("transform");
+    const base=box(el,geo?.x,geo?.y);
+    // Prefer the original baseline, then the nearest free position. A group
+    // caption may go above its own drawing when there is no room below it.
+    let candidates;
+    if(geo){
+      // Start at the four edges of this particular drawing. Trying its top
+      // directly avoids sliding a caption under the next constellation.
+      const figure=group.querySelector(".theme-figure");
+      const rim=figure?box(figure,geo.x,geo.y):{x:geo.x-geo.rr,y:geo.y-geo.rr,w:geo.rr*2,h:geo.rr*2};
+      const midX=rim.x+rim.w/2, midY=rim.y+rim.h/2;
+      candidates=[];
+      for(const gap of [8,16,24,32,40,48]) for(let slide=-56;slide<=56;slide+=8){
+        const below=rim.y+rim.h+gap, above=rim.y-gap-base.h;
+        const left=rim.x-gap-base.w, right=rim.x+rim.w+gap;
+        const append=(x,y,preference)=>candidates.push({dx:x-base.x,dy:y-base.y,distance:Math.abs(slide)+preference+(gap-8)*2});
+        append(midX-base.w/2+slide,below,0);
+        append(midX-base.w/2+slide,above,8);
+        append(left,midY-base.h/2+slide,12);
+        append(right,midY-base.h/2+slide,12);
+      }
+    }else{
+      candidates=[];
+      const maxY=el.classList.contains("anno")?48:el.classList.contains("grade-caption")?8:40;
+      for(let dy=-maxY;dy<=maxY;dy+=8) for(let dx=-80;dx<=80;dx+=8){
+        candidates.push({dx,dy,distance:Math.hypot(dx*1.2,dy)});
+      }
+    }
+    candidates.sort((a,b)=>a.distance-b.distance);
+    let best=null, fewest=Infinity;
+    for(const move of candidates){
+      const pos={...base,x:base.x+move.dx,y:base.y+move.dy};
+      if(pos.x<view.x+3 || pos.x+pos.w>view.x+view.width-3 ||
+         pos.y<view.y+3 || pos.y+pos.h>view.y+view.height-3) continue;
+      const hits=occupied.reduce((sum,b)=>sum+Number(overlaps(pos,b,5)),0);
+      if(hits<fewest){best={...move,pos};fewest=hits;}
+      if(hits===0) break;
+    }
+    if(best){
+      el.setAttribute("transform",`translate(${best.dx} ${best.dy})`);
+      occupied.push(best.pos);
+    }
+  }
+}
+
+function consGeom(c,bands=overviewBands()){ const t=THEMES[c.theme], [a,b]=bands[c.band], th=(t.sec[0]+t.sec[1])/2, cur=c.band===CURRENT_BAND;
   const stagger=cur?(THEME_ORDER.indexOf(c.theme)%2?18:-14):0;
   if(shapePreview&&cur){
-    const halfWidth=(b-a)/2, rr=Math.min(34,halfWidth-4);
-    const room=Math.max(0,halfWidth-rr-4);
-    const [x,y]=polar(th,(a+b)/2+Math.max(-room,Math.min(stagger,room)));
+    const rr=39, [x,y]=polar(th,(a+b)/2+stagger);
     return {x,y,rr,cur};
   }
   const [x,y]=polar(th,(a+b)/2+stagger);
@@ -903,29 +981,31 @@ function renderOverview(){
     <div class="legend" aria-hidden="true">${shapePreview?shapeLegend():'<span><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="var(--ink)"/></svg>点亮</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="none" stroke="var(--muted)" stroke-width="1.3"/></svg>未点亮</span>'}<span class="mono">${lit}/${NODES.length}</span></div></div>
     <div class="graph" id="graph"><svg id="gsvg" role="img" aria-label="Curio 星图：年级环与学科扇区"></svg></div>`;
   const g=$("#graph"), svg=$("#gsvg"), narrow=g.clientWidth<620; g.classList.toggle("narrow",narrow);
-  svg.setAttribute("viewBox",narrow?"6 40 748 690":"0 0 760 760");
-  const [bandStart,bandEnd]=BANDS[shapePreview?CURRENT_BAND:1];
+  g.classList.toggle("shape-overview",shapePreview);
+  svg.setAttribute("viewBox",shapePreview?"0 0 760 760":narrow?"6 40 748 690":"0 0 760 760");
+  const bands=overviewBands(), [bandStart,bandEnd]=bands[shapePreview?CURRENT_BAND:1];
   let h=`<circle class="band-now" cx="${C}" cy="${C}" r="${(bandStart+bandEnd)/2}" stroke-width="${bandEnd-bandStart}"/>`;
-  BANDS.forEach(([a,b],i)=>{ h+=`<path class="kq" d="${Sk.ellipse(C,C,b,b,200+i,.6)}" ${i>=3?'stroke-dasharray="3 6"':""}/>`; });
+  bands.forEach(([a,b],i)=>{ h+=`<path class="kq" d="${Sk.ellipse(C,C,b,b,200+i,.6)}" ${i>=3?'stroke-dasharray="3 6"':""}/>`; });
   h+=`<path class="kq" d="${Sk.ellipse(C,C,40,40,190,.6)}"/>`;
-  BANDS.forEach(([a,b],i)=>{ h+=`<text class="${i===CURRENT_BAND?"anno":"ring-lbl"}" x="${C}" y="${C+(a+b)/2+6}" text-anchor="middle">${i===CURRENT_BAND?"你在这一圈":BAND_NAME[i]}</text>`; });
+  bands.forEach(([a,b],i)=>{ h+=`<text class="${i===CURRENT_BAND?"anno":"ring-lbl"}${shapePreview?" grade-caption":""}" x="${C}" y="${C+(a+b)/2+6}" text-anchor="middle">${i===CURRENT_BAND?"你在这一圈":BAND_NAME[i]}</text>`; });
   // sector dividers (between themes) and the math | science split
   THEME_ORDER.forEach((k,i)=>{ const a0=THEMES[k].sec[0]; const p=polar(a0,44), q=polar(a0,350); h+=`<path class="kq" stroke-dasharray="1 7" d="${Sk.line(p[0],p[1],q[0],q[1],330+i,.3)}" opacity=".7"/>`; });
   h+=`<path class="kq" stroke-dasharray="2 6" d="${Sk.line(C,C-44,C,C-352,301,.4)}"/><path class="kq" stroke-dasharray="2 6" d="${Sk.line(C,C+44,C,C+352,302,.4)}"/>`;
   const SL=(t,th,r,cls,anc)=>{ const p=polar(th,r); return `<text class="${cls}" x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" text-anchor="${anc||"middle"}">${t}</text>`; };
   h+=`<text class="sector-lbl" x="40" y="44">数学</text><text class="sector-lbl" x="720" y="44" text-anchor="end">科学</text>`;
-  ["mat","ene","life","earth"].forEach(k=>{ const t=THEMES[k], th=(t.sec[0]+t.sec[1])/2, p=polar(th,364); h+=`<text class="ring-lbl" x="${p[0].toFixed(1)}" y="${(p[1]+5).toFixed(1)}" text-anchor="middle" style="fill:var(${t.c})">${t.later}</text>`; });
-  { const p=polar(60,286); h+=`<text class="ring-lbl" x="${p[0]+8}" y="${p[1]}" text-anchor="start">初中起分科</text>`; }
+  ["mat","ene","life","earth"].forEach(k=>{ const t=THEMES[k], th=(t.sec[0]+t.sec[1])/2, p=polar(th,364); h+=`<text class="ring-lbl${shapePreview?" subject-caption":""}" x="${p[0].toFixed(1)}" y="${(p[1]+5).toFixed(1)}" text-anchor="middle" style="fill:var(${t.c})">${t.later}</text>`; });
+  { const [a,b]=bands[3], p=shapePreview?polar(86,(a+b)/2):polar(60,286);
+    h+=`<text class="ring-lbl${shapePreview?" subject-caption":""}" x="${p[0]+(shapePreview?0:8)}" y="${p[1]}" text-anchor="${shapePreview?"middle":"start"}">初中起分科</text>`; }
   // annotation
   h+=`<g transform="translate(${C-22} ${C-26}) scale(.44)">${ICONS.ship(9)}</g>`;
   // links between constellations (any prerequisite across them)
   const links=new Set(); NODES.forEach(n=>n.prereq.forEach(p=>{ const a=consId(NODE[p]), b=consId(n); if(a!==b) links.add(a+">"+b); }));
-  const G={}; Object.values(CONS).forEach(c=>G[c.id]=consGeom(c));
+  const G={}; Object.values(CONS).forEach(c=>G[c.id]=consGeom(c,bands));
   [...links].forEach((l,i)=>{ const [a,b]=l.split(">"); h+=`<path class="clink kq" data-a="${a}" data-b="${b}" stroke-dasharray="2 5" d="" opacity=".8"/>`; });
   // constellations
   Object.values(CONS).forEach((c,ci)=>{ const geo=G[c.id], t=THEMES[c.theme], litN=c.nodes.filter(n=>nodeState(n)==="lit").length;
     let fig="";
-    if(shapePreview&&geo.cur) fig=chartShapeFigure(c,geo.rr);
+    if(shapePreview&&geo.cur) fig=`<g class="theme-figure">${chartShapeFigure(c,geo.rr)}</g>`;
     else {
       const idx=Object.fromEntries(c.nodes.map((n,i)=>[n.id,i]));
       c.nodes.forEach((n,i)=>n.prereq.forEach(p=>{ if(p in idx){ const A=geo.pts[idx[p]], B=geo.pts[i]; fig+=`<path class="${geo.cur?"k1":"kq"}" d="${Sk.line(A[0],A[1],B[0],B[1],ci*31+i,.25)}" opacity="${geo.cur?.55:.6}"/>`; } }));
@@ -936,12 +1016,17 @@ function renderOverview(){
     const hasRep=c.nodes.some(n=>repairsFor(n.id).length);
     // 一二年级、初中、高中这几圈一般不写名字；有能玩的任务的星座例外，免得找不到
     const playable=c.band!==1&&c.band!==2&&c.nodes.some(n=>n.acts.length);
-    const label = playable ? `<text class="cname small" x="0" y="${geo.rr+15}" text-anchor="middle">${esc(consName(c))}</text>` : (c.band===1||c.band===2) ? `<text class="cname ${geo.cur?"":"small"}" x="0" y="${geo.rr+(geo.cur?20:15)}" text-anchor="middle">${esc(t.name)}</text>${geo.cur?`<text class="ccount" x="0" y="${geo.rr+36}" text-anchor="middle">${litN}/${c.nodes.length}</text>`:""}` : "";
+    const currentCaption=shapePreview&&geo.cur;
+    const label = !currentCaption&&playable ? `<text class="cname small" x="0" y="${geo.rr+15}" text-anchor="middle">${esc(consName(c))}</text>` : (currentCaption||c.band===1||c.band===2) ? `<text class="cname ${geo.cur?"":"small"}" x="0" y="${geo.rr+(geo.cur?20:15)}" text-anchor="middle">${esc(t.name)}</text>${geo.cur?`<text class="ccount" x="0" y="${geo.rr+(currentCaption?44:36)}" text-anchor="middle">${litN}/${c.nodes.length}</text>`:""}` : "";
     h+=`<g class="cons" data-id="${c.id}" tabindex="0" role="button" aria-label="${esc(consName(c))}，${BAND_NAME[c.band]}，${c.nodes.length} 颗星球，点亮 ${litN}" transform="translate(${geo.x.toFixed(1)} ${geo.y.toFixed(1)})">
       <circle class="hit" r="${geo.rr+(geo.cur?16:10)}"/>${c.id===recC?`<circle class="ping" r="${geo.rr+6}"/>`:""}
-      ${geo.cur?`<path d="${Sk.blob(0,0,geo.rr+8,geo.rr+8,ci+3)}" style="fill:var(${t.c})" opacity=".1"/>`:""}${fig}${hasRep?`<circle cx="${geo.rr*.8}" cy="${-geo.rr*.8}" r="4" fill="var(--bad)"/>`:""}${label}</g>`;
+      ${geo.cur?`<path d="${Sk.blob(0,0,geo.rr+8,geo.rr+8,ci+3)}" style="fill:var(${t.c})" opacity=".1"/>`:""}${fig}${hasRep?`<circle cx="${geo.rr*.8}" cy="${-geo.rr*.8}" r="4" fill="var(--bad)"/>`:""}${shapePreview&&label?`<g class="${geo.cur?"current-caption":"other-caption"}">${label}</g>`:label}</g>`;
   });
   svg.innerHTML=h;
+  if(shapePreview){
+    placeChartLabels(svg,G);
+    if(document.fonts?.status==="loading") document.fonts.ready.then(()=>{if(svg.isConnected) placeChartLabels(svg,G);});
+  }
   const cons=[...svg.querySelectorAll(".cons")], clinks=[...svg.querySelectorAll(".clink")];
   const neighbors=id=>{ const s=new Set([id]); clinks.forEach(l=>{ if(l.dataset.a===id) s.add(l.dataset.b); if(l.dataset.b===id) s.add(l.dataset.a); }); return s; };
   const focus=id=>{ g.classList.toggle("focusing",!!id); if(!id) return; const nb=neighbors(id); cons.forEach(el=>el.classList.toggle("nb",nb.has(el.dataset.id))); clinks.forEach(l=>l.classList.toggle("nb",l.dataset.a===id||l.dataset.b===id)); };
