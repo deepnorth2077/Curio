@@ -103,12 +103,14 @@ body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{
 .tk{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round} .tkd{fill:none;stroke:var(--accent);stroke-width:1.1}
 body.narrow .lb{font-size:21px} body.narrow .lbg{font-size:20px} body.narrow .lbm{font-size:20px}
 body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .sign{font-size:28px}
+/* ============ 台架样式 ============ */
 #stage{max-height:58vh}
 .rope{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
 .steel{fill:var(--sky);stroke:var(--ink);stroke-width:2}
 .wood{fill:var(--apricot);stroke:var(--ink);stroke-width:2}
+.activePart{fill:var(--accent);stroke:var(--ink);stroke-width:2}
 body.narrow .lb,body.narrow .lbm,body.narrow .lbg{font-size:21px}
-@media (max-width:520px){.card footer{display:block}.hint{white-space:normal}.readout{text-align:left}}
+@media (max-width:520px){.card footer{display:flex;flex-direction:column;align-items:flex-start;gap:3px}.hint{white-space:normal}.readout{text-align:left}}
 </style>
 </head>
 <body>
@@ -344,7 +346,7 @@ function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站�
 
 // 第一屏的提醒（G6）：进入动手 1.5 秒还没碰，第一个圆钮外面扩出一圈细环；一碰就再也不出现
 let cuePos = null, cueTimer = 0;
-function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; S.dirty = true; } }, 1500); }
+function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; placeCue(); } }, 1500); }
 function disarmCue(){ clearTimeout(cueTimer); cuePos = null; cueEl.style.display = "none"; }
 function touched(){ if (cuePos || cueTimer) disarmCue(); cueTimer = 0; }
 function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }   // 第三个数是被提醒的东西的半径（托里的一个）
@@ -359,8 +361,8 @@ addEventListener("resize",()=>{fitView();paint();});
 const fmt=value=>String(Math.round(value*100)/100);
 const line=(x1,y1,x2,y2,cls="k",seed=19)=>P(Sk.line(x1,y1,x2,y2,seed,.45),cls);
 const label=(x,y,text,cls="lb")=>TC(x,y,text,cls);
-function crate(x,y,w,h){
-  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" class="wood"/>`+
+function crate(x,y,w,h,cls="wood"){
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" class="${cls}"/>`+
     line(x+5,y+5,x+w-5,y+h-5,"k1")+line(x+5,y+h-5,x+w-5,y+5,"k1");
 }
 function station(number,title,mode){
@@ -452,23 +454,34 @@ function move(value){
 }
 function drawing(){
   if(S.mode==="end"){
-    let out=T(150,54,"我的坡板记录","ttl")+line(150,114,650,114,"kf");
+    const baseline=171,scale=30,top=baseline-MODEL.height*scale;
+    let out=T(150,54,"我的坡板记录","ttl")+line(150,top,650,top,"kf");
     for(const [i,r] of runs.entries()){
-      const x=150+i*172,y=171,k=30,dx=Math.sqrt(r.length*r.length-MODEL.height*MODEL.height)*k;
-      out+=line(x,y,x+dx,y-MODEL.height*k,"k")+line(x+dx,y,x+dx,y-MODEL.height*k,"k1")+
+      const x=150+i*172,y=baseline,dx=Math.sqrt(r.length*r.length-MODEL.height*MODEL.height)*scale;
+      out+=line(x,y,x+dx,top,"k")+line(x+dx,y,x+dx,top,"k1")+
         T(x,210,i===2?"我选的坡":"第 "+(i+1)+" 块坡板","lbg")+
         T(x,242,`${r.length} m · ${fmt(r.force)} N`,"lbm");
     }
     return out+label(400,310,`升高 ${MODEL.height} m，每次做功 ${MODEL.weight*MODEL.height} J`,"lb");
   }
   const r=slope(),q=cratePose(),top=244-MODEL.scale*MODEL.height;
-  let out=P(`M${r.foot} 244L606 ${top}v8L${r.foot+10} 251z`,"wood");
+  let out=P(`M${r.foot} 244L606 ${top}v8L${r.foot+10} 251z`,S.mode==="actFoot"?"activePart":"wood");
   for(let m=0;m<=length;m++){
     const x=r.foot+r.dx*m*MODEL.scale,y=244+r.dy*m*MODEL.scale;
     out+=line(x,y,x-10*r.dy,y+10*r.dx,"k1",46+m);
   }
-  out+=`<g transform="translate(${q.x} ${q.y}) rotate(${q.deg})">${crate(-34,-50,68,48)}`+
+  out+=`<g transform="translate(${q.x} ${q.y}) rotate(${q.deg})">${crate(-34,-50,68,48,S.mode==="actPush"?"activePart":"wood")}`+
     label(0,-61,MODEL.weight+" N","lbm")+"</g>";
+  if(S.mode!=="guess"){
+    // 两把表用同一把牛顿刻度，让指针位置也能比较推力。
+    const gauges=S.station===1?[[153,"当前",r.force]]:[[153,"短坡",runs[0].force],[306,"当前",r.force]];
+    for(const [x,name,force] of gauges){
+      const width=106,y=86,pos=x+width*force/(MODEL.weight/MODEL.minLength);
+      out+=T(x,y-15,name+" "+fmt(force)+" N","lbm")+line(x,y,x+width,y)+
+        line(x,y-4,x,y+5,"k1")+line(x+width,y-4,x+width,y+5,"k1")+
+        P(`M${pos-4} ${y+13}l4-9 4 9z`,"lead");
+    }
+  }
   if(S.mode!=="guess")out+=label(401,330,`坡面 ${length} m　·　沿坡推力 ${fmt(r.force)} N`,"lbm");
   return out;
 }
@@ -489,7 +502,7 @@ function enter1(){
 function push(n){
   station(n,n===1?"先推短坡":n===2?"换长坡再推":"试推你选的坡","actPush");
   controls([{label:"把货交给站台",go:finishRun}],
-    "拖箱子上的圆钮，沿着板慢慢推。m 是米，N 是牛；推力沿路做的功用焦（J）记。","沿坡拖箱，或按左右键");
+    "坡面没有摩擦。拖圆钮，沿着板匀速推。m 是米，N 是牛，做的功用焦（J）记。","沿坡拖箱，或按左右键");
 }
 function finishRun(){
   if(progress!==1){say("货箱还没到站台，再沿着板推一段。","hmm");return;}
