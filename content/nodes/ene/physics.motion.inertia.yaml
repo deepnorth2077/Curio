@@ -1,0 +1,32 @@
+id: physics.motion.inertia
+schema: knode/1
+title: 牛顿第一定律：松手后还会走吗
+subjects:
+- physics
+theme: ene
+grade: G8
+unit: 先盯一辆车
+prerequisites:
+- p.g8.force
+driving_question: 松开手，同一辆小车为何有时停、有时一直滑？
+objectives:
+- 在惯性参考系中合力为零时，静止或匀速直线运动。无阻力直轨模型上已在动的小车每秒走相同距离；普通轨上阻力使它减速。
+- 两条同一时间拍下的轨道足迹。
+misconceptions:
+- id: keep-pushing
+  text: 运动必须持续推
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 4.2
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42130/index.cnxml
+lenses:
+- band: G3-4
+  approach: 先从静止观察，再给车初速度后松手，对照有阻力轨和理想轨的等时印迹。
+- band: G7-9
+  approach: 在惯性参考系中合力为零时，静止或匀速直线运动。无阻力直轨模型上已在动的小车每秒走相同距离；普通轨上阻力使它减速。
+activities: []
+status: draft
+version: 1
+curriculum:
+- std: 义务教育物理课程标准（2022年版）
+  ref: 机械运动和力、机械能

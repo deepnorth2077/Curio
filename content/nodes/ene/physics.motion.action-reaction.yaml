@@ -1,0 +1,32 @@
+id: physics.motion.action-reaction
+schema: knode/1
+title: 牛顿第三定律：两辆车互推
+subjects:
+- physics
+theme: ene
+grade: G10
+unit: 改变运动，再看伙伴
+prerequisites:
+- physics.motion.force-acceleration
+driving_question: 轻车跑得快，是它受到的推力比重车大吗？
+objectives:
+- 相互作用的两力同时、等大、反向、分属不同物体。2 kg和4 kg小车互推4 N时加速度大小为2和1 m/s²。水平外力忽略。
+- 把两张力签分别贴回受力的那辆车。
+misconceptions:
+- id: cancel-on-one
+  text: 反作用力在同一辆车上抵消
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 4.4
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42074/index.cnxml
+lenses:
+- band: G3-4
+  approach: 让相同质量两车互推；给其中一辆加货，同一瞬间比较两箭头和两辆车速度变化。
+- band: G7-9
+  approach: 相互作用的两力同时、等大、反向、分属不同物体。2 kg和4 kg小车互推4 N时加速度大小为2和1 m/s²。水平外力忽略。
+activities: []
+status: draft
+version: 1
+curriculum:
+- std: 普通高中物理课程标准
+  ref: 必修一 · 相互作用与运动定律

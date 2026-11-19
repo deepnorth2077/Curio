@@ -1,0 +1,31 @@
+id: p.g8.force
+schema: knode/1
+title: 力
+subjects:
+- physics
+theme: ene
+grade: G8
+unit: 物理 · 力
+prerequisites: []
+driving_question: 左右都挂着砝码，小车一定会改变速度吗？
+objectives:
+- 同一物体同一直线上的力带方向相加。向右4 N、向左4 N合力0，向右6 N、向左2 N合力向右4 N。
+- 一辆车的受力图和合力读数。
+misconceptions:
+- id: add-both
+  text: 只把大小相加
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 4.3
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42073/index.cnxml
+lenses:
+- band: G3-4
+  approach: 先调成两边一样大，再只改一边。用刻线看速度是否变化。
+- band: G7-9
+  approach: 同一物体同一直线上的力带方向相加。向右4 N、向左4 N合力0，向右6 N、向左2 N合力向右4 N。
+activities: []
+status: draft
+version: 1
+curriculum:
+- std: 义务教育物理课程标准（2022年版）
+  ref: 机械运动和力、机械能

@@ -1,0 +1,33 @@
+id: physics.motion.force-acceleration
+schema: knode/1
+title: 牛顿第二定律：同一推力推两辆车
+subjects:
+- physics
+theme: ene
+grade: G10
+unit: 改变运动，再看伙伴
+prerequisites:
+- p.g8.force
+- physics.motion.inertia
+driving_question: 更重的车，怎样才能和轻车一起加快？
+objectives:
+- 恒质量、直线、合力不变时 a=F净/m。2 kg受4 N时2 m/s²；4 kg受4 N时1 m/s²；同时把力和质量加倍时加速度不变。
+- 用两张速度随时间增长的纸带给两辆车配对。
+misconceptions:
+- id: speed-is-acceleration
+  text: 把速度当作加速度
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 4.3
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42073/index.cnxml
+lenses:
+- band: G3-4
+  approach: 同质量换净力，再同净力加货；自己配出两辆加速相同但重量不同的车。
+- band: G7-9
+  approach: 恒质量、直线、合力不变时 a=F净/m。2 kg受4 N时2 m/s²；4 kg受4 N时1 m/s²；同时把力和质量加倍时加速度不变。
+activities: []
+status: draft
+version: 1
+curriculum:
+- std: 普通高中物理课程标准
+  ref: 必修一 · 相互作用与运动定律
