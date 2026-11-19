@@ -117,3 +117,55 @@ class TestRetiredCatalogId(unittest.TestCase):
         repo.write(catalog_tests.CATALOG, yaml.safe_dump(doc, allow_unicode=True))
         repo.commit()
         self.assertTrue(repo.check().errors)
+
+
+class TestKnowledgePointCatalogBranch(unittest.TestCase):
+    def check_branch(self, nid, before, after):
+        repo = Repo()
+        self.addCleanup(repo.close)
+        repo.write("content/nodes/num/" + catalog_tests.CARD + ".yaml", node(catalog_tests.CARD))
+        repo.write(catalog_tests.CATALOG, yaml.safe_dump(before, allow_unicode=True))
+        repo.baseline()
+        repo.branch("kp/" + nid)
+        repo.write("content/nodes/num/" + nid + ".yaml", node(nid))
+        repo.write(catalog_tests.CATALOG, yaml.safe_dump(after, allow_unicode=True))
+        repo.commit()
+        return repo.check().errors
+
+    def test_new_card_can_register_its_own_point(self):
+        before = catalog_tests.sample()
+        after = catalog_tests.sample()
+        nid = "math.number.thirds"
+        after["points"].append(dict(id=nid, title="三等份", grade="G3", theme="num",
+                                    unit="三上", prerequisites=[catalog_tests.CARD]))
+        after["version"] += 1
+        self.assertEqual(self.check_branch(nid, before, after), [])
+
+    def test_existing_card_can_update_its_own_directory_entry(self):
+        before = catalog_tests.sample()
+        after = catalog_tests.sample()
+        after["points"][1]["title"] = "分数和图"
+        after["version"] += 1
+        self.assertEqual(self.check_branch(catalog_tests.CARD, before, after), [])
+
+    def test_other_rows_and_version_only_changes_stay_protected(self):
+        for group in ("points", "retired", "version_only"):
+            with self.subTest(group=group):
+                before = catalog_tests.sample()
+                after = catalog_tests.sample()
+                after["version"] += 1
+                if group != "version_only":
+                    after["points"][1]["title"] = "分数和图"
+                    after[group][0]["title"] = "夹带修改"
+                errors = self.check_branch(catalog_tests.CARD, before, after)
+                self.assertTrue(any(path == catalog_tests.CATALOG for path, _ in errors), errors)
+
+    def test_card_on_its_own_branch_preserves_the_registered_grade(self):
+        before = catalog_tests.sample()
+        after = catalog_tests.sample()
+        # 新卡与新目录都是 G3，但这个占位进 main 时属于 G1。
+        after["points"][0]["grade"] = "G3"
+        after["version"] += 1
+        errors = self.check_branch("m.g1.count", before, after)
+        self.assertTrue(any("m.g1.count" in message and "年级" in message
+                            for _, message in errors), errors)

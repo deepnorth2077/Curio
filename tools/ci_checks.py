@@ -432,6 +432,9 @@ def run(repo, base="origin/main", branch="", labels=()):
                     # 知识点自己的配图放在 content/assets/<知识点 id>/ 下（docs/workflow.md）
                     parts = Path(p).parts
                     ok = len(parts) >= 4 and parts[2] == node_id and p.endswith(".svg")
+                elif ok and p == CATALOG_PATH:
+                    # 目录已有才可随卡登记。下方通过目录校验后，还要逐条核对改动归属。
+                    ok = status_of[p] == "M"
                 elif ok and p.startswith("content/"):
                     ok = False
                 elif ok and act_prompt:
@@ -520,8 +523,21 @@ def run(repo, base="origin/main", branch="", labels=()):
             r.err("知识点目录缺少可用的 catalog.schema.json", CATALOG_PATH)
         else:
             previous = load_yaml_text(previous_catalog) if previous_catalog is not None else None
-            for message in check_catalog(load(catalog_path), nodes, previous, schemas["catalog.schema.json"]):
+            catalog = load(catalog_path)
+            errors = check_catalog(catalog, nodes, previous, schemas["catalog.schema.json"])
+            for message in errors:
                 r.err(message, CATALOG_PATH)
+            if not errors and previous is not None and prefix == "kp/" and CATALOG_PATH in changed:
+                def other_points(doc):
+                    return [point for point in doc["points"] if point["id"] != node_id]
+
+                def own_point(doc):
+                    return next((point for point in doc["points"] if point["id"] == node_id), None)
+
+                if (node_id not in nodes or own_point(previous) == own_point(catalog)
+                        or other_points(previous) != other_points(catalog) or previous["retired"] != catalog["retired"]):
+                    msg = f"{branch} 的目录改动只可包含自己的现行条目和对应版本号"
+                    r.warn(msg + "（已放行）", CATALOG_PATH) if override else r.err(msg, CATALOG_PATH)
     elif previous_catalog is not None:
         r.err("不能删除已登记的知识点目录", CATALOG_PATH)
 
