@@ -930,7 +930,7 @@ function placeChartLabels(svg,geometry){
       const rim=figure?box(figure,geo.x,geo.y):{x:geo.x-geo.rr,y:geo.y-geo.rr,w:geo.rr*2,h:geo.rr*2};
       const midX=rim.x+rim.w/2, midY=rim.y+rim.h/2;
       candidates=[];
-      for(const gap of [8,16,24,32,40,48]) for(let slide=-56;slide<=56;slide+=8){
+      for(let gap=8;gap<=80;gap+=8) for(let slide=-72;slide<=72;slide+=8){
         const below=rim.y+rim.h+gap, above=rim.y-gap-base.h;
         const left=rim.x-gap-base.w, right=rim.x+rim.w+gap;
         const append=(x,y,preference)=>candidates.push({dx:x-base.x,dy:y-base.y,distance:Math.abs(slide)+preference+(gap-8)*2});
