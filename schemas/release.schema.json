@@ -51,6 +51,13 @@
     "assets": {
       "type": "array",
       "items": { "$ref": "#/$defs/fileEntry" }
+    },
+    "catalog": {
+      "$ref": "#/$defs/fileEntry",
+      "properties": {
+        "path": { "const": "content/catalog/points.yaml" },
+        "json": { "properties": { "path": { "const": "content/catalog/points.yaml.json" } } }
+      }
     }
   },
   "$defs": {

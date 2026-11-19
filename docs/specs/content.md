@@ -252,6 +252,7 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 ```
 
 - **收录范围**：只收 `published` 的知识点、它们引用的活动里 `approved` 的那些，以及这些活动引用的配图文件。草稿知识点、没批准的活动都不进发布，也不影响其他内容的发布。所以给已发布的知识点新加一个还在审核的活动，不会卡住整个发布。
+- 如果有 `content/catalog/points.yaml`，清单用可选字段 `catalog` 登记它及其 JSON 副本。目录中的每个点都有 ID，有已发布课程的点还会出现在 `nodes` 中。[知识点目录规格](catalog.md)
 - **引用闭包**：发布包里不能有指向包外的硬引用。下面任何一条不满足，构建失败（CI 的发布门禁也检查同样的规则）：
   - 已发布知识点的每个 `prerequisites` 都必须已发布；
   - 收录的每个活动，它的**全部** `targets` 都必须已发布。共享活动的某个目标还是草稿时，要么等它发布，要么把活动拆开。
@@ -263,7 +264,7 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 
 1. 每个文件：对仓库里的原始字节算 SHA-256（文件已保证是 LF）。每个 `.yaml` 条目带一个 `json` 对象，是 6.3 那份 `.json` 的路径、SHA-256、字节数；它在条目里，所以也参与下一步的哈希。
 2. 三个列表各自排序：`nodes`、`activities` 按 `id`，`files`、`assets` 按 `path`。
-3. 把 `{"engine_min": …, "contracts": …, "nodes": …, "activities": …, "assets": …}` 转成**规范 JSON**：键按字母排序，不留空白（分隔符为 `,` 和 `:`），不转义非 ASCII 字符，编码为 UTF-8。用 Python 写就是 `json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`。
+3. 取清单的 `engine_min`、`contracts`、`nodes`、`activities` 和 `assets` 五项。清单含 `catalog` 时，把完整的 `catalog` 条目加入同一对象。把这个对象转成**规范 JSON**，键按字母排序，不留空白（分隔符为 `,` 和 `:`），不转义非 ASCII 字符，编码为 UTF-8。用 Python 写就是 `json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`。
    - 这样写之所以跨语言可复现，是因为清单的取值受到严格限制：只有字符串和非负整数（不超过 2^53−1；构建器把 `version: 1.0` 这类整数值的小数写法统一转成整数，否则 Python 写成 `1.0`、JavaScript 写成 `1`，哈希会不同），没有小数、布尔值和 null；所有键名、id、路径都是 ASCII，所以「按字母排序」在任何语言里都是同一个顺序（id 是 ASCII 由 schema 的正则保证：知识点 id 只有小写字母、数字、点、连字符，活动 id 同理；路径由第 1 节的规则保证）；哈希是十六进制小写。在这些限制下，结果和 JSON 规范化方案 RFC 8785 一致。
    - 发布哈希只由 Python 构建器计算。其他语言要验证时，按 RFC 8785 实现即可。
 4. `content_hash` = 上一步字节的 SHA-256；`release_id` = `rel_` + `content_hash`。

@@ -16,7 +16,7 @@ from pathlib import Path
 
 import yaml
 
-from ci_checks import check_publish_gate
+from ci_checks import CATALOG_PATH, check_catalog, check_publish_gate
 
 PATH_SEGMENT = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
 MAX_SAFE_INTEGER = 2**53 - 1
@@ -252,6 +252,13 @@ def build_package(content_root, source_commit):
         "activities": activity_entries,
         "assets": assets,
     }
+    if CATALOG_PATH in by_path:
+        data = by_path[CATALOG_PATH][1]
+        document = load_document(data, CATALOG_PATH)
+        errors = check_catalog(document, nodes)
+        if errors:
+            raise BuildError(f"{CATALOG_PATH}：\n" + "\n".join(errors))
+        hash_input["catalog"] = file_entry(CATALOG_PATH, data, outputs)
     canonical = json.dumps(hash_input, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     content_hash = hashlib.sha256(canonical).hexdigest()
     manifest = {
@@ -279,6 +286,8 @@ def manifest_digests(manifest):
             add(entry)
     for asset in manifest["assets"]:
         add(asset)
+    if "catalog" in manifest:
+        add(manifest["catalog"])
     return listed
 
 

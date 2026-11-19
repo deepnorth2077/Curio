@@ -1,0 +1,14 @@
+{
+  "catalog": {
+    "path": "content/catalog/points.yaml",
+    "sha256": "9e16adcfc13fbe90df9c3ae68e16d7b9635a4d436b6cf315fe8bf2343000309b",
+    "bytes": 431,
+    "json": {
+      "path": "content/catalog/points.yaml.json",
+      "sha256": "ca93b77f5d64e98f4a88c65de3044c881180a947e05212c5f2449ee29214fa15",
+      "bytes": 429
+    }
+  },
+  "content_hash": "b11d2adc30026f5267875d7d1dfa50194a7ae82f37dc753c812f239e06e4bd71",
+  "release_id": "rel_b11d2adc30026f5267875d7d1dfa50194a7ae82f37dc753c812f239e06e4bd71"
+}
