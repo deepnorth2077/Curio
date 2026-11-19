@@ -51,7 +51,7 @@ def play(w):
     expect(station=3, length=3, height=1, distance=3, force=4, work=12)
     w.btn("把货交给站台")
     w.btn("收下坡板记录")
-    card = w.doc.locator("#dyn").inner_text()
+    card = w.doc.locator("#dyn").text_content()
     w.check("星卡保留自己选的坡板", "我选的坡" in card and "3 m · 4 N" in card, card)
 
     expected_stations = list(range(1, 3 + 1))

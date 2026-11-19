@@ -40,6 +40,11 @@ def play(w):
     w.btn("收好我的纸带")
     w.check("星卡属于刚刚配出的两辆车", "4 千克 · 合力向右 8 牛顿" in w.doc.locator("#dyn").text_content())
     w.shot("my-tapes")
+    w.btn("第 2 站")
+    w.doc.locator("#referenceForce").press("Home")
+    run("同时推", 4, 6, 4, 1)
+    w.btn("收好我的纸带")
+    w.check("另一种配法做成自己的星卡", "4 千克 · 合力向右 4 牛顿" in w.doc.locator("#dyn").text_content())
     verbs = [m["payload"]["verb"] for m in w.sent("event")]
     w.check("猜测、两次观察和一个成就物", verbs == ["predicted", "observed", "observed"] and
             len(w.sent("complete")) == 1, verbs)

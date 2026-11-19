@@ -46,7 +46,7 @@ def play(w):
     expect(station=2, leftArm=9, rightArm=3, leftMoment=18, rightMoment=18)
     w.btn("核对平衡")
     w.btn("收下平衡记录")
-    w.check("星卡保留自选的新支点", "9 格" in w.doc.locator("#dyn").inner_text())
+    w.check("星卡保留自选的新支点", "9 格" in w.doc.locator("#dyn").text_content())
 
     expected_stations = list(range(1, 2 + 1))
     events = [m["payload"] for m in w.sent("event")]
