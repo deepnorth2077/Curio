@@ -35,6 +35,8 @@ a{color:inherit}
 .wrap{max-width:900px;margin:0 auto;padding:18px 16px 60px}
 .panel{background:var(--bg);border:1px solid var(--rule);border-radius:18px;padding:18px;margin:12px 0;display:flex;align-items:flex-end;justify-content:center;gap:56px;flex-wrap:wrap}
 .item{text-align:center}
+.hero-rocket .k{stroke-width:1.15}
+.hero-rocket .k1{stroke-width:.8}
 .item span{display:block;font-size:14px;color:var(--muted);margin-top:6px}
 .old{display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap;background:var(--pane);border:1px dashed var(--rule);border-radius:18px;padding:18px;margin:12px 0}
 .old svg{width:96px;height:96px}
@@ -109,7 +111,7 @@ function rocket(small){
   return s;
 }
 
-const one = (px, small, label) => `<div class="item"><svg viewBox="0 0 48 64" width="${px * .75}" height="${px}" aria-hidden="true">${rocket(small)}</svg><span>${label}</span></div>`;
+const one = (px, small, label) => `<div class="item"><svg class="${px > 120 ? "hero-rocket" : ""}" viewBox="0 0 48 64" width="${px * .75}" height="${px}" aria-hidden="true">${rocket(small)}</svg><span>${label}</span></div>`;
 const panel = scheme => `<div class="panel ${scheme}">${one(24, true, "24 px · 标题栏")}${one(64, false, "64 px · 星图中心")}${one(200, false, "200 px · 头图")}</div>`;
 document.getElementById("out").innerHTML = panel("light") + panel("dark");
 </script>
