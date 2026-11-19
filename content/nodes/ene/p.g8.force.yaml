@@ -23,9 +23,11 @@ lenses:
   approach: 先调成两边一样大，再只改一边。用刻线看速度是否变化。
 - band: G7-9
   approach: 同一物体同一直线上的力带方向相加。向右4 N、向左4 N合力0，向右6 N、向左2 N合力向右4 N。
-activities: []
+activities:
+- act.simulation.balance-track-01
+- act.quiz.balance-track-01
 status: draft
-version: 1
+version: 2
 curriculum:
 - std: 义务教育物理课程标准（2022年版）
   ref: 机械运动和力、机械能
