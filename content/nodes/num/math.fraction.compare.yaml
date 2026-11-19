@@ -1,0 +1,47 @@
+id: math.fraction.compare
+schema: knode/1
+title: 分数比大小
+subjects: [math]
+theme: num
+grade: G5
+unit: 五下 · 分数的意义和性质（通分；人教版旧版册次，新版以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第三学段「数与运算」：会比较分数的大小
+  - textbook: 人教版小学数学五年级下册（旧版）
+    unit: 第四单元 分数的意义和性质
+prerequisites: [math.fraction.equivalent]
+related: []
+driving_question: 2/3 只差一份就满，3/4 也只差一份就满，它们一样大吗？
+objectives:
+  - 知道分母不同的分数，每份的大小不一样，不能直接比份数。
+  - 会通分：把两个分数换成分母一样的名字再比，2/3 = 8/12，3/4 = 9/12。
+  - 知道分子一样时，分母小的那个大；会拿 1/2 当参照来估计。
+  - 会把几个分数在数线上排出顺序。
+misconceptions:
+  - id: gap-thinking
+    text: 只看离整体差几份，例如认为 2/3 和 3/4 一样大，因为都只差一份。
+  - id: piece-size-only
+    text: 只看每一份的大小，例如认为 2/3 比 3/4 大，因为三分之一比四分之一大。
+  - id: add-denominators
+    text: 通分时把两个分母加起来当公分母，例如把 2/3 和 3/4 换成 2/7 和 3/7。
+  - id: change-denominator-only
+    text: 通分时只改分母不改分子，例如把 2/3 和 3/4 换成 2/12 和 3/12。
+  - id: bigger-denominator-bigger
+    text: 分子一样时认为分母大的分数大，例如认为 3/7 比 3/5 大。
+  - id: numerator-only
+    text: 只比分子，例如认为 3/5 和 3/7 一样大，或者把 2/3、3/5、7/10 按分子排成从小到大。
+sources:
+  - type: textbook
+    ref: 人教版小学数学五年级下册（旧版）第四单元「通分」
+lenses:
+  - band: G3-4
+    approach: 只比分母一样或分子一样的分数，用分数条叠在一起看。
+  - band: G5-6
+    approach: 两根分数条叠起来看谁长；接着切，切到两根的刀口全对齐，就能一份一份地比；在没有刻度的数线上给四个分数排队。
+  - band: G7-9
+    approach: 作差或作商比较；分式的通分。
+activities: [act.simulation.match-cuts-01, act.quiz.fraction-order-01]
+status: draft
+version: 1
+# END OF FILE

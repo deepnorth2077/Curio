@@ -1,0 +1,50 @@
+id: math.fraction.divide
+schema: knode/1
+title: 除以分数
+subjects:
+  - math
+theme: num
+grade: G6
+unit: 六上 · 分数除法（人教版旧版册次，新版以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第三学段「数与运算」：能进行简单的分数四则运算
+  - textbook: 人教版小学数学六年级上册（旧版）
+    unit: 第三单元 分数除法
+prerequisites:
+  - math.fraction.multiply
+  - math.fraction.as-division
+related: []
+driving_question: 6 除以 1/2 等于 12。除法怎么越除越大？
+objectives:
+  - 知道 6 ÷ 1/2 问的是 6 里面有几个 1/2，所以答案比 6 大。
+  - 知道对同一个正数，除以大于 0、小于 1 的数，结果比原来大；正的除数越小，商越大。
+  - 知道除以 3/4 可以分两步：每一份切成 4 小份，再每 3 小份装一杯，也就是乘 4/3。
+  - 知道乘起来等于 1 的两个数互为倒数；除以一个不等于 0 的数，等于乘它的倒数。
+misconceptions:
+  - id: divide-as-halve
+    text: 把「除以 1/2」当成「除以 2」或「分成一半」，例如认为 6 ÷ 1/2 = 3。
+  - id: fraction-ignored
+    text: 不把分数除数当回事，例如认为 6 ÷ 1/2 还是 6。
+  - id: multiply-instead
+    text: 把除以分数算成乘这个分数，例如把 6 ÷ 3/4 算成 4 又 1/2。
+  - id: divide-by-top-only
+    text: 只用分子去除，例如把 6 ÷ 3/4 算成 2。
+  - id: divide-always-smaller
+    text: 觉得除法一定越除越小，例如认为 3/4 ÷ 1/8 不到 1。
+sources:
+  - type: textbook
+    ref: 人教版小学数学六年级上册（旧版）第三单元「倒数的认识」「分数除法」
+lenses:
+  - band: G3-4
+    approach: 只做「能倒几杯」：6 升水倒进半升的杯子，数出 12 杯。不写除法算式。
+  - band: G5-6
+    approach: 换不同大小的杯子倒 6 升水，杯子越小杯数越多；把每升切成 4 份、每 3 份装一杯，看出除以 3/4 就是乘 4/3；用小棍去量丝带。
+  - band: G7-9
+    approach: 除法统一成乘倒数；反比例函数里 x 趋近 0 时 y 变得很大，0 没有倒数。
+activities:
+  - act.simulation.pour-cups-01
+  - act.quiz.fraction-divide-01
+status: draft
+version: 1
+# END OF FILE

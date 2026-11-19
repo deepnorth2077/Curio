@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>谁的几分之几</title>
+<style>
+/* kit:base —— 颜色、卡片、气泡、按钮。色值不要改；模块自己的样式写在最后一段 */
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --grip:#2A7F7C; --grip-soft:#D3E8E5;
+  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
+  --dad:#4F7FA8; --mom:#C2603F; --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#E0876A; --accent-soft:#3A2A24;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;
+  --dad:#7FA9CF; --mom:#E0876A; --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:820px;margin:0 auto;padding:12px 14px 28px}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;overflow:hidden}
+.card header,.card footer{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px}
+.card header{border-bottom:1px solid var(--rule)}
+.card footer{border-top:1px solid var(--rule);min-height:52px;align-items:center}
+.station{font-size:13px;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+h1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);margin:0;text-align:right}
+.hint{font-size:14px;color:var(--muted)}
+.readout{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15px;text-align:right}
+.readout b{color:var(--accent);font-weight:600}
+svg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+svg#stage:focus,svg#stage:focus-visible{outline:none}
+svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.t{fill:var(--ink);font-family:var(--f-sans);font-size:15px}
+.tm{fill:var(--muted);font-family:var(--f-sans);font-size:15px}
+.talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
+.ava{flex:none;width:42px;height:42px}
+.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
+.bubble.good{background:var(--good-soft);border-color:transparent}
+.bubble.bad{background:var(--bad-soft);border-color:transparent}
+.bubble.hmm{background:var(--paper);border-color:transparent}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:10px 0 0}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:manipulation}
+.btn.ghost{background:var(--pane);color:var(--ink)}
+.btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
+.btn.choice:hover{background:var(--hover)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500} .btn.tight{padding:9px 12px}
+.qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px} .card footer{flex-wrap:wrap;row-gap:2px} .hint{white-space:nowrap} .readout{font-size:14px;flex:1 1 auto} }
+/* kit:grip 2026-11-14 —— 圆钮（「可抓」记号，g1.md A.4 G1～G8）。--grip 只给圆钮、托、按住按钮、焦点框用；--accent 不给任何控件用 */
+.btn.hold{touch-action:none;background:var(--grip);border-color:var(--grip);color:var(--bg);display:inline-flex;align-items:center;gap:10px;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.btn.hold.on{filter:brightness(.82)}
+.btn.hold svg{width:18px;height:18px;flex:none}
+.btn.hold svg path{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.gfill{fill:var(--grip)} .gsoft{fill:var(--grip-soft)}
+.gring{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.gring.on{stroke-width:3.2}
+.gridge{fill:none;stroke:var(--bg);stroke-width:2.2;stroke-linecap:round}
+.garrow{fill:none;stroke:var(--grip);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.gkbd{fill:none;stroke:var(--ink);stroke-width:1.6}
+#cue{fill:none;stroke:var(--grip);stroke-width:2.4;transform-box:fill-box;transform-origin:center;animation:cue 2.4s ease-out infinite}
+@keyframes cue{0%{transform:scale(1);opacity:.95}50%{transform:scale(1.8);opacity:0}100%{transform:scale(1.8);opacity:0}}
+@media (prefers-reduced-motion:reduce){#cue{animation:none;transform:scale(1.3);opacity:.9}}
+/* kit:frac 2026-11-14 —— 分数一律上下结构（A.4 第 2 条）。HTML 里用 .frac，SVG 里用 fracS() */
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.08;font-family:var(--f-mono);font-size:.84em;margin:0 .2em;font-variant-numeric:tabular-nums}
+.frac>span:first-child{border-bottom:1.6px solid currentColor;padding:0 .28em .04em}
+.frac>span:last-child{padding:.04em .28em 0}
+.fl{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round}
+.fs{fill:var(--ink);font-family:var(--f-mono);font-size:16px} .fm{fill:var(--ink);font-family:var(--f-mono);font-size:22px} .fb{fill:var(--ink);font-family:var(--f-mono);font-size:34px}
+body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{font-size:38px}
+/* 模块自己的画面样式写在这里：字号全写在类上，窄屏在 body.narrow 里放大（教训 14、28）。下面几个类可以直接用 */
+.food{fill:var(--apricot)} .lead{fill:var(--accent)} .papr{fill:var(--paper)} .pane{fill:var(--pane)}
+.kacc{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.one{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-dasharray:7 6}
+.faint{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;opacity:.75}
+.lb{fill:var(--ink);font-family:var(--f-sans);font-size:17px}
+.lbg{fill:var(--muted);font-family:var(--f-sans);font-size:16px}
+.lbm{fill:var(--ink);font-family:var(--f-mono);font-size:17px}
+.big{fill:var(--ink);font-family:var(--f-mono);font-size:44px}
+.ttl{fill:var(--ink);font-family:var(--f-serif);font-size:26px}
+.sign{fill:var(--ink);font-family:var(--f-serif);font-size:24px}
+.tk{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round} .tkd{fill:none;stroke:var(--accent);stroke-width:1.1}
+body.narrow .lb{font-size:21px} body.narrow .lbg{font-size:20px} body.narrow .lbm{font-size:20px}
+body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .sign{font-size:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <header><span class="station" id="station"></span><h1 id="title"></h1></header>
+    <svg id="stage" viewBox="0 0 800 610" tabindex="0" role="application" aria-label="动手区">
+      <g id="dyn"></g>
+      <g id="fx"><circle id="cue" cx="0" cy="0" r="10" style="display:none"/></g><!-- 提醒环用 CSS 动画，不跟着每帧重画（教训 23） -->
+      <rect id="touch" x="-400" y="-400" width="1600" height="1410" fill="transparent"/><!-- 永不重画的触摸层（教训 25） -->
+    </svg>
+    <footer><span class="hint" id="hint"></span><span class="readout" id="readout"></span></footer>
+  </div>
+  <div class="talk">
+    <svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="27" r="16" fill="var(--sky)"/>
+      <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+      <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+      <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+      <path class="k1" d="M18 32 C21 35 27 35 30 32"/>
+    </svg>
+    <div class="bubble" id="say" aria-live="polite"></div>
+  </div>
+  <div class="actions" id="actions"></div>
+  <div id="qarea"></div>
+</div>
+
+<script>
+"use strict";
+/* Curio · 谁的一半 act.simulation.whose-half-01（谁的几分之几）。设计说明：docs/constellations/zero-to-one/stars/03-the-whole.md */
+
+/* ============ 1. 真相模型：页面上的每个数字都从这里算。只放数和纯函数，不碰页面 ============ */
+const MODEL = {
+  navLen: 20, navDen: 2,                     // 领航员那条蛋糕卷 20 厘米，吃 1/2（设计约定）
+  capDen: 4,                                 // 舰长吃的是 1/4（设计约定）
+  lenMin: 8, lenMax: 64, lenStep: 8, lenStart: 16,   // 舰长那条：8 到 64 厘米，每 8 厘米吸一格，一开始 16（设计约定）
+  same: 40, longer: 48,                      // 停在 40 一样多，停在 48 以上舰长多（由 navPart 算：20 ÷ 2 = 10 = 40 ÷ 4）
+  stopMs: 600,                               // 键盘最后一次按键之后 0.6 秒没再按，算停下（手感约定）
+  bag: 12, plateCounts: [2, 3, 4, 6], platesStart: 4, lightTarget: 3,   // 一袋 12 颗；盘子数只取能平均分的（设计约定）
+  part: 5, dens: [2, 3, 4, 5, 10], denStart: 3, mustFill: 3,            // 第 3 站：5 颗是一袋的 1/n（设计约定）；1/3 加另外两种
+  holdFirst: 300, holdEvery: 700,            // 按住：0.3 秒摆第一份，之后每 0.7 秒一份（手感约定）
+  whale: 30, whaleDen: 10, kid: 130,         // 大的蓝鲸能长到 30 米左右（NOAA：27～33.5 米，取整）；8 岁孩子大约 130 厘米（WS/T 612—2018 中位数），两个叠起来 260 厘米，9 岁也不到 3 米
+};
+const navPart = () => MODEL.navLen / MODEL.navDen;            // 10 厘米
+const capPart = L => L / MODEL.capDen;                        // 8→2，16→4，…，40→10，64→16
+const each = n => MODEL.bag / n;                              // 2 盘 6 颗，3 盘 4 颗，4 盘 3 颗，6 盘 2 颗
+const wholeOf = den => MODEL.part * den;                      // 5 颗是一袋的 1/n，一整袋 5 × n 颗
+const whalePart = () => MODEL.whale / MODEL.whaleDen;         // 3 米
+const kids2 = () => MODEL.kid * 2;                            // 260 厘米
+const fmt = n => String(Math.round(n));
+
+
+/* ============ 2. 平台契约 activity/1.1（单独打开时也能玩）  kit:host ============ */
+const Host = (() => {
+  const h = {}, inFrame = window.parent !== window;
+  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); else (window.__sent = window.__sent || []).push({ type, payload: payload || {} }); };
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
+    state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
+})();
+Host.on("init", p => {
+  if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
+});
+// 每站的猜测和观察只记一次，complete 只发一次（C.0 第 3 条；教训 15、19）
+const sentPred = new Set(), sentObs = new Set();
+let completed = false;
+function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station }); }
+let lastState = "";
+function sendState(o){ const s = JSON.stringify(o); if (s === lastState) return; lastState = s; Host.state(o); }
+
+/* ============ 3. 手绘线条（平台的 sketchLib）  kit:sketch ============ */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,curve,cr,R,f};
+}
+const Sk = sketchLib();
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+const T = (x, y, s, cls, extra) => `<text x="${x}" y="${y}" class="${cls || "t"}"${extra ? " " + extra : ""}>${s}</text>`;
+const TC = (x, y, s, cls, extra) => T(x, y, s, cls, 'text-anchor="middle"' + (extra ? " " + extra : ""));
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const r1 = n => Math.round(n * 10) / 10;
+const box = (x, y, w, h, seed, j) => Sk.line(x, y, x + w, y, seed, j) + Sk.line(x + w, y, x + w, y + h, seed + 1, j) + Sk.line(x + w, y + h, x, y + h, seed + 2, j) + Sk.line(x, y + h, x, y, seed + 3, j);
+// 角度：从正上方起、顺时针，和钟面一样
+const pol = (cx, cy, r, deg) => { const a = deg * Math.PI / 180; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
+function sectorD(cx, cy, r, a0, a1){
+  if (a1 - a0 >= 359.9) return `M${r1(cx - r)} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
+  const p0 = pol(cx, cy, r, a0), p1 = pol(cx, cy, r, a1);
+  return `M${r1(cx)} ${r1(cy)}L${r1(p0[0])} ${r1(p0[1])}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${r1(p1[0])} ${r1(p1[1])}Z`;
+}
+function arcD(cx, cy, r, a0, a1, seed){   // 手绘的一段圆弧
+  const rnd = Sk.R(seed), N = Math.max(2, Math.ceil((a1 - a0) / 14)), pts = [];
+  for (let i = 0; i <= N; i++) pts.push(pol(cx, cy, r * (1 + (rnd() - .5) * .012), a0 + (a1 - a0) * i / N));
+  return Sk.cr(pts, false);
+}
+
+/* ============ 4. 共用零件：分数、「1」记号、圆钮、数线条  kit:parts ============ */
+const narrow = () => document.body.classList.contains("narrow");
+// 4.1 分数：HTML 里的 .frac（带读法）和 SVG 里的 fracS（上下结构，手绘分数线）。任何地方都不用斜杠写法
+const CN1 = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+const cnNum = n => (n = +n, n === 100 ? "百" : n === 1000 ? "千" : !Number.isInteger(n) || n < 1 || n > 99 ? undefined : n <= 10 ? CN1[n] : n < 20 ? "十" + CN1[n - 10] : CN1[Math.floor(n / 10)] + "十" + (n % 10 ? CN1[n % 10] : ""));   // 认 1 到 99、100（百）、1000（千）；别的数（含 0）不认，读出来是 undefined，用到先补这里
+const cnFrac = (a, b) => `${cnNum(b)}分之${cnNum(a)}`;          // 读法：3/4 读作四分之三
+const F = (a, b) => `<span class="frac" role="img" aria-label="${cnFrac(a, b)}"><span aria-hidden="true">${a}</span><span aria-hidden="true">${b}</span></span>`;
+const FSZ = { fs: [16, 20], fm: [22, 26], fb: [34, 38] };
+function fracS(x, y, a, b, cls, seed){   // x 是中线，y 是分数线的高度
+  const sz = FSZ[cls][narrow() ? 1 : 0], w = Math.max(String(a).length, String(b).length) * sz * .62 + sz * .5;
+  return `<g role="img" aria-label="${cnFrac(a, b)}">` + TC(x, r1(y - sz * .3), a, cls) + P(Sk.line(x - w / 2, y, x + w / 2, y, seed || 7, .45), "fl") + TC(x, r1(y + sz * .98), b, cls) + `</g>`;
+}
+// 4.2 「1」记号：整体外面一圈手绘虚线框，左上角挂一块写着 1 的纸色小牌
+function oneMark(x, y, w, h, seed, o){   // o.below：牌子挂在左下角（框上面要留给别的东西时用）
+  const tx = x + 4, ty = o && o.below ? y + h - 15 : y - 15;
+  return P(box(x, y, w, h, seed, .8), "one") +
+    `<g transform="rotate(-5 ${tx + 14} ${ty + 14})"><rect x="${tx}" y="${ty}" width="28" height="30" rx="4" class="papr"/>` + P(box(tx, ty, 28, 30, seed + 9, .4), "k1") + TC(tx + 14, ty + 22, "1", "fm") + `</g>`;
+}
+// 4.3 圆钮：实心圆、墨线外圈、三道防滑纹、两侧箭头（G1）。dir 是能动的方向（单位向量）；arc 给出圆心时箭头沿圆弧
+const vbW = () => svg.viewBox.baseVal.width || 800;
+const pxScale = () => vbW() / (svg.clientWidth || 800);                 // 1 个屏幕像素合多少 viewBox 单位
+const gripR = () => Math.max(17, 15 * pxScale());                       // 画出来直径不小于 28 px（G4）
+const hitR = () => Math.max(30, 26 * pxScale());                        // 能点中的范围不小于 48 px（G4）
+function chevron(px, py, dx, dy, s){ const nx = -dy, ny = dx; return `M${r1(px - dx * s + nx * s)} ${r1(py - dy * s + ny * s)}L${r1(px + dx * s * .7)} ${r1(py + dy * s * .7)}L${r1(px - dx * s - nx * s)} ${r1(py - dy * s - ny * s)}`; }
+function grip(x, y, dir, o){
+  o = o || {}; const g = gripR(), on = !!o.on, k = on ? 1.12 : 1, r = g * k, [dx, dy] = dir, nx = -dy, ny = dx;
+  let s = `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" class="gfill"/>` + P(Sk.ellipse(x, y, r, r, o.seed || 71, .5), "gring" + (on ? " on" : ""));
+  for (const i of [-1, 0, 1]){ const ox = dx * i * r * .36, oy = dy * i * r * .36, L = r * (i ? .36 : .5); s += P(`M${r1(x + ox - nx * L)} ${r1(y + oy - ny * L)}L${r1(x + ox + nx * L)} ${r1(y + oy + ny * L)}`, "gridge"); }
+  const gap = g + 11;
+  if (o.arc){ const [cx, cy] = o.arc, R = Math.hypot(x - cx, y - cy), a0 = Math.atan2(x - cx, cy - y) * 180 / Math.PI, da = gap / R * 180 / Math.PI;
+    for (const sg of [-1, 1]){ const [px, py] = pol(cx, cy, R, a0 + sg * da), a = (a0 + sg * da) * Math.PI / 180; s += P(chevron(px, py, sg * Math.cos(a), sg * Math.sin(a), 6), "garrow"); } }
+  else for (const sg of [-1, 1]) s += P(chevron(x + dx * sg * gap, y + dy * sg * gap, dx * sg, dy * sg, 6), "garrow");
+  if (o.kbd) s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r + 6)}" class="gkbd"/>`;
+  return s;
+}
+// 4.4 数线条：0 和 1 的刻度长，数写在线下面；fracs 是要钉上去的分数 [[分子, 分母], …]，标签太挤时只标一部分
+function lineStrip(lx, ly, lw, fracs, seed){
+  let s = P(Sk.line(lx - 10, ly, lx + lw + 14, ly, seed, .5)) + P(`M${lx} ${ly - 12}v24M${lx + lw} ${ly - 12}v24`) + TC(lx, ly + 38, "0", "lbm") + TC(lx + lw, ly + 38, "1", "lbm"), lastLab = 1e9;
+  for (const [a, b] of fracs.slice().sort((p, q) => q[0] / q[1] - p[0] / p[1])){
+    const x = r1(lx + lw * a / b);
+    s += P(`M${x} ${ly}v-15`, "k1") + `<circle cx="${x}" cy="${ly - 18}" r="5.5" class="lead"/>` + P(Sk.ellipse(x, ly - 18, 5.5, 5.5, seed + a * 13 + b, .3), "k1");
+    if (lastLab - x >= (narrow() ? 44 : 36)){ s += fracS(x, ly - 50, a, b, "fs", seed + b); lastLab = x; }
+  }
+  return s;
+}
+const RIDGES = `<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 3v12M9 3v12M14 3v12"/></svg>`;   // 按住按钮上的防滑纹小图标
+
+/* ============ 5. 页面骨架  kit:shell ============ */
+const $ = id => document.getElementById(id);
+const svg = $("stage"), gDyn = $("dyn"), cueEl = $("cue");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const STATIONS = 3;   // 一共几站
+// t 是孩子操作推到的进度（0～1），p 是画面上缓动跟随的进度；读数和画面都用 p（教训 2）
+const S = { station: 1, mode: "talk", scene: "s1", hold: false, press: false, kbd: false, dirty: true };
+let gen = 0;          // 每换一站加一：延时回调先确认还在原来的状态（教训 11）
+const later = (ms, f) => { const g = gen; setTimeout(() => { if (g === gen) f(); }, reduced ? Math.min(ms, 60) : ms); };
+
+function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
+function hint(s){ $("hint").textContent = s || ""; }
+function readout(html){ if ($("readout").innerHTML !== (html || "")) $("readout").innerHTML = html || ""; }
+function say(html, tone){ const b = $("say"); b.innerHTML = html; b.className = "bubble" + (tone ? " " + tone : ""); }
+let fingerDown = false;
+addEventListener("pointerdown", () => { fingerDown = true; }, true);
+for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);
+let keysDown = 0;
+addEventListener("keydown", e => { if (!e.repeat) keysDown++; }, true);
+addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true);
+addEventListener("blur", () => { keysDown = 0; S.hold = false; });
+function actions(list){
+  const boxEl = $("actions"); boxEl.replaceChildren();
+  S.dirty = true;   // 换按钮就是换了状态：一律重画一次，免得圆钮留在锁住的画面上
+  const guard = fingerDown, born = performance.now();
+  let keyGuard = keysDown > 0;
+  if (keyGuard){ const off = () => { if (keysDown === 0){ setTimeout(() => { keyGuard = false; }, 0); removeEventListener("keyup", off, true); } }; addEventListener("keyup", off, true); }
+  for (const a of list || []){
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn " + (a.cls || ""); b.innerHTML = (a.hold ? RIDGES : "") + `<span>${a.label}</span>`;
+    if (a.hold){
+      const on = v => { S.hold = v; b.classList.toggle("on", v); if (v) touched(); };
+      b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); on(true); });
+      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => on(false));
+      b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(true); } });
+      b.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(false); } });
+      b.addEventListener("blur", () => on(false));
+      b.addEventListener("contextmenu", e => e.preventDefault());
+    } else {
+      b.addEventListener("click", e => { if (performance.now() - born < 400 || (keyGuard && e.detail === 0)) return; a.go(e); });
+      if (guard){ b.disabled = true; const en = () => { setTimeout(() => { b.disabled = false; }, 120); removeEventListener("pointerup", en, true); }; addEventListener("pointerup", en, true); }
+    }
+    boxEl.append(b);
+  }
+  const first = boxEl.querySelector("button");
+  if (first && !/^act/.test(S.mode)) first.focus({ preventScroll: true });
+  return boxEl;
+}
+// 猜测：只记下来，不在这里判对错的颜色。猜错的反馈先接住、再说清，然后一律去动手，让实物来回答
+function ask(question, options, onAnswer){
+  say(question);
+  actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
+    if (!sentPred.has(S.station)){ sentPred.add(S.station); Host.event("predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null }); }
+    S.guess = S.guess || {}; S.guess[S.station] = o;
+    say(o.feedback, o.correct ? "good" : "hmm");
+    onAnswer(o);
+  }})));
+}
+function next(label, go, cls){ actions([{ label, go, cls }]); }
+// 星卡上选站重玩（#154）：replay 是正在重玩的站号，0 是从头往下走。重玩一站跳过开场和猜测题，直接进这一站的动手；
+// 揭晓完，原来「去第 k+1 站」「看我的星卡」的按钮换成「回星卡」（用 nextOr）。不出猜测题就不发 predicted；
+// observed 靠 observedOnce、complete 靠 completed，都只记第一次。每站怎么复位、怎么进动手是模块自己的事，写在 REPLAY[站号] 里
+let replay = 0;
+const REPLAY = {};
+function nextOr(label, go, cls){ if (replay) next("回星卡", enterEnd); else next(label, go, cls); }
+function replayAt(k){ replay = k; gen++; S.station = k; hint(""); readout(""); disarmCue(); REPLAY[k](); }
+function restart(){ replay = 0; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }   // 从头玩：和以前的「再玩一次」一样
+function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站。enterEnd() 最后调它
+  replay = 0;
+  actions([{ label: "从头玩", go: restart, cls: "ghost tight" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1), cls: "tight" }))));   // tight：手机上一行排得下
+}
+
+(function(){   // 「我有个问题」：随时可以问，发到信号站
+  const area = $("qarea");
+  const open = document.createElement("button");
+  open.type = "button"; open.className = "btn ghost small"; open.textContent = "我有个问题";
+  open.style.marginTop = "12px";
+  open.addEventListener("click", () => {
+    if (area.querySelector("textarea")) return;
+    const ta = document.createElement("textarea"); ta.maxLength = 120; ta.placeholder = "想问领航员什么？";
+    const send = document.createElement("button"); send.type = "button"; send.className = "btn small"; send.textContent = "发给领航员";
+    const bx = document.createElement("div"); bx.className = "qbox"; bx.append(ta, send);
+    send.addEventListener("click", () => { const q = ta.value.trim(); if (!q) return; Host.noteQuestion(q); bx.remove(); say("好问题，我记下来了。等会儿一起找答案。"); });
+    area.append(bx); ta.focus();
+  });
+  area.append(open);
+})();
+
+// 第一屏的提醒（G6）：进入动手 1.5 秒还没碰，第一个圆钮外面扩出一圈细环；一碰就再也不出现
+let cuePos = null, cueTimer = 0;
+function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; S.dirty = true; } }, 1500); }
+function disarmCue(){ clearTimeout(cueTimer); cuePos = null; cueEl.style.display = "none"; }
+function touched(){ if (cuePos || cueTimer) disarmCue(); cueTimer = 0; }
+function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }   // 第三个数是被提醒的东西的半径（托里的一个）
+
+// 窄屏：viewBox 缩到中间 600 宽的操作区，字号类放大（教训 13、28）。每个场景写明自己用到的高度
+// 排版规矩：要紧的东西都画在 x = 110～690 之间；每个场景在这里写 [起始 y, 高度]
+const VIEW = { s1q: [160, 230], s1: [92, 410], s2q: [150, 300], s2: [62, 396], s3q: [150, 280], s3a: [56, 372], s3: [56, 470], wow: [66, 470], end: [8, 596] };
+function fitView(){
+  const nar = (svg.clientWidth || 800) < 600, [y, h] = VIEW[S.scene] || [0, 610];
+  document.body.classList.toggle("narrow", nar);
+  const v = (nar ? [100, y, 600, h] : [0, y, 800, h]).join(" ");
+  if (svg.getAttribute("viewBox") !== v){ svg.setAttribute("viewBox", v); S.dirty = true; }
+}
+addEventListener("resize", fitView);
+function scene(name){ S.scene = name; fitView(); S.dirty = true; }
+
+/* ============ 6. 这个模块的零件：蛋糕卷、盘子、糖、袋子、蓝鲸、小人 ============ */
+const FONT = { lb: [17, 21], lbg: [16, 20], lbm: [17, 20], sign: [24, 28] };
+const fsz = cls => FONT[cls][narrow() ? 1 : 0];
+const tw = (s, sz) => { let w = 0; for (const ch of String(s)) w += /[⺀-鿿＀-￯]/.test(ch) ? sz : sz * .56; return w; };
+const fw = (a, b, fc) => { const sz = FSZ[fc][narrow() ? 1 : 0]; return Math.max(String(a).length, String(b).length) * sz * .62 + sz * .5; };
+// 一行里字和上下结构的分数混排，居中在 cx。parts 里字符串是字，[分子, 分母] 是分数
+function rich(cx, y, parts, cls, seed){
+  cls = cls || "lb"; const sz = fsz(cls), ws = parts.map(p => Array.isArray(p) ? fw(p[0], p[1], "fs") + 10 : tw(String(p).trim(), sz));
+  let x = cx - ws.reduce((a, b) => a + b, 0) / 2, s = "";
+  parts.forEach((p, i) => { s += Array.isArray(p) ? fracS(r1(x + ws[i] / 2), r1(y - sz * .34), p[0], p[1], "fs", (seed || 300) + i) : T(r1(x), y, String(p).trim(), cls); x += ws[i]; });
+  return s;
+}
+function rbox(x, y, w, h, r, seed, j){   // 手绘的圆角框
+  const p = [], q = [[x + w - r, y + r, -90], [x + w - r, y + h - r, 0], [x + r, y + h - r, 90], [x + r, y + r, 180]];
+  for (const [cx, cy, a0] of q) for (const t of [0, 45, 90]){ const a = (a0 + t) * Math.PI / 180; p.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); }
+  const rnd = Sk.R(seed); j = j == null ? .6 : j;
+  return Sk.cr(p.map(([a, b]) => [a + (rnd() - .5) * j, b + (rnd() - .5) * j]), true) + "Z";
+}
+const smallR = () => Math.max(11, 9.5 * pxScale());                   // 小圆钮：画出来直径不小于 18 px（G4）
+function smallGrip(x, y, o){   // 小圆钮：和圆钮一样，小一号，没有箭头（G1）
+  o = o || {}; const r = smallR() * (o.on ? 1.12 : 1);
+  let s = `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" class="gfill"/>` + P(Sk.ellipse(x, y, r, r, o.seed || 73, .4), "gring" + (o.on ? " on" : ""));
+  for (const i of [-1, 0, 1]) s += P(`M${r1(x + i * r * .38)} ${r1(y - r * (i ? .34 : .48))}V${r1(y + r * (i ? .34 : .48))}`, "gridge");
+  if (o.kbd) s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r + 6)}" class="gkbd"/>`;
+  return s;
+}
+// 一段蛋糕卷：杏色的圆角长条，中间一道奶油卷纹；cut 是平均切成几份，gone 是被吃走的那一份（只剩虚线轮廓）
+function cake(x, y, w, h, cut, gone, o){
+  o = o || {}; const n = cut || 1, pw = w / n; let s = "";
+  for (let i = 0; i < n; i++){
+    const px = x + i * pw;
+    if (i === gone){ s += P(rbox(px + 1, y + 1, pw - 2, h - 2, Math.min(8, pw / 3), 400 + i, .4), "kf"); continue; }
+    s += `<rect x="${r1(px)}" y="${y}" width="${r1(pw)}" height="${h}" rx="${Math.min(9, pw / 3)}" class="${o.fill || "food"}"/>`;
+    if (pw > 22) s += P(Sk.curve([[px + 6, y + h * .55], [px + pw * .35, y + h * .42], [px + pw * .65, y + h * .62], [px + pw - 6, y + h * .48]], 410 + i, .4), "faint");
+  }
+  const outline = gone == null ? rbox(x, y, w, h, Math.min(10, w / 3), o.seed || 420) : "";
+  if (outline) s += P(outline, o.ink || "k");
+  else for (let i = 0; i < n; i++) if (i !== gone) s += P(rbox(x + i * pw, y, pw, h, Math.min(9, pw / 3), (o.seed || 420) + i, .5), o.ink || "k");
+  for (let i = 1; i < n; i++) if (gone == null) s += P(Sk.line(x + i * pw, y + 2, x + i * pw, y + h - 2, 430 + i, .3), "k1");
+  return `<g class="roll">${s}</g>`;
+}
+function plate(cx, y, rx, seed, cls){   // 一个盘子：扁椭圆，墨线描边
+  return `<ellipse cx="${r1(cx)}" cy="${y}" rx="${r1(rx)}" ry="${r1(Math.max(9, rx * .22))}" ${cls === "lit" ? 'fill="var(--accent-soft)"' : `class="${cls || "pane"}"`}/>` + P(Sk.ellipse(cx, y, rx, Math.max(9, rx * .22), seed, .5), "k1");   // lit：点亮的盘子垫一层淡色
+}
+function candy(x, y, i, r){   // 一颗糖：圆圆的糖身，两头拧起来的糖纸。鼠尾草绿和天蓝轮着来，颜色没有含义
+  r = r || 10; const c = i % 2 ? "var(--sky)" : "var(--sage)", rr = r * .78, a = r * .62, b = r * .52;
+  const ends = `M${r1(x - r + 1)} ${r1(y)}L${r1(x - r - a)} ${r1(y - b)}L${r1(x - r - a)} ${r1(y + b)}ZM${r1(x + r - 1)} ${r1(y)}L${r1(x + r + a)} ${r1(y - b)}L${r1(x + r + a)} ${r1(y + b)}Z`;
+  return `<g class="candy"><path d="${ends}" fill="${c}"/><ellipse cx="${r1(x)}" cy="${r1(y)}" rx="${r}" ry="${r1(rr)}" fill="${c}"/>` + P(Sk.ellipse(x, y, r, rr, 500 + i, .3) + ends, "k1") + `</g>`;
+}
+function sign(cx, y, w, h, inner, seed){   // 纸色的牌子
+  return `<rect x="${r1(cx - w / 2)}" y="${y}" width="${w}" height="${h}" rx="8" class="papr"/>` + P(box(cx - w / 2, y, w, h, seed, .6), "k1") + inner;
+}
+function kid(x, base, h, seed){   // 一个原创的小人：圆脑袋、短身子、两条腿。h 是身高（画面单位）
+  const hr = h * .13, hy = base - h + hr, sy = hy + hr, sb = base - h * .36;
+  return `<circle cx="${x}" cy="${r1(hy)}" r="${r1(hr)}" class="papr"/>` + P(Sk.ellipse(x, hy, hr, hr, seed, .3), "k1") +
+    `<path d="M${r1(x - h * .13)} ${r1(sb)}L${r1(x - h * .1)} ${r1(sy + 3)}L${r1(x + h * .1)} ${r1(sy + 3)}L${r1(x + h * .13)} ${r1(sb)}Z" class="papr"/>` +
+    P(`M${r1(x - h * .13)} ${r1(sb)}L${r1(x - h * .1)} ${r1(sy + 3)}L${r1(x + h * .1)} ${r1(sy + 3)}L${r1(x + h * .13)} ${r1(sb)}Z` + Sk.line(x - h * .06, sb, x - h * .07, base, seed + 1, .3) + Sk.line(x + h * .06, sb, x + h * .07, base, seed + 2, .3) +
+      Sk.line(x - h * .1, sy + h * .08, x - h * .2, sy + h * .26, seed + 3, .3) + Sk.line(x + h * .1, sy + h * .08, x + h * .2, sy + h * .26, seed + 4, .3), "k1") +
+    `<circle cx="${r1(x - hr * .35)}" cy="${r1(hy - hr * .05)}" r="1.6" fill="var(--ink)"/><circle cx="${r1(x + hr * .35)}" cy="${r1(hy - hr * .05)}" r="1.6" fill="var(--ink)"/>`;
+}
+
+/* ============ 7. 第 1 站 · 拉：整体变大，同样的 1/4 也跟着变大 ============ */
+const CM = 8, RX0 = 130;                                        // 1 厘米画 8 宽；两条蛋糕卷、尺子、两块蛋糕的左端都在 x = 130
+const R1 = { nav: 150, cap: 236, h: 34, ruler: 306, navTray: 408, capTray: 476, ph: 26 };
+const lenX = cm => RX0 + cm * CM;
+const handleXY = () => [lenX(S.Lp) + gripR() * .55, R1.cap + R1.h / 2];   // 圆钮装在蛋糕卷右端，稍往外，不压住 8 厘米那么短的卷
+function draw1q(){   // 提问时：两个扣着餐罩的盘子、两块牌子。不画蛋糕卷
+  let s = "";
+  [[255, "领航员", 2, 1], [545, "舰长", 4, 2]].forEach(([cx, who, d, k]) => {
+    s += sign(cx, 196, 262, 62, rich(cx, 236, [`${who}：一条蛋糕卷的`, [1, d]], "lb", 600 + k * 10), 610 + k);
+    s += plate(cx, 352, 112, 620 + k) + `<path d="M${cx - 92} 350C${cx - 92} 262 ${cx + 92} 262 ${cx + 92} 350Z" class="papr"/>` +
+      P(`M${cx - 92} 350C${cx - 92} 262 ${cx + 92} 262 ${cx + 92} 350` + Sk.line(cx - 92, 350, cx + 92, 350, 630 + k, .4)) +
+      `<circle cx="${cx}" cy="283" r="8" class="pane"/>` + P(Sk.ellipse(cx, 283, 8, 8, 640 + k, .3), "k1") + P(Sk.curve([[cx - 58, 322], [cx - 50, 300], [cx - 32, 288]], 650 + k, .4), "faint");
+  });
+  return s;
+}
+function draw1(){
+  const L = S.Lp, act = S.mode === "act1", wN = lenX(MODEL.navLen) - RX0, wC = L * CM, pN = navPart() * CM, pC = capPart(L) * CM;
+  let s = "";
+  // 两条蛋糕卷，各套一个「1」记号；舰长那条（主角）随拉手伸缩，始终平均切成 4 份
+  s += oneMark(RX0 - 8, R1.nav - 9, wN + 16, R1.h + 18, 700) + T(RX0 + 42, R1.nav - 15, `领航员的蛋糕卷 · ${MODEL.navLen} 厘米`, "lbg");
+  s += cake(RX0, R1.nav, wN, R1.h, MODEL.navDen, 0, { seed: 710 });
+  s += oneMark(RX0 - 8, R1.cap - 9, wC + 16, R1.h + 18, 720) + T(RX0 + 42, R1.cap - 15, `舰长的蛋糕卷 · ${S.L} 厘米`, "lbg");
+  s += cake(RX0, R1.cap, wC, R1.h, MODEL.capDen, 0, { seed: 730, ink: "kacc" });
+  // 尺子：0 对着蛋糕卷的左端，每 8 厘米一个数
+  s += P(Sk.line(RX0, R1.ruler, lenX(MODEL.lenMax), R1.ruler, 740, .4));
+  let d = ""; for (let c = 0; c <= MODEL.lenMax; c++) d += `M${lenX(c)} ${R1.ruler}v${c % 8 ? 6 : 13}`;
+  s += P(d, "k1"); for (let c = 0; c <= MODEL.lenMax; c += 8) s += TC(lenX(c), R1.ruler + 34, c, "lbm");
+  s += TC(lenX(MODEL.lenMax), R1.ruler + 58, "厘米", "lbg");
+  // 两个盘子里的两块：左端对齐，一道虚线对着领航员那块的右端，长短一眼看出
+  s += plate(RX0 + 70, R1.navTray, 84, 750) + `<rect x="${RX0}" y="${R1.navTray - R1.ph - 2}" width="${r1(pN)}" height="${R1.ph}" rx="8" class="food"/>` + P(rbox(RX0, R1.navTray - R1.ph - 2, pN, R1.ph, 8, 751, .5));
+  s += T(RX0 + 178, R1.navTray - 6, `领航员 · ${navPart()} 厘米`, "lb");
+  s += plate(RX0 + 70, R1.capTray, 84, 760) + `<rect x="${RX0}" y="${R1.capTray - R1.ph - 2}" width="${r1(pC)}" height="${R1.ph}" rx="8" class="lead"/>` + P(rbox(RX0, R1.capTray - R1.ph - 2, pC, R1.ph, 8, 761, .5));
+  s += T(RX0 + 178, R1.capTray - 6, `舰长 · ${fmt(capPart(S.L))} 厘米`, "lb");
+  s += P(`M${RX0 + pN} ${R1.navTray - R1.ph - 12}V${R1.capTray + 8}`, "kf");
+  if (act){ const [hx, hy] = handleXY(); s += grip(hx, hy, [1, 0], { on: S.press, kbd: S.kbd, seed: 770 }); }
+  return s;
+}
+function readout1(){ readout(`领航员：${MODEL.navLen} 厘米的 ${F(1, MODEL.navDen)} 是 ${navPart()} 厘米 · 舰长：${S.L} 厘米的 ${F(1, MODEL.capDen)} 是 ${fmt(capPart(S.L))} 厘米`); }
+function hint1(){
+  const need = [!S.stop40 && "拉到两块一样长", !S.stop48 && "拉到比我的还长"].filter(Boolean);
+  hint(need.length ? `拖动圆钮 · 还要${need.join("、")}` : "拖动圆钮，接着试");
+}
+function setL(v){ v = clamp(Math.round(v / MODEL.lenStep) * MODEL.lenStep, MODEL.lenMin, MODEL.lenMax); if (v === S.L) return false; S.L = v; S.dirty = true; readout1(); return true; }
+function stop1(){
+  S.keyStop = 0; if (S.mode !== "act1") return;
+  const L = S.L, p = capPart(L), first40 = L === MODEL.same && !S.stop40, first48 = L >= MODEL.longer && !S.stop48;
+  S.lastL = L; S.maxL = Math.max(S.maxL || 0, L);
+  sendState({ station: 1, whole: L, part: p, other: navPart() });
+  if (L === MODEL.same){ S.stop40 = true; say(`一样多了。你吃的是 ${F(1, 4)}，我吃的是 ${F(1, 2)}。`); }
+  else if (L >= MODEL.longer){ S.stop48 = true; say(`你那块比我的还长。${L} 厘米的 ${F(1, 4)} 是 ${p} 厘米。`); }
+  else if (L < MODEL.same) say(`${L} 厘米的 ${F(1, 4)} 是 ${p} 厘米。还是我的长。`);
+  if (S.stop40 && S.stop48 && (first40 || first48)){ $("say").innerHTML += "还能接着拉。看够了点「看明白了」。"; acts1(); }
+  hint1();
+}
+function acts1(){ actions(S.stop40 && S.stop48 ? [{ label: "看明白了", go: done1, cls: "ghost" }] : []); }
+function enter1(){
+  gen++; S.station = 1; S.mode = "intro1"; head(1, "拉：谁的蛋糕卷"); hint(""); readout(""); disarmCue();
+  Object.assign(S, { L: MODEL.lenStart, Lp: MODEL.lenStart, stop40: false, stop48: false, keyStop: 0, maxL: 0 }); scene("s1q");
+  say(`我吃了一条蛋糕卷的 ${F(1, 2)}。你吃了一条蛋糕卷的 ${F(1, 4)}。`);
+  next("然后呢", () => { S.mode = "ask1"; ask("谁吃得多？", [
+    { label: `领航员，${F(1, 2)} 比 ${F(1, 4)} 大`, mis: "ignore-the-whole", feedback: `你记得 ${F(1, 2)} 比 ${F(1, 4)} 大，这没有错。可这两条蛋糕卷，你还没见过呢。` },
+    { label: "不一定，要看蛋糕卷有多长", correct: true, feedback: "你想先看看蛋糕卷。那就揭开餐罩。" },
+    { label: "一样多，都是吃了一份", mis: "ignore-the-whole", feedback: "都是一份，听着是一样多。可这一份和那一份，一定一样大吗？" }
+  ], () => next("揭开餐罩", act1)); });
+}
+function act1(){
+  S.mode = "act1"; scene("s1"); acts1(); readout1(); hint1();
+  say((replay ? "" : "带圆钮的地方，都能用手抓。") + "现在你那块比我的短。拖动圆钮，把你那条蛋糕卷拉长。");
+  svg.focus({ preventScroll: true }); armCue(handleXY);
+}
+REPLAY[1] = () => {   // 重玩第 1 站：蛋糕卷回到 16 厘米、两个「停过」清掉，跳过开场和猜测题。lastL 留着，停下时才换成新的
+  head(1, "拉：谁的蛋糕卷"); Object.assign(S, { L: MODEL.lenStart, Lp: MODEL.lenStart, stop40: false, stop48: false, keyStop: 0, maxL: 0 }); act1();
+};
+function done1(){
+  S.mode = "rev1"; hint(""); disarmCue(); observedOnce(1); S.dirty = true;
+  say("分数说的是占整体的多少。被平均分的那条蛋糕卷，就叫整体。", "good");
+  next("我来说", () => {   // 让舰长自己说出结论：只挑半句，不记事件
+    S.mode = "say1"; say(`你来说：整体变大，同样的 ${F(1, 4)} 也跟着变＿。`);
+    const big = fmt(capPart(S.maxL || MODEL.lenMax));
+    actions([["大", true], ["小", false], ["不变", false]].map(([w, ok]) => ({ label: w, cls: "choice", go: () => {
+      say((ok ? "对，跟着变大。" : "是跟着变大。") + `你的 ${F(1, 4)} 从 ${fmt(capPart(MODEL.lenStart))} 厘米，长到过 ${big} 厘米。`, ok ? "good" : "hmm");
+      next("还有呢", () => { S.mode = "rev1"; const g = S.guess && S.guess[1];
+        say(`同一条蛋糕卷上，${F(1, 2)} 比 ${F(1, 4)} 多。换了一条，就要先问一句：谁的 ${F(1, 4)}？` + (g && g.correct ? "你一开始就想到要看蛋糕卷。" : "所以光比分数，比不出谁吃得多。"), "good");
+        nextOr("去第 2 站", enter2); });
+    }})));
+  });
+}
+
+/* ============ 8. 第 2 站 · 发：一袋糖也能当一个整体 ============ */
+const BAG = { x: 400, top: 118, bot: 262, wt: 196, wb: 220 }, PY = 386;
+const bagXY = () => [BAG.x, 196];
+const bagGrip = () => [BAG.x + BAG.wt / 2 + 6, BAG.top + 4];
+const gapOf = n => Math.min(136, 560 / n), rxOf = n => Math.min(54, gapOf(n) * .42);
+const plateXY = i => [BAG.x + (i - (S.plates - 1) / 2) * gapOf(S.plates), PY - 12];
+const plateGrip = i => [plateXY(i)[0] + rxOf(S.plates) * .86, PY + 4];
+const inBag = k => { const c = k % 4, r = Math.floor(k / 4); return [BAG.x + (c - 1.5) * 42 + (r % 2 ? 6 : -6), 238 - r * 32]; };   // 袋里第 k 颗糖的位置，从底下一层往上排
+function onPlate(i, j){ const e = each(S.plates), per = e === 4 ? 2 : Math.min(3, e), [cx] = plateXY(i), row = Math.floor(j / per), col = j % per, n = Math.min(per, e - row * per); return [cx + (col - (n - 1) / 2) * 30, PY - 11 - row * 21]; }
+const dealDone = () => S.dealt >= each(S.plates);
+function draw2q(){ return sign(400, 236, 330, 84, TC(400, 288, `一袋糖，${MODEL.bag} 颗`, "sign"), 801) + P(Sk.line(330, 236, 352, 192, 805, .4) + Sk.line(470, 236, 448, 192, 806, .4), "k1"); }
+function draw2(){
+  const n = S.plates, act = S.mode === "act2", e = S.flyT < 1 ? S.flyT * S.flyT * (3 - 2 * S.flyT) : 1, flying = S.flyT < 1 ? 1 : 0;
+  const left = MODEL.bag - S.dealt * n;   // 已经离开袋子的糖（含正在飞的那一轮）
+  let s = oneMark(116, 98, 568, PY + 54 - 98, 800) + T(158, 86, `一袋糖 · ${MODEL.bag} 颗`, "lbg");
+  // 糖袋（主角）：网兜一样的袋子，看得见里面的糖
+  const { x, top, bot, wt, wb } = BAG;
+  s += `<g class="bag"><path d="M${x - wt / 2} ${top}L${x + wt / 2} ${top}L${x + wb / 2} ${bot}Q${x} ${bot + 8} ${x - wb / 2} ${bot}Z" fill="var(--accent-soft)"/>` +
+    P(Sk.line(x - wt / 2, top, x - wb / 2, bot, 810, .5) + Sk.line(x + wt / 2, top, x + wb / 2, bot, 811, .5) + `M${x - wb / 2} ${bot}Q${x} ${bot + 8} ${x + wb / 2} ${bot}` + Sk.line(x - wt / 2 - 6, top, x + wt / 2 + 6, top, 812, .4), "kacc") +
+    P(Sk.curve([[x - wt / 2 + 4, top + 12], [x, top + 18], [x + wt / 2 - 4, top + 12]], 813, .4), "k1") + `</g>`;
+  for (let k = 0; k < left; k++){ const [cx, cy] = inBag(k); s += candy(cx, cy, k, 12); }
+  if (act && !dealDone()){ const [gx, gy] = bagGrip(); s += smallGrip(gx, gy, { on: S.press && S.pressOn === "bag", kbd: S.kbd, seed: 820 }); }
+  // 一排盘子：点亮的盘子垫一层淡色；每个盘子下面一个小计数
+  for (let i = 0; i < n; i++){
+    const [cx] = plateXY(i), on = S.litSet.has(i), k = Math.max(0, S.dealt - flying);
+    if (on) s += `<ellipse cx="${r1(cx)}" cy="${PY - 14}" rx="${r1(rxOf(n) + 12)}" ry="${r1(Math.max(26, rxOf(n) * .62))}" fill="var(--accent-soft)"/>` + P(Sk.ellipse(cx, PY - 14, rxOf(n) + 12, Math.max(26, rxOf(n) * .62), 840 + i, .5), "faint");   // 点亮：盘子后面亮起一圈淡色
+    s += plate(cx, PY, rxOf(n), 830 + i, "pane");
+    for (let j = 0; j < k; j++){ const [px, py] = onPlate(i, j); s += candy(px, py, j * n + i, 9); }
+    if (flying){ const j = S.dealt - 1, [ax, ay] = inBag(left + i), [bx, by] = onPlate(i, j); s += candy(lerp(ax, bx, e), lerp(ay, by, e) - Math.sin(e * Math.PI) * 30, j * n + i, 9); }
+    s += TC(cx, PY + 36, `${Math.max(0, S.dealt - (flying && S.flyT < .9 ? 1 : 0))} 颗`, "lbg");
+    if (act && dealDone() && (n <= 4 || i === [...Array(n).keys()].find(q => !S.litSet.has(q)))){ const [gx, gy] = plateGrip(i); s += smallGrip(gx, gy, { kbd: S.kbd && i === S.kbdPlate, seed: 850 + i }); }
+  }
+  return s;
+}
+function readout2(){
+  const n = S.plates, e = each(n), k = S.litSet.size;
+  readout(S.dealt === 0 ? `${MODEL.bag} 颗 · 还没发 · ${n} 个盘子` : !dealDone() ? `发了 ${S.dealt} 轮 · 每盘 ${S.dealt} 颗 · 袋里还剩 ${MODEL.bag - S.dealt * n} 颗` :
+    k ? `${k} 盘是一袋的 ${F(k, n)} · ${k * e} 颗` : `${MODEL.bag} 颗平均分成 ${n} 份 · 每份 ${e} 颗 · 一袋的 ${F(1, n)} 是 ${e} 颗`);
+  sendState({ station: 2, plates: n, each: S.dealt, taken: k });
+}
+function hint2(){
+  hint(!dealDone() ? "点一下带小圆钮的糖袋，发一轮" : !S.lit3 ? `点盘子，点亮 ${MODEL.lightTarget} 盘` : !S.redealt ? "按「少一盘」或「多一盘」，换了再发一遍" : "点糖袋、点盘子、换盘子数，接着试");
+}
+function acts2(){
+  const list = [];
+  if (S.lit3) list.push({ label: "少一盘", go: () => changePlates(-1), cls: "ghost tight" }, { label: "多一盘", go: () => changePlates(1), cls: "ghost tight" });
+  if (S.lit3 && S.redealt) list.push({ label: "看明白了", go: done2 });
+  actions(list);
+}
+function deal(){
+  if (S.mode !== "act2" || dealDone()) return;
+  S.flyT = 1; S.dealt++; S.flyT = reduced ? 1 : 0; S.dirty = true; touched(); readout2();
+  if (dealDone()){
+    S.lastPlates = S.plates; const n = S.plates, e = each(n), again = S.changed && !S.redealt;
+    if (S.changed) S.redealt = true;
+    if (!S.lit3) say(`发完了，每盘 ${e} 颗。一盘就是这袋糖的 ${F(1, n)}。点一下盘子，把它点亮。`);
+    else say(`${MODEL.bag} 颗分成 ${n} 盘，每盘 ${e} 颗，一盘是这袋糖的 ${F(1, n)}。` + (again ? "看够了点「看明白了」。" : ""));
+    if (again) acts2();
+  } else say(`发了 ${S.dealt} 轮，每盘 ${S.dealt} 颗。接着点。`);
+  hint2();
+}
+function lightPlate(i, v){
+  if (S.mode !== "act2" || !dealDone() || i < 0 || i >= S.plates) return;
+  if (v == null) v = !S.litSet.has(i); if (v === S.litSet.has(i)) return;
+  if (v) S.litSet.add(i); else S.litSet.delete(i);
+  S.lit = S.litSet.size; S.dirty = true; touched(); readout2();
+  const k = S.lit, n = S.plates, e = each(n);
+  if (k === MODEL.lightTarget && !S.lit3 && n === MODEL.platesStart){ S.lit3 = true; say(`${k} 盘是这袋糖的 ${F(k, n)}，${k * e} 颗。想换个盘子数，就按「少一盘」或「多一盘」。`); acts2(); }
+  else if (k) say(`${k} 盘是这袋糖的 ${F(k, n)}，${k * e} 颗。`);
+  else say("一盘也没点亮。");
+  hint2();
+}
+function changePlates(step){
+  if (S.mode !== "act2" || !S.lit3) return;
+  const i = clamp(MODEL.plateCounts.indexOf(S.plates) + step, 0, MODEL.plateCounts.length - 1), n = MODEL.plateCounts[i];
+  if (n === S.plates) return;
+  Object.assign(S, { plates: n, dealt: 0, lit: 0, flyT: 1, changed: true }); S.litSet.clear(); S.dirty = true; touched(); readout2();
+  say(`换成 ${n} 个盘子了，糖都回到了袋里。再点糖袋发一遍。`); hint2();
+}
+function enter2(){
+  gen++; S.station = 2; S.mode = "intro2"; head(2, "发：一袋糖分盘子"); hint(""); readout(""); disarmCue(); reset2(); scene("s2q");
+  say(`这里有一袋糖，${MODEL.bag} 颗。`);
+  next("然后呢", () => { S.mode = "ask2"; ask(`这袋糖的 ${F(1, 4)} 是几颗？`, [
+    { label: "3 颗", correct: true, feedback: "你猜 3 颗。把糖发到盘子里，数一数。" },
+    { label: "1 颗", mis: "numerator-as-count", feedback: `${F(1, 4)} 上面写着 1，想到 1 颗很自然。可这袋糖有 ${MODEL.bag} 颗呢。` },
+    { label: "4 颗", mis: "denominator-as-count", feedback: "下面写着 4，想到 4 颗也有道理。可 4 说的是分成几份，一份有几颗还没数过。" }
+  ], () => next("发糖", act2)); });
+}
+function reset2(){ Object.assign(S, { plates: MODEL.platesStart, dealt: 0, lit: 0, flyT: 1, lit3: false, changed: false, redealt: false, kbdPlate: 0 }); S.litSet = new Set(); }
+function act2(){
+  S.mode = "act2"; scene("s2"); acts2(); readout2(); hint2();
+  say("这 4 个盘子，一盘一份。点一下带小圆钮的糖袋，每个盘子落进一颗。"); svg.focus({ preventScroll: true }); armCue(() => [...bagGrip(), smallR()]);
+}
+REPLAY[2] = () => { head(2, "发：一袋糖分盘子"); reset2(); act2(); };   // 重玩第 2 站：糖回袋、4 个盘子、清掉点亮，跳过开场和猜测题
+function done2(){
+  S.mode = "rev2"; hint(""); disarmCue(); observedOnce(2); S.dirty = true; const g = S.guess && S.guess[2];
+  say(`一袋糖也能当一个整体。平均分成 4 份，一份 3 颗，就是这袋糖的 ${F(1, 4)}。` + (g && g.correct ? "你猜对了。" : "一份有几颗，要看这袋糖有多少颗。"), "good");
+  nextOr("去第 3 站", enter3);
+}
+
+/* ============ 9. 第 3 站 · 找回来：知道一份，就能找回整体 ============ */
+const SW = 98, SH = 80, SY = 196;
+const cols = den => den <= 5 ? den : 5, rows = den => den <= 5 ? 1 : 2;
+const slotXY = (i, den) => { const c = cols(den); return [400 + (i % c - (c - 1) / 2) * SW, SY + Math.floor(i / c) * SH + SH / 2]; };
+const bagBox = den => { const w = cols(den) * SW + 36, h = rows(den) * SH + 30; return { x: 400 - w / 2, y: SY - 18, w, h }; };
+const CHIPY = 474;
+const chipR = () => narrow() ? 40 : 31;
+const chipXY = d => [400 + (MODEL.dens.indexOf(d) - 2) * (narrow() ? 106 : 86), CHIPY];   // 接缝：走查用它点小圆片
+const DICE = [[-26, -9], [0, -9], [26, -9], [-13, 10], [13, 10]];
+function five(cx, cy, seed, r){ let s = ""; DICE.forEach(([dx, dy], j) => { s += candy(cx + dx * (r || 10) / 10, cy + dy * (r || 10) / 10, seed + j, (r || 10) * .8); }); return s; }
+function draw3q(){
+  return sign(400, 196, 330, 62, rich(400, 236, ["这是一袋糖的", [1, 3]], "lb", 900), 901) +
+    plate(400, 352, 92, 902) + five(400, 330, 0, 12);
+}
+function bagShape(b, cls, seed){   // 袋子的轮廓：方方的袋身，上面收口、扎一道
+  const nk = b.w * .3, top = b.y - 34;
+  return P(Sk.line(b.x, b.y, b.x, b.y + b.h, seed, .5) + Sk.line(b.x, b.y + b.h, b.x + b.w, b.y + b.h, seed + 1, .5) + Sk.line(b.x + b.w, b.y + b.h, b.x + b.w, b.y, seed + 2, .5) +
+    `M${r1(b.x)} ${b.y}Q${r1(400 - nk)} ${b.y - 4} ${r1(400 - nk / 2)} ${top}M${r1(b.x + b.w)} ${b.y}Q${r1(400 + nk)} ${b.y - 4} ${r1(400 + nk / 2)} ${top}` + Sk.line(400 - nk / 2 - 8, top, 400 + nk / 2 + 8, top, seed + 3, .4), cls);
+}
+function draw3(){
+  const den = S.den, b = bagBox(den), act = S.mode === "act3", e = S.dropT < 1 ? 1 - Math.pow(1 - S.dropT, 3) : 1;
+  let s = sign(400, 76, 330, 54, rich(400, 110, ["这 5 颗是一袋的", [1, den]], "lb", 910), 911);
+  // 「1」记号就套在空袋子的虚线轮廓上：袋子随分母变大变小
+  s += `<g class="bag">` + bagShape(b, "one", 920) + `<g transform="rotate(-5 ${r1(b.x + 18)} ${b.y - 4})"><rect x="${r1(b.x + 4)}" y="${b.y - 19}" width="28" height="30" rx="4" class="papr"/>` + P(box(b.x + 4, b.y - 19, 28, 30, 929, .4), "k1") + TC(r1(b.x + 18), b.y + 3, "1", "fm") + `</g></g>`;
+  for (let i = 0; i < den; i++){
+    const [sx, sy] = slotXY(i, den), full = i < S.copies, drop = i === S.copies - 1 && S.dropT < 1 ? (1 - e) * 46 : 0;
+    if (!full){ s += P(Sk.ellipse(sx, sy + 22, 41, 10, 930 + i, .4), "kf"); continue; }
+    s += plate(sx, sy + 22, 43, 940 + i, i === 0 ? "lead" : "pane") + `<g${drop ? ` opacity="${r1(e * .9 + .1)}"` : ""}>` + five(sx, sy - 2 - drop, i * 5, 10) + `</g>`;
+    if (i === 0) s += P(Sk.ellipse(sx, sy + 4, 49, 36, 950, .5), "kacc");   // 主角：已知的那一份
+  }
+  s += TC(400, b.y + b.h + 36, `${S.copies} 份 · ${MODEL.part * S.copies} 颗`, "lb");
+  if (S.chips){   // 分母的托：一组里挑一个
+    const [ax, ay] = chipXY(MODEL.dens[0]), ar = chipR(), [bx] = chipXY(MODEL.dens[MODEL.dens.length - 1]);
+    s += `<rect x="${r1(ax - ar - 12)}" y="${r1(ay - ar - 12)}" width="${r1(bx - ax + 2 * ar + 24)}" height="${r1(2 * ar + 24)}" rx="${r1(ar + 12)}" class="gsoft"/>`;
+    MODEL.dens.forEach((d, i) => { const [cx, cy] = chipXY(d), r = chipR(), on = d === den && act;
+      s += `<circle cx="${cx}" cy="${cy}" r="${r}" class="${on ? "gfill" : "pane"}"/>` + P(Sk.ellipse(cx, cy, r, r, 960 + i, .4), on ? "gring" : "k1") + `<g${on ? ' style="--ink:var(--bg)"' : ""}>` + fracS(cx, cy + 1, 1, d, "fs", 970 + i) + `</g>` +
+        (S.kbd && on ? `<circle cx="${cx}" cy="${cy}" r="${r + 6}" class="gkbd"/>` : ""); });
+  }
+  return s;
+}
+function readout3(){
+  const c = S.copies, d = S.den;
+  readout(c < d ? `${c} 份 · ${MODEL.part * c} 颗` : `${MODEL.part} 颗是一袋的 ${F(1, d)} · 一整袋 ${wholeOf(d)} 颗`);
+  sendState({ station: 3, part: MODEL.part, den: d, copies: c, whole: wholeOf(d) });
+}
+function hint3(){
+  const others = S.full.filter(d => d !== MODEL.denStart).length, need = MODEL.mustFill - 1 - others;
+  hint(!S.chips ? "按住「再摆一份」" : S.copies < S.den ? "按住「再摆一份」，摆满袋子" : need > 0 ? `点一个小圆片换分母 · 还要摆满 ${need} 种` : "换分母、摆一摆，接着试");
+}
+function addCopy(){
+  if (S.mode !== "act3" || S.copies >= S.den) return;
+  S.copies++; S.dropT = reduced ? 1 : 0; S.dirty = true; readout3();
+  if (S.copies < S.den){ hint3(); return; }
+  const d = S.den; if (!S.full.includes(d)) S.full.push(d); S.lastDen = d;
+  const ready = S.full.includes(MODEL.denStart) && S.full.length >= MODEL.mustFill;
+  if (d === MODEL.denStart && !S.chips){ S.chips = true; scene("s3"); say(`${d} 份，${wholeOf(d)} 颗，正好一整袋。牌子上的分母也能换，点下面带圆钮的小圆片。`); armCue(() => [...chipXY(S.den), chipR()]); }
+  else say(`${MODEL.part} 颗是一袋的 ${F(1, d)}，一整袋 ${wholeOf(d)} 颗。` + (ready && !S.ready3 ? "看够了点「看明白了」。" : ""));
+  if (ready && !S.ready3){ S.ready3 = true; S.hold = false; acts3(); }
+  hint3();
+}
+function pickDen(d){
+  if (S.mode !== "act3" || !S.chips || d === S.den || !MODEL.dens.includes(d)) return;
+  const bigger = d > S.den; S.den = d; S.copies = 1; S.dropT = 1; S.dirty = true; touched(); readout3();
+  say(`换成一袋的 ${F(1, d)}，袋子${bigger ? "变大" : "变小"}了，能装 ${d} 份。按住「再摆一份」摆满它。`); hint3();
+}
+function acts3(){ actions([{ label: "再摆一份", hold: true, cls: "hold" }].concat(S.ready3 ? [{ label: "看明白了", go: done3, cls: "ghost" }] : [])); }
+function enter3(){
+  gen++; S.station = 3; S.mode = "intro3"; head(3, "找回来：一份变一袋"); hint(""); readout(""); disarmCue(); reset3(); scene("s3q");
+  say(`这个盘子里有 5 颗糖。牌子上写着：这是一袋糖的 ${F(1, 3)}。`);
+  next("然后呢", () => { S.mode = "ask3"; ask("原来一整袋有几颗？", [
+    { label: "3 颗", mis: "denominator-as-count", feedback: "牌子上写着 3，想到 3 颗很自然。可盘子里光这一份就有 5 颗了。" },
+    { label: "8 颗", mis: "add-instead-of-copy", feedback: "5 和 3 加起来是 8，这个加法没错。可这个 3，数的是颗，还是份？" },
+    { label: "15 颗", correct: true, feedback: "你猜 15 颗。把一份一份摆回袋子里，看对不对。" }
+  ], () => next("摆一摆", act3)); });
+}
+function reset3(){ Object.assign(S, { den: MODEL.denStart, copies: 1, dropT: 1, full: [], chips: false, ready3: false, hold: false, holdOn: false }); }
+function act3(){
+  S.mode = "act3"; scene(S.chips ? "s3" : "s3a"); acts3();   // 分母托出来以前，画面只到袋子下面 readout3(); hint3();
+  say(`这只空袋子能装 ${S.den} 份，第一份已经在里面了。按住「再摆一份」，一份一份摆进去。`); svg.focus({ preventScroll: true });
+}
+REPLAY[3] = () => { head(3, "找回来：一份变一袋"); reset3(); act3(); };   // 重玩第 3 站：袋子回到 1/3、只有一份、分母托收起，跳过开场和猜测题
+function done3(){
+  S.mode = "rev3"; S.hold = false; hint(""); disarmCue(); observedOnce(3); S.dirty = true; const g = S.guess && S.guess[3];
+  say(`同样的 5 颗，可以是小袋子的 ${F(1, 2)}，也可以是大袋子的 ${F(1, 10)}。知道了一份，就能把整体找回来。` + (g && g.correct ? "你猜的 15 颗，摆出来正好。" : "一份摆 3 次，才是一整袋。"), "good");
+  next("还有呢", wow);
+}
+function wow(){
+  S.mode = "wow"; scene("wow");
+  readout(`蓝鲸大约 ${MODEL.whale} 米 · 它的 ${F(1, MODEL.whaleDen)} 是 ${whalePart()} 米 · 两个舰长大约 ${kids2()} 厘米`);
+  say(`大的蓝鲸能长到 ${MODEL.whale} 米左右。它的 ${F(1, 10)} 就有 ${whalePart()} 米，比两个舰长叠起来还高。小小的分数，不一定是小小的东西。`, "good");
+  nextOr("看我的星卡", enterEnd);
+}
+// 「哇」：蓝鲸平均切成 10 段，取出一段立起来，旁边两个叠着的小人。上面一条按 18 单位一米画，下面放大成 60 单位一米，两边用同一个比例比高矮
+const WH = { x0: 130, x1: 670, y: 158 }, ZM = 60, GROUND = 512;
+function whalePath(){
+  const { y } = WH;
+  return `M130 ${y}C130 ${y - 30} 160 ${y - 38} 215 ${y - 36}L560 ${y - 22}C578 ${y - 21} 585 ${y - 32} 594 ${y - 34}C594 ${y - 26} 596 ${y - 20} 602 ${y - 17}C616 ${y - 12} 626 ${y - 6} 634 ${y}` +
+    `C642 ${y - 10} 652 ${y - 26} 668 ${y - 28}C664 ${y - 16} 654 ${y - 6} 648 ${y}C654 ${y + 6} 664 ${y + 16} 668 ${y + 28}C652 ${y + 26} 642 ${y + 10} 634 ${y}` +
+    `C618 ${y + 10} 590 ${y + 16} 540 ${y + 20}L230 ${y + 30}C168 ${y + 32} 130 ${y + 26} 130 ${y}Z`;
+}
+function drawWow(){
+  const seg = (WH.x1 - WH.x0) / MODEL.whaleDen, pick = 4, sx = WH.x0 + seg * pick, wp = whalePath();
+  let s = oneMark(WH.x0 - 12, WH.y - 46, WH.x1 - WH.x0 + 24, 92, 1000);
+  s += `<clipPath id="whc"><path d="${wp}"/></clipPath><path d="${wp}" fill="var(--sky)"/>`;
+  s += `<g clip-path="url(#whc)"><rect x="${r1(sx)}" y="${WH.y - 50}" width="${r1(seg)}" height="100" class="lead"/></g>`;
+  s += P(wp) + `<circle cx="168" cy="${WH.y - 6}" r="3.2" fill="var(--ink)"/>` + P(Sk.curve([[134, WH.y + 6], [170, WH.y + 9], [214, WH.y + 8]], 1001, .3), "k1");
+  let pl = ""; for (let i = 0; i < 6; i++) pl += Sk.line(160 + i * 18, WH.y + 16 + i * .6, 230 + i * 20, WH.y + 22 + i * .4, 1010 + i, .3);
+  s += P(pl, "faint");
+  let cuts = ""; for (let k = 1; k < MODEL.whaleDen; k++) cuts += `M${r1(WH.x0 + seg * k)} ${WH.y - 40}V${WH.y + 40}`;
+  s += `<g clip-path="url(#whc)">` + P(cuts, "kf") + `</g>`;
+  s += P(Sk.line(WH.x0, WH.y + 58, WH.x1, WH.y + 58, 1020, .4) + `M${WH.x0} ${WH.y + 50}v16M${WH.x1} ${WH.y + 50}v16`, "k1") + TC(400, WH.y + 84, `大约 ${MODEL.whale} 米`, "lb");
+  // 放大：取出的那一段立起来，旁边两个叠着的小人。同一个比例：1 米画 60
+  const segH = whalePart() * ZM, kidH = MODEL.kid / 100 * ZM, zx = 320, kx = 470;
+  s += P(`M${r1(sx)} ${WH.y + 34}L${zx - 34} ${GROUND - segH}M${r1(sx + seg)} ${WH.y + 34}L${zx + 34} ${GROUND - segH}`, "faint");
+  s += P(Sk.line(200, GROUND, 620, GROUND, 1030, .4));
+  s += `<rect x="${zx - 34}" y="${r1(GROUND - segH)}" width="68" height="${r1(segH)}" rx="14" class="lead"/>` + P(rbox(zx - 34, GROUND - segH, 68, segH, 14, 1031, .6));
+  s += kid(kx, GROUND, kidH, 1040) + kid(kx, GROUND - kidH, kidH, 1050);
+  s += P(`M${zx + 40} ${r1(GROUND - segH)}H${kx + 70}`, "kf");
+  s += T(zx - 48, r1(GROUND - segH / 2), `${whalePart()} 米`, "lb", 'text-anchor="end"') + rich(zx - 84, r1(GROUND - segH / 2 + 30), ["这一段", ], "lbg", 1060);
+  s += T(kx + 44, r1(GROUND - kidH), `大约 ${kids2()} 厘米`, "lb") + T(kx + 44, r1(GROUND - kidH + 26), "两个舰长", "lbg");
+  return s;
+}
+
+/* ============ 10. 星卡 · 谁的几分之几：舰长自己拉的长度、自己发的盘子数、自己摆满的袋子（教训 12） ============ */
+function drawEnd(){
+  const L = S.card.L, n = S.card.plates, den = S.card.den, x0 = 150;
+  let s = `<rect x="108" y="16" width="584" height="586" rx="20" fill="var(--pane)" stroke="var(--rule)"/>` +
+    `<path d="M654 36l7 14 15 2-11 11 3 15-14-7-14 7 3-15-11-11 15-2z" class="lead" opacity=".85"/>` + T(134, 66, "谁的几分之几", "ttl");
+  // 第一格：他最后停的那条蛋糕卷，第一份是他的
+  const cw = L * 5.5, cy = 104;
+  s += oneMark(x0 - 6, cy - 7, cw + 12, 36, 1100, { below: true }) + cake(x0, cy, cw, 22, 4, null, { seed: 1110 }) + `<rect x="${x0}" y="${cy}" width="${r1(cw / 4)}" height="22" rx="7" class="lead"/>` + P(rbox(x0, cy, cw / 4, 22, 7, 1115, .4));
+  s += rich(400, cy + 70, [`${L} 厘米的`, [1, 4], `是 ${fmt(capPart(L))} 厘米`], "lb", 1120);
+  // 第二格：他最后一次发好的盘子，第一盘点亮
+  const py = 250, gap = Math.min(110, 460 / n), rx = Math.min(42, gap * .4), e = each(n);
+  for (let i = 0; i < n; i++){ const cx = 400 + (i - (n - 1) / 2) * gap; s += plate(cx, py, rx, 1130 + i, i === 0 ? "lit" : "pane");
+    const per = e === 4 ? 2 : Math.min(3, e); for (let j = 0; j < e; j++){ const row = Math.floor(j / per), m = Math.min(per, e - row * per); s += candy(cx + (j % per - (m - 1) / 2) * 22, py - 9 - row * 15, j * n + i, 6.5); } }
+  s += oneMark(400 - (n * gap) / 2 - 4, py - 54, n * gap + 8, 74, 1140);
+  s += rich(400, py + 50, [`${MODEL.bag} 颗的`, [1, n], `是 ${e} 颗`], "lb", 1150);
+  // 第三格：他最后摆满的那只袋子，第一份是牌子上那 5 颗
+  const sy = 362, sw = Math.min(74, 440 / den), bw = sw * den + 20;
+  s += P(box(400 - bw / 2, sy - 30, bw, 52, 1160, .5), "one");
+  for (let i = 0; i < den; i++){ const cx = 400 + (i - (den - 1) / 2) * sw; s += `<circle cx="${r1(cx)}" cy="${sy - 4}" r="${r1(Math.min(18, sw * .32))}" class="${i === 0 ? "lead" : "food"}"/>` + P(Sk.ellipse(cx, sy - 4, Math.min(18, sw * .32), Math.min(18, sw * .32), 1170 + i, .3), "k1"); }
+  s += rich(400, sy + 58, [`${MODEL.part} 颗是它的`, [1, den], `，一整袋 ${wholeOf(den)} 颗`], "lb", 1180);
+  // 数线条：0 到 1，钉着 1/4 和 1/2；1 的下面挂一块小牌，写着他的整体
+  const ly = 520; s += lineStrip(x0, ly, 500, [[1, 4], [1, 2]], 1190);
+  s += P(`M${x0 + 500} ${ly + 44}v10`, "k1") + `<rect x="${x0 + 396}" y="${ly + 54}" width="142" height="32" rx="6" class="papr"/>` + P(box(x0 + 396, ly + 54, 142, 32, 1195, .4), "k1") + TC(x0 + 467, ly + 76, `1 = ${L} 厘米`, "lbm");
+  return s;
+}
+function enterEnd(){
+  gen++; S.station = STATIONS + 1; S.mode = "end"; S.hold = false; head(0, "谁的几分之几"); hint(""); disarmCue();
+  S.card = { L: S.lastL || MODEL.lenStart, plates: S.lastPlates || MODEL.platesStart, den: S.lastDen || MODEL.denStart }; scene("end");
+  readout(`1 = ${S.card.L} 厘米 · ${MODEL.bag} 颗分 ${S.card.plates} 盘 · 一袋 ${wholeOf(S.card.den)} 颗`);
+  say("这是你的星卡。三个整体，都是你自己定的。", "good");
+  if (!completed){ completed = true; Host.complete({}); }
+  endActions();
+}
+
+/* ============ 11. 画面和输入 ============ */
+const DRAW = { s1q: draw1q, s1: draw1, s2q: draw2q, s2: draw2, s3q: draw3q, s3a: draw3, s3: draw3, wow: drawWow, end: drawEnd };
+function render(){ gDyn.innerHTML = DRAW[S.scene](); placeCue(); }
+function toSvg(e){ const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
+function hit(q){   // 这一刻能抓、能点的东西。别的地方照常滑页面
+  if (S.mode === "act1"){ const [hx, hy] = handleXY(); if (Math.hypot(q.x - hx, q.y - hy) < hitR()) return "handle"; }
+  if (S.mode === "act2"){
+    if (!dealDone() && q.x > BAG.x - BAG.wb / 2 - 10 && q.x < BAG.x + BAG.wb / 2 + 14 && q.y > BAG.top - 24 && q.y < BAG.bot + 12) return "bag";
+    if (dealDone()) for (let i = 0; i < S.plates; i++){ const [cx] = plateXY(i); if (Math.abs(q.x - cx) < Math.max(rxOf(S.plates), hitR()) && q.y > PY - 80 && q.y < PY + 26) return "plate" + i; }
+  }
+  if (S.mode === "act3" && S.chips) for (const d of MODEL.dens){ const [cx, cy] = chipXY(d), r = chipR(); if (Math.hypot(q.x - cx, q.y - cy) < Math.max(r + 4, hitR())) return "chip" + d; }
+  return null;
+}
+let drag = null;
+svg.addEventListener("touchstart", e => { const t = e.touches[0]; if (t && hit(toSvg(t))) e.preventDefault(); }, { passive: false });
+svg.addEventListener("pointerdown", e => {
+  S.kbd = false; svg.classList.remove("kbd");
+  const q = toSvg(e), h = hit(q); if (!h) return;
+  drag = { kind: h, cx: e.clientX, cy: e.clientY, moved: false, dx: q.x - lenX(S.L) - gripR() * .55 };
+  S.press = true; S.pressOn = h; S.dirty = true; touched(); svg.setPointerCapture(e.pointerId); e.preventDefault();
+  if (h === "handle") svg.style.cursor = "grabbing";
+});
+svg.addEventListener("pointermove", e => {
+  const q = toSvg(e);
+  if (!drag){ const h = hit(q); svg.style.cursor = !h ? "" : h === "handle" ? "grab" : "pointer"; return; }
+  if (!drag.moved && Math.hypot(e.clientX - drag.cx, e.clientY - drag.cy) > 6) drag.moved = true;
+  if (drag.moved && drag.kind === "handle" && S.mode === "act1") setL((q.x - drag.dx - gripR() * .55 - RX0) / CM);
+});
+function endDrag(e){
+  if (!drag) return; const d = drag; drag = null; S.press = false; S.pressOn = null; S.dirty = true; svg.style.cursor = "";
+  if (e.type !== "pointerup") return;
+  if (d.kind === "handle" && d.moved) stop1();
+  if (d.kind === "bag" && !d.moved) deal();
+  if (/^plate/.test(d.kind) && !d.moved) lightPlate(+d.kind.slice(5));
+  if (/^chip/.test(d.kind) && !d.moved) pickDen(+d.kind.slice(4));
+}
+for (const ev of ["pointerup", "pointercancel"]) svg.addEventListener(ev, endDrag);
+svg.addEventListener("keydown", e => {   // 键盘：第 1 站 ← → 拉；第 2 站空格或回车发一轮、↑ ↓ 点亮、← → 换盘子数；第 3 站 ← → 换分母、按住空格摆
+  const lr = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0, ud = e.key === "ArrowUp" ? 1 : e.key === "ArrowDown" ? -1 : 0, go = e.key === " " || e.key === "Enter";
+  if ((!lr && !ud && !go) || !/^act/.test(S.mode)) return;
+  e.preventDefault(); S.kbd = true; svg.classList.add("kbd"); touched(); S.dirty = true;
+  if (S.mode === "act1" && lr){ setL(S.L + lr * MODEL.lenStep); S.keyStop = performance.now() + MODEL.stopMs; }
+  if (S.mode === "act2"){
+    if (go && !e.repeat) deal();
+    else if (ud > 0){ const i = [...Array(S.plates).keys()].find(q => !S.litSet.has(q)); if (i != null){ S.kbdPlate = i; lightPlate(i, true); } }
+    else if (ud < 0){ const on = [...S.litSet].sort((a, b) => b - a); if (on.length){ S.kbdPlate = on[0]; lightPlate(on[0], false); } }
+    else if (lr) changePlates(lr);
+  }
+  if (S.mode === "act3"){ if (lr && S.chips){ const i = clamp(MODEL.dens.indexOf(S.den) + lr, 0, MODEL.dens.length - 1); pickDen(MODEL.dens[i]); } else if (e.key === " " && !e.repeat){ S.hold = true; } }
+});
+svg.addEventListener("keyup", e => { if (e.key === " ") S.hold = false; });
+svg.addEventListener("blur", () => { if (S.mode === "act3") S.hold = false; });
+
+let last = performance.now();
+function tick(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  const kf = reduced ? 1 : 1 - Math.exp(-dt / .06);
+  if (S.scene === "s1" && Math.abs(S.L - S.Lp) > .01){ S.Lp = Math.abs(S.L - S.Lp) < .05 ? S.L : S.Lp + (S.L - S.Lp) * kf; S.dirty = true; }   // 蛋糕卷缓缓跟上吸好的格子
+  if (S.mode === "act1" && S.keyStop && now >= S.keyStop) stop1();
+  if (S.scene === "s2" && S.flyT < 1){ S.flyT = Math.min(1, S.flyT + dt / .42); S.dirty = true; }
+  if (S.scene === "s3" || S.scene === "s3a"){
+    if (S.dropT < 1){ S.dropT = Math.min(1, S.dropT + dt / .32); S.dirty = true; }
+    if (S.mode === "act3" && S.hold && S.copies < S.den){
+      if (!S.holdOn){ S.holdOn = true; S.nextAt = now + MODEL.holdFirst; }
+      else if (now >= S.nextAt){ addCopy(); S.nextAt += MODEL.holdEvery; }
+    } else S.holdOn = false;
+  }
+  if (S.dirty){ S.dirty = false; render(); }
+  requestAnimationFrame(tick);
+}
+Host.ready();      // 必须先于任何 state、event（教训 31）
+fitView();
+enter1();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

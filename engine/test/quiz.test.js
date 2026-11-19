@@ -70,15 +70,15 @@ function begun(order = ORDER, mode = "first") {
   return save(startQuiz(act(), order, mode));
 }
 
-test("开始：phase 是 starting，pending 是 attempt.started，带 mode", () => {
+test("开始：phase 是 starting，pending 是 attempt.started，带 mode 和 grader", () => {
   const q = startQuiz(act(), ORDER, "first");
   assert.equal(q.phase, "starting");
   assert.equal(q.pending.verb, "attempt.started");
-  assert.deepEqual(q.pending.payload, { mode: "first" });
+  assert.deepEqual(q.pending.payload, { mode: "first", grader: "grade/1" });
   assert.equal(q.view.waiting, true);
   assert.equal(q.view.result, null);
   const r = startQuiz(act(), ORDER, "retry");
-  assert.deepEqual(r.pending.payload, { mode: "retry" });
+  assert.deepEqual(r.pending.payload, { mode: "retry", grader: "grade/1" });
 });
 
 test("started 存好以后进入 answering，停在 order 的第一道题", () => {

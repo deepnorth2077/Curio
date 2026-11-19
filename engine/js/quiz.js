@@ -1,6 +1,6 @@
 // 挑战的纯状态机（竖切片 1 规格 6.1）。输入动作，输出界面状态和要写的事件意图。不碰 DOM、存储、时间和随机数。
 // 状态是普通的 JSON 对象；step 不改旧状态，忽略的动作原样返回同一个对象。
-import { grade, checkAnswerNumbers } from "./grade.js";
+import { grade, checkAnswerNumbers, GRADER } from "./grade.js";
 
 /**
  * @typedef {"starting"|"answering"|"finishing"|"done"} Phase
@@ -29,7 +29,7 @@ import { grade, checkAnswerNumbers } from "./grade.js";
  *   phase: Phase, pending: Pending|null, view: View,
  *   s: {items: Record<string, any>, order: string[], pos: number, tries: Record<string, number>,
  *       first: Record<string, boolean>, wrong: Record<string, string[]>, hints: Record<string, number>, nextId: number,
- *       inflight: {kind: "answer", item_id: string, correct: boolean, response: string, text: string}|{kind: "hint", item_id: string}|null,
+ *       inflight: {kind: "answer", item_id: string, correct: boolean, response: string, text: string}|{kind: "hint", item_id: string}|{kind: "reveal", item_id: string}|null,
  *       failed: boolean, feedback: Feedback|null}
  * }} Quiz
  */
@@ -93,7 +93,7 @@ export function startQuiz(activity, order, mode) {
     items, order: order.slice(), pos: 0, tries: {}, first: {}, wrong: {}, hints: {}, nextId: 2,
     inflight: null, failed: false, feedback: null,
   };
-  const pending = { id: 1, verb: "attempt.started", payload: { mode } };
+  const pending = { id: 1, verb: "attempt.started", payload: { mode, grader: GRADER } };
   return build("starting", pending, s);
 }
 
@@ -148,7 +148,7 @@ function feedbackText(item, response, correct, misconception = null) {
 }
 
 /**
- * 这道题有结果了（答对存好，或看过答案）：进入下一题；是最后一题时，只有每道题都有已存好的作答才产出完成。
+ * 这道题有结果了（答对存好，或 answer.revealed 存好）：进入下一题；是最后一题时，只有每道题都有已存好的作答才产出完成。
  * @param {any} s 新的内部状态（会被复制）
  * @param {number} pos 这道题的位置
  * @returns {Quiz}
@@ -192,6 +192,13 @@ export function step(q, action) {
       if (f.kind === "hint") {
         return build("answering", null, { ...q.s, hints: { ...q.s.hints, [f.item_id]: (q.s.hints[f.item_id] || 0) + 1 }, inflight: null, failed: false });
       }
+      if (f.kind === "reveal") {
+        // answer.revealed 存好了：这道题记为「看过答案」，这时才显示答案，和答对存好以后一样进入下一题
+        const item = q.s.items[f.item_id];
+        const s = { ...q.s, inflight: null, failed: false,
+          feedback: { item_id: f.item_id, correct: false, revealed: true, answer_text: answerText(item.answer), text: revealText(item) } };
+        return advance(s, q.s.pos);
+      }
       const s = {
         ...q.s,
         tries: { ...q.s.tries, [f.item_id]: (q.s.tries[f.item_id] || 0) + 1 },
@@ -216,9 +223,9 @@ export function step(q, action) {
       if (q.phase !== "answering" || q.pending) return q;
       const id = q.s.order[q.s.pos];
       if ((q.s.tries[id] || 0) < 1) return q;
-      // 看答案不写事件：这道题记为「看过答案」，和答对存好以后一样进入下一题
-      const s = { ...q.s, feedback: { item_id: id, correct: false, revealed: true, answer_text: answerText(q.s.items[id].answer), text: revealText(q.s.items[id]) } };
-      return advance(s, q.s.pos);
+      // 先存再显示（CURIO-013）：产出 answer.revealed，存好以前 feedback 还是那次答错的，答案不进 view
+      const s = { ...q.s, nextId: q.s.nextId + 1, failed: false, inflight: { kind: "reveal", item_id: id } };
+      return build("answering", { id: q.s.nextId, verb: "answer.revealed", payload: { item_id: id } }, s);
     }
     case "failed": {
       if (!q.pending || action.id !== q.pending.id) return q;

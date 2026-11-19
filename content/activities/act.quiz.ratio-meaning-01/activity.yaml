@@ -1,0 +1,120 @@
+id: act.quiz.ratio-meaning-01
+schema: activity-def/1
+kind: quiz
+version: 2
+title: 调饮料台大挑战
+targets:
+- math.ratio.meaning
+age_band: G5-6
+duration_min: 5
+review: pending
+engine: 1
+sources:
+- type: textbook
+  ref: 人教版小学数学六年级上册（旧版）第四单元「比的意义」「比的基本性质」
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 第一壶用 3 勺粉兑 5 杯水，第二壶用 6 勺粉兑 10 杯水。哪一壶浓？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 第二壶
+        misconception: one-quantity-only
+        feedback: 第二壶粉多了，水也多了。试着把它平分成两小壶。
+      - id: b
+        text: 一样浓
+        correct: true
+      - id: c
+        text: 第一壶
+        misconception: one-quantity-only
+        feedback: 第一壶水少了，它的粉也少了。把粉和水一起比一比。
+    feedback:
+      correct: 第二壶的粉和水都是第一壶的 2 倍。分成两壶，每壶刚好是 3 勺兑 5 杯。
+      wrong: 把大壶平均分成两小壶。
+    hints:
+    - 把大壶平均分成两小壶。
+    - 看看每小壶分到几勺粉、几杯水。
+  - id: q2
+    stem: '第一壶粉和水是 1 : 2，第二壶是 2 : 3。哪一壶浓？'
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 第一壶
+        misconception: one-quantity-only
+        feedback: 再给两壶配上同样多的水，看看谁用的粉多。
+      - id: b
+        text: 一样，都差 1
+        misconception: additive-comparison
+        feedback: 差都是 1。试着比较每 6 杯水里有几勺粉。
+      - id: c
+        text: 第二壶
+        correct: true
+    feedback:
+      correct: 都兑 6 杯水，第一壶要 3 勺粉，第二壶要 4 勺粉。第二壶浓。
+      wrong: 把两壶的水都换成 6 杯。
+    hints:
+    - 把两壶的水都换成 6 杯。
+    - 水变成几倍，粉也变成同样的倍数。
+  - id: q3
+    stem: 想调出一样的味道。2 勺粉要 3 杯水，8 勺粉要几杯水？
+    answer:
+      type: number
+      value: 12
+      tolerance: 0
+      unit: 杯
+      common_wrong:
+      - value: 9
+        feedback: 你给粉和水各加了 6。要保留味道，得让它们变成相同的倍数。
+        misconception: add-same-keeps-ratio
+    feedback:
+      correct: 8 勺是 2 勺的 4 倍，水也要 4 倍。3 × 4 = 12。
+      wrong: 先看粉变成几倍。
+    hints:
+    - 先看粉变成几倍。
+    - 让水也变成这个倍数。
+  - id: q4
+    stem: '把 15 : 20 化简成 3 : □。方框里填几？'
+    answer:
+      type: number
+      value: 4
+      tolerance: 0
+      common_wrong:
+      - value: 8
+        feedback: 你把两边都减了 12。化简比的时候，两边要同时除以同一个数。
+        misconception: add-same-keeps-ratio
+    feedback:
+      correct: '15 和 20 同时除以 5，最简单的整数比是 3 : 4。'
+      wrong: 想想大桶怎么均分成小壶。
+    hints:
+    - 想想大桶怎么均分成小壶。
+    - 15 平均分几份，每份才是 3？
+  - id: q5
+    stem: 甲壶用 4 勺粉兑了 10 杯水，乙壶用 6 勺粉兑了 11 杯水。只许往一壶加清水。怎样让两壶一样浓？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 甲壶加 1 杯
+        misconception: one-quantity-only
+        feedback: 这样两壶都有 11 杯水。甲只有 4 勺粉，乙有 6 勺，两壶的味道会怎样？
+      - id: b
+        text: 乙壶加 1 杯
+        misconception: additive-comparison
+        feedback: 这样两壶的杯数都比勺数多 6。甲分成两份，乙分成三份，比比每 2 勺粉配多少杯水。
+      - id: c
+        text: 乙壶加 4 杯
+        correct: true
+      - id: d
+        text: 甲壶加 4 杯
+        feedback: 甲原先每 2 勺粉配 5 杯水。再加水，甲会更淡。先看看较浓的是哪一壶。
+    feedback:
+      correct: 甲每 2 勺粉配 5 杯水。同样的味道，乙的 6 勺粉要配 15 杯水。已有 11 杯，还缺 4 杯。
+      wrong: 加水会让味道变淡。先把两壶都换算成每 2 勺粉配多少杯水，再决定给哪壶加。
+    hints:
+    - 只加清水会让饮料更淡。你应该给较浓的壶加，还是给较淡的壶加？
+    - 甲壶每 2 勺粉配多少水？用这个配法算出乙壶所需的总杯数，再和已有的杯数比。
+# END OF FILE

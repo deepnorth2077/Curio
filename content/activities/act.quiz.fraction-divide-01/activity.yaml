@@ -1,0 +1,112 @@
+id: act.quiz.fraction-divide-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 倒水大挑战
+targets:
+  - math.fraction.divide
+age_band: G5-6
+duration_min: 5
+review: pending
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版小学数学六年级上册（旧版）第三单元「倒数的认识」「分数除法」
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: 一壶水有 4 升，每半升装一杯，能装满几杯？
+      answer:
+        type: number
+        value: 8
+        tolerance: 0
+        unit: 杯
+        common_wrong:
+          - value: 2
+            misconception: divide-as-halve
+            feedback: 你把水分成了两份。这里每半升就算一杯。
+          - value: 4
+            misconception: fraction-ignored
+            feedback: 4 杯是每杯装 1 升时的杯数。再换成小杯看看。
+      hints:
+        - 先看 1 升能装几杯。
+        - 有 4 个这样的 1 升。
+      feedback:
+        correct: 1 升可以装 2 个半升杯，4 升里有 8 个半升。
+        wrong: 先看 1 升能装几杯。
+    - id: q2
+      stem: 3 升水，每杯装四分之一升。能倒满几杯？
+      answer:
+        type: number
+        value: 12
+        tolerance: 0
+        unit: 杯
+        common_wrong:
+          - value: 0.75
+            misconception: multiply-instead
+            feedback: 0.75 是这壶水的四分之一。我们要数的是整壶里有几个四分之一升。
+      hints:
+        - 把 1 升水切成四等份，每份装一杯。
+        - 3 升里有几组这样的杯子？
+      feedback:
+        correct: 每升分成 4 个四分之一升，3 升共有 12 杯。
+        wrong: 把 1 升水切成四等份，每份装一杯。
+    - id: q3
+      stem: 6 升水，每杯装三分之二升。一共能装满几杯？
+      answer:
+        type: number
+        value: 9
+        tolerance: 0
+        unit: 杯
+        common_wrong:
+          - value: 4
+            misconception: multiply-instead
+            feedback: 4 升是 6 升的三分之二。这里要把 6 升都装进杯子。
+          - value: 3
+            misconception: divide-by-top-only
+            feedback: 杯子装的是 2 小份，每一小份只有三分之一升。先把水切成小份。
+      hints:
+        - 每升水先切成 3 份。
+        - 6 升切出来的小份，每几个能装成一杯？
+      feedback:
+        correct: 每升先切 3 小份，6 升一共 18 小份。每 2 份装一杯，一共 9 杯。
+        wrong: 每升水先切成 3 份。
+    - id: q4
+      stem: 半张饼平均分给 4 人。每人拿到整张饼的几分之几？
+      answer:
+        type: fraction
+        numerator: 1
+        denominator: 8
+        accept_equivalent: true
+        common_wrong:
+          - numerator: 2
+            denominator: 1
+            feedback: 分给 4 人后，每人拿的会比半张还少。画出整张饼作比较。
+      hints:
+        - 画一张饼，先圈住一半。
+        - 把这一半分成 4 份。整张饼能分出多少个这样的小片？
+      feedback:
+        correct: 半张饼切成 4 个一样大的小片。另一半也这样切，整张就有 8 片，每人拿到一片。
+        wrong: 画一张饼，先圈住一半。
+    - id: q5
+      stem: 3 米长的绳子，每四分之三米剪一段。能剪出几段？
+      answer:
+        type: number
+        value: 4
+        tolerance: 0
+        unit: 段
+        common_wrong:
+          - value: 2.25
+            misconception: multiply-instead
+            feedback: 2.25 米是整根绳子的四分之三。这里每一段都是四分之三米。
+          - value: 1
+            misconception: divide-always-smaller
+            feedback: 一米里就能放进一段。拿着这段沿 3 米的绳子接着量。
+      hints:
+        - 在 3 米的绳子上，每四分之一米作个记号。
+        - 从头开始，每数到 3 小格就剪一刀。
+      feedback:
+        correct: 3 米可以分成 12 个四分之一米，每 3 个小段合成一段。12 里面有 4 组 3。
+        wrong: 在 3 米的绳子上，每四分之一米作个记号。
+# END OF FILE

@@ -1,0 +1,117 @@
+id: act.quiz.fraction-multiply-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 横切再竖切大挑战
+targets:
+  - math.fraction.multiply
+age_band: G5-6
+duration_min: 5
+review: pending
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版小学数学六年级上册（旧版）第一单元「分数乘法」
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: 把巧克力的一半再平均分成 4 份，其中一份占整块的几分之几？
+      answer:
+        type: fraction
+        numerator: 1
+        denominator: 8
+        accept_equivalent: true
+        common_wrong:
+          - numerator: 2
+            denominator: 6
+            misconception: add-instead-of-of
+            feedback: 这两刀依次切同一块巧克力。看看横竖的切缝一共圈出几块。
+          - numerator: 1
+            denominator: 6
+            misconception: add-denominators
+            feedback: 每列都有 4 行，两列要数两次 4。
+      hints:
+        - 先切成 2 列，再把每列切成 4 行。
+        - 数一数整块里一共有几个一样大的小块。
+      feedback:
+        correct: 整块可以切成 2 列、4 行，共 8 小块。取了其中 1 块。
+        wrong: 先切成 2 列，再把每列切成 4 行。
+    - id: q2
+      stem: 一盒有 20 块巧克力，分给伙伴其中的四分之三。分出多少块？
+      answer:
+        type: number
+        value: 15
+        tolerance: 0
+        unit: 块
+        common_wrong:
+          - value: 5
+            feedback: 5 块是一份。伙伴拿走了这样的 3 份。
+      hints:
+        - 先把 20 块平均分成 4 份。
+        - 每份有几块？伙伴拿了几份？
+      feedback:
+        correct: 平均分成 4 份，每份 5 块。拿出 3 份就是 15 块。
+        wrong: 先把 20 块平均分成 4 份。
+    - id: q3
+      stem: 4 段丝带，每段长九分之二米。把总长度写成分数，是多少米？
+      answer:
+        type: fraction
+        numerator: 8
+        denominator: 9
+        accept_equivalent: true
+        common_wrong:
+          - numerator: 8
+            denominator: 36
+            misconception: multiply-both
+            feedback: 份数多了，可每份还是九分之一米，格子的大小没变。
+          - numerator: 2
+            denominator: 36
+            misconception: multiply-bottom-only
+            feedback: 四段拼在一起会更长。你写的数比原来的一段还短。
+      hints:
+        - 画一条九等分的条，把两格圈在一起。
+        - 画出这样的 4 组，每小格的长度变了吗？
+      feedback:
+        correct: 每段有 2 个九分之一，4 段共 8 个九分之一米。
+        wrong: 画一条九等分的条，把两格圈在一起。
+    - id: q4
+      stem: 一块板先取四分之三，再取这部分的三分之二。最后取了整块的几分之几？
+      answer:
+        type: fraction
+        numerator: 6
+        denominator: 12
+        accept_equivalent: true
+        common_wrong:
+          - numerator: 5
+            denominator: 7
+            misconception: add-instead-of-of
+            feedback: 这两个分数依次取在同一块板上。把两层颜色叠起来数。
+      hints:
+        - 把整块画成 4 列、3 行。
+        - 数数选中的 3 列和 2 行重叠了几块。
+      feedback:
+        correct: 4 列取 3 列，3 行取 2 行，12 小块中两次都取到的有 6 块，正好半块。
+        wrong: 把整块画成 4 列、3 行。
+    - id: q5
+      stem: 一块地的五分之三种菜。菜地的三分之一种番茄。番茄占整块地的几分之几？
+      answer:
+        type: fraction
+        numerator: 1
+        denominator: 5
+        accept_equivalent: true
+        common_wrong:
+          - numerator: 4
+            denominator: 8
+            misconception: add-instead-of-of
+            feedback: 后一刀只分菜地。把菜地和整块地分别圈出来看看。
+          - numerator: 1
+            denominator: 3
+            feedback: 三分之一说的是菜地。题目问的是整块地。
+      hints:
+        - 先把整块地画成 5 条，圈出菜地。
+        - 只把圈出的菜地再分成 3 份。番茄占其中一份。
+      feedback:
+        correct: 整块地分成 5 条，其中 3 条种菜。菜地平分成 3 份，一份正好是整块地的五分之一。
+        wrong: 先把整块地画成 5 条，圈出菜地。
+# END OF FILE

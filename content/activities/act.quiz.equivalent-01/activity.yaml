@@ -1,0 +1,128 @@
+id: act.quiz.equivalent-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 再切刀大挑战
+targets:
+- math.fraction.equivalent
+age_band: G5-6
+duration_min: 5
+review: pending
+engine: 1
+sources:
+- type: textbook
+  ref: 人教版小学数学五年级下册（旧版）第四单元「分数的基本性质」「约分」
+body:
+  shuffle: false
+  items:
+  - stem: 一根纸条的三分之一涂了色。把整条再切成 12 份，涂色的部分要写成十二分之几？请写分母是 12 的分数。
+    answer:
+      type: fraction
+      numerator: 4
+      denominator: 12
+      accept_equivalent: false
+      common_wrong:
+      - numerator: 1
+        denominator: 12
+        feedback: 总份数变多了。原来涂色的那一大份，现在有几小份？
+        misconception: change-one-only
+      - numerator: 10
+        denominator: 12
+        feedback: 你给两个数加了同样多。切纸条时，每一大份被切成了几份？
+        misconception: add-same
+    feedback:
+      correct: 每一大份变成 4 小份，涂色的那份也成了 4 小份。
+      wrong: 再看原来那一份的边界，数一数里面的新刀口。
+    hints:
+    - 先把整条三等分，请保留这两道刀口。
+    - 从 3 份变成 12 份，每一份都要再切成几份？
+    id: q1
+    figure:
+      type: svg
+      src: content/assets/math.fraction.equivalent/instrument.svg
+  - stem: 把十六分之十二约成最简分数。
+    answer:
+      type: fraction
+      numerator: 3
+      denominator: 4
+      accept_equivalent: false
+      common_wrong:
+      - numerator: 11
+        denominator: 15
+        feedback: 你给上下各减了 1。用分数条试试，两段长短还一样吗？
+        misconception: add-same
+      - numerator: 6
+        denominator: 8
+        feedback: 第一步约对了。现在的两数还能一起除以哪个数？
+    feedback:
+      correct: 每 4 份并成 1 份，原来 12 份是 3 组，整条 16 份是 4 组。
+      wrong: 找一种并法，让两道边界都能并齐。
+    hints:
+    - 先试每 2 份并成 1 份。
+    - 再看看约出来的分子、分母还能不能一起除以同一个大于 1 的数。
+    id: q2
+  - stem: 同样长的纸条，五分之二和十分之四哪段长？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 十分之四长
+        feedback: 你看到上下两个数都大了。整条也变长了吗？
+        misconception: bigger-numbers-bigger
+      - id: b
+        text: 一样长
+        correct: true
+      - id: c
+        text: 五分之二长
+        feedback: 每一大份确实长些。再数两段各取了几份。
+        misconception: bigger-piece-bigger
+    feedback:
+      correct: 每一份再对半切，涂色的两份成了四份，涂色的边界没动。
+      wrong: 想象把五等分的那条再对半切一次。
+    hints:
+    - 把两条纸条左端对齐，看看涂色部分停在哪儿。
+    - 每一大份对半切，涂色的边界会不会动？
+    id: q3
+  - stem: 下面哪个名字和四分之三的大小不同？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 八分之六
+        feedback: 上、下都变大了。每一份再切两份，涂色会变吗？
+        misconception: one-name-only
+      - id: b
+        text: 十二分之九
+        feedback: 试试每一份再切成三份，数数涂色的小块。
+        misconception: one-name-only
+      - id: c
+        text: 五分之四
+        correct: true
+    feedback:
+      correct: 前两个名字都能从四分之三再切出来。五分之四的余下部分更小。
+      wrong: 回想再切刀，每份都得切成同样多的小份。
+    hints:
+    - 把另外三个名字各自约一约。
+    - 也可以看还差多大的一份才到 1。
+    id: q4
+  - stem: 一节课有 40 分钟。它占 1 小时的几分之几？请写最简分数。
+    answer:
+      type: fraction
+      numerator: 2
+      denominator: 3
+      accept_equivalent: false
+      common_wrong:
+      - numerator: 40
+        denominator: 60
+        feedback: 你已经找到了这段时间占的份数。再看看能不能把分钟并成大组。
+      - numerator: 4
+        denominator: 6
+        feedback: 你已经约过了。上下两个数还能一起除以什么数？
+    feedback:
+      correct: 把一小时分成 3 个 20 分钟，40 分钟正好占两份。
+      wrong: 先想一小时分成多少个一分钟，再看看占多少。
+    hints:
+    - 把一个小时看成整条，40 分钟是涂色部分。
+    - 试着用同样长的一段时间把两个时长都分完。
+    id: q5
+# END OF FILE

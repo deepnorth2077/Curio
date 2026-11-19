@@ -93,18 +93,23 @@ payload 里以 `_text_id` 结尾或叫 `text_id` 的字段，值是 `txt_<ULID>`
 
 | 动词 | 范围 | 谁 | payload |
 | --- | --- | --- | --- |
-| `attempt.started` | 尝试 | learner | `{mode: first \| retry \| review}` |
+| `attempt.started` | 尝试 | learner | `{mode: first \| retry \| review, grader?}`；`grader` 是判分程序的版本，形如 `grade/1`，最多 32 个字符，由 `engine/js/grade.js` 导出；判分结果只要可能变，版本号就加一。没有这个字段的旧事件理解为 `grade/1`（CURIO-013） |
 | `attempt.completed` | 尝试 | learner | `{duration_ms}`，非负整数 |
 | `attempt.abandoned` | 尝试 | learner、system | `{reason: left \| timeout \| error}` |
-| `poe.predicted` | 尝试 | learner | `{choice?, text_id?}`，至少一个 |
+| `poe.predicted` | 尝试 | learner | `{choice?, text_id?, step?, misconception?}`，`choice`、`text_id` 至少一个；`step` 是这次猜测在模块里的位置（如 `s1`），最多 32 个字符；`misconception` 是所选选项对应的误区 id，没有误区时不写（CURIO-013） |
 | `poe.explained` | 尝试 | learner | `{choice?, text_id?}`，至少一个 |
 | `sim.adjusted` | 尝试 | learner | `{control, value}`；`value` 是数字、字符串（最多 32 个字符）或布尔值 |
 | `sim.observed` | 尝试 | learner | `{observable, value}`，`value` 同上 |
 | `item.answered` | 尝试 | learner | `{item_id, response, correct, try, hints_used, misconception?}`；`try` 从 1 开始，同一题第几次作答；`hints_used` 非负整数 |
 | `hint.used` | 尝试 | learner | `{item_id?, level}`；`level` 是 1～3 |
+| `answer.revealed` | 尝试 | learner | `{item_id}`；舰长点了「看答案」。先存好这条，再显示答案（CURIO-013） |
 | `reflection.written` | 尝试 | learner | `{text_id}` |
 
 `attempt.completed` **不带分数**。分数一律由投影从 `item.answered` 算出，避免两处数据不一致。
+
+**原事件永不改。**`item.answered` 里的 `correct` 表示「当时系统认为」。发现答案键或判分程序写错时，靠已经记下的 `response`、`content_release` 和 `grader` 重判；具体怎么改正，等第一次真的需要时先写 ADR（CURIO-013）。
+
+**误区 id 只是线索。**`misconception` 表示「舰长选了对应这个误区的选项」，不表示「舰长有这个误区」。任何投影和给家长看的说明都不能把一次选择写成诊断（CURIO-013）。
 
 ### 3.2 问题本、维修舱
 
@@ -163,7 +168,7 @@ payload 里以 `_text_id` 结尾或叫 `text_id` 的字段，值是 `txt_<ULID>`
 | `note_question` | `question.asked`（宿主先把文字存成私人文字） |
 | `complete` | `attempt.completed` |
 
-`attempt.started`、`attempt.abandoned`、`poe.explained` 由宿主自己记，模块不能发。
+`attempt.started`、`attempt.abandoned`、`poe.explained`、`answer.revealed` 由宿主自己记，模块不能发。`poe.predicted` 的 `step`、`misconception` 由宿主按模块列表填，每个模块怎么换写在竖切片 5a 的规格里。
 
 ## 4. 私人文字
 
@@ -286,7 +291,8 @@ payload 里以 `_text_id` 结尾或叫 `text_id` 的字段，值是 `txt_<ULID>`
 2. `actor` 是这个孩子本人；只有 `attempt.abandoned` 允许 `system`；
 3. 所有事件的 `content` 完全相同；
 4. 第一条是 `attempt.started`，而且只有这一条 `attempt.started`；最多一条结束事件（`completed` 或 `abandoned`），而且它是最后一条；
-5. 同一道题（同一 `item_id`）的 `item.answered`，`try` 恰好是 1、2、3……，按 `device_seq` 递增，不重复、不跳号。
+5. 同一道题（同一 `item_id`）的 `item.answered`，`try` 恰好是 1、2、3……，按 `device_seq` 递增，不重复、不跳号；
+6. `answer.revealed` 的 `item_id` 在它之前已有这道题的 `item.answered`；同一个 `item_id` 最多一条 `answer.revealed`；它之后不再有这道题的 `item.answered`（CURIO-013；编号最大，所以不改变「记编号最小的那条」，没有这个动词的旧尝试不受影响）。
 
 任何一条不满足，这次尝试标为「不一致」：事件保留，但不计入掌握度和奖励，列进 `conflicts`，并记下不满足的规则里**编号最小**的那条（例如同时违反第 1、3、5 条，只记 1）。
 
@@ -384,6 +390,7 @@ ADR-004 已经规定「奖励余额由事件算出」。这里进一步明确：
 - 事件格式只升级 `schema` 的主版本（`event/2` → `event/3`）。动词的 payload 只做向后兼容的改动（加可选字段）；需要不兼容的改动时，就出新的主版本。
 - 升级器是纯函数 `upgrade(旧版本事件) → 新版本事件`，逐版串联。存储里的原事件**永远不改**，读出来进投影之前才升级。
 - `event/1` 只在原型里用过，从来没有真实孩子的数据，所以**不写** `event/1` → `event/2` 的升级器。原型和旧打卡工具里的数据，由导入工具转换成带 `import_batch` 的 `event/2` 事件（CURIO-006）。
+- **加可选字段或新动词时，先教会所有读的程序，再开始写**：设备上读事件的程序遇到不认识的字段或动词会拒收，所以先发一个只认识新字段、新动词的版本（`schemas/`、`kernel/js/validate.js`），等它上线，再发写它们的版本（`engine/`、`app/`）。两步可以是同一个任务里的两个 PR（CURIO-013）。
 - 第一个用到升级器的切片，用一个**只在测试里**的假版本 `event/2-test`，证明升级链路可用：存储里的原事件不变，投影看到的是升级后的结果。
 
 ## 9. 黄金向量
