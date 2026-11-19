@@ -24,9 +24,11 @@ lenses:
   approach: 让相同质量两车互推；给其中一辆加货，同一瞬间比较两箭头和两辆车速度变化。
 - band: G7-9
   approach: 相互作用的两力同时、等大、反向、分属不同物体。2 kg和4 kg小车互推4 N时加速度大小为2和1 m/s²。水平外力忽略。
-activities: []
+activities:
+- act.simulation.pair-track-01
+- act.quiz.pair-track-01
 status: draft
-version: 1
+version: 2
 curriculum:
 - std: 普通高中物理课程标准
   ref: 必修一 · 相互作用与运动定律
