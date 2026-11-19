@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deepnorth2077/curio/schemas/catalog.schema.json",
+  "title": "catalog/1 · 知识点目录",
+  "type": "object",
+  "required": ["schema", "version", "points", "retired"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "catalog/1" },
+    "version": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "points": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/point",
+        "required": ["prerequisites"],
+        "properties": {
+          "prerequisites": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/nodeId" } }
+        },
+        "unevaluatedProperties": false
+      }
+    },
+    "retired": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/point",
+        "required": ["replaced_by"],
+        "properties": { "replaced_by": { "$ref": "#/$defs/nodeId" } },
+        "unevaluatedProperties": false
+      }
+    }
+  },
+  "$defs": {
+    "nodeId": { "type": "string", "pattern": "^[a-z]+(\\.[a-z0-9-]+)+$" },
+    "point": {
+      "type": "object",
+      "required": ["id", "title", "grade", "theme", "unit"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "title": { "type": "string", "minLength": 1 },
+        "grade": { "enum": ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12"] },
+        "theme": { "enum": ["num", "rel", "geo", "stat", "mat", "ene", "life", "earth"] },
+        "unit": { "type": "string" }
+      }
+    }
+  }
+}

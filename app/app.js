@@ -74,7 +74,9 @@ export async function verifyManifest(rel) {
   if (rel.engine_min > ENGINE_LEVEL) throw new ReleaseError("update", `需要 ${rel.engine_min} 级引擎`);
   let text;
   try {
-    text = canonicalJson({ engine_min: rel.engine_min, contracts: rel.contracts, nodes: rel.nodes, activities: rel.activities, assets: rel.assets });
+    const fields = { engine_min: rel.engine_min, contracts: rel.contracts, nodes: rel.nodes, activities: rel.activities, assets: rel.assets };
+    if ("catalog" in rel) fields.catalog = rel.catalog;
+    text = canonicalJson(fields);
   } catch (e) { throw new ReleaseError("broken", String(e && e.message)); }
   const h = await sha256Hex(new TextEncoder().encode(text));
   if (h !== rel.content_hash) throw new ReleaseError("broken", "content_hash 对不上");
@@ -111,7 +113,7 @@ async function fetchVerifiedJson(base, j, fetchFn) {
  * 读发布包并逐个核对。任何一处对不上都抛 ReleaseError。
  * @param {URL} [url]
  * @param {typeof fetch} [fetchFn]
- * @returns {Promise<{release: any, raw: string, nodes: any[], activities: Map<string, {entry: any, def: any|null, module?: {manifest:any, html:string}}>}>}
+ * @returns {Promise<{release: any, raw: string, nodes: any[], catalog?: any, activities: Map<string, {entry: any, def: any|null, module?: {manifest:any, html:string}}>}>}
  */
 export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
   let rel, raw;
@@ -161,7 +163,15 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
     if (def && def.id !== a.id) throw new ReleaseError("broken", `活动 ${a.id} 对不上`);
     activities.set(a.id, { entry: a, def });
   }
-  return { release: rel, raw, nodes, activities };
+  const result = { release: rel, raw, nodes, activities };
+  if ("catalog" in rel) {
+    const entry = rel.catalog;
+    if (entry?.path !== "content/catalog/points.yaml" || entry.json?.path !== entry.path + ".json") {
+      throw new ReleaseError("broken", "知识点目录的文件不完整");
+    }
+    result.catalog = await fetchVerifiedJson(url, entry.json, fetchFn);
+  }
+  return result;
 }
 
 /* ============================================================

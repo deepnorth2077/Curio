@@ -48,6 +48,7 @@ KID_FACING_ACT = ["title", "predict", "explain"]
 FORBIDDEN_WORD = "学习"
 PUBLISH_REQUIRED_TYPES = ["explain", "quiz"]
 PATH_SEGMENT = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
+CATALOG_PATH = "content/catalog/points.yaml"
 # 孩子会碰到的外壳页面：样式里要有「长按不选字、不弹菜单」那两条（#156，module_lint.NOSELECT_CSS）。文件不在就不查
 NOSELECT_SHELLS = ["preview/template.html", "app/index.html", "prototype/index.html"]
 
@@ -100,6 +101,55 @@ def match(path, patterns):
 def load_yaml_text(text):
     import yaml
     return yaml.safe_load(text)
+
+
+def check_catalog(doc, nodes, previous=None, schema=None):
+    """CI 和发布构建共用。nodes 含所有状态的卡；CI 还传入主线的上一版目录。"""
+    from jsonschema import Draft202012Validator
+    if schema is None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas/catalog.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    errors = []
+    for error in Draft202012Validator(schema).iter_errors(doc):
+        where = "/".join(str(key) for key in error.absolute_path) or "(根)"
+        errors.append(f"{where}：{error.message}")
+    if errors:
+        return errors
+
+    points = {entry["id"]: entry for entry in doc["points"]}
+    entries = {}
+    for entry in doc["points"] + doc["retired"]:
+        nid = entry["id"]
+        if nid in entries:
+            errors.append(f"知识点目录 ID 重复：{nid}")
+        entries[nid] = entry
+    for point in doc["points"]:
+        for nid in point["prerequisites"]:
+            if nid not in points:
+                errors.append(f"{point['id']} 的前置 {nid} 不在现行目录里")
+    for old in doc["retired"]:
+        target = old["replaced_by"]
+        if target not in points or target not in nodes:
+            errors.append(f"{old['id']} 的接替者 {target} 必须是有课程卡的现行知识点")
+    for nid, (_, card) in nodes.items():
+        if nid not in points:
+            errors.append(f"现行目录里缺少课程卡 {nid}")
+        elif any(points[nid][field] != card.get(field) for field in ("grade", "theme")):
+            errors.append(f"{nid} 的年级、主题必须与课程卡一致")
+
+    if previous is not None and doc != previous:
+        if doc["version"] <= previous["version"]:
+            errors.append("目录有改动，version 必须比主线大")
+        for old in previous["points"] + previous["retired"]:
+            nid = old["id"]
+            if nid not in entries:
+                errors.append(f"已登记的目录 ID 不能消失：{nid}")
+            elif any(entries[nid][field] != old[field] for field in ("grade", "theme")):
+                errors.append(f"已登记的 {nid} 不能改年级或主题")
+        for old in previous["retired"]:
+            if old["id"] in points:
+                errors.append(f"已撤下的 ID 不能重新用作现行知识点：{old['id']}")
+    return errors
 
 
 def activity_items(doc):
@@ -462,6 +512,18 @@ def run(repo, base="origin/main", branch="", labels=()):
             if doc["id"] in nodes:
                 r.err(f"知识点 ID 重复：{doc['id']}", rel(repo, f))
             nodes[doc["id"]] = (f, doc)
+
+    catalog_path = repo / CATALOG_PATH
+    previous_catalog = base_text(CATALOG_PATH)
+    if catalog_path.is_file():
+        if "catalog.schema.json" not in schemas:
+            r.err("知识点目录缺少可用的 catalog.schema.json", CATALOG_PATH)
+        else:
+            previous = load_yaml_text(previous_catalog) if previous_catalog is not None else None
+            for message in check_catalog(load(catalog_path), nodes, previous, schemas["catalog.schema.json"]):
+                r.err(message, CATALOG_PATH)
+    elif previous_catalog is not None:
+        r.err("不能删除已登记的知识点目录", CATALOG_PATH)
 
     activity_root = repo / "content/activities"
     activity_dirs = sorted(p for p in activity_root.iterdir() if p.is_dir()) if activity_root.exists() else []

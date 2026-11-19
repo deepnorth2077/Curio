@@ -6,7 +6,7 @@
     python preview/build.py --root . --trial-bundle prototype/trial-content.js
     python preview/build.py --root . --constellation zero-to-one --out prototype/preview/zero-to-one/index.html
 
---bundle：把所有 status: published 的知识点、它们卡片里列的已批准（review: approved）活动和配图打成一个 JS 文件，
+--bundle：把可选的知识点目录、所有 status: published 的知识点、它们卡片里列的已批准（review: approved）活动和配图打成一个 JS 文件，
 原型（prototype/index.html）用 <script src="content.js"> 读。
 --trial-bundle：为首页额外生成点名试玩的星座目录和未发布活动。默认引用仓库里的动手探索 HTML；
 部署时加 --copy-trial-modules，把清单内需要的 HTML 复制到输出目录旁边的 trial-modules/。
@@ -189,7 +189,11 @@ def build_bundle(roots):
                     acts[aid] = a
                 ids.append(aid)
             nodes.append(bundle_node(node, ids))
-    return {"nodes": nodes, "activities": acts, "figures": figures}
+    bundle = {"nodes": nodes, "activities": acts, "figures": figures}
+    catalog = find(roots, "content/catalog/points.yaml", required=False)
+    if catalog:
+        bundle["catalog"] = yaml.safe_load(catalog.read_text(encoding="utf-8"))
+    return bundle
 
 
 def build_trial_bundle(roots, output_dir, copy_modules=False):
