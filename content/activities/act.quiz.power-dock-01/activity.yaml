@@ -1,0 +1,121 @@
+# author: Codex
+# prompt_ref: prompts/act.simulation.power-dock-01.md
+id: act.quiz.power-dock-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 给起重机打工票
+targets:
+- physics.energy.power
+age_band: G3-4
+duration_min: 7
+review: pending
+engine: 1
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 7.7
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42152/index.cnxml
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 两辆货车各完成 12 焦的搬运功。甲用 3 秒，乙用 6 秒。哪一辆在这趟中平均每秒做功更多？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 甲车
+        correct: true
+      - id: b
+        text: 乙车
+        misconception: first-is-powerful
+        feedback: 两车要分的功一样，乙车把它摊在更多秒里。
+      - id: c
+        text: 两车一样
+        misconception: first-is-powerful
+        feedback: 工作票的焦数一样，秒表上的时间不同。
+    feedback:
+      correct: 甲每秒平均做 4 焦，乙每秒平均做 2 焦。甲的平均功率更大。
+      wrong: 把每辆车的一趟功均分给各秒。
+    hints:
+    - 把每辆车的一趟功均分给各秒。
+    - 比一比哪一格秒表分到的功多。
+  - id: q2
+    stem: 小吊机在一次升货中做了 20 焦的功，正好用了 4 秒。这一趟的平均功率有几瓦？
+    answer:
+      type: number
+      value: 5
+      tolerance: 0
+      unit: 瓦
+      common_wrong:
+      - value: 20
+        misconception: first-is-powerful
+        feedback: 20 焦是整趟的功。平均功率要看每秒分到多少。
+    feedback:
+      correct: 把 20 焦均分给 4 秒，每秒平均 5 焦。这一趟的平均功率是 5 瓦。
+      wrong: 一瓦表示平均每秒做一焦的功。
+    hints:
+    - 一瓦表示平均每秒做一焦的功。
+    - 把总功除以秒表读数。
+  - id: q3
+    stem: 甲起重机先做完，乙随后也做完。两张工票的功栏都被墨水盖住了。只凭先后，能挑出平均功率大的吗？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 一定是甲
+        misconception: first-is-powerful
+        feedback: 甲也可能只搬了一个很轻的小箱，做的功较少。
+      - id: b
+        text: 一定是乙
+        misconception: first-is-powerful
+        feedback: 乙用时晚，也可能做了更大或更小的一单。
+      - id: c
+        text: 还得读出它们的功和各自用时
+        correct: true
+    feedback:
+      correct: 先后顺序没有给出每秒的功。补齐两张票的焦数和耗时，才能比较。
+      wrong: 想想两份订单的货可能一样重吗。
+    hints:
+    - 想想两份订单的货可能一样重吗。
+    - 看看平均功率要用的两个读数是否齐了。
+  - id: q4
+    stem: 码头吊钩在 6 秒内对一箱货做了 18 焦的功。下一趟要在 4 秒内保持同样的平均功率，这一趟应做几焦的功？
+    answer:
+      type: number
+      value: 12
+      tolerance: 0
+      unit: 焦
+      common_wrong:
+      - value: 18
+        misconception: first-is-powerful
+        feedback: 两次用时不同，同样的平均功率会得到不同的总功。
+    feedback:
+      correct: 第一趟平均每秒做 3 焦。保持这个平均数，4 秒做 12 焦。
+      wrong: 先从第一张票找出平均每秒的功。
+    hints:
+    - 先从第一张票找出平均每秒的功。
+    - 再把每秒的份额乘以下一趟的用时。
+  - id: q5
+    stem: 两台绞车同时开工。甲先完成小单，2 秒做 8 焦。乙后完成大单，5 秒做 25 焦。哪张“平均功率冠军”贴纸贴得对？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 贴甲，它先完工
+        misconception: first-is-powerful
+        feedback: 甲每秒平均做 4 焦。再核对乙的每秒读数。
+      - id: b
+        text: 贴乙，它平均每秒多做 1 焦
+        correct: true
+      - id: c
+        text: 贴乙，它平均每秒多做 17 焦
+        misconception: first-is-powerful
+        feedback: 17 焦是两张票总功的差，两台的用时不同。
+    feedback:
+      correct: 甲是 8 ÷ 2 = 4 瓦，乙是 25 ÷ 5 = 5 瓦。乙晚完工，每秒却多做 1 焦。
+      wrong: 先遮住两台完工的名次。
+    hints:
+    - 先遮住两台完工的名次。
+    - 给每张工票分别算平均每秒的功，再比较它们的差。
+# END OF FILE
