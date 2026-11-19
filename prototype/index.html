@@ -641,14 +641,49 @@ const CATALOG=trial.catalog;
 CONTENT.nodes.forEach(c=>{ if(!THEMES[c.theme]) return; const row=[c.id,c.title,c.grade,c.theme,c.unit,c.prerequisites], i=RAW.findIndex(r=>r[0]===c.id);
   if(i>=0) RAW[i]=row; else RAW.push(row);
   DETAIL[c.id]=Object.assign({},DETAIL[c.id],{dq:c.driving_question||null,objectives:c.objectives||[],misconceptions:(c.misconceptions||[]).map(m=>m.text),lenses:(c.lenses||[]).map(l=>[l.band,l.approach]),acts:c.activities}); });
+// A retired sample has one current entry point. Scores and events still belong to their original IDs.
+const cardIds=new Set(CONTENT.nodes.filter(n=>THEMES[n.theme]).map(n=>n.id));
+const replacements=[
+  {old:"math.number.fraction-intro",to:"math.fraction.unit-fraction"},
+  {old:"math.number.fraction-compare",to:"math.fraction.count-on-line"},
+  {old:"m.g3.frac-calc",to:"math.fraction.add-subtract"},
+  {old:"m.g3.frac-app",to:"math.fraction.the-whole"},
+  {old:"m.g5.fraction",to:"math.fraction.the-whole"},
+  {old:"m.g3.decimal",to:"math.decimal.tenths"},
+  {old:"m.g4.decimal",to:"math.decimal.tenths"},
+  {old:"m.g6.percent",to:"math.percent.meaning"},
+  {old:"m.g6.ratio",to:"math.ratio.meaning"}
+];
+const retired=new Map();
+for(const entry of replacements){
+  if(!cardIds.has(entry.to)||cardIds.has(entry.old)) continue;
+  const row=RAW.find(([id])=>id===entry.old);
+  if(row) retired.set(entry.old,{...entry,title:row[1]});
+}
+const currentId=id=>retired.get(id)?.to??id;
 const RAW_IDS=new Set(RAW.map(r=>r[0]));
+const rowGrades=new Map(RAW.map(([id,,grade])=>[id,Number(grade.slice(1))]));
 const GRADES=["G1","G2","G3","G4","G5","G6","G7","G8","G9","G10","G11","G12"];
 const GRADE={G1:"一年级",G2:"二年级",G3:"三年级",G4:"四年级",G5:"五年级",G6:"六年级",G7:"初一",G8:"初二",G9:"初三",G10:"高一",G11:"高二",G12:"高三"};
 const BAND_OF=g=>({G1:0,G2:0,G3:1,G4:1,G5:2,G6:2,G7:3,G8:3,G9:3})[g]??4;
 const BAND_NAME=["一二年级","三四年级","五六年级","初中","高中"];
 let CURRENT_BAND=1, CURRENT_GRADE="G3";   // 由「设置」里的年级算出来，见 applyProfile()
-const NODES=RAW.map(([id,title,grade,theme,unit,prereq],i)=>{ const t=THEMES[theme], d=DETAIL[id]||{};
-  return {id,title,short:title.split("：")[0],grade,theme,unit,prereq:(prereq||[]).filter(p=>RAW_IDS.has(p)),galaxy:t.g,band:BAND_OF(grade),icon:d.icon||t.icon,dq:d.dq||null,objectives:d.objectives||[],misconceptions:d.misconceptions||[],lenses:d.lenses||[],acts:d.acts||[],seed:11+i*7,no:i+1}; });
+const NODES=RAW.flatMap(([id,title,grade,theme,unit,prereq],i)=>{
+  if(retired.has(id)) return [];
+  const t=THEMES[theme], d=DETAIL[id]||{};
+  const predecessors=new Set();
+  for(const old of prereq||[]){
+    const target=currentId(old);
+    if(target===id||!RAW_IDS.has(target)) continue;
+    // A G3 sample should not acquire a G5 prerequisite when its old neighbor is retired.
+    if(target!==old&&rowGrades.get(target)>rowGrades.get(id)) continue;
+    predecessors.add(target);
+  }
+  const aliases=[...retired.values()].filter(entry=>entry.to===id);
+  const activities=[...new Set([...(d.acts||[]),...aliases.flatMap(entry=>DETAIL[entry.old]?.acts||[])])];
+  const searchNames=aliases.map(entry=>entry.title);
+  return [{id,title,short:title.split("：")[0],grade,theme,unit,prereq:[...predecessors],galaxy:t.g,band:BAND_OF(grade),icon:d.icon||t.icon,dq:d.dq||null,objectives:d.objectives||[],misconceptions:d.misconceptions||[],lenses:d.lenses||[],acts:activities,aliases,searchNames,seed:11+i*7,no:i+1}];
+});
 const NODE=Object.fromEntries(NODES.map(n=>[n.id,n]));
 // A series follows the story's order. Its stars keep the single canonical grade and metro line on their cards.
 const SERIES=new Map();
@@ -673,7 +708,12 @@ const ACTIVITIES={
 Object.values(CONTENT.activities).forEach(a=>{ ACTIVITIES[a.id]=Object.assign({},a,{type:a.kind,content:true}); });
 const PLAYED=new Set();   // 这次打开页面以后玩完的内容活动，只在内存里，刷新就没了（这一版先不记进度）
 const ACT_KIND={experiment:"实验",quiz:"挑战",simulation:"动手探索",explain:"讲解",reflection:"反思"};
-const actKind=(a,n)=>a.type==="explain"&&n.acts.some(x=>ACTIVITIES[x]&&ACTIVITIES[x].type==="simulation")?"旧版讲解":(ACT_KIND[a.type]||"任务");
+function actKind(a,n){
+  const original=retired.get(a.targets?.[0]);
+  if(a.type==="quiz"&&original?.to===n.id) return `原星挑战 · 成绩记在「${original.title}」`;
+  if(a.type==="explain"&&n.acts.some(id=>ACTIVITIES[id]?.type==="simulation")) return "旧版讲解";
+  return ACT_KIND[a.type]||"任务";
+}
 const TASK_LIB_DEFAULT=["数学","科学","阅读","运动","下棋","弹琴"];
 
 /* ============================================================
@@ -723,10 +763,10 @@ function computeMastery(){ const m={}; for(const e of S.events){ if(!e.node) con
   if(e.verb==="diagnosed") v=Math.max(0,v-.15);
   m[e.node]=v; } return m; }
 function mastery(id){ if(!MCACHE) MCACHE=computeMastery(); return MCACHE[id]||0; }
-const visited=id=>S.events.some(e=>e.node===id);
+const visited=id=>S.events.some(e=>currentId(e.node)===currentId(id));
 function nodeState(n){ const m=mastery(n.id); if(m>=.8) return "lit"; if(visited(n.id)) return "landed"; return n.band>CURRENT_BAND?"ahead":"new"; }
 const STATE_WORD={lit:"已点亮",landed:"登陆过",new:"还没去过",ahead:"超前探险"};
-const repairsFor=id=>S.repairs.filter(r=>r.node===id&&r.status!=="archived");
+const repairsFor=id=>S.repairs.filter(r=>currentId(r.node)===currentId(id)&&r.status!=="archived");
 const dueRepairs=()=>S.repairs.filter(r=>r.status==="practice"&&(!r.nextReview||r.nextReview<=todayStr()));
 function recommend(){ const ok=n=>n.prereq.every(p=>mastery(p)>=.8); return NODES.find(n=>nodeState(n)!=="lit"&&ok(n)&&n.acts.length&&n.band<=CURRENT_BAND)||NODES.find(n=>nodeState(n)!=="lit"&&n.acts.length)||NODES[0]; }
 /* ============================================================
@@ -740,8 +780,8 @@ const MOCK={
   "vision.capture_question"(i){ if(i.sample) return {stem:"圆被平均分成 4 份，涂色部分是这个圆的几分之几？",childAnswer:"1/3",rightAnswer:"1/4"}; return {stem:"",childAnswer:"",rightAnswer:"",needsEdit:true}; },
   "tutor.diagnose"(i){ const t=i.stem+" "+i.childAnswer; let node="math.number.fraction-intro";
     if(/周长|一圈|长方形/.test(t)) node="math.geometry.perimeter"; else if(/时|分钟|秒/.test(t)&&!/几分之/.test(t)) node="math.measure.time-units"; else if(/比大小|哪个大/.test(t)) node="math.number.fraction-compare";
-    let mis=NODE[node].misconceptions[0]; if(node==="math.number.fraction-intro"&&/1\/3/.test(i.childAnswer)&&/4/.test(i.stem)) mis="把涂色的份数和没涂色的份数相比（1 比 3）";
-    return {node,misconception:mis}; },
+    let mis=NODE[currentId(node)].misconceptions[0]; if(node==="math.number.fraction-intro"&&/1\/3/.test(i.childAnswer)&&/4/.test(i.stem)) mis="把涂色的份数和没涂色的份数相比（1 比 3）";
+    return {node:currentId(node),misconception:mis}; },
   "gen.variants"(i){ return {variants:makeVariants(i.node)}; },
   "tutor.ask"(i){ const q=i.text;
     if(/天/.test(q)&&/蓝/.test(q)) return {answer:"阳光里藏着很多颜色。它穿过空气时，蓝光最容易被空气里的小颗粒弹来弹去，满天都是被弹散的蓝光，所以天看起来是蓝的。",followUp:"那傍晚的天空为什么会变红？"};
@@ -750,8 +790,8 @@ const MOCK={
 };
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 function makeVariants(node){ const o=[];
-  if(node==="math.number.fraction-intro"){ for(let i=0;i<3;i++){ const n=rnd(3,8),k=rnd(1,n-1),t=["饼","比萨","西瓜","巧克力板"][rnd(0,3)]; o.push({q:`把一块${t}平均分成 ${n} 份，吃了 ${k} 份，吃了这块${t}的几分之几？`,a:`${k}/${n}`,kind:"fraction"}); } }
-  else if(node==="math.number.fraction-compare"){ for(let i=0;i<3;i++){ const n=rnd(5,10); let a=rnd(1,n-1),b=rnd(1,n-1); while(b===a) b=rnd(1,n-1); o.push({q:`${a}/${n} 和 ${b}/${n}，哪个大？（写出较大的那个）`,a:`${Math.max(a,b)}/${n}`,kind:"fraction"}); } }
+  if(currentId(node)===currentId("math.number.fraction-intro")){ for(let i=0;i<3;i++){ const n=rnd(3,8),k=rnd(1,n-1),t=["饼","比萨","西瓜","巧克力板"][rnd(0,3)]; o.push({q:`把一块${t}平均分成 ${n} 份，吃了 ${k} 份，吃了这块${t}的几分之几？`,a:`${k}/${n}`,kind:"fraction"}); } }
+  else if(currentId(node)===currentId("math.number.fraction-compare")){ for(let i=0;i<3;i++){ const n=rnd(5,10); let a=rnd(1,n-1),b=rnd(1,n-1); while(b===a) b=rnd(1,n-1); o.push({q:`${a}/${n} 和 ${b}/${n}，哪个大？（写出较大的那个）`,a:`${Math.max(a,b)}/${n}`,kind:"fraction"}); } }
   else if(node==="math.geometry.perimeter"){ for(let i=0;i<3;i++){ const l=rnd(4,12),w=rnd(2,l-1); o.push({q:`长方形长 ${l} 厘米、宽 ${w} 厘米，周长是多少厘米？`,a:String(2*(l+w)),kind:"number"}); } }
   else o.push({q:"1 分 = 多少秒？",a:"60",kind:"number"},{q:"2 分 = 多少秒？",a:"120",kind:"number"},{q:"1 时 = 多少分？",a:"60",kind:"number"});
   return o; }
@@ -824,7 +864,7 @@ document.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); i
    ============================================================ */
 const openCons={}; let treeQuery="";
 function matchesNode(n,query){
-  return [n.title,n.unit,GALAXY[n.galaxy],THEMES[n.theme].name,CATALOG[n.id]?.series_title,CATALOG[n.id]?.group_title,
+  return [n.title,...n.searchNames,n.unit,GALAXY[n.galaxy],THEMES[n.theme].name,CATALOG[n.id]?.series_title,CATALOG[n.id]?.group_title,
     ...n.acts.map(id=>ACTIVITIES[id]?.title)].some(text=>text?.includes(query));
 }
 function treeHTML(inDrawer){
@@ -1292,6 +1332,7 @@ function revealSelected(){
   else if(rect.bottom>viewport.bottom-6) box.scrollTop+=rect.bottom-viewport.bottom+6;
 }
 function select(id,user){
+  id=currentId(id);
   const n=NODE[id]; if(!n) return; selected=id;
   const inSeries=chartSeries&&CATALOG[id]?.series===chartSeries;
   const opened=user&&innerWidth>=760&&!noteOpen;
@@ -1313,6 +1354,14 @@ function select(id,user){
 function noteHTML(n,animate){
   const st=nodeState(n), m=mastery(n.id), rec=recommend(), isRec=rec.id===n.id, t=THEMES[n.theme], c=CONS[consId(n)];
   const nextOnes=NODES.filter(x=>x.prereq.includes(n.id)), acts=n.acts.map(a=>ACTIVITIES[a]).filter(Boolean), lit=st==="lit";
+  const previous=n.aliases.flatMap(entry=>{
+    const events=S.events.filter(e=>e.node===entry.old);
+    if(!events.length) return [];
+    const scores=events.filter(e=>e.verb==="completed"&&Number.isFinite(e.result?.score)).map(e=>Math.round(e.result.score*100)+"%");
+    return [`<li>${esc(entry.title)} · 原点亮进度 ${Math.round(mastery(entry.old)*100)}%${scores.length?" · 原成绩："+scores.join("、"):""}</li>`];
+  });
+  const history=previous.length?`<details class="parent"><summary>旧星记录</summary><p>这些记录算作来过这颗星。</p><ul>${previous.join("")}</ul></details>`:"";
+  const lawsOverview=n.id==="m.g4.laws"&&!cardIds.has(n.id)&&cardIds.has("math.operation.distributive-law");
   const cardBg=n.galaxy==="math"?"var(--c-math-bg)":"var(--c-sci-bg)";
   return `<div class="note">
     <div class="crumbs"><span>${GALAXY[n.galaxy]}</span><span>${esc(consName(c))}座</span><span>${GRADE[n.grade]}</span></div>
@@ -1325,12 +1374,13 @@ function noteHTML(n,animate){
       <dt>线路</dt><dd><a class="wikilink" href="#metro" data-line="${n.theme}"><span style="display:inline-block;width:14px;height:5px;border-radius:9px;background:var(${t.c});vertical-align:middle;margin-right:4px"></span>${t.line}</a></dd>
       ${n.prereq.length?`<dt>先去</dt><dd class="links">${n.prereq.map(p=>`<a class="wikilink" href="#" data-goto="${p}">${esc(NODE[p].title)}</a>`).join("")}</dd>`:""}
     </dl>
-    ${n.dq?`<div class="signal-card" style="--card-bg:${cardBg}"><div><div class="eyebrow">${isRec?"今日信号":"来自这颗星球的信号"}</div><p class="q">${esc(n.dq)}</p></div>${icon(n.icon,n.galaxy,100,n.seed,animate?"drawin":"")}</div>`
+    ${lawsOverview?`<div class="callout"><p>交换律、结合律和分配律都属于运算定律。分配律已经可以动手试了。</p><a class="wikilink" href="#chart" data-goto="math.operation.distributive-law">${esc(NODE["math.operation.distributive-law"].title)}</a></div>`:n.dq?`<div class="signal-card" style="--card-bg:${cardBg}"><div><div class="eyebrow">${isRec?"今日信号":"来自这颗星球的信号"}</div><p class="q">${esc(n.dq)}</p></div>${icon(n.icon,n.galaxy,100,n.seed,animate?"drawin":"")}</div>`
       :`<div class="callout"><span class="ct">这颗星球的信号还在路上</span><span class="muted" style="font-size:13px">它的讲解、实验和挑战还没造好。示例数据里只有少数星球是完整的。</span></div>`}
     <h2>任务</h2>
     <div class="tasklist">${acts.length?acts.map(a=>{ const done=PLAYED.has(a.id); return `<div class="taskrow">${a.content?icon(n.icon,n.galaxy,48,n.seed+a.id.length):icon(a.type==="experiment"?"pinhole":"cake",n.galaxy,48,a.id.length)}<div><b>${done?`<span class="tick" aria-label="玩过了">✓</span> `:""}${esc(a.title)}</b><small>${actKind(a,n)}${a.duration_min?` · 约 ${a.duration_min} 分钟`:""}</small></div><button class="btn ink" data-start="${a.id}">${done?"再玩":"开始"}</button></div>`; }).join("")
       :`<p class="muted" style="font-size:13px">还没有任务。</p>`}</div>
     <div class="minispec ${lit?"":"locked"}">${icon(n.icon,n.galaxy,40,n.seed)}<div><b style="font-size:13px;color:var(--ink)">图鉴 No.${String(n.no).padStart(3,"0")}</b><div class="muted" style="font-size:12px">${lit?"已收集，可以在地铁的「图鉴」里翻到它":"点亮之后，这张标本卡会收进图鉴"}</div></div></div>
+    ${history}
     ${repairsFor(n.id).length?`<div class="callout q"><span class="ct">维修舱里有 ${repairsFor(n.id).length} 道这颗星球的题</span><a class="wikilink" href="#repair">去修一修</a></div>`:""}
     ${n.lenses.length?`<h2>不同年龄看到的样子</h2><div class="lenses">${n.lenses.map(([b,a])=>`<div class="${b===ageBand()?"on":""}"><span class="b">${b}</span><span>${esc(a)}</span></div>`).join("")}</div>`:""}
     ${nextOnes.length?`<h2>反向链接</h2><p class="muted" style="font-size:13px">点亮这里之后可以去：</p><div class="links">${nextOnes.map(x=>`<a class="wikilink" href="#" data-goto="${x.id}">${esc(x.title)}</a>`).join("")}</div>`:""}
@@ -1434,13 +1484,13 @@ const FONT_LINK=`<link rel="stylesheet" href="https://fonts.googleapis.com/css2?
 function srcdoc(mod){ return `<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONT_LINK}<style>${MOD_BASE_CSS}${mod.css}</style></head><body>${mod.body}<script>${SDK}\nconst Sk=(${sketchLib.toString()})();\n(${mod.fn.toString()})();<\/script></body></html>`; }
 
 function openLab(actId){
-  const A=ACTIVITIES[actId], node=NODE[A.targets[0]], poe=A.pedagogy==="POE";
+  const A=ACTIVITIES[actId], original=A.targets[0], node=NODE[currentId(original)], poe=A.pedagogy==="POE";
   const run={phase:poe?"predict":"run",prediction:null,first:null,big:null,last:null,hints:0,wrong:[]};
   const lab=document.createElement("div"); lab.className="lab"; lab.setAttribute("role","dialog"); lab.setAttribute("aria-label",A.title);
   lab.innerHTML=`<div class="labhead">${icon(node.icon,node.galaxy,40,node.seed)}<div class="t"><small>${esc(node.title)} · ${A.type==="experiment"?"实验":"挑战"} · <span class="mono">${A.contract}</span></small><h2>${esc(A.title)}</h2></div><button class="close" aria-label="关闭">${X_ICON}</button></div>
     <div class="labbody ${poe?"poe":""}">${poe?`<div class="poe-col" id="poe"></div>`:""}<div><div class="frame"><iframe title="${esc(A.title)}" sandbox="allow-scripts"></iframe></div><div id="after"></div></div></div>`;
   document.body.appendChild(lab);
-  const frame=lab.querySelector("iframe"), send=(type,payload)=>frame.contentWindow&&frame.contentWindow.postMessage({contract:"activity/1.1",type,payload},"*"), base={node:node.id,activity:A.id};
+  const frame=lab.querySelector("iframe"), send=(type,payload)=>frame.contentWindow&&frame.contentWindow.postMessage({contract:"activity/1.1",type,payload},"*"), base={node:original,activity:A.id};
   const readyTimer=setTimeout(()=>logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"模块 3 秒内没有发出 ready"}},base)),3000);
   const close=()=>{ window.removeEventListener("message",onMsg); clearTimeout(readyTimer); lab.remove(); rerender(); select(node.id,false); };
   lab.querySelector(".close").onclick=close;
@@ -1448,14 +1498,14 @@ function openLab(actId){
     if(!m||m.contract!==A.contract){ logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"契约版本不符"}},base)); return; }
     const p=m.payload||{};
     switch(m.type){
-      case "ready": clearTimeout(readyTimer); send("init",{age_band:ageBand(),lang:"zh",phase:run.phase,palette:palette(),mastery:mastery(node.id)}); logEvent(Object.assign({verb:"started"},base)); break;
+      case "ready": clearTimeout(readyTimer); send("init",{age_band:ageBand(),lang:"zh",phase:run.phase,palette:palette(),mastery:mastery(original)}); logEvent(Object.assign({verb:"started"},base)); break;
       case "event": if(!A.emits.includes(p.verb)){ logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"未在 manifest.emits 声明",verb:p.verb}},base)); break; }
         if(p.verb==="started") break; logEvent(Object.assign({verb:p.verb,result:p.result},base));
         if(p.verb==="answered"&&p.result&&p.result.correct===false) run.wrong.push(p.result);
         if(p.verb==="observed"&&poe){ run.phase="explain"; drawPOE(); } break;
       case "state": if(!run.first) run.first=p; run.last=p; if(p.hole==="大") run.big=p; break;
       case "request_hint": run.hints++; send("hint",{level:run.hints}); logEvent(Object.assign({verb:"hint_used",result:{level:run.hints}},base)); break;
-      case "note_question": addQuestion(p.text,node.id); toast("问题已发到信号站"); break;
+      case "note_question": addQuestion(p.text,original); toast("问题已发到信号站"); break;
       case "complete": finish(p); break;
       case "resize": frame.style.height=Math.max(420,Math.min(2400,+p.h||0))+"px"; frame.style.minHeight="0"; break;
       default: logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"未知消息",type:m.type}},base)); } }
@@ -1483,7 +1533,7 @@ function openLab(actId){
     if(poe){ drawPOE(); return; }
     const wrong=run.wrong.filter(w=>w.misconception);
     lab.querySelector("#after").innerHTML=`<div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div style="display:flex;gap:10px;align-items:center"><svg class="drawn-check" width="28" height="28" viewBox="0 0 28 28" style="color:var(--good)"><path d="M5 15l6 6L23 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><div><b style="color:var(--ink)">挑战完成 · ${r.score} / ${r.total}</b><p class="muted" style="font-size:13px">能量 +1${wrong.length?`；${wrong.length} 道题掉进了常见陷阱`:""}</p></div></div>${wrong.length?`<button class="btn ink" id="toRep">送进维修舱</button>`:""}</div></div>`;
-    const tr=lab.querySelector("#toRep"); if(tr) tr.onclick=()=>{ wrong.forEach(w=>createRepair({source:"quiz",stem:w.stem,childAnswer:w.response,rightAnswer:w.right,node:node.id,misconception:w.misconceptionText})); close(); location.hash="#repair"; toast(`${wrong.length} 道题已送进维修舱`); }; }
+    const tr=lab.querySelector("#toRep"); if(tr) tr.onclick=()=>{ wrong.forEach(w=>createRepair({source:"quiz",stem:w.stem,childAnswer:w.response,rightAnswer:w.right,node:original,misconception:w.misconceptionText})); close(); location.hash="#repair"; toast(`${wrong.length} 道题已送进维修舱`); }; }
 }
 
 /* ============================================================
@@ -1635,7 +1685,8 @@ const Player=(()=>{
   let openNow=null;   // 同一时间只开一个
   function open(actId,nodeId){
     const A=ACTIVITIES[actId]; if(!A) return;
-    const node=NODE[nodeId]&&NODE[nodeId].acts.includes(actId)?NODE[nodeId]:NODE[(A.targets||[])[0]]; if(!node) return;
+    const requested=NODE[currentId(nodeId)];
+    const node=requested?.acts.includes(actId)?requested:NODE[currentId((A.targets||[])[0])]; if(!node) return;
     if(openNow) openNow.teardown();
     const list=node.acts.filter(id=>ACTIVITIES[id]&&ACTIVITIES[id].content), idx=list.indexOf(actId);
     const lab=document.createElement("div"); lab.className="lab pl"; lab.setAttribute("role","dialog"); lab.setAttribute("aria-label",A.title);
@@ -1901,9 +1952,9 @@ function renderRepair(){
   $("#newRep").onclick=intake;
   const tk=$("#tk");
   if(!S.repairs.length){ tk.innerHTML=`<div class="empty">维修舱是空的。可以拍照录入做错的题，挑战里掉进陷阱的题也能一键送进来。</div>`; return; }
-  tk.innerHTML=S.repairs.map(r=>{ const n=NODE[r.node]; const st=r.status==="archived"?`<span class="pill lit">已修好</span>`:r.nextReview>todayStr()?`<span class="pill">明天再练</span>`:`<span class="pill acc">待修</span>`;
+  tk.innerHTML=S.repairs.map(r=>{ const n=NODE[currentId(r.node)], old=retired.get(r.node); const st=r.status==="archived"?`<span class="pill lit">已修好</span>`:r.nextReview>todayStr()?`<span class="pill">明天再练</span>`:`<span class="pill acc">待修</span>`;
     return `<div class="ticket"><div class="th">${r.crop?`<img src="${r.crop}" alt="题目裁剪图">`:icon(n?n.icon:"cake",n?n.galaxy:"math",56,3)}</div><div style="display:grid;gap:6px;min-width:0">
-      <div class="meta">${st}<a class="wikilink" href="#chart" data-goto="${r.node}">${esc(n?n.title:"")}</a></div><div class="stem">${esc(r.stem)}</div>
+      <div class="meta">${st}${old?`<span>原星 · ${esc(old.title)}</span>`:""}${n?`<a class="wikilink" href="#chart" data-goto="${esc(n.id)}">${esc(n.title)}</a>`:""}</div><div class="stem">${esc(r.stem)}</div>
       <div class="sub">我的答案 ${esc(r.childAnswer||"—")} · 正确 ${esc(r.rightAnswer||"—")}${r.misconception?` · 陷阱：${esc(r.misconception)}`:""}</div>
       ${r.status!=="archived"?`<div><button class="btn" data-pr="${r.id}">举一反三</button></div>`:""}</div></div>`; }).join("");
   tk.querySelectorAll("[data-pr]").forEach(b=>b.onclick=()=>practice(b.dataset.pr));
@@ -1984,7 +2035,8 @@ function renderSignal(){
   $("#sf").onsubmit=e=>{ e.preventDefault(); const t=$("#si").value.trim(); if(!t) return; addQuestion(t,null); };
   const L=$("#ql"); if(!S.questions.length){ L.innerHTML=`<div class="empty">还没有发出过信号。</div>`; return; }
   L.innerHTML=S.questions.map(q=>`<div class="callout q qitem"><div class="ct" style="justify-content:space-between;width:100%"><span style="color:var(--ink);font-size:16px">${esc(q.text)}</span><span class="mono" style="font-size:11px;color:var(--muted);font-weight:400">${q.at.slice(5,10)}</span></div>
-    ${q.node?`<a class="wikilink" href="#chart" data-goto="${q.node}">来自「${esc(NODE[q.node].title)}」</a>`:""}
+    ${retired.has(q.node)?`<span class="muted">原星 · ${esc(retired.get(q.node).title)}</span>`:""}
+    ${NODE[currentId(q.node)]?`<a class="wikilink" href="#chart" data-goto="${esc(currentId(q.node))}">来自「${esc(NODE[currentId(q.node)].title)}」</a>`:""}
     ${q.answer?`<div style="background:var(--pane);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text)"><p>${esc(q.answer.answer)}</p><p style="margin-top:6px;color:var(--ink)">想一想：${esc(q.answer.followUp)}</p><p class="muted" style="font-size:11px;margin-top:6px">模拟回答 · tutor.ask</p></div>`:`<div><button class="btn" data-ans="${q.id}">请 AI 回个信号</button></div>`}</div>`).join("");
   L.querySelectorAll("[data-ans]").forEach(b=>b.onclick=async()=>{ const q=S.questions.find(x=>x.id===b.dataset.ans); b.disabled=true; b.textContent="等回信……"; try{ q.answer=await AI.call("tutor.ask",{text:q.text,age_band:ageBand()}); save(); }catch(err){ toast(err.message); } renderSignal(); });
   L.querySelectorAll("[data-goto]").forEach(a=>a.onclick=e=>{ e.preventDefault(); location.hash="#chart"; setTimeout(()=>select(a.dataset.goto,true),0); });
