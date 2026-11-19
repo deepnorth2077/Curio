@@ -77,7 +77,7 @@ class Station:
             self.w.check(f"{key} = {value}", equal, got)
 
 
-def run(stations, correct_positions):
+def run(stations, correct_positions, *, on_card=None):
     def play(w):
         if w.touch:
             # 触摸坐标以独立活动的视口为准。由本地路由提供同一文件，
@@ -110,9 +110,9 @@ def run(stations, correct_positions):
             reveal = s.buttons.filter(has_text=re.compile("看.*发现|看结果"))
             w.check("操作之前还不能揭晓", not reveal.count() or reveal.first.is_disabled())
             w.shot(f"{number}-start", first=True)
-            exercise(s)
+            reveal_label = exercise(s)
             w.shot(f"{number}-done")
-            s.button(re.compile("看.*发现|看结果"))
+            s.button(reveal_label or re.compile("看.*发现|看结果"))
             s.button(re.compile(r"去第\s*\d+\s*站|看我的星卡"))
         events = [m["payload"] for m in w.sent("event")]
         expected = [(verb, n) for n in (1, 2, 3) for verb in ("predicted", "observed")]
@@ -120,6 +120,8 @@ def run(stations, correct_positions):
                 [(e["verb"], e["result"]["station"]) for e in events] == expected, events)
         w.check("收卡时活动完成一次", len(w.sent("complete")) == 1, w.sent("complete"))
         w.shot("card")
+        if on_card:
+            on_card(s)
         s.button(re.compile(r"第\s*1\s*站"))
         w.check("重玩直接回到第一站的实物", not w.doc.locator("#actions .choice").count()
                 and s.state().get("station") == 1, s.state())

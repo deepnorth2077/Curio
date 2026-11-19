@@ -136,6 +136,8 @@ body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .s
 .fold-layers{animation:fold-layers 1.2s both}
 @media(prefers-reduced-motion:reduce){.fold-layers{animation:none;opacity:0}}
 
+.pour-row[data-selected="true"] .digit-face{fill:var(--accent)}
+#workbench [data-select-row][aria-pressed="true"]{background:var(--paper);box-shadow:inset 0 0 0 1px var(--ink)}
 </style>
 </head>
 <body>
@@ -382,21 +384,6 @@ const bench = $("workbench");
 const fixed = $("fixed");
 const centers = [170, 250, 330, 423, 503, 583];
 const places = ["百位", "十位", "个位", "十分位", "百分位", "千分位"];
-function placeGrid(y, height){
-  let s = "";
-  centers.forEach((x, i) => {
-    s += TC(x, y - 9, places[i], "unit-label");
-    s += P(box(x - 37, y, 74, height, 15 + i, .35), "k1");
-  });
-  return s + '<circle cx="375" cy="'+(y + height - 8)+'" r="4" fill="var(--ink)"/>';
-}
-function numberAt(value, y, offset = 0, cls = "digit-face"){
-  const [whole, decimals = ""] = value.split(".");
-  return [...whole, ...decimals].map((digit, i) => {
-    const x = centers[i + 3 - whole.length + offset];
-    return x === undefined ? "" : TC(x, y, digit, cls);
-  }).join("");
-}
 function control(label, go, parent = bench, cls = "btn ghost"){
   const b = document.createElement("button");
   b.type = "button"; b.textContent = label; b.className = cls;
@@ -420,7 +407,6 @@ function begin(n){
   bench.replaceChildren(); actions([]); reset(n); fixed.innerHTML=backdrop(n);
   say((n===1 && !replay ? "带圆钮的地方，都能用手抓。" : "")+DATA[n].instruction);
   hint(DATA[n].hint); mount(); update(); svg.focus({preventScroll:true});
-  const pos=firstKnob(); if(pos){armCue(pos);later(1550,placeCue);}
 }
 function update(){draw(); publish();}
 function canReveal(){
@@ -457,14 +443,23 @@ const DATA = {
        {label:"0.3，它短",mis:"trailing-zero-changes",feedback:"你看了数字的长短。让水面来做裁判。"},
        {label:"一样大",correct:true,feedback:"来试试，看看 3 还站在哪一格。"}],
      cover:()=>labelCover("0.3　？　0.30","给水柱换个标签"),instruction:"从 0.3 开始试两种添法。看水面，也看看 3 会不会搬家。",hint:"点按钮添零，或退回"},
-  3:{title:"对齐 · 把水倒在一起",intro:"量筒里一边装着 0.5，一边装着 0.25。合起来能装多少？",question:"0.5 加 0.25，等于多少？",
-     choices:[{label:"0.75",correct:true,feedback:"把两行数字对齐，再把水合起来看看。"},
-       {label:"0.30",mis:"align-right",feedback:"你把末尾对在了一起。看看两个 5 是块还是片。"},
-       {label:"3.0",mis:"align-right",feedback:"先估估两边加起来能不能满一筒，再试着倒。"}],
-     cover:()=>labelCover("0.5 + 0.25","把两个量筒里的水倒在一起"),instruction:"先试着倒，再抓住下面一行往右挪，让两行的小数点面对面。",hint:"拖行尾圆钮，按「倒进去」"}
+  3:{title:"倒 · 把水倒在一起",intro:"量筒里一边装着 0.5，一边装着 0.25。合起来能装多少？",question:"0.5 加 0.25，等于多少？",
+     choices:[{label:"0.75",correct:true,feedback:"记下了。倒一倒，看看两筒水会合成多少。"},
+       {label:"0.30",mis:"align-right",feedback:"你猜是 0.30。把两筒水放上台，试试看。"},
+       {label:"3.0",mis:"align-right",feedback:"你猜能装满三筒。倒一倒，看看水面会到哪儿。"}],
+     cover:()=>labelCover("0.5 + 0.25","把两个量筒里的水倒在一起"),instruction:"先把两筒水倒在一起试试。",hint:"试试倒水"}
 };
 const cardName="我的量筒",cardText="星卡上留着你摆出的那对小数。顺着水面和数线，讲给领航员听吧。";
-let digits,side,slot,free,changed,personal=["0.125","0.5"],zeroMode,tail,seen,problem,offset,poured,blocked;
+let digits,side,slot,free,changed,personal=["0.125","0.5"],zeroMode,tail,seen,problem,poured,blocked;
+const rowOffsets = {top: 0, bottom: -1};
+let selectedRow = "bottom";
+const cellWidth = 78;
+const firstCellX = 318;
+const blockedClues = [
+  "0.5 里的 5 在小数点后第几格？0.25 里的 5 呢？",
+  "1.2 里的 2 在小数点后第几格？0.35 里的 3 呢？",
+  "0.9 里的 9 和 0.1 里的 1，各在小数点后第几格？"
+];
 const fixture=[[0,0,1],[0,1,2],[0,2,5],[1,0,5]];
 let stepIndex=0, lastDrop=null;
 function cupLayers(x,value){
@@ -482,7 +477,7 @@ function cupLayers(x,value){
 function reset(n){
   if(n===1){digits=[["","",""],["","",""]];side=0;slot=0;stepIndex=0;lastDrop=null;free=false;changed=new Set();}
   if(n===2){zeroMode="plain";tail=0;seen=new Set();}
-  if(n===3){problem=0;offset=-1;poured=false;blocked=false;}
+  if(n===3)resetPour(0);
 }
 function vessel(x,y,w,h){
   const left=x-w/2,right=x+w/2;
@@ -500,7 +495,11 @@ function water(x,y,w,h,level,slices=0){
 function backdrop(n){
   if(n===1)return oneMark(174,38,125,207,19)+vessel(237,51,100,180)+vessel(563,51,100,180)+TC(237,282,"左筒　目标 0.125","lb",'id="cupLeft"')+TC(563,282,"右筒　目标 0.5","lb",'id="cupRight"');
   if(n===2)return oneMark(187,38,126,230,19)+vessel(250,48,100,205)+TC(250,300,"一整筒","lb")+centers.slice(3).map((x,i)=>TC(x,122,places[i+3],"unit-label")+P(box(x-35,133,70,51,21+i,.4),"k1")).join("");
-  return placeGrid(58,113).replace(/<circle[^>]+\/>$/,'')+'<circle cx="375" cy="103" r="4" fill="var(--ink)"/>';
+  // 这些细线只帮助比较两排的位置。位名印在各自的纸条上，跟着数字一起走。
+  return Array.from({length: 7}, (_, i) => {
+    const x = firstCellX + (i - 2.5) * cellWidth;
+    return P(`M${x} 18v158`, "kf");
+  }).join("");
 }
 function decimal(sideIndex){
   const parts=digits[sideIndex];
@@ -537,11 +536,8 @@ function artwork(){
     return water(250,48,100,205,+value,layers)+TC(535,91,value,"big")+
       [...value.slice(2)].map((d,i)=>TC(centers[3+i],169,d, d==="0" && value!=="0.3"?"inknum":"digit-face")).join("")+TC(532,220,zeroMode==="front"?"3 片":tail===0?"3 块":tail===1?"30 片":"300 丝","sign");
   }
-  const [a,b]=MODEL.examples[problem], knobX=620+offset*80;
-  let s=numberAt(a,104)+numberAt(b,154,offset,"inknum")+P(`M${295+offset*80} 127h${312}`,"faint")+
-    `<circle cx="${375+offset*80}" cy="153" r="4" class="lead"/>`;
-  if(!poured && S.mode.startsWith("act"))s+=grip(knobX,151,[1,0],{})+
-    `<rect x="135" y="112" width="544" height="73" class="hit"/>`;
+  const [a,b] = MODEL.examples[problem];
+  let s = drawRow("top", a) + drawRow("bottom", b);
   if(poured){
     const total=+sums();
     for(let i=0;i<2;i++){
@@ -558,7 +554,7 @@ function artwork(){
   }else{
     s+=servingCups(220,a)+servingCups(577,b)+vessel(400,202,73,68);
     s+=P("M274 234h59m-10 -7 10 7 -10 7M522 234h-57m9 -7 -9 7 9 7",blocked?"kacc":"faint");
-    s+=TC(400,302,blocked?"格子还没对齐":"合在一起","lb");
+    s+=TC(400,302,blocked?"水没倒进去":"合在一起","lb");
   }
   if(S.mode==="reveal")s=racePicture();
   return s;
@@ -572,7 +568,7 @@ function racePicture(){
 function publish(){
   if(S.station===1){hint(free?"左右各换一张，再点「比一比」":"按目标放卡　"+stepIndex+" / 4");const a=decimal(0),b=decimal(1);readout(`左 <b>${a}</b>　右 <b>${b}</b>`);sendState({station:1,a,b,larger:+a>+b?"a":+a<+b?"b":"same"});}
   if(S.station===2){hint("试过 "+seen.size+" 种添法，共 2 种");const value=zeroValue();readout("水面 <b>"+value+"</b> 筒");sendState({station:2,value,level:String(+value)});}
-  if(S.station===3){hint("成功倒了 "+(problem+Number(poured))+" 道，共 3 道");const [top,bottom]=MODEL.examples[problem];readout(top+" + "+bottom+(poured?" = <b>"+sums()+"</b>":""));sendState({station:3,top,bottom,aligned:offset===0,sum:poured?sums():null});}
+  if(S.station===3){hint("成功倒了 "+(problem+Number(poured))+" 道，共 3 道");const [top,bottom]=MODEL.examples[problem];readout(top+" + "+bottom+(poured?" = <b>"+sums()+"</b>":""));sendState({station:3,top,bottom,aligned:rowsAligned(),sum:poured?sums():null});}
 }
 function selectSlot(a,i){
   if(!free && (a!==fixture[stepIndex][0]||i!==fixture[stepIndex][1])){say("先看看目标小数。亮框是接下来要放的格子。");return;}
@@ -639,7 +635,16 @@ function mount(){
   if(S.station===2){
     control("末尾添 0",()=>addZero("tail"));control("小数点后面添 0",()=>addZero("front"));control("退回 0.3",()=>addZero("plain"));
   }
-  if(S.station===3){control("向左挪",()=>shift(-1));control("向右挪",()=>shift(1));control("倒进去",pour);}
+  if(S.station===3){
+    control("倒进去", pour);
+    for(const [row, label] of [["top","上排"], ["bottom","下排"]]){
+      const button = control(label, () => selectRow(row));
+      button.dataset.selectRow = row;
+      button.setAttribute("aria-pressed", String(row === selectedRow));
+    }
+    control("向左挪", () => shiftRow(rowOffsets[selectedRow] - 1));
+    control("向右挪", () => shiftRow(rowOffsets[selectedRow] + 1));
+  }
 }
 function compare(){
   if(!free||changed.size<2||MODEL.targets.every((v,i)=>+v===+decimal(i))){say("先摆好例子，再把两个量筒里的数字各换一张。");return;}
@@ -652,18 +657,95 @@ function addZero(where){
   say(where==="tail"?"水面留在原处，3 还在十分位。":where==="front"?"把 0 塞进小数点后第一格，3 搬到百分位。":"回到 0.3，再试另一种添法。");
   if(seen.size===2)canReveal();
 }
-function shift(dx){if(poured)return;blocked=false;offset=clamp(offset+dx,-1,0);update();}
+function resetPour(index){
+  problem = index;
+  rowOffsets.top = 0;
+  rowOffsets.bottom = index === 2 ? 0 : -1;
+  selectedRow = "bottom";
+  poured = false;
+  blocked = false;
+}
+function rowsAligned(){
+  return rowOffsets.top === rowOffsets.bottom;
+}
+function drawRow(row, value){
+  const y = row === "top" ? 18 : 100;
+  const digits = value.replace(".", "");
+  const start = firstCellX - 34;
+  const width = cellWidth * digits.length + 58;
+  const end = start + width;
+  const active = !poured && S.mode === "act3";
+  let s = `<g class="pour-row" data-row="${row}" data-selected="${active && row === selectedRow}" transform="translate(${rowOffsets[row] * cellWidth} 0)">`;
+  s += `<rect x="${start}" y="${y}" width="${width}" height="64" rx="9" class="papr"/>`;
+  s += P(box(start, y, width, 64, row === "top" ? 30 : 36, .4), "k1");
+  [...digits].forEach((digit, i) => {
+    const x = firstCellX + i * cellWidth;
+    s += TC(x, y + 23, places[2 + i], "unit-label") + TC(x, y + 55, digit, "digit-face");
+  });
+  s += `<circle cx="${firstCellX + cellWidth/2}" cy="${y+53}" r="4" fill="var(--ink)"/>`;
+  if(active){
+    s += grip(end - 26, y + 31, [1,0], {});
+    s += `<rect x="${start}" y="${y}" width="${width}" height="64" class="hit"/>`;
+  }
+  return s + "</g>";
+}
+function selectRow(row){
+  selectedRow = row;
+  gDyn.querySelectorAll(".pour-row").forEach(group => {
+    group.dataset.selected = String(group.dataset.row === selectedRow);
+  });
+  bench.querySelectorAll("[data-select-row]").forEach(button => {
+    button.setAttribute("aria-pressed", String(button.dataset.selectRow === selectedRow));
+  });
+}
+function shiftRow(position){
+  if(poured)return;
+  const nextPosition = clamp(position, -2, 1);
+  if(nextPosition === rowOffsets[selectedRow])return;
+  rowOffsets[selectedRow] = nextPosition;
+  blocked = false;
+  update();
+}
 function pour(){
   if(poured)return;
-  if(offset!==0){blocked=true;update();say(problem===0?"这会碰出错账 0.30。一个 5 是块，另一个 5 是片，还倒不进去。":"看看上下的小数点。两点对齐，块才能对着块。","hmm");return;}
-  poured=true;update();say(problem===2?"10 块合成一整筒。十分位进 1 到个位。":"相同的格子对在一起，倒好了。","good");
+  if(!rowsAligned()){
+    blocked = true;
+    update();
+    say(blockedClues[problem], "hmm");
+    return;
+  }
+  poured = true;
+  update();
+  const discovery = [
+    "这回小数点对齐了。块和块加，片和片加，合出 7 块 5 片，是 0.75 筒。",
+    "这回 2 块和 3 块倒在同一格，合起来是 1 整筒、5 块和 5 片。",
+    "9 块和 1 块凑成 10 块，换成一整筒。十分位进 1 到个位。"
+  ];
+  say(discovery[problem], "good");
   bench.replaceChildren();
-  if(problem<2)control("换一道",()=>{problem++;offset=problem===2?0:-1;poured=false;blocked=false;bench.replaceChildren();mount();update();say("再试试这道。先看看两行的小数点。");});
-  else canReveal();
+  if(problem === MODEL.examples.length - 1){
+    canReveal();
+    return;
+  }
+  control("换一道", () => {
+    resetPour(problem + 1);
+    bench.replaceChildren();
+    mount();
+    update();
+    say("换了两筒水，这回你想怎么倒？");
+  });
 }
-function firstKnob(){return S.station===3?()=>[620+offset*80,151]:null;}
-function grab(p){if(S.station===3 && !poured && p.y>=110&&p.y<=186)return{x:p.x,offset};return null;}
-function move(d,p){if(S.station===3&&!poured){blocked=false;offset=clamp(d.offset+Math.round((p.x-d.x)/80),-1,0);update();}}
+function grab(p, target){
+  if(S.station !== 3 || poured)return null;
+  const group = target.closest(".pour-row");
+  if(!group)return null;
+  const row = group.dataset.row;
+  selectRow(row);
+  return {x:p.x, offset:rowOffsets[row]};
+}
+function move(d,p){
+  if(S.station===3)shiftRow(d.offset + Math.round((p.x-d.x)/cellWidth));
+}
 function key(k,back){
   if(S.station===1){
     if(/^\d$/.test(k)){put(+k);return true;}
@@ -671,7 +753,11 @@ function key(k,back){
     if(free&&k==="Tab"&&!back&&side===0){side=1;slot=0;syncSlots();return true;}
   }
   if(S.station===2&&["ArrowLeft","ArrowRight"].includes(k)){bench.querySelectorAll("button")[k==="ArrowLeft"?0:1].focus();return true;}
-  if(S.station===3){if(k==="ArrowLeft"||k==="ArrowRight"){shift(k==="ArrowRight"?1:-1);return true;}if(k==="Enter"){pour();return true;}}
+  if(S.station===3 && !poured){
+    if(k==="ArrowUp" || k==="ArrowDown"){selectRow(k==="ArrowUp"?"top":"bottom");return true;}
+    if(k==="ArrowLeft" || k==="ArrowRight"){shiftRow(rowOffsets[selectedRow]+(k==="ArrowRight"?1:-1));return true;}
+    if(k==="Enter"){pour();return true;}
+  }
   return false;
 }
 function revelation(){
@@ -691,7 +777,7 @@ function card(){
 let dragging=null;
 svg.addEventListener("pointerdown",e=>{
   if(!S.mode.startsWith("act"))return;
-  const p=svgPoint(e), start=grab(p);
+  const p=svgPoint(e), start=grab(p,e.target);
   if(!start)return;
   touched();dragging={...start,id:e.pointerId};svg.setPointerCapture(e.pointerId);e.preventDefault();
 });

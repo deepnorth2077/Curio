@@ -1,7 +1,7 @@
 id: act.simulation.stretch-frame-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 拉伸相框
 targets:
 - math.ratio.proportion
