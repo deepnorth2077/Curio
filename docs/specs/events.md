@@ -168,7 +168,7 @@ payload 里以 `_text_id` 结尾或叫 `text_id` 的字段，值是 `txt_<ULID>`
 | `note_question` | `question.asked`（宿主先把文字存成私人文字） |
 | `complete` | `attempt.completed` |
 
-`attempt.started`、`attempt.abandoned`、`poe.explained`、`answer.revealed` 由宿主自己记，模块不能发。`poe.predicted` 的 `step`、`misconception` 由宿主按模块列表填，每个模块怎么换写在竖切片 5a 的规格里。
+`attempt.started`、`attempt.abandoned`、`poe.explained`、`answer.revealed` 由宿主自己记，模块不能发。`poe.predicted` 的 `step`、`misconception` 由宿主按模块列表填，各模块接入时定义换算规则。「生命的说明书」先采用[竖切片 5a](slice-5a.md)的子集，只把整站完成记为 `sim.observed`（`observable: "station.completed"`，`value` 为站号）。
 
 ## 4. 私人文字
 

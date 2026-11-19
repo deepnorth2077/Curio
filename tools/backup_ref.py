@@ -608,7 +608,7 @@ def build_export(accepted_raws, *, exported_at, learner_id):
 
 
 # ---------------------------------------------------------------- 6. 恢复计划
-SLICE_VERBS = ("attempt.started", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned")
+SLICE_VERBS = ("attempt.started", "sim.observed", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned")
 _VALIDATOR = None
 
 

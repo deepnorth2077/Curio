@@ -1,9 +1,10 @@
 // 事件信封和 payload 的校验（竖切片 1 规格第 3 节；事件规格第 2 节；schemas/event.schema.json）。
 // 纯函数：不碰 DOM、存储、时间和随机数。字符串长度一律按 Unicode 码点数。
 
-/** 本切片认的 6 个动词（answer.revealed 是 CURIO-013 加的）。 */
+/** 当前外壳可摄入的动词。 */
 export const SLICE_VERBS = Object.freeze([
   "attempt.started",
+  "sim.observed",
   "item.answered",
   "hint.used",
   "answer.revealed",
@@ -11,7 +12,7 @@ export const SLICE_VERBS = Object.freeze([
   "attempt.abandoned",
 ]);
 
-/** schemas/event.schema.json 里 verb 的全部取值（信封校验用；本切片只认其中 6 个）。 */
+/** schemas/event.schema.json 里 verb 的全部取值（信封校验用；可摄入的动词见 SLICE_VERBS）。 */
 const SCHEMA_VERBS = new Set([
   "attempt.started", "attempt.completed", "attempt.abandoned",
   "poe.predicted", "poe.explained", "sim.adjusted", "sim.observed",
@@ -143,7 +144,7 @@ export function checkEnvelope(e) {
 }
 
 /**
- * 本切片 6 个动词各自的规则（第 3 节的表）。调用前信封已经合格。
+ * 当前可摄入动词的规则（第 3 节的表）。调用前信封已经合格。
  * @param {Record<string, any>} e
  * @returns {string|null}
  */
@@ -174,6 +175,14 @@ export function checkVerb(e) {
       if (k) return k;
       if (!["left", "timeout", "error"].includes(p.reason)) return "reason 不认识";
       return null;
+    }
+    case "sim.observed": {
+      const k = keys(p, ["observable", "value"], ["observable", "value"], "payload ");
+      if (k) return k;
+      if (!isStr(p.observable)) return "observable 不是字符串";
+      if (typeof p.value === "boolean" || numberOk(p.value)) return null;
+      if (isStr(p.value) && codePoints(p.value) <= 32) return null;
+      return "value 应为数字、布尔值或不超过 32 个字符的字符串";
     }
     case "item.answered": {
       const req = ["item_id", "response", "correct", "try", "hints_used"];

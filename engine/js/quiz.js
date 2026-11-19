@@ -1,6 +1,6 @@
 // 挑战的纯状态机（竖切片 1 规格 6.1）。输入动作，输出界面状态和要写的事件意图。不碰 DOM、存储、时间和随机数。
 // 状态是普通的 JSON 对象；step 不改旧状态，忽略的动作原样返回同一个对象。
-import { grade, checkAnswerNumbers, GRADER } from "./grade.js";
+import { gradeWithFeedback, checkAnswerNumbers, GRADER } from "./grade.js";
 
 /**
  * @typedef {"starting"|"answering"|"finishing"|"done"} Phase
@@ -134,17 +134,11 @@ const revealText = (item) => (item.feedback && typeof item.feedback.correct === 
 const choicesOf = (it) => (it.answer.type === "choice" ? it.answer.choices.map((c) => ({ id: c.id, text: c.text })) : null);
 
 /** 这次作答的反馈文字。 */
-function feedbackText(item, response, correct, misconception = null) {
-  const fb = item.feedback || {};
-  if (correct) return typeof fb.correct === "string" ? fb.correct : DEFAULT_FEEDBACK.correct;
-  if (item.answer.type === "choice") {
-    const c = item.answer.choices.find((x) => x.id === response);
-    if (c && typeof c.feedback === "string") return c.feedback;
-  } else if (misconception !== null) {
-    const w = (item.answer.common_wrong || []).find((x) => x.misconception === misconception);
-    if (w && typeof w.feedback === "string") return w.feedback;
-  }
-  return typeof fb.wrong === "string" ? fb.wrong : DEFAULT_FEEDBACK.wrong;
+function feedbackText(item, grade) {
+  if (grade.feedback !== null) return grade.feedback;
+  const key = grade.correct ? "correct" : "wrong";
+  const fallback = item.feedback?.[key];
+  return typeof fallback === "string" ? fallback : DEFAULT_FEEDBACK[key];
 }
 
 /**
@@ -176,11 +170,11 @@ export function step(q, action) {
       if (typeof response !== "string" || [...response].length > 32) return q;
       const id = q.s.order[q.s.pos];
       const item = q.s.items[id];
-      const g = grade(item.answer, response);
+      const g = gradeWithFeedback(item.answer, response);
       const payload = { item_id: id, response, correct: g.correct, try: (q.s.tries[id] || 0) + 1, hints_used: q.s.hints[id] || 0 };
       if (g.misconception !== null) payload.misconception = g.misconception;
       const s = { ...q.s, nextId: q.s.nextId + 1, failed: false,
-        inflight: { kind: "answer", item_id: id, correct: g.correct, response, text: feedbackText(item, response, g.correct, g.misconception) } };
+        inflight: { kind: "answer", item_id: id, correct: g.correct, response, text: feedbackText(item, g) } };
       return build("answering", { id: q.s.nextId, verb: "item.answered", payload }, s);
     }
     case "saved": {

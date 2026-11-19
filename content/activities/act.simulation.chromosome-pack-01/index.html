@@ -73,10 +73,20 @@ svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px}
   .t{font-size:26px} .tm{font-size:22px} .num{font-size:20px} .ttl{font-size:38px} .big{font-size:42px} }
+.wrap.choosing > :not(#station-picker){display:none}
+#station-picker{background:var(--pane);border:1px solid var(--rule);border-radius:18px;padding:14px 18px 18px}
+#picker-title{font:600 20px var(--f-serif);color:var(--ink);margin:0 0 12px}
+#station-choices{justify-content:flex-start}
+#station-menu:not([hidden]){margin-bottom:8px}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <section id="station-picker" hidden aria-labelledby="picker-title">
+    <h2 id="picker-title">选一站</h2>
+    <div id="station-choices" class="actions"></div>
+  </section>
+  <button type="button" id="station-menu" class="btn ghost small" hidden>选站重玩</button>
   <div class="card">
     <header><span class="station" id="station">第 1 站 · 共 4 站</span><h1 id="title">绕线轴</h1></header>
     <svg id="stage" viewBox="0 0 800 610" tabindex="0" role="application" aria-label="动手区">
@@ -132,13 +142,15 @@ const fmtLetters = mb => mb >= 100 ? (mb/100).toFixed(2).replace(/0$/, "") + " �
 /* ============ 2. 平台契约 activity/1.1（单独打开时也能玩） ============ */
 const Host = (() => {
   const h = {}, inFrame = window.parent !== window;
-  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  addEventListener("message", e => { const m = e.data; if (inFrame && e.source === parent && m && m.contract === "activity/1.1" && Object.hasOwn(h, m.type)) h[m.type](m.payload || {}); });
   const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); };
-  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.body.scrollHeight })).observe(document.body);
   return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
     state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
 })();
 Host.on("init", p => {
+  $("qarea").hidden = p.question_available === false;
+  restoreStations(p);
   if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
 });
 
@@ -172,9 +184,81 @@ const $ = id => document.getElementById(id);
 const svg = $("stage"), gStatic = $("static"), gDyn = $("dyn");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const STATIONS = 4;
-const S = { station: 1, mode: "talk", hold: false, theta: -Math.PI/2,
+/* 宿主保存的是完成的站号。只从连续的第一站起恢复，缺一站就从那里继续。 */
+const stationNames = ["绕线轴", "盘成环", "卷紧、配对", "第 23 对"];
+let completedStations = 0;
+let activityCompleted = false;
+let restored = false;
+let replayingStation = false;
+
+function restoreStations(payload){
+  if (restored || !Array.isArray(payload.completed_stations)) return;
+  restored = true;
+  const saved = new Set(payload.completed_stations);
+  while (completedStations < STATIONS && saved.has(completedStations + 1)) completedStations++;
+  activityCompleted = payload.activity_completed === true;
+  if (completedStations) showStationPicker();
+}
+function hideStationPicker(){
+  $("station-picker").hidden = true;
+  $("station-menu").hidden = true;
+  document.querySelector(".wrap").classList.remove("choosing");
+}
+function showStationPicker(){
+  const panel = $("station-picker"), choices = $("station-choices");
+  choices.replaceChildren();
+  const add = (label, action, primary = false) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = primary ? "btn" : "btn ghost";
+    button.textContent = label;
+    button.addEventListener("click", action);
+    choices.append(button);
+  };
+  if (completedStations < STATIONS){
+    const n = completedStations + 1;
+    add(`继续第 ${n} 站 · ${stationNames[n-1]}`, () => startStation(n, false), true);
+  } else {
+    add("看我的星卡", () => { hideStationPicker(); replayingStation = false; enterEnd(); }, true);
+  }
+  for (let n = 1; n <= completedStations; n++){
+    add(`重玩第 ${n} 站 · ${stationNames[n-1]}`, () => startStation(n, true));
+  }
+  add("从头玩", () => startStation(1, false));
+  panel.hidden = false;
+  document.querySelector(".wrap").classList.add("choosing");
+  choices.firstElementChild.focus({preventScroll:true});
+}
+$("station-menu").addEventListener("click", showStationPicker);
+function finishStation(label, go){
+  if (replayingStation){
+    next("回到选站", showStationPicker);
+    return;
+  }
+  if (S.station === completedStations + 1){
+    completedStations++;
+    Host.event("observed", {station: S.station, item: "station-complete"});
+  }
+  actions([{label, go}, {label:"选站重玩", cls:"ghost", go:showStationPicker}]);
+}
+
+const fresh = () => ({ station: 1, mode: "talk", hold: false, theta: -Math.PI/2,
   t1: 0, p1: 0, t2: 0, p2: 0, t3: 0, p3: 0, count: 0, done: {}, pairs: 0, sel: null, boyReveal: false, girl: false,
-  round: 1, tries: 0, kcur: 0, wow: false };
+  tries: 0, kcur: 0, wow: false });
+let S = fresh();
+function startStation(n, replay){
+  hideStationPicker();
+  replayingStation = replay;
+  S = fresh();
+  drag = null;
+  fitView(false);
+  for (let prior = 1; prior < n; prior++) S["t" + prior] = S["p" + prior] = 1;
+  [enter1, enter2, enter3, enter4][n-1]();
+  if (replay) [act1, act2, act3, revealParents][n-1]();
+}
+function emit(verb, result){
+  if (!replayingStation && result.station > completedStations) Host.event(verb, result);
+}
 
 function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
 function hint(s){ $("hint").textContent = s || ""; }
@@ -217,7 +301,7 @@ function actions(list){
 function ask(question, options, onAnswer, verb){
   say(question);
   actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
-    Host.event(verb || "predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null });
+    emit(verb || "predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null });
     say(o.feedback, o.correct ? "good" : "bad");
     onAnswer(o);
   }})));
@@ -325,9 +409,9 @@ function act1(){
   readout1(); svg.focus({ preventScroll: true });
 }
 function done1(){
-  S.mode = "talk"; S.hold = false; hint(""); Host.event("observed", { station: 1 });
+  S.mode = "talk"; S.hold = false; hint(""); emit("observed", { station: 1 });
   say(`绕好了。每个小线轴上绕着 ${MODEL.lettersPerSpool} 个字母，绕不到两圈。说明书短了约 ${MODEL.fold.spools} 倍。`, "good");
-  next("继续", () => { say(`一个细胞里，大约有 ${fmtWan(MODEL.spools)} 个这样的小线轴。`); next("去第 2 站", enter2); });
+  next("继续", () => { say(`一个细胞里，大约有 ${fmtWan(MODEL.spools)} 个这样的小线轴。`); finishStation("去第 2 站", enter2); });
 }
 
 /* ============ 6. 第 2 站：盘成环 ============ */
@@ -406,7 +490,7 @@ function act2(){
   actions([]); render(); svg.focus({ preventScroll: true });
 }
 function done2(){
-  S.mode = "talk"; S.done[2] = true; hint(""); Host.event("observed", { station: 2 }); render();
+  S.mode = "talk"; S.done[2] = true; hint(""); emit("observed", { station: 2 }); render();
   say(`收进去了，一点也不乱。一共短了约 ${fmtFold(MODEL.fold.loops)} 倍。`, "good");
   next("继续", () => {
     say("细胞要读哪一段，就把那一段松开，读完再盘好。");
@@ -415,7 +499,7 @@ function done2(){
       say(`把细胞核放大成乒乓球，说明书拉直了约有 ${fmtLen(lenAt(1) * MODEL.scale)}，大人要走 ${Math.round(lenAt(1) * MODEL.scale / 1000 / MODEL.walkKmh)} 个小时。`);
       next("继续", () => {
         say(`你刚才把它盘成了约 ${fmtLen(lenAt(MODEL.fold.loops) * MODEL.scale)}，收进了这个乒乓球。`);
-        next("去第 3 站", enter3);
+        finishStation("去第 3 站", enter3);
       });
     });
   });
@@ -508,15 +592,17 @@ function enter3(){
   S.station = 3; S.mode = "talk"; head(3, "卷紧、配对"); hint(""); makeRods();
   gStatic.innerHTML = staticCell(); S.t3 = S.p3 = 0; render(); readout3();
   say("细胞要分成两个了。说明书先抄一份，一个新细胞分一份。");
-  next("继续", () => { say("可是松松的线，分不清哪些给谁。"); next("那怎么办？", () => {
-    S.mode = "act3"; hint("按住「卷紧」");
-    say("把它卷得更紧，卷成一根根小短棒。按住「卷紧」。");
-    actions([{ label: "按住 卷紧", cls: "hold", hold: true, step: () => { S.t3 = clamp(S.t3 + .05); } }]);
-  }); });
+  next("继续", () => { say("可是松松的线，分不清哪些给谁。"); next("那怎么办？", act3); });
+}
+function act3(){
+  S.mode = "act3"; hint("按住「卷紧」");
+  say("把它卷得更紧，卷成一根根小短棒。按住「卷紧」。");
+  actions([{ label: "按住 卷紧", cls: "hold", hold: true, step: () => { S.t3 = clamp(S.t3 + .05); } }]);
 }
 function done3(){
-  S.mode = "talk"; hint(""); Host.event("observed", { station: 3 });
+  S.mode = "talk"; hint(""); emit("observed", { station: 3 });
   say(`卷成了一根根小短棒，一共短了约 ${fmtFold(MODEL.fold.rods)} 倍。`, "good");
+  if (replayingStation){ next("数一数", countUp); return; }
   next("继续", () => { say("这样卷好的小短棒，就叫染色体。"); next("继续", () => ask("猜猜，一共有几根小短棒？", [
     { label: "23 根", feedback: "23 是对数，一对有两根。我们数一数。" },
     { label: "46 根", correct: true, feedback: "猜对了。我们数一数。" },
@@ -618,10 +704,10 @@ function checkLeft(){
 function afterSexPair(){
   if (S.pairs !== 23) return;
   S.mode = "pairtalk"; actions([]); fitView(false);
-  Host.event("answered", { station: 3, item: "pairing", correct: true, tries: S.tries });
+  emit("answered", { station: 3, item: "pairing", correct: true, tries: S.tries });
   setTimeout(() => {
     say("23 对都配好了。科学家也是这样排的。");
-    next("看看第 23 对", enter4);
+    finishStation("看看第 23 对", enter4);
   }, reduced ? 0 : 700);
 }
 
@@ -650,9 +736,13 @@ function enter4(){
   next("继续", () => { say("这个细胞来自一个男孩。男孩的第 23 对一般是 X 和 Y。"); next("继续", () => ask("男孩的 Y 染色体，是从谁那里来的？", [
     { label: "爸爸", correct: true, feedback: "对。妈妈只有 X，没有 Y 可以给。Y 来自爸爸，X 来自妈妈。" },
     { label: "妈妈", mis: "y-from-mother", feedback: "很多人这么想。可妈妈只有 X，没有 Y 可以给，Y 来自爸爸。" }
-  ], o => { S.boyReveal = true; render();
-    next("那女孩呢？", () => { S.girl = true; render(); say("女孩的第 23 对一般是两根 X，一根来自爸爸，一根来自妈妈。");
-      next("继续", () => { say("在染色体上，男孩和女孩一般只差在这一对。"); next("看我的星卡", enterEnd); }); }); }, "answered")); });
+  ], revealParents, "answered")); });
+}
+function revealParents(){
+  S.boyReveal = true; render();
+  if (replayingStation) say("这根 Y 来自爸爸，这根 X 来自妈妈。看两根短棒下面的记号。");
+  next("那女孩呢？", () => { S.girl = true; render(); say("女孩的第 23 对一般是两根 X，一根来自爸爸，一根来自妈妈。");
+    next("继续", () => { say("在染色体上，男孩和女孩一般只差在这一对。"); finishStation("看我的星卡", enterEnd); }); });
 }
 
 /* ============ 9. 结尾：星卡 ============ */
@@ -685,15 +775,17 @@ function drawEnd(){
   return s;
 }
 function enterEnd(){
+  $("station-menu").hidden = false;
+  if (!RODS.length) makeRods();
   S.station = 5; S.mode = "end"; head(0, "我的染色体图"); hint(""); readout(""); gStatic.innerHTML = ""; render();
   say("这是你亲手排好的染色体图。你把 2 米长的说明书收进了细胞核。", "good");
   next("继续", () => {
     say(`你发现了吗？21 号其实比 22 号还短：${fmtLetters(MODEL.chr[20][1])}对 ${fmtLetters(MODEL.chr[21][1])}个字母。`);
     next("为什么？", () => { say("编号是很久以前按显微镜下的样子排的，那时看走了眼。");
-      next("再玩一次", () => { Object.assign(S, { t1: 0, p1: 0, t2: 0, p2: 0, t3: 0, p3: 0, count: 0, done: {}, pairs: 0, sel: null, boyReveal: false, girl: false, theta: -Math.PI/2, round: S.round + 1, tries: 0, wow: false }); enter1(); }, "ghost"); });
+      next("再玩一次", () => startStation(1, false), "ghost"); });
   });
   // 只在第一轮告诉平台「做完了」，再玩不重复记
-  if (S.round === 1){ Host.event("observed", { station: 4 }); Host.complete({}); }
+  if (!activityCompleted){ activityCompleted = true; Host.event("observed", { station: 4 }); Host.complete({}); }
 }
 
 /* ============ 10. 画面和输入 ============ */

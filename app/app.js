@@ -3,12 +3,13 @@
 // 竖切片 6b（docs/specs/backup.md）：存发布包、「上次恢复没做完」、家长页入口（家长页本身在 parent.js）。
 // 读写 IndexedDB、取当前时间、生成 ULID、洗牌都在这里做，结果作为参数交给内核和引擎。
 import { createLog } from "../kernel/js/log.js";
-import { projectMastery, groupAttempts } from "../kernel/js/mastery.js";
+import { projectMastery, groupAttempts, attemptRule } from "../kernel/js/mastery.js";
 import { createUlid } from "../kernel/js/ulid.js";
 import { startQuiz, step, DEFAULT_FEEDBACK } from "../engine/js/quiz.js";
 import { openStore } from "./store.js";
 import { openSession, localReceipt, assemble, guardDeps, LockLostError } from "./session.js";
 import { FrozenError } from "./commit.js";
+import { mountExploration, supportedExploration, STATION_COUNT } from "./exploration.js";
 import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT } from "./parent.js";
 
 /** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。 */
@@ -84,19 +85,25 @@ export async function verifyManifest(rel) {
 }
 
 /**
- * 读一份 .yaml.json，核对字节数和 SHA-256 以后才解析。
+ * 读发布清单中列出的文件；HTML 和 JSON 都先逐字节核对，再解码。
  * @param {URL} base release.json 的地址
  * @param {{path: string, bytes: number, sha256: string}} j
  * @param {typeof fetch} fetchFn
  */
-async function fetchVerifiedJson(base, j, fetchFn) {
-  if (!j || typeof j.path !== "string") throw new ReleaseError("broken", "清单条目没有 json");
+async function fetchVerifiedText(base, j, fetchFn) {
+  if (!j || typeof j.path !== "string") throw new ReleaseError("broken", "清单里缺少文件路径");
   const res = await fetchFn(new URL(j.path, base), { cache: "no-cache" });
   if (!res.ok) throw new ReleaseError("broken", `读不到 ${j.path}`);
   const buf = new Uint8Array(await res.arrayBuffer());
   if (buf.byteLength !== j.bytes) throw new ReleaseError("broken", `${j.path} 的字节数对不上`);
   if ((await sha256Hex(buf)) !== j.sha256) throw new ReleaseError("broken", `${j.path} 的哈希对不上`);
-  try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(buf)); }
+  try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); }
+  catch { throw new ReleaseError("broken", `${j.path} 不是 UTF-8 文件`); }
+}
+
+async function fetchVerifiedJson(base, j, fetchFn) {
+  const text = await fetchVerifiedText(base, j, fetchFn);
+  try { return JSON.parse(text); }
   catch { throw new ReleaseError("broken", `${j.path} 不是合法的 JSON`); }
 }
 
@@ -104,7 +111,7 @@ async function fetchVerifiedJson(base, j, fetchFn) {
  * 读发布包并逐个核对。任何一处对不上都抛 ReleaseError。
  * @param {URL} [url]
  * @param {typeof fetch} [fetchFn]
- * @returns {Promise<{release: any, raw: string, nodes: any[], activities: Map<string, {entry: any, def: any|null}>}>}
+ * @returns {Promise<{release: any, raw: string, nodes: any[], activities: Map<string, {entry: any, def: any|null, module?: {manifest:any, html:string}}>}>}
  */
 export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
   let rel, raw;
@@ -122,9 +129,29 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
     if (!def || def.id !== n.id) throw new ReleaseError("broken", `知识点 ${n.id} 对不上`);
     nodes.push(def);
   }
-  /** @type {Map<string, {entry: any, def: any|null}>} */
+  /** @type {Map<string, {entry: any, def: any|null, module?: {manifest:any, html:string}}>} */
   const activities = new Map();
   for (const a of rel.activities) {
+    if (supportedExploration(a.id)) {
+      const dir = "content/activities/" + a.id + "/";
+      const manifestFile = a.files.find((f) => f.path === dir + "manifest.yaml");
+      const htmlFile = a.files.find((f) => f.path === dir + "index.html");
+      if (a.kind !== "simulation" || !manifestFile || manifestFile.json?.path !== manifestFile.path + ".json" || !htmlFile) {
+        throw new ReleaseError("broken", `探索 ${a.id} 的文件不完整`);
+      }
+      const [manifest, html] = await Promise.all([
+        fetchVerifiedJson(url, manifestFile.json, fetchFn), fetchVerifiedText(url, htmlFile, fetchFn)
+      ]);
+      const targets = nodes.filter((n) => n.activities?.includes(a.id));
+      if (manifest?.id !== a.id || manifest.version !== a.version || manifest.type !== a.kind ||
+          manifest.contract !== "activity/1.1" || manifest.entry !== "index.html" || manifest.pedagogy !== "explain" ||
+          !Array.isArray(manifest.emits) || !Array.isArray(manifest.targets) ||
+          !targets.length || !targets.every((n) => manifest.targets.includes(n.id))) {
+        throw new ReleaseError("broken", `探索 ${a.id} 和发布清单或所属星对不上`);
+      }
+      activities.set(a.id, { entry: a, def: null, module: { manifest, html } });
+      continue;
+    }
     let def = null;
     for (const f of a.files) {
       if (!f.json) continue;
@@ -285,7 +312,9 @@ const app = {
   /** 「再试一次」正在进行 */ relocking: false,
   /** @type {any} */ mastery: null,
   /** 正在做的挑战 */ quiz: /** @type {null|{q: any, def: any, node: any, content: any, attempt_id: string, startedMs: number, cur: null|{id: number, raw: string, receipt: object}, busy: boolean, error: any, solved: string|null, wrongBy: Record<string, string[]>, litBefore: boolean}} */ (null),
-  view: /** @type {"chart"|"quiz"|"parent"} */ ("chart"),
+  selectedNode: null,
+  exploration: /** @type {null|{host: ReturnType<typeof mountExploration>|null, leaving: Promise<boolean>|null, failed:boolean}} */ (null),
+  view: /** @type {"chart"|"menu"|"quiz"|"exploration"|"parent"} */ ("chart"),
   notice: /** @type {string|null} */ (null),
   /** 打开时读到的：干净的设备（backup.md 6.1）、上次备份、最早一条记录的时间（家长入口的小圆点） */
   clean: false,
@@ -306,6 +335,8 @@ const parentEnv = () => ({
 /** 按当前的 view 重画。 */
 function renderCurrent() {
   if (app.view === "quiz" && app.quiz) renderQuiz();
+  else if (app.view === "menu" && app.selectedNode) renderMenu(app.selectedNode);
+  else if (app.view === "exploration" && app.exploration) return; // 保留已装入的实物和当前手势。
   else if (app.view === "parent") renderParent(parentEnv());
   else renderChart();
 }
@@ -377,6 +408,8 @@ function renderChart() {
   if (app.mode === "readonly" && !app.hasIdentity) { main.innerHTML = ""; return; }
   const nodes = app.pack ? app.pack.nodes : [];
   const lit = nodes.filter((n) => nodeState(n.id) === "lit").length;
+  const tip = nodes.some((node) => nodeActivities(node).some((a) => a.module))
+    ? "点一颗星，选动手探索或挑战。" : "点一颗星，开始挑战。";
   const stars = nodes.map((n, i) => {
     const st = nodeState(n.id);
     const going = app.quiz && app.quiz.node.id === n.id && pendingQuiz(app.quiz);
@@ -390,7 +423,7 @@ function renderChart() {
     ${skySvg()}
     <div class="chart-head"><h1 id="chartTitle">星图</h1><p class="sub">点亮了 ${lit} 颗，一共 ${nodes.length} 颗</p></div>
     <ul class="stars">${stars}</ul>
-    <p class="chart-tip muted">${app.mode === "writable" ? "点一颗星，开始挑战。" : app.mode === "recovering" ? "正在准备……" : ""}</p>
+    <p class="chart-tip muted">${app.mode === "writable" ? tip : app.mode === "recovering" ? "正在准备……" : ""}</p>
     ${showCleanHint() ? `<p class="clean-hint"><a href="#parent">${esc(PTEXT.cleanHint)}</a></p>` : ""}
     <div class="chart-foot">
       ${app.store && app.hasIdentity ? `<a class="parent-link" href="#parent">家长${needsDot({ clean: app.clean, lastBackup: app.lastBackup, firstEventAt: app.firstEventAt }, Date.now()) ? `<span class="dot" role="img" aria-label="很久没备份了"></span>` : ""}</a>` : ""}
@@ -422,12 +455,179 @@ function openNode(nodeId) {
     toast(app.mode === "recovering" ? "正在准备，等一下再点。" : app.mode === "unfinished" ? "请家长先看一看上面的提示。" : app.why === "lost" ? "请刷新页面。" : "这里只能看，不能开始挑战。");
     return;
   }
-  if (app.quiz && app.quiz.node.id === nodeId && pendingQuiz(app.quiz)) { app.view = "quiz"; renderQuiz(); return; }
-  const node = /** @type {any} */ (app.pack).nodes.find((n) => n.id === nodeId);
-  const acts = (node.activities || []).map((id) => /** @type {any} */ (app.pack).activities.get(id)).filter(Boolean);
-  const quizzes = acts.filter((a) => a.entry.kind === "quiz" && a.def);
-  if (!quizzes.length) { toast("这个还在做。"); return; }
-  startChallenge(node, quizzes[0].def);
+  const node = app.pack.nodes.find((n) => n.id === nodeId);
+  if (!node) return;
+  const acts = nodeActivities(node);
+  if (acts.some((a) => a.module)) {
+    app.selectedNode = node;
+    renderMenu(node);
+    $("#menuTitle").focus({ preventScroll: true });
+  } else {
+    const quiz = acts.find((a) => a.entry.kind === "quiz" && a.def);
+    if (quiz) openQuiz(node, quiz.def);
+    else toast("这个还在做。");
+  }
+}
+
+function nodeActivities(node) {
+  return (node.activities || []).map((id) => app.pack.activities.get(id)).filter(Boolean);
+}
+
+function openQuiz(node, def) {
+  if (app.mode !== "writable" || !app.session) return;
+  if (app.quiz?.def.id === def.id && pendingQuiz(app.quiz)) {
+    app.view = "quiz";
+    renderQuiz();
+  } else if (canSwitchActivity()) {
+    startChallenge(node, def);
+  }
+}
+
+// 旧挑战可能刚好退回星图、最后一笔还在写。它的重试必须继续使用同一条原始事件。
+function canSwitchActivity() {
+  if (!app.quiz?.q.pending) return true;
+  $("#live").textContent = "请先存好上次的挑战。";
+  if (app.quiz.q.view.failed) {
+    app.view = "quiz";
+    renderQuiz();
+  } else {
+    toast("正在保存上次的挑战，稍等一下再点。");
+  }
+  return false;
+}
+
+function renderMenu(node) {
+  app.view = "menu";
+  const main = $("#main");
+  const acts = nodeActivities(node);
+  const choices = acts.filter((a) => a.module || (a.entry.kind === "quiz" && a.def));
+  main.innerHTML = `<section class="activity-menu" aria-labelledby="menuTitle">
+    <button type="button" class="back" data-act="back">${backIcon()} 星图</button>
+    <h1 id="menuTitle" tabindex="-1">${esc(node.title)}</h1>
+    <div class="activity-options">${choices.map((a) => {
+      const def = a.module?.manifest || a.def;
+      const isQuiz = a.entry.kind === "quiz";
+      const resume = isQuiz && app.quiz?.def.id === def.id && pendingQuiz(app.quiz);
+      const detail = isQuiz ? `${def.body.items.length} 道题` : `${STATION_COUNT} 站`;
+      return `<button type="button" class="activity-option" data-kind="${a.entry.kind}" data-activity="${esc(a.entry.id)}"${app.mode === "writable" ? "" : " disabled"}>
+        <span class="activity-meta">${isQuiz ? "挑战" : "动手探索"} · ${detail}</span>
+        <strong>${esc(def.title)}</strong>
+        <span class="activity-go">${resume ? "接着做" : "进入"} <span aria-hidden="true">→</span></span>
+      </button>`;
+    }).join("")}</div>
+    <div id="toast" class="toast" role="status" hidden></div>
+  </section>`;
+  main.querySelector('[data-act="back"]').addEventListener("click", renderChart);
+  for (const el of main.querySelectorAll("[data-activity]")) {
+    const activity = choices.find((a) => a.entry.id === el.dataset.activity);
+    el.addEventListener("click", () => {
+      if (app.mode !== "writable" || !app.session) return;
+      if (activity.module) {
+        if (canSwitchActivity()) openExploration(node, activity.module);
+      } else openQuiz(node, activity.def);
+    });
+  }
+}
+
+/** 合格尝试里已保存的站包括中途退出前完成的站。通关只认单独的结束事件。 */
+export function explorationProgress(events, learnerId, activityId, version) {
+  const stations = new Set();
+  for (const attempt of groupAttempts(events).values()) {
+    const first = attempt[0];
+    const content = first.content;
+    if (first.learner_id !== learnerId || content?.activity_id !== activityId ||
+        content.activity_kind !== "simulation" || content.activity_version !== version || attemptRule(attempt)) continue;
+    if (attempt[attempt.length - 1].verb === "attempt.completed") {
+      // 较早的记录只有整次完成。四站当时必须依次走完，重进时应能任选一站。
+      return { doneStations: Array.from({ length: STATION_COUNT }, (_, i) => i + 1), activityCompleted: true };
+    }
+    for (const e of attempt) {
+      const value = e.payload.value;
+      if (e.verb === "sim.observed" && e.payload.observable === "station.completed" &&
+          Number.isInteger(value) && value >= 1 && value <= STATION_COUNT) stations.add(value);
+    }
+  }
+  return { doneStations: [...stations].sort((a,b) => a-b), activityCompleted: false };
+}
+
+function openExploration(node, module) {
+  if (app.exploration || app.mode !== "writable" || !app.session) return;
+  const { manifest, html } = module;
+  const session = app.session;
+  const history = explorationProgress(session.log.events(), session.identity.learner_id, manifest.id, manifest.version);
+  const run = { host: null, leaving: null, failed:false };
+  app.exploration = run;
+  app.view = "exploration";
+  $("#main").innerHTML = `<section class="exploration" aria-labelledby="exploreTitle">
+    <header class="quiz-head"><button type="button" class="back" data-act="leave" aria-label="退出探索，回到星图">${backIcon()} 星图</button>
+    <div><h1 id="exploreTitle" tabindex="-1">${esc(manifest.title)}</h1><p class="sub">${esc(node.title)}</p></div></header>
+    <div class="explore-status"><p role="status">正在打开……</p><button type="button" class="btn" data-act="refresh" hidden>刷新</button></div><div class="workbench"></div></section>`;
+  const back = $("#main [data-act=leave]");
+  const panel = $("#main .explore-status");
+  const status = panel.querySelector('[role="status"]');
+  const refresh = panel.querySelector('[data-act="refresh"]');
+  refresh.addEventListener("click", () => location.reload());
+  back.addEventListener("click", async () => {
+    if (await closeExploration(run) && app.view === "exploration") renderChart();
+  });
+  $("#exploreTitle").focus({ preventScroll: true });
+  try {
+    run.host = mountExploration({
+      container: $("#main .workbench"), manifest, html, session, ids, now,
+      content: Object.freeze({ node_id: node.id, activity_id: manifest.id, activity_kind: "simulation",
+        activity_version: manifest.version, content_release: app.pack.release.release_id }),
+      mode: history.activityCompleted ? "retry" : "first", ...history,
+      onStatus(state) {
+        if (app.exploration !== run) return;
+        if (state === "completed") recompute();
+        const words = {loading:"正在打开……", active:"", completed:"", failed:"记录没存好。请刷新页面，再回到这颗星。",
+          timeout:"实物没有打开。回到星图，再试一次。", navigation:"探索中断了。请回到星图再试。"};
+        status.textContent = words[state] || "";
+        panel.hidden = !status.textContent;
+        if (state === "failed") {
+          run.failed = true;
+          back.disabled = true;
+          refresh.hidden = false;
+        }
+      }
+    });
+  } catch (e) {
+    console.error(e);
+    panel.hidden = false;
+    status.textContent = "这个探索暂时打不开，请回到星图。";
+  }
+}
+
+// 在离开宿主前等它提交最后的观察和退出，防止下一次活动争用同一个 device_seq。
+function closeExploration(run = app.exploration) {
+  if (!run) return Promise.resolve(true);
+  if (run.failed) return Promise.resolve(false);
+  if (run.leaving) return run.leaving;
+  const back = $("#main [data-act=leave]");
+  if (back) back.disabled = true;
+  run.leaving = (async () => {
+    try {
+      await run.host?.leave();
+      if (app.exploration !== run) return false;
+      run.host?.destroy();
+      app.exploration = null;
+      recompute();
+      return true;
+    } catch (e) {
+      console.error(e);
+      if (app.exploration === run) {
+        run.failed = true;
+        const panel = $("#main .explore-status");
+        if (panel) {
+          panel.hidden = false;
+          panel.querySelector('[role="status"]').textContent = "记录没存好。请刷新页面，再回到这颗星。";
+          panel.querySelector('[data-act="refresh"]').hidden = false;
+        }
+      }
+      return false;
+    }
+  })();
+  return run.leaving;
 }
 
 /** 这次挑战还没做完，或者做完了但孩子还没看到结果（最后一道存好前回了星图）。 */
@@ -873,6 +1073,12 @@ function requestLock() {
 function lostLock() {
   app.lockLost = true; // 先记下：恢复途中（还没有 session）也靠它停止写入
   if (app.session) app.session.committer.freeze();
+  if (app.exploration) {
+    const run = app.exploration;
+    app.exploration = null;
+    run.host?.destroy();
+    app.view = location.hash === "#parent" ? "parent" : "chart";
+  }
   if (app.mode === "stopped") return;
   app.mode = "readonly";
   app.why = "lost";
@@ -967,7 +1173,11 @@ async function boot() {
   window.addEventListener("pageshow", (e) => { if (e.persisted) lostLock(); });
   // 家长页用 #parent，浏览器的「返回」也能回到星图
   app.view = location.hash === "#parent" ? "parent" : "chart";
-  window.addEventListener("hashchange", () => {
+  window.addEventListener("hashchange", async () => {
+    if (app.exploration && location.hash === "#parent") {
+      if (!await closeExploration()) return;
+      if (location.hash !== "#parent") { renderChart(); return; }
+    }
     if (location.hash === "#parent") { if (app.view !== "parent") resetParent(); app.view = "parent"; }
     else if (app.view === "parent") app.view = "chart";
     else return;

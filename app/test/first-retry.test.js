@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createLog } from "../../kernel/js/log.js";
-import { completedBefore } from "../app.js";
+import { completedBefore, explorationProgress } from "../app.js";
 import { isClean, lastBackupText, needsDot, formatFingerprint } from "../parent.js";
 import { CONTENT_V1 } from "./fake-store.js";
 
@@ -25,6 +25,29 @@ function attempt({ learner = LRN, device = DEV_A, seq, ends = "completed", conte
 }
 const events = (...raws) => { const log = createLog(); for (const r of raws.flat()) log.ingest(r); return log.events(); };
 const ACT = CONTENT_V1.activity_id;
+
+const LIFE = { ...CONTENT_V1, node_id: "biology.cell.cell-intro", activity_kind: "simulation",
+  activity_id: "act.simulation.cell-zoom-01", activity_version: 2 };
+
+test("旧探索只有整次完成记录：同一个孩子、同一版在另一台设备也可以重玩全部四站", () => {
+  const history = events(attempt({device:DEV_B, content:LIFE, seq:1}));
+  assert.deepEqual(explorationProgress(history, LRN, LIFE.activity_id, 2),
+    {doneStations:[1, 2, 3, 4], activityCompleted:true});
+  for (const [who, version] of [[OTHER, 2], [LRN, 3]]) {
+    assert.deepEqual(explorationProgress(history, who, LIFE.activity_id, version),
+      {doneStations:[], activityCompleted:false});
+  }
+});
+
+test("中途退出沿用保存的站；不一致的完成记录不会解锁其余站", () => {
+  const [start, end] = attempt({content:LIFE, seq:1, ends:"abandoned"});
+  const observation = {...JSON.parse(start), verb:"sim.observed", event_id:"evt_" + body(++n), device_seq:2,
+    payload:{observable:"station.completed", value:1}};
+  const history = events(start, JSON.stringify(observation), JSON.stringify({...JSON.parse(end), device_seq:3}),
+    attempt({content:LIFE, seq:4, actor:{type:"learner", id:OTHER}}));
+  assert.deepEqual(explorationProgress(history, LRN, LIFE.activity_id, 2),
+    {doneStations:[1], activityCompleted:false});
+});
 
 test("另一台设备上完成过（同一个孩子）→ retry", () => {
   assert.equal(completedBefore(events(attempt({ device: DEV_B, seq: 1 })), LRN, ACT), true);

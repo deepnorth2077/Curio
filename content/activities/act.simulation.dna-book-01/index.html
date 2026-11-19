@@ -81,10 +81,20 @@ svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
 @media (prefers-reduced-motion:reduce){ .pulse{animation:none;opacity:.8} }
 @media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px}
   .t{font-size:26px} .tm{font-size:24px} .lab{font-size:28px} .ttl{font-size:40px} .big{font-size:42px} .let{font-size:23px} }
+.wrap.choosing > :not(#station-picker){display:none}
+#station-picker{background:var(--pane);border:1px solid var(--rule);border-radius:18px;padding:14px 18px 18px}
+#picker-title{font:600 20px var(--f-serif);color:var(--ink);margin:0 0 12px}
+#station-choices{justify-content:flex-start}
+#station-menu:not([hidden]){margin-bottom:8px}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <section id="station-picker" hidden aria-labelledby="picker-title">
+    <h2 id="picker-title">选一站</h2>
+    <div id="station-choices" class="actions"></div>
+  </section>
+  <button type="button" id="station-menu" class="btn ghost small" hidden>选站重玩</button>
   <div class="card">
     <header><span class="station" id="station">第 1 站 · 共 4 站</span><h1 id="title">打开小房间</h1></header>
     <svg id="stage" viewBox="0 0 800 600" tabindex="0" role="application" aria-label="动手区">
@@ -178,13 +188,15 @@ const PAGES_TXT = fmtBig(MODEL.pagesTotal);       // 「64 万」
 /* ============ 2. 平台契约 activity/1.1（单独打开时也能玩） ============ */
 const Host = (() => {
   const h = {}, inFrame = window.parent !== window;
-  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  addEventListener("message", e => { const m = e.data; if (inFrame && e.source === parent && m && m.contract === "activity/1.1" && Object.hasOwn(h, m.type)) h[m.type](m.payload || {}); });
   const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); };
-  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.body.scrollHeight })).observe(document.body);
   return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
     state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
 })();
 Host.on("init", p => {
+  $("qarea").hidden = p.question_available === false;
+  restoreStations(p);
   if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
 });
 
@@ -232,7 +244,73 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const narrowMQ = matchMedia("(max-width:520px)");
 const narrow = () => narrowMQ.matches;
 const STATIONS = 4;
-const S = { round: 1 };
+/* 宿主保存的是完成的站号。只从连续的第一站起恢复，缺一站就从那里继续。 */
+const stationNames = ["打开小房间", "同一本书，读不同的地方", "说明书在哪里", "说明书一直在用"];
+let completedStations = 0;
+let activityCompleted = false;
+let restored = false;
+let replayingStation = false;
+
+function restoreStations(payload){
+  if (restored || !Array.isArray(payload.completed_stations)) return;
+  restored = true;
+  const saved = new Set(payload.completed_stations);
+  while (completedStations < STATIONS && saved.has(completedStations + 1)) completedStations++;
+  activityCompleted = payload.activity_completed === true;
+  if (completedStations) showStationPicker();
+}
+function hideStationPicker(){
+  $("station-picker").hidden = true;
+  $("station-menu").hidden = true;
+  document.querySelector(".wrap").classList.remove("choosing");
+}
+function showStationPicker(){
+  const panel = $("station-picker"), choices = $("station-choices");
+  choices.replaceChildren();
+  const add = (label, action, primary = false) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = primary ? "btn" : "btn ghost";
+    button.textContent = label;
+    button.addEventListener("click", action);
+    choices.append(button);
+  };
+  if (completedStations < STATIONS){
+    const n = completedStations + 1;
+    add(`继续第 ${n} 站 · ${stationNames[n-1]}`, () => startStation(n, false), true);
+  } else {
+    add("看我的星卡", () => { hideStationPicker(); replayingStation = false; enterEnd(); }, true);
+  }
+  for (let n = 1; n <= completedStations; n++){
+    add(`重玩第 ${n} 站 · ${stationNames[n-1]}`, () => startStation(n, true));
+  }
+  add("从头玩", () => startStation(1, false));
+  panel.hidden = false;
+  document.querySelector(".wrap").classList.add("choosing");
+  choices.firstElementChild.focus({preventScroll:true});
+}
+$("station-menu").addEventListener("click", showStationPicker);
+function finishStation(label, go){
+  if (replayingStation){
+    next("回到选站", showStationPicker);
+    return;
+  }
+  if (S.station === completedStations + 1){
+    completedStations++;
+    Host.event("observed", {station: S.station, item: "station-complete"});
+  }
+  actions([{label, go}, {label:"选站重玩", cls:"ghost", go:showStationPicker}]);
+}
+
+const S = {};
+function startStation(n, replay){
+  hideStationPicker();
+  replayingStation = replay;
+  resetState();
+  drag = null;
+  [enter1, enter2, enter3, enter4][n-1]();
+  if (replay) [act1, act2, act3, act4][n-1]();
+}
 function resetState(){
   Object.assign(S, { station: 1, mode: "intro", hold: false, time: 0,
     dt: 0, dp: 0, bx: 0, by: 0, snap: false, placed: false,
@@ -243,7 +321,7 @@ function resetState(){
   S.bx = C1.b0[0]; S.by = C1.b0[1];
 }
 // 事件只在第一轮发；「再玩一次」不再记猜测、观察和完成
-const ev = (verb, result) => { if (S.round === 1) Host.event(verb, result); };
+const ev = (verb, result) => { if (!replayingStation && result.station > completedStations) Host.event(verb, result); };
 
 function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
 function hint(s){ $("hint").textContent = s || ""; }
@@ -294,9 +372,9 @@ function ask(question, options, onAnswer){
 }
 function next(label, go, cls){ actions([{ label, go, cls }]); }
 // 一串只有「继续」的话
-function chain(lines, last){
+function chain(lines, last, atStationEnd = false){
   const step = i => { const [text, tone] = Array.isArray(lines[i]) ? lines[i] : [lines[i]]; say(text, tone);
-    if (i + 1 < lines.length) next("继续", () => step(i + 1)); else next(last[0], last[1]); };
+    if (i + 1 < lines.length) next("继续", () => step(i + 1)); else if (atStationEnd) finishStation(last[0], last[1]); else next(last[0], last[1]); };
   step(0);
 }
 
@@ -548,6 +626,7 @@ function donePull(){
   S.mode = "placed"; S.placed = true; hint(""); if (!S.done.pull){ S.done.pull = true; ev("observed", { station: 1, item: "open-nucleus" }); }
   render(); readout("");
   say("拿出来了。这本说明书有个名字，叫 DNA。", "good");
+  if (replayingStation){ next("翻开看看", enterRead); return; }
   next("翻开前先猜", () => ask("这本说明书，用多少种字母写成？", [
     { label: "26 种，和英文一样", feedback: "英文书确实用 26 个字母。可这本只用 4 种：A、T、C、G。" },
     { label: "4 种，比英文还少", correct: true, feedback: "猜对了。只有 A、T、C、G 这 4 种。" },
@@ -572,7 +651,7 @@ function doneRead(){
   render(); readout1();
   chain([[`一秒一个，不吃不睡，要念约 ${YEARS} 年才念完。`, "good"],
     `一个人一辈子大约 ${MODEL.lifeYears} 年。念完它，要 ${LIVES_TXT}辈子。`,
-    "7 个音符能写出好多歌。4 种字母排来排去，就写下了怎么长成你。"], ["去第 2 站", enter2]);
+    "7 个音符能写出好多歌。4 种字母排来排去，就写下了怎么长成你。"], ["去第 2 站", enter2], true);
 }
 
 /* ============ 7. 第 2 站：同一本书，读不同的地方 ============ */
@@ -688,7 +767,7 @@ function done2(){
   S.done[2] = true; hint("还可以接着拨"); ev("observed", { station: 2, visited: Object.keys(S.visited) }); render();
   chain([["封面一样，厚度一样。只是读的地方不同，本领就不同。", "good"],
     "真实的细胞会读书里很多小段，这里是打个比方。",
-    "身体里绝大多数细胞，带的都是同一本说明书。"], ["去第 3 站", enter3]);
+    "身体里绝大多数细胞，带的都是同一本说明书。"], ["去第 3 站", enter3], true);
 }
 
 /* ============ 8. 第 3 站：说明书在哪里 ============ */
@@ -817,7 +896,7 @@ function check3(){
   if (LIST3.every(([k]) => S.found[k]) && !S.done[3]){
     S.done[3] = true;
     next("我找完了", () => { S.mode = "talk3"; hint(""); ev("observed", { station: 3, found: LIST3.map(q => q[0]) }); render();
-      chain([["说明书几乎在每个细胞里，不只在血里。", "good"], "人成熟的红细胞是个例外，它长好以后，把细胞核扔掉了。"], ["去第 4 站", enter4]); });
+      chain([["说明书几乎在每个细胞里，不只在血里。", "good"], "人成熟的红细胞是个例外，它长好以后，把细胞核扔掉了。"], ["去第 4 站", enter4], true); });
     const b = $("actions").querySelector("button"); if (b && S.kbd) b.focus({ preventScroll: true });   // 键盘用户找完直接按回车
   }
 }
@@ -972,7 +1051,7 @@ function afterPass(){
   S.passing = false; S.mode = "dogdone"; render();
   say("小狗的说明书，是从狗爸爸、狗妈妈那里传来的。这叫遗传。");
   next("那小猫呢？", () => { S.showCat = true; render();
-    chain(["猫的说明书也只用 A、T、C、G，可排法和狗的不一样。", ["所以小狗总是长成小狗，不会长成小猫。", "good"]], ["看我的星卡", enterEnd]); });
+    chain(["猫的说明书也只用 A、T、C、G，可排法和狗的不一样。", ["所以小狗总是长成小狗，不会长成小猫。", "good"]], ["看我的星卡", enterEnd], true); });
 }
 
 /* ============ 10. 结尾：我的说明书卡（按固定排版表画，宽屏一张、窄屏一张） ============ */
@@ -1015,12 +1094,13 @@ function drawEnd(){
   return [s, "", ""];
 }
 function enterEnd(){
+  $("station-menu").hidden = false;
   S.station = 5; S.mode = "end"; head(0, "我的说明书卡"); hint(""); gStatic.innerHTML = ""; render();
   readout(`<b>4</b> 种字母 · 约 <b>${TOTAL_TXT}个</b> · 念 <b>约 ${YEARS} 年</b>`);
   say("这是你的说明书卡。下一站，看看这么长的书怎么收进细胞核。", "good");
   // 只在第一轮告诉平台「做完了」，再玩不重复记
-  if (S.round === 1){ Host.event("observed", { station: 5, item: "star-card" }); Host.complete({}); }
-  next("再玩一次", () => { const r = S.round + 1; resetState(); S.round = r; enter1(); }, "ghost");
+  if (!activityCompleted){ activityCompleted = true; Host.event("observed", { station: 5, item: "star-card" }); Host.complete({}); }
+  next("再玩一次", () => startStation(1, false), "ghost");
 }
 
 /* ============ 11. 画面和输入 ============ */
