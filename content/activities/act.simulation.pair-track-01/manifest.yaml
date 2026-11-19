@@ -1,0 +1,15 @@
+id: act.simulation.pair-track-01
+contract: activity/1.1
+type: simulation
+version: 1
+title: 两辆车的互推印章
+targets: [physics.motion.action-reaction]
+age_band: G3-4
+entry: index.html
+duration_min: 7
+pedagogy: explain
+capabilities: [pointer, keyboard]
+misconceptions: [cancel-on-one]
+emits: [predicted, observed]
+author: {model: Codex, prompt_ref: prompts/act.simulation.pair-track-01.md}
+review: pending

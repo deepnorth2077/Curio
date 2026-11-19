@@ -1,0 +1,121 @@
+# author: Codex
+# prompt_ref: prompts/act.simulation.pair-track-01.md
+id: act.quiz.pair-track-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 给两辆车贴力签
+targets:
+- physics.motion.action-reaction
+age_band: G3-4
+duration_min: 7
+review: pending
+engine: 1
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 4.4
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42074/index.cnxml
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 光滑水平轨道上，甲车在左，乙车在右。甲的弹簧向右推乙。哪张标签写的是这股力的伙伴？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 乙对甲，向右
+        misconception: cancel-on-one
+        feedback: 两车互推时，它们对彼此的力方向相反。
+      - id: b
+        text: 乙对甲，向左
+        correct: true
+      - id: c
+        text: 轨道对乙，向上
+        misconception: cancel-on-one
+        feedback: 这是轨道托住车的力。互推的那一对来自甲、乙两车。
+    feedback:
+      correct: 找到同一次接触，再交换“谁推谁”。乙推甲的力朝左。
+      wrong: 找正在互相接触的两辆车。
+    hints:
+    - 找正在互相接触的两辆车。
+    - 交换施力者和受力者，再核对箭头方向。
+  - id: q2
+    stem: 轻车在左、重车在右。轻车向右推重车，此刻轻车的弹簧秤读 6 牛。重车同时向左推轻车的力有几牛？
+    answer:
+      type: number
+      value: 6
+      tolerance: 0
+      unit: 牛
+      common_wrong:
+      - value: 0
+        misconception: cancel-on-one
+        feedback: 重车也在向左推轻车，两个力分别落在两辆车上。
+    feedback:
+      correct: 同一对相互作用力大小相等。重车反推轻车的力也是 6 牛。
+      wrong: 先在两张力签上各写一辆受力的车。
+    hints:
+    - 先在两张力签上各写一辆受力的车。
+    - 两张力签记录同一次接触，比较它们的大小。
+  - id: q3
+    stem: 甲乙两车互推。你把“甲推乙”和“乙推甲”两张力签都放到甲的受力图上，算出零。应该怎样改？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 把两个箭头都改成向右
+        misconception: cancel-on-one
+        feedback: 改方向没有解决力签贴错车的问题。
+      - id: b
+        text: 两张都留在甲车图上
+        misconception: cancel-on-one
+        feedback: 两张力签的受力者不同。找出名字在“推”字后面的那辆车。
+      - id: c
+        text: 把“甲推乙”移到乙车图上
+        correct: true
+    feedback:
+      correct: “甲推乙”的受力者是乙。甲的图上只能把甲受到的力相加。
+      wrong: 逐张读出是谁受到了推力。
+    hints:
+    - 逐张读出是谁受到了推力。
+    - 用“推”字后面的名字给每张力签选车。
+  - id: q4
+    stem: 光滑水平轨道上，两辆车只在水平方向互推。2 千克的轻车在左，4 千克的重车在右。轻车持续向右推重车 8 牛，重车每秒向右增加多少米每秒的速度？
+    answer:
+      type: number
+      value: 2
+      tolerance: 0
+      unit: 米每秒
+      common_wrong:
+      - value: 0
+        misconception: cancel-on-one
+        feedback: 重车向左推轻车的力作用在轻车上，不能从重车的受力栏里扣掉。
+    feedback:
+      correct: 重车受的水平合力向右。8 ÷ 4 = 2，每秒向右增加 2 米每秒的速度。
+      wrong: 只保留落到重车上的力签。
+    hints:
+    - 只保留落到重车上的力签。
+    - 用重车的水平合力除以它自己的质量。
+  - id: q5
+    stem: 水平直轨上，轻车从左向右推重车 4 牛，绳子同时向左拉重车 4 牛。两股力保持不变，重车原来向右滑，另无水平力。哪张记录能同时解释重车和轻车？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 重车匀速向右，轻车受重车向左推
+        correct: true
+      - id: b
+        text: 重车立刻停下，轻车受重车向左推
+        misconception: cancel-on-one
+        feedback: 重车受到的水平力平衡，原有速度会保持。
+      - id: c
+        text: 重车向右加速，轻车没有受到推力
+        misconception: cancel-on-one
+        feedback: 绳的拉力也作用在重车上。两车接触时都会受到对方的推力。
+    feedback:
+      correct: 先看重车，两股力平衡，它保持向右的速度。再看互推的伙伴，重车对轻车的推力向左。
+      wrong: 给重车画一张图，只放重车受到的力。
+    hints:
+    - 给重车画一张图，只放重车受到的力。
+    - 再从两车的接触处找出作用在轻车上的那支箭头。
+# END OF FILE
