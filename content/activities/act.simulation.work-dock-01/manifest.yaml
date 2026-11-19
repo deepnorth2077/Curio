@@ -1,0 +1,23 @@
+id: act.simulation.work-dock-01
+contract: activity/1.1
+type: simulation
+version: 1
+title: 做功纸带机
+targets:
+- physics.energy.work
+age_band: G3-4
+entry: index.html
+duration_min: 6
+pedagogy: explain
+capabilities:
+- pointer
+- keyboard
+misconceptions:
+- effort-is-work
+emits:
+- predicted
+- observed
+author:
+  model: Codex
+  prompt_ref: prompts/act.simulation.work-dock-01.md
+review: pending

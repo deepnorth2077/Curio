@@ -1,0 +1,116 @@
+# author: Codex
+# prompt_ref: prompts/act.simulation.work-dock-01.md
+id: act.quiz.work-dock-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 给推力开工作票
+targets:
+- physics.energy.work
+age_band: G3-4
+duration_min: 7
+review: pending
+engine: 1
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 7.1
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42146/index.cnxml
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 你一直向上托着装书的箱子，箱子停在同一条高度线上。只算托力对箱子做的机械功。工作票该怎么记？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 按托力有多大来记
+        misconception: effort-is-work
+        feedback: 磅秤能读出力，还要在尺上找到箱子的移动。
+      - id: b
+        text: 记 0 焦
+        correct: true
+      - id: c
+        text: 托得越久，焦数越多
+        misconception: effort-is-work
+        feedback: 时间过去了，但箱子仍停在同一条刻线上。
+    feedback:
+      correct: 箱子的位移为零，所以托力对它做了 0 焦的功。手臂依然可能觉得累。
+      wrong: 看看箱子起点和终点的刻线。
+    hints:
+    - 看看箱子起点和终点的刻线。
+    - 找找箱子在托力方向上走了多远。
+  - id: q2
+    stem: 机器人用 3 牛的恒力向右推箱子。箱子也向右走了 5 米。这股推力对箱子做了几焦的功？
+    answer:
+      type: number
+      value: 15
+      tolerance: 0
+      unit: 焦
+      common_wrong:
+      - value: 3
+        misconception: effort-is-work
+        feedback: 你记下了力的大小，还要乘上箱子沿力走过的路。
+    feedback:
+      correct: 每向右走一米，推力做 3 焦的功。走 5 米就是 15 焦。
+      wrong: 在纸上标出手推的方向。
+    hints:
+    - 在纸上标出手推的方向。
+    - 沿这个方向，把每米的功累加起来。
+  - id: q3
+    stem: 小灯用 8 牛向右推箱子 2 米，小环用 4 牛向右推同一箱子 4 米。两次力恒定，箱子都向右移动。谁对箱做功更多？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 小灯更多
+        misconception: effort-is-work
+        feedback: 小灯的力大一倍，可它推过的路只有一半。
+      - id: b
+        text: 小环更多
+        misconception: effort-is-work
+        feedback: 小环走的路长一倍，每米用的力却小一半。
+      - id: c
+        text: 一样多
+        correct: true
+    feedback:
+      correct: 把两张工作票铺开，8 × 2 和 4 × 4 的格子数都是 16。
+      wrong: 每张票都要标出推力和同方向的路程。
+    hints:
+    - 每张票都要标出推力和同方向的路程。
+    - 用两边的乘积比格子总数。
+  - id: q4
+    stem: 手始终竖直向上托着托盘，托力恒为 9 牛。托盘先升高 2 米，又保持高度水平走了 3 米。托力共做几焦的功？
+    answer:
+      type: number
+      value: 18
+      tolerance: 0
+      unit: 焦
+      common_wrong:
+      - value: 45
+        misconception: effort-is-work
+        feedback: 水平走的路，不能填在向上托力的距离栏里。
+    feedback:
+      correct: 沿托力方向只升高了 2 米。托力做功为 9 × 2 = 18 焦。
+      wrong: 从侧面看托盘起点和终点的高度。
+    hints:
+    - 从侧面看托盘起点和终点的高度。
+    - 给向上移动的那段盖章，再核对水平方向那段。
+  - id: q5
+    stem: 拖拉机先向右用 6 牛拉箱子走 2 米，再向右用 4 牛拉它走 3 米，两段拉力各自恒定。最后箱子被挡住，绳仍绷紧。拉力共做几焦的功？
+    answer:
+      type: number
+      value: 24
+      tolerance: 0
+      unit: 焦
+      common_wrong:
+      - value: 12
+        misconception: effort-is-work
+        feedback: 这只够一段的工作票。两段移动都要计入。
+    feedback:
+      correct: 两段各做了 12 焦。挡住后位移为零，合计 12 + 12 = 24 焦。
+      wrong: 每当拉力改变，就另开一行工作票。
+    hints:
+    - 每当拉力改变，就另开一行工作票。
+    - 每行用这段的拉力乘同向位移，再合计。
+# END OF FILE

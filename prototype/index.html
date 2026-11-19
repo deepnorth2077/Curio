@@ -194,6 +194,7 @@ button.sitem:hover{background:var(--hover);color:var(--ink)}
 .series-nav{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;margin:4px 18px 8px}
 .series-nav>span{font-size:13px;color:var(--muted);margin-right:2px}
 .series-nav button{font:inherit;font-size:14px;color:var(--text);padding:8px 12px;border:1px solid var(--rule);border-radius:9px}
+.series-nav button[data-course-jump]{min-height:44px}
 .series-nav button[aria-pressed="true"]{color:var(--pane);background:var(--ink);border-color:var(--ink)}
 .series-groups{flex:1;min-height:0;overflow:auto;padding:4px 18px 30px}
 .series-groups section{margin-bottom:18px}
@@ -1128,14 +1129,16 @@ function zoomTo(id,el){ chartSeries=null; const svg=$("#gsvg"); const reduce=mat
 function zoomOut(){ const svg=$("#gsvg"); const go=()=>{ chartZoom=null; chartSeries=null; renderChart(); const ns=$("#gsvg"); if(ns&&ns.animate&&!matchMedia("(prefers-reduced-motion: reduce)").matches) ns.animate([{transform:"scale(1.25)",opacity:0},{transform:"scale(1)",opacity:1}],{duration:300,easing:"ease-out"}); };
   if(svg&&svg.animate&&!matchMedia("(prefers-reduced-motion: reduce)").matches) svg.animate([{opacity:1,transform:"scale(1)"},{opacity:0,transform:"scale(.85)"}],{duration:200}).onfinish=go; else go(); }
 
-// 生命的说明书和当前圈的其他组共用一张星图。三颗星仍用课程卡的年级和 ID。
+// 试玩课程和当前圈的教材单元画在同一张图，各星保留自己卡片的年级和 ID。
 function seriesInDiagram(c){
-  const series=SERIES.get("life-manual");
-  return series&&series.theme===c?.theme?series:null;
+  return (trial.diagram_series||[]).map(id=>SERIES.get(id)).filter(series=>series&&series.theme===c?.theme);
 }
 function seriesNav(c){
   const inline=seriesInDiagram(c);
-  const choices=[...SERIES.values()].filter(series=>series.theme===c.theme&&series!==inline);
+  const choices=[...SERIES.values()].filter(series=>series.theme===c.theme&&!inline.includes(series));
+  if(inline.length>1){
+    return `<nav class="series-nav" aria-label="跳到课程"><span>跳到</span>${inline.map(series=>`<button type="button" data-course-jump="${esc(series.id)}">${esc(series.title)}</button>`).join("")}</nav>`;
+  }
   if(!choices.length) return "";
   const tab=(id,name)=>`<button type="button" data-series="${esc(id)}" aria-pressed="${(chartSeries||"")===id}">${esc(name)}</button>`;
   return `<nav class="series-nav" aria-label="星座目录"><span>星座试玩</span>${choices.map(series=>tab(series.id,series.title)).join("")}${tab("","本圈星球")}</nav>`;
@@ -1146,6 +1149,15 @@ function bindConstellation(wrap,c){
     chartSeries=button.dataset.series||null;
     renderConstellation(c);
     wrap.querySelector('[data-series][aria-pressed="true"]')?.focus({preventScroll:true});
+  });
+  wrap.querySelectorAll("[data-course-jump]").forEach(button=>button.onclick=()=>{
+    const heading=wrap.querySelector(`[data-course-heading="${CSS.escape(button.dataset.courseJump)}"]`);
+    const graph=wrap.querySelector(".graph.scroll");
+    if(heading&&graph){
+      graph.scrollTop+=heading.getBoundingClientRect().top-graph.getBoundingClientRect().top-10;
+      const first=SERIES.get(button.dataset.courseJump).nodes[0];
+      graph.querySelector(`.node[data-id="${CSS.escape(first.id)}"]`)?.focus({preventScroll:true});
+    }
   });
   const link=wrap.querySelector("[data-metroline]");
   if(link) link.onclick=e=>{e.preventDefault(); metroMode="lines"; metroFocusLine=c.theme; location.hash="#metro";};
@@ -1177,11 +1189,23 @@ function renderConstellation(c){
   if(series&&series.theme===c.theme){renderSeries(wrap,c,series); return;}
   // The diagram groups stars by their primary textbook unit. Edition notes and other volumes stay on the full card.
   const inline=seriesInDiagram(c);
-  const units=inline?[{name:inline.title,nodes:inline.nodes}]:[];
+  const units=[];
+  for(const course of inline){
+    let unit;
+    for(const node of course.nodes){
+      const entry=CATALOG[node.id];
+      if(!unit||unit.group!==entry.group){
+        unit={group:entry.group,name:entry.group_title,nodes:[],course:course.id};
+        if(inline.length>1&&entry.group===1) unit.heading=course.title;
+        units.push(unit);
+      }
+      unit.nodes.push(node);
+    }
+  }
   for(const n of c.nodes){
-    if(inline&&CATALOG[n.id]?.series===inline.id) continue;
+    if(inline.some(s=>s.id===CATALOG[n.id]?.series)) continue;
     const name=n.unit.split(/；|（(?![一二三四五六七八九十0-9]+）)/)[0].trim();
-    let unit=units.find(u=>u.name===name);
+    let unit=units.find(u=>!u.course&&u.name===name);
     if(!unit){unit={name,nodes:[]};units.push(unit);}
     unit.nodes.push(n);
   }
@@ -1201,8 +1225,13 @@ function renderConstellation(c){
     if(current) result.push(current);
     return result;
   }
+  const courseHeadings=[];
   let H=14;
   for(const unit of units){
+    if(unit.heading){
+      courseHeadings.push({id:unit.course,title:unit.heading,y:H+24});
+      H+=46;
+    }
     for(let start=0;start<unit.nodes.length;start+=columns){
       const list=unit.nodes.slice(start,start+columns);
       const heading=start?[]:lines(unit.name,colLeft-22,"16px "+css.getPropertyValue("--f-hand"));
@@ -1221,6 +1250,9 @@ function renderConstellation(c){
     <div class="legend"><a class="wikilink" href="#metro" data-metroline="${c.theme}">在地铁上看这条线</a></div></div>
     ${seriesNav(c)}<div class="graph scroll" id="graph"><svg id="gsvg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(consName(c))}座的星球"></svg></div>`;
   let h=`<path d="${Sk.blob(W/2,H/2,W/2-20,H/2-10,c.band+7)}" style="fill:var(${t.c})" opacity=".05"/>`;
+  for(const course of courseHeadings){
+    h+=`<text class="unit-lbl" style="font-weight:700" x="12" y="${course.y}" data-course-heading="${esc(course.id)}">${esc(course.title)}</text>`;
+  }
   for(const {heading,y} of rows){
     if(!heading.length) continue;
     const first=y+6-(heading.length-1)*11;
@@ -1345,8 +1377,7 @@ function select(id,user){
   const inSeries=chartSeries&&CATALOG[id]?.series===chartSeries;
   const opened=user&&innerWidth>=760&&!noteOpen;
   if(opened){noteOpen=true; applyNote();}
-  const inline=current==="chart"&&!chartSeries&&seriesInDiagram(CONS[chartZoom]);
-  const inDiagram=inline&&CATALOG[id]?.series===inline.id;
+  const inDiagram=current==="chart"&&!chartSeries&&seriesInDiagram(CONS[chartZoom]).some(s=>s.id===CATALOG[id]?.series);
   if(user&&!inSeries&&!inDiagram&&(chartZoom!==consId(n)||chartSeries)){
     chartSeries=null; chartZoom=consId(n); openCons[chartZoom]=true;
     if(current==="chart") renderChart();
@@ -1371,7 +1402,8 @@ function noteHTML(n,animate){
     return [`<li>${esc(entry.title)} · 原点亮进度 ${Math.round(mastery(entry.old)*100)}%${scores.length?" · 原成绩："+scores.join("、"):""}</li>`];
   });
   const history=previous.length?`<details class="parent"><summary>旧星记录</summary><p>这些记录算作来过这颗星。</p><ul>${previous.join("")}</ul></details>`:"";
-  const lawsOverview=n.id==="m.g4.laws"&&!cardIds.has(n.id)&&cardIds.has("math.operation.distributive-law");
+  const overview=trial.overviews?.[n.id];
+  const children=(overview?.children||[]).filter(id=>cardIds.has(id)&&NODE[id]);
   const cardBg=n.galaxy==="math"?"var(--c-math-bg)":"var(--c-sci-bg)";
   return `<div class="note">
     <div class="crumbs"><span>${GALAXY[n.galaxy]}</span><span>${esc(consName(c))}座</span><span>${GRADE[n.grade]}</span></div>
@@ -1384,7 +1416,7 @@ function noteHTML(n,animate){
       <dt>线路</dt><dd><a class="wikilink" href="#metro" data-line="${n.theme}"><span style="display:inline-block;width:14px;height:5px;border-radius:9px;background:var(${t.c});vertical-align:middle;margin-right:4px"></span>${t.line}</a></dd>
       ${n.prereq.length?`<dt>先去</dt><dd class="links">${n.prereq.map(p=>`<a class="wikilink" href="#" data-goto="${p}">${esc(NODE[p].title)}</a>`).join("")}</dd>`:""}
     </dl>
-    ${lawsOverview?`<div class="callout"><p>交换律、结合律和分配律都属于运算定律。分配律已经可以动手试了。</p><a class="wikilink" href="#chart" data-goto="math.operation.distributive-law">${esc(NODE["math.operation.distributive-law"].title)}</a></div>`:n.dq?`<div class="signal-card" style="--card-bg:${cardBg}"><div><div class="eyebrow">${isRec?"今日信号":"来自这颗星球的信号"}</div><p class="q">${esc(n.dq)}</p></div>${icon(n.icon,n.galaxy,100,n.seed,animate?"drawin":"")}</div>`
+    ${children.length?`<div class="callout"><p>${esc(overview.text)}</p><div class="links">${children.map(id=>`<a class="wikilink" href="#chart" data-goto="${esc(id)}">${esc(NODE[id].title)}</a>`).join("")}</div></div>`:n.dq?`<div class="signal-card" style="--card-bg:${cardBg}"><div><div class="eyebrow">${isRec?"今日信号":"来自这颗星球的信号"}</div><p class="q">${esc(n.dq)}</p></div>${icon(n.icon,n.galaxy,100,n.seed,animate?"drawin":"")}</div>`
       :`<div class="callout"><span class="ct">这颗星球的信号还在路上</span><span class="muted" style="font-size:13px">它的讲解、实验和挑战还没造好。示例数据里只有少数星球是完整的。</span></div>`}
     <h2>任务</h2>
     <div class="tasklist">${acts.length?acts.map(a=>{ const done=PLAYED.has(a.id); return `<div class="taskrow">${a.content?icon(n.icon,n.galaxy,48,n.seed+a.id.length):icon(a.type==="experiment"?"pinhole":"cake",n.galaxy,48,a.id.length)}<div><b>${done?`<span class="tick" aria-label="玩过了">✓</span> `:""}${esc(a.title)}</b><small>${actKind(a,n)}${a.duration_min?` · 约 ${a.duration_min} 分钟`:""}</small></div><button class="btn ink" data-start="${a.id}">${done?"再玩":"开始"}</button></div>`; }).join("")
@@ -1403,7 +1435,7 @@ function bindNote(root){
     e.preventDefault(); closePops();
     const entry=CATALOG[link.dataset.inSeries], host=CONS[chartZoom];
     const target=host?.theme===entry.chart_theme?host:CONS[entry.chart_theme+"|"+CURRENT_BAND]||Object.values(CONS).find(c=>c.theme===entry.chart_theme);
-    chartZoom=target.id; chartSeries=entry.series===seriesInDiagram(target)?.id?null:entry.series;
+    chartZoom=target.id; chartSeries=seriesInDiagram(target).some(s=>s.id===entry.series)?null:entry.series;
     if(current==="chart"){renderChart();revealSelected();} else location.hash="#chart";
   });
   root.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>{ closePops(); const A=ACTIVITIES[b.dataset.start]; if(A&&A.content) Player.open(A.id,selected); else openLab(b.dataset.start); });

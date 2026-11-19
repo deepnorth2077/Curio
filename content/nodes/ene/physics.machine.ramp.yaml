@@ -1,0 +1,34 @@
+id: physics.machine.ramp
+schema: knode/1
+title: 斜面：长路怎样省力
+subjects:
+- science
+- physics
+theme: ene
+grade: G6
+unit: 送到同样高
+prerequisites: []
+driving_question: 终点一样高，把坡拉长，手上的力怎么变？
+objectives:
+- 光滑直坡，沿坡匀速推。重12 N的箱升高1 m，坡长2 m需6 N，4 m需3 N。坡长是斜边。
+- 保留两块坡板与同一条站台高度线。
+misconceptions:
+- id: length-is-height
+  text: 坡长当高度
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 9.5
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42174/index.cnxml
+lenses:
+- band: G3-4
+  approach: 先选短坡把货升顶，换长板仍对齐同一站台；自选坡长再跑，比较沿坡路程与力。
+- band: G7-9
+  approach: 光滑直坡，沿坡匀速推。重12 N的箱升高1 m，坡长2 m需6 N，4 m需3 N。坡长是斜边。
+activities:
+- act.simulation.ramp-dock-01
+- act.quiz.ramp-dock-01
+status: draft
+version: 2
+curriculum:
+- std: 义务教育科学课程标准（2022年版）
+  ref: 简单机械与机械能

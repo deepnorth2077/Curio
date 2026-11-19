@@ -75,6 +75,40 @@ _这一段由 `tools/status_gen.py` 按 `docs/constellations/zero-to-one/status.
 **现在**：前 4 颗已验收。第 5 到 19 颗的动手探索和挑战已接入同一试玩页，等 Luka 统一验收。
 <!-- status:end zero-to-one -->
 
+### 能量与运动的两个试玩星座
+
+<!-- status:begin energy-dock -->
+_这一段由 `tools/status_gen.py` 按 `docs/constellations/energy-dock/status.yaml` 生成，不要手改。_
+
+**标杆星座「省力的机器和能量账本」**（2026-11-19；主 issue #193；完整任务说明从 `docs/constellations/energy-dock/index.md` 看起）：6 颗星：完成 0、等验收 6、在做 0、草案 0。试玩页 https://deepnorth2077.github.io/Curio/preview/energy-dock/
+
+| 星 | 状态 | 主要 PR | 在等什么 |
+| --- | --- | --- | --- |
+| 第 1 颗「杠杆：把支点挪一格」 | 等验收 | #206 | Luka 和舰长试玩 |
+| 第 2 颗「滑轮：谁在托箱子」 | 等验收 | #207 | Luka 和舰长试玩 |
+| 第 3 颗「斜面：长路怎样省力」 | 等验收 | #208 | Luka 和舰长试玩 |
+| 第 4 颗「功：力和路程合起来」 | 等验收 | #209 | Luka 和舰长试玩 |
+| 第 5 颗「功率：一秒能搬多少」 | 等验收 | #210 | Luka 和舰长试玩 |
+| 第 6 颗「能量：滑停以后去了哪」 | 等验收 | #211 | Luka 和舰长试玩 |
+
+**现在**：已制作动手探索与五题挑战，等 Luka 和舰长统一试玩。
+<!-- status:end energy-dock -->
+
+<!-- status:begin newton-track -->
+_这一段由 `tools/status_gen.py` 按 `docs/constellations/newton-track/status.yaml` 生成，不要手改。_
+
+**标杆星座「力怎样改变运动」**（2026-11-19；主 issue #194；完整任务说明从 `docs/constellations/newton-track/index.md` 看起）：4 颗星：完成 0、等验收 4、在做 0、草案 0。试玩页 https://deepnorth2077.github.io/Curio/preview/newton-track/
+
+| 星 | 状态 | 主要 PR | 在等什么 |
+| --- | --- | --- | --- |
+| 第 1 颗「力」 | 等验收 | #212 | Luka 和舰长试玩 |
+| 第 2 颗「牛顿第一定律：松手后还会走吗」 | 等验收 | #213 | Luka 和舰长试玩 |
+| 第 3 颗「牛顿第二定律：同一推力推两辆车」 | 等验收 | #214 | Luka 和舰长试玩 |
+| 第 4 颗「牛顿第三定律：两辆车互推」 | 等验收 | #215 | Luka 和舰长试玩 |
+
+**现在**：已制作动手探索与五题挑战，等 Luka 和舰长统一试玩。
+<!-- status:end newton-track -->
+
 ### 本轮交付和验收（2026-11-19）
 
 - **数学**。「0 和 1 之间」六组 19 颗均可玩，家庭验收进度见上表。Luka 可以一次试玩剩余 15 颗。记下舰长在哪一步卡住、当时看到了什么，把反馈用进下一组。第 5、16 颗改了动手操作，第 14、17 颗重做了挑战末题。[数学试玩](https://deepnorth2077.github.io/Curio/preview/zero-to-one/) · [四处改动 #171](https://github.com/deepnorth2077/Curio/pull/171)
@@ -87,7 +121,7 @@ _这一段由 `tools/status_gen.py` 按 `docs/constellations/zero-to-one/status.
 
 做法：以 #184 的首页作画面和交互基准，冻结原型（停止往原型加正式功能）。根目录和 `?shapes=1` 继续给家庭试玩，影响验收的问题仍可修。数学余下 15 颗的统一试玩可并行。
 
-**迁移前要知道的现状。** 正式发布包只收 `published` 的知识点：现在 23 张有课程的卡里，3 张生命卡已发布，20 张是草案。首页的 93 个知识点只存在于 `prototype/index.html` 的示例数据里，不在 `content/`。正式外壳里还没有年级、入学年份和教材，它们现在只在原型的「设置」里。所以「星图迁入 `app/`」不是接一下数据，要先补这两样。
+**迁移现状。** 目录已经随正式发布包下发。#190 入库时有 93 个现行点，两套物理试玩增加 9 个，沿用原有的「力」并保留「牛顿运动定律」总览，现有 102 个现行点。33 张课程卡中，3 张生命卡已正式发布，30 张草案卡走试玩入口。正式外壳接下来还要保存年级、入学年份和教材。
 
 | 步骤 | 做什么 | 要不要独立审 | 放行条件 |
 | --- | --- | --- | --- |

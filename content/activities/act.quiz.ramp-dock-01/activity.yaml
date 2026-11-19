@@ -1,0 +1,121 @@
+# author: Codex
+# prompt_ref: prompts/act.simulation.ramp-dock-01.md
+id: act.quiz.ramp-dock-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 给货箱搭坡板
+targets:
+- physics.machine.ramp
+age_band: G3-4
+duration_min: 7
+review: pending
+engine: 1
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 9.5
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42174/index.cnxml
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 同一只箱子沿光滑直坡匀速上同一站台，手沿坡推。短板换成长板。箱子走的路和升高的高度怎样变？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 路和高度都变大
+        misconception: length-is-height
+        feedback: 两块板的上端都靠在同一站台边。
+      - id: b
+        text: 路和高度都相同
+        misconception: length-is-height
+        feedback: 沿着较长的板量，箱子走的路会变长。
+      - id: c
+        text: 路变长，高度相同
+        correct: true
+    feedback:
+      correct: 你分别看了坡面和竖直高度尺。两块板绕了不同长的路，却到达同一层。
+      wrong: 先找箱子最后停在哪一层。
+    hints:
+    - 先找箱子最后停在哪一层。
+    - 再让手指沿坡板从脚走到顶。
+  - id: q2
+    stem: 箱重 12 牛，沿光滑坡板匀速升高 1 米。坡板长 3 米。沿坡推它的手需要用几牛？
+    answer:
+      type: number
+      value: 4
+      tolerance: 0
+      unit: 牛
+      common_wrong:
+      - value: 12
+        misconception: length-is-height
+        feedback: 竖直抬箱时用箱重作力。沿坡推时可以多走些路。
+    feedback:
+      correct: 升高箱子需要 12 焦，分到 3 米坡路上，沿坡只需用 4 牛的力推。
+      wrong: 算一算把货升到这个高度要做多少功。
+    hints:
+    - 算一算把货升到这个高度要做多少功。
+    - 把这份功均分到沿坡推过的路程上。
+  - id: q3
+    stem: 同一箱子匀速上同一层。有两块光滑坡板。你试过短板，换成长板也沿坡推。手推箱所做的功会怎样？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 一样多
+        correct: true
+      - id: b
+        text: 变少
+        misconception: length-is-height
+        feedback: 长板上的推力小些，可手要推更远。
+      - id: c
+        text: 变多
+        misconception: length-is-height
+        feedback: 坡板虽长，箱子升高的距离没有变。
+    feedback:
+      correct: 两块板都把同一箱子送上同一层，箱子增加的重力势能相同。
+      wrong: 在起点和站台顶各贴一根高度线。
+    hints:
+    - 在起点和站台顶各贴一根高度线。
+    - 比一比两种路线的终点比起点高多少。
+  - id: q4
+    stem: 一箱货重 18 牛。沿光滑坡面用 6 牛的力匀速推了 6 米。站台比起点高几米？
+    answer:
+      type: number
+      value: 2
+      tolerance: 0
+      unit: 米
+      common_wrong:
+      - value: 6
+        misconception: length-is-height
+        feedback: 你量的是沿坡走的长度。高度要用竖直的尺量。
+    feedback:
+      correct: 手做了 6 × 6 = 36 焦的功。箱子每升高一米需要 18 焦，所以升高 2 米。
+      wrong: 先读出推力和沿坡走的距离。
+    hints:
+    - 先读出推力和沿坡走的距离。
+    - 算出手做的功，再除以箱重。
+  - id: q5
+    stem: 箱重 12 牛，原站台高 1 米，新站台高 2 米。新台可搭 4 米或 6 米的光滑坡板。沿坡匀速推，两块板各需几牛？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 4 米板需 3 牛，6 米板需 2 牛
+        misconception: length-is-height
+        feedback: 这对读数仍按原站台的高度计算。
+      - id: b
+        text: 4 米板需 6 牛，6 米板需 4 牛
+        correct: true
+      - id: c
+        text: 4 米板需 4 牛，6 米板需 6 牛
+        misconception: length-is-height
+        feedback: 同一新高度上，较长的坡板所需推力更小。
+    feedback:
+      correct: 新站台需要 12 × 2 = 24 焦。再分别除以 4 米、6 米，得到 6 牛、4 牛。
+      wrong: 先把工作票上的站台高度改好。
+    hints:
+    - 先把工作票上的站台高度改好。
+    - 算出新高度需要的功，再分别摊到两块坡板的长度上。
+# END OF FILE

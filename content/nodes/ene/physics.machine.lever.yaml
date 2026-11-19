@@ -1,0 +1,34 @@
+id: physics.machine.lever
+schema: knode/1
+title: 杠杆：把支点挪一格
+subjects:
+- science
+- physics
+theme: ene
+grade: G6
+unit: 手里的力
+prerequisites: []
+driving_question: 箱子比砝码重，为什么横杆还能摆平？
+objectives:
+- 水平轻杆，两边竖直向下，比较力乘到支点的距离。6 N 在一格与 2 N 在三格平衡。格子等长。
+- 把杆上刻线和两边的力配成一张平衡记录。
+misconceptions:
+- id: heavy-wins
+  text: 只看重不看远近
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 9.5
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42174/index.cnxml
+lenses:
+- band: G3-4
+  approach: 先在等臂处挂轻重两盘，看哪头沉。再把轻盘推远，刚好停在平衡线。换一个支点重新配平。
+- band: G7-9
+  approach: 水平轻杆，两边竖直向下，比较力乘到支点的距离。6 N 在一格与 2 N 在三格平衡。格子等长。
+activities:
+- act.simulation.lever-dock-01
+- act.quiz.lever-dock-01
+status: draft
+version: 2
+curriculum:
+- std: 义务教育科学课程标准（2022年版）
+  ref: 简单机械与机械能
