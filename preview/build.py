@@ -3,10 +3,13 @@
 用法：
     python preview/build.py --root <内容根目录> [--root <另一个根目录> ...] --out <输出文件>
     python preview/build.py --root . --bundle prototype/content.js
+    python preview/build.py --root . --trial-bundle prototype/trial-content.js
     python preview/build.py --root . --constellation zero-to-one --out prototype/preview/zero-to-one/index.html
 
 --bundle：把所有 status: published 的知识点、它们卡片里列的已批准（review: approved）活动和配图打成一个 JS 文件，
-原型（prototype/index.html）用 <script src="content.js"> 读。content/ 改了就重新生成一次。
+原型（prototype/index.html）用 <script src="content.js"> 读。
+--trial-bundle：为首页额外生成点名试玩的星座目录和未发布活动。默认引用仓库里的动手探索 HTML；
+部署时加 --copy-trial-modules，把清单内需要的 HTML 复制到输出目录旁边的 trial-modules/。
 
 每个根目录下应当有 content/nodes/、content/activities/、content/assets/。
 可以给多个根目录（例如三个 kp/ 分支各导出一份），按 CONSTELLATIONS 里列的顺序取知识点和活动。
@@ -14,7 +17,9 @@
 """
 import argparse
 import json
+import os
 import re
+import shutil
 from pathlib import Path
 
 import yaml
@@ -31,6 +36,9 @@ CONSTELLATIONS = {
             "act.quiz.chromosome-intro-01",
             "act.reflection.chromosome-intro-01",
         ]),
+    ]),
+    "chocolate": ("乘法的秘密", [
+        ("math.operation.distributive-law", ["act.simulation.chocolate-split-01"]),
     ]),
     # 「0 和 1 之间」：分数、小数、比与百分数（docs/constellations/zero-to-one/index.md）。做完一颗加一颗
     "zero-to-one": ("0 和 1 之间", [
@@ -79,11 +87,16 @@ def find(roots, rel, required=True):
     return None
 
 
-def find_node(roots, node_id):
+def find_node(roots, node_id, prefer_published=False):
+    first = None
     for r in roots:
-        hits = list((r / "content/nodes").rglob(f"{node_id}.yaml"))
-        if hits:
-            return hits[0]
+        for path in (r / "content/nodes").rglob(f"{node_id}.yaml"):
+            if first is None:
+                first = path
+            if not prefer_published or yaml.safe_load(path.read_text(encoding="utf-8")).get("status") == "published":
+                return path
+    if first:
+        return first
     raise SystemExit(f"找不到知识点卡：{node_id}")
 
 
@@ -116,7 +129,7 @@ def not_approved(doc, aid, only_approved):
     return False
 
 
-def load_activity(roots, aid, figures, only_approved=False):
+def load_activity(roots, aid, figures, only_approved=False, module_src=None):
     """读一个活动：动手探索（manifest.yaml + index.html）或数据活动（activity.yaml）。配图收进 figures。
     找不到返回 None；only_approved 时，review 不是 approved 的也返回 None，配图不收。"""
     manifest = find(roots, f"content/activities/{aid}/manifest.yaml", required=False)
@@ -124,9 +137,14 @@ def load_activity(roots, aid, figures, only_approved=False):
         m = yaml.safe_load(manifest.read_text(encoding="utf-8"))
         if not_approved(m, aid, only_approved):
             return None
-        page = find(roots, f"content/activities/{aid}/{m.get('entry', 'index.html')}").read_text(encoding="utf-8")
-        return {"id": m["id"], "kind": "simulation", "title": m["title"], "duration_min": m.get("duration_min"),
-                "age_band": m.get("age_band", "G3-4"), "targets": m.get("targets", []), "html": page}
+        entry = find(roots, f"content/activities/{aid}/{m.get('entry', 'index.html')}")
+        activity = {"id": m["id"], "kind": "simulation", "title": m["title"], "duration_min": m.get("duration_min"),
+                    "age_band": m.get("age_band", "G3-4"), "targets": m.get("targets", [])}
+        if module_src:
+            activity["src"] = module_src(entry, aid)
+        else:
+            activity["html"] = entry.read_text(encoding="utf-8")
+        return activity
     path = find(roots, f"content/activities/{aid}/activity.yaml", required=False)
     if not path:
         print(f"跳过（还没有）：{aid}")
@@ -140,6 +158,16 @@ def load_activity(roots, aid, figures, only_approved=False):
         if src not in figures:
             figures[src] = prep_svg(find(roots, src).read_text(encoding="utf-8"), f"f{len(figures)}")
     return {k: act[k] for k in ("id", "kind", "title", "duration_min", "age_band", "targets", "body") if k in act}
+
+
+def bundle_node(node, activity_ids):
+    return {
+        "id": node["id"], "title": node["title"], "theme": node["theme"], "grade": node["grade"],
+        "unit": node.get("unit", ""), "prerequisites": node.get("prerequisites", []),
+        "driving_question": node.get("driving_question", ""), "objectives": node.get("objectives", []),
+        "misconceptions": node.get("misconceptions", []), "lenses": node.get("lenses", []),
+        "activities": activity_ids,
+    }
 
 
 def build_bundle(roots):
@@ -160,13 +188,57 @@ def build_bundle(roots):
                         continue
                     acts[aid] = a
                 ids.append(aid)
-            nodes.append({
-                "id": node["id"], "title": node["title"], "theme": node["theme"], "grade": node["grade"],
-                "unit": node.get("unit", ""), "prerequisites": node.get("prerequisites", []),
-                "driving_question": node.get("driving_question", ""), "objectives": node.get("objectives", []),
-                "misconceptions": node.get("misconceptions", []), "lenses": node.get("lenses", []), "activities": ids,
-            })
+            nodes.append(bundle_node(node, ids))
     return {"nodes": nodes, "activities": acts, "figures": figures}
+
+
+def build_trial_bundle(roots, output_dir, copy_modules=False):
+    """首页额外读的试玩清单。只有这两组数学活动允许先于正式发布试玩。"""
+    nodes, activities, figures, catalog = [], {}, {}, {}
+
+    def module_src(entry, aid):
+        if copy_modules:
+            dest = output_dir / "trial-modules" / f"{aid}.html"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(entry, dest)
+            return dest.relative_to(output_dir).as_posix()
+        return Path(os.path.relpath(entry, output_dir)).as_posix()
+
+    for series, chart_theme in (("zero-to-one", "num"), ("chocolate", "num"), ("life-manual", "life")):
+        name, stars = CONSTELLATIONS[series]
+        group, group_start = 1, 1
+        group_title = "掰巧克力" if series == "chocolate" else name
+        for star, (nid, allowed_ids) in enumerate(stars, 1):
+            # 多个根目录合并时，任一根里已发布的同 ID 都会进入正式包。
+            path = find_node(roots, nid, prefer_published=len(roots) > 1)
+            node = yaml.safe_load(path.read_text(encoding="utf-8"))
+            published = node["status"] == "published"
+            if series == "life-manual" and not published:
+                continue
+            if series == "zero-to-one" and nid in ZERO_TO_ONE_GROUPS:
+                if star > 1:
+                    group += 1
+                group_start, group_title = star, ZERO_TO_ONE_GROUPS[nid]
+            catalog[nid] = {
+                "series": series, "series_title": name, "star": star, "chart_theme": chart_theme,
+                "group": group, "group_title": group_title, "group_order": star - group_start + 1,
+            }
+            # 晋级后完全交回正式内容包的审核筛选；试玩包只保留位置。
+            if published:
+                continue
+            ids = [aid for aid in allowed_ids if aid in node.get("activities", [])]
+            for aid in ids:
+                activity = load_activity(roots, aid, figures, module_src=module_src)
+                if not activity or nid not in activity["targets"]:
+                    raise SystemExit(f"试玩清单的活动缺失或不属于 {nid}：{aid}")
+                activities[aid] = activity
+            nodes.append(bundle_node(node, ids))
+    if copy_modules:
+        # 重建同一部署目录时也撤下已转正或已移出名单的旧试玩入口。
+        for old in (output_dir / "trial-modules").glob("act.simulation.*.html"):
+            if old.stem not in activities:
+                old.unlink()
+    return {"nodes": nodes, "activities": activities, "figures": figures, "catalog": catalog}
 
 
 def build(roots, constellation="life-manual"):
@@ -193,10 +265,14 @@ def main():
     ap.add_argument("--root", action="append", required=True, type=Path)
     ap.add_argument("--out", type=Path, help="试玩页（单个 HTML 文件）")
     ap.add_argument("--bundle", type=Path, help="原型读的内容包（JS 文件）")
+    ap.add_argument("--trial-bundle", type=Path, help="首页额外加载的试玩包（JS 文件）")
+    ap.add_argument("--copy-trial-modules", action="store_true", help="把数学试玩模块复制到可独立部署的同级目录")
     ap.add_argument("--constellation", default="life-manual", choices=sorted(CONSTELLATIONS), help="试玩页做哪个星座")
     a = ap.parse_args()
-    if not a.out and not a.bundle:
-        ap.error("--out 和 --bundle 至少要给一个")
+    if not (a.out or a.bundle or a.trial_bundle):
+        ap.error("--out、--bundle 和 --trial-bundle 至少要给一个")
+    if a.copy_trial_modules and not a.trial_bundle:
+        ap.error("--copy-trial-modules 需要 --trial-bundle")
     if a.out:
         data = build(a.root, a.constellation)
         blob = json.dumps(data, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
@@ -210,6 +286,12 @@ def main():
         a.bundle.write_text("// 自动生成，不要手改：python preview/build.py --root . --bundle prototype/content.js\n"
                             f"window.CURIO_CONTENT={blob};\n", encoding="utf-8")
         print(f"写好了 {a.bundle}：{len(data['nodes'])} 个知识点，{len(data['activities'])} 个活动，{len(data['figures'])} 张配图")
+    if a.trial_bundle:
+        data = build_trial_bundle(a.root, a.trial_bundle.parent, a.copy_trial_modules)
+        blob = json.dumps(data, ensure_ascii=False, sort_keys=True)
+        a.trial_bundle.write_text("// 自动生成：python preview/build.py --root . --trial-bundle prototype/trial-content.js\n"
+                                  f"window.CURIO_TRIAL={blob};\n", encoding="utf-8")
+        print(f"写好了 {a.trial_bundle}：{len(data['catalog'])} 颗星，{len(data['activities'])} 个试玩活动")
 
 
 if __name__ == "__main__":
