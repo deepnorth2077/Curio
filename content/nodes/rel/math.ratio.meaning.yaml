@@ -1,0 +1,50 @@
+id: math.ratio.meaning
+schema: knode/1
+title: 比：味道一样的秘密
+subjects:
+- math
+theme: rel
+grade: G6
+unit: 六上 · 比（人教版旧版册次，新版以实体书为准）
+curriculum:
+- std: 义务教育数学课程标准（2022 年版）
+  ref: 第三学段「数量关系」：在实际情境中理解比和比例以及按比例分配的含义
+- textbook: 人教版小学数学六年级上册（旧版）
+  unit: 第四单元 比
+prerequisites:
+- math.fraction.equivalent
+- math.fraction.as-division
+related:
+- math.fraction.compare
+driving_question: 2 勺粉兑 3 杯水，3 勺粉兑 4 杯水，都是水比粉多 1，味道一样吗？
+objectives:
+- 知道比说的是两个量几份对几份，不是差多少。
+- '知道前项和后项同时乘或除以相同的数（0 除外），比值不变：2 : 3 = 4 : 6 = 12 : 18。'
+- 会化简比，会求比值，会用比值比较哪个浓。
+- 知道两个量各加上一样多，比一般会变。
+misconceptions:
+- id: additive-comparison
+  text: '用差来比较两个比，例如认为 2 : 3 和 3 : 4 一样，因为都差 1。'
+- id: one-quantity-only
+  text: 只看其中一个量，例如认为 12 勺兑 18 杯一定比 2 勺兑 3 杯浓，或者水多就一定淡。
+- id: add-same-keeps-ratio
+  text: '觉得两个量加上一样多，比不变，例如认为 2 : 3 和 4 : 5 味道一样，或者 2 : 3 = 8 : 9。'
+sources:
+- type: textbook
+  ref: 人教版小学数学六年级上册（旧版）第四单元「比的意义」「比的基本性质」
+- type: reference
+  ref: NOAA Ocean Service：海水的平均盐度，按质量约千分之三十五
+  url: https://oceanservice.noaa.gov/education/dyw-pass-salt.html
+lenses:
+- band: G3-4
+  approach: 只做「一样的味道」：1 勺粉兑 2 杯水，要做两壶就 2 勺兑 4 杯。不写比号。
+- band: G5-6
+  approach: 一勺一杯地调两壶饮料，比颜色和味道计；把一大桶平均分进几只小壶，看出每壶还是同一个比；试一试「各加 2」和「各乘 2」。
+- band: G7-9
+  approach: 比和比值推广到相似、斜率、浓度、速度这些「两个量相除」得到的新量。
+activities:
+- act.simulation.mix-drink-01
+- act.quiz.ratio-meaning-01
+status: draft
+version: 1
+# END OF FILE

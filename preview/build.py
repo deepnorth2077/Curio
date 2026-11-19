@@ -38,10 +38,35 @@ CONSTELLATIONS = {
         ("math.fraction.count-on-line", ["act.simulation.hop-line-01", "act.quiz.count-on-line-01"]),
         ("math.fraction.the-whole", ["act.simulation.whose-half-01", "act.quiz.the-whole-01"]),
         ("math.decimal.tenths", ["act.simulation.zoom-line-01", "act.quiz.tenths-01"]),
+        ("math.decimal.compare-add", ["act.simulation.place-slots-01", "act.quiz.compare-add-01"]),
+        ("math.decimal.point-shift", ["act.simulation.slide-rule-01", "act.quiz.point-shift-01"]),
+        ("math.fraction.equivalent", ["act.simulation.recut-01", "act.quiz.equivalent-01"]),
+        ("math.fraction.as-division", ["act.simulation.share-table-01", "act.quiz.as-division-01"]),
+        ("math.fraction.compare", ["act.simulation.match-cuts-01", "act.quiz.fraction-order-01"]),
+        ("math.fraction.add-subtract", ["act.simulation.measuring-cup-01", "act.quiz.add-subtract-01"]),
+        ("math.operation.multiply-shrinks", ["act.simulation.stretch-bar-01", "act.quiz.multiply-shrinks-01"]),
+        ("math.fraction.multiply", ["act.simulation.cross-cut-01", "act.quiz.fraction-multiply-01"]),
+        ("math.fraction.divide", ["act.simulation.pour-cups-01", "act.quiz.fraction-divide-01"]),
+        ("math.ratio.meaning", ["act.simulation.mix-drink-01", "act.quiz.ratio-meaning-01"]),
+        ("math.ratio.sharing", ["act.simulation.ratio-chute-01", "act.quiz.ratio-sharing-01"]),
+        ("math.ratio.proportion", ["act.simulation.stretch-frame-01", "act.quiz.proportion-01"]),
+        ("math.percent.meaning", ["act.simulation.hundred-grid-01", "act.quiz.percent-meaning-01"]),
+        ("math.number.same-point", ["act.simulation.three-rulers-01", "act.quiz.same-point-01"]),
+        ("math.percent.change", ["act.simulation.grow-shrink-01", "act.quiz.percent-change-01"]),
     ]),
 }
 
 TEMPLATE = Path(__file__).with_name("template.html")
+
+# 每组第一颗星在试玩页里有一个跳转入口，便于分几次验收。
+ZERO_TO_ONE_GROUPS = {
+    "math.fraction.unit-fraction": "一份有多大",
+    "math.decimal.tenths": "小数：把一份再切十份",
+    "math.fraction.equivalent": "一个数，很多名字",
+    "math.operation.multiply-shrinks": "乘除的怪事",
+    "math.ratio.meaning": "比：两个量的关系",
+    "math.percent.meaning": "百分数：大家说好的分母",
+}
 
 
 def find(roots, rel, required=True):
@@ -157,7 +182,10 @@ def build(roots, constellation="life-manual"):
             "misconceptions": {m["id"]: m.get("text", "") for m in node.get("misconceptions", [])},
             "activities": acts,
         })
-    return {"constellation": name, "stars": stars, "figures": figures}
+    data = {"constellation": name, "stars": stars, "figures": figures}
+    if constellation == "zero-to-one":
+        data["groups"] = ZERO_TO_ONE_GROUPS
+    return data
 
 
 def main():

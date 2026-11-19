@@ -1,0 +1,107 @@
+id: act.quiz.percent-change-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 伸缩柱大挑战
+targets:
+- math.percent.change
+age_band: G5-6
+duration_min: 5
+review: pending
+engine: 1
+sources:
+- type: textbook
+  ref: 人教版小学数学六年级下册（旧版）第二单元「百分数（二）」
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 一个书包原价 200 元，打八折后卖多少元？
+    answer:
+      type: number
+      value: 160
+      tolerance: 0
+      unit: 元
+      common_wrong:
+      - value: 192
+        feedback: 你减了 8 元。八折说的是每 10 元付几元。
+      - value: 120
+        feedback: 你减了 80 元。80% 表示要付的是原价的多少。
+    feedback:
+      correct: 每 10 元付 8 元，200 元里有 20 个 10 元，所以要付 160 元。
+      wrong: 把原价平均分成 10 份，取其中 8 份。
+    hints:
+    - 打八折，每 10 元只付 8 元。
+    - 把原价平均分成 10 份，取其中 8 份。
+  - id: q2
+    stem: 100 元先涨 20%，再降 20%，现在多少元？
+    answer:
+      type: number
+      value: 96
+      tolerance: 0
+      unit: 元
+      common_wrong:
+      - value: 100
+        feedback: 百分数相同，两次当作 1 的价钱也相同吗？
+        misconception: percent-adds
+    feedback:
+      correct: 先涨 20 元到 120 元，再从 120 元里降 24 元，剩 96 元。
+      wrong: 第二步要用涨价后的钱数算该降多少。
+    hints:
+    - 画两根柱子，先求第一步之后的高度。
+    - 第二步要用涨价后的钱数算该降多少。
+  - id: q3
+    stem: 80 元的球降价 50%。要从新价涨百分之几，才能回到 80 元？
+    answer:
+      type: number
+      value: 100
+      tolerance: 0
+      unit: '%'
+      common_wrong:
+      - value: 50
+        feedback: 涨和降都写 50%，但这次的起点是降价后的球。
+        misconception: percent-adds
+      - value: 25
+        feedback: 降价后的价钱是一半。看看缺的那段和现在的柱子一样长吗？
+        misconception: half-of-change
+    feedback:
+      correct: 新价是 40 元，还缺 40 元。要涨的钱和新价一样多，就是涨 100%。
+      wrong: 把新价当 1，量量还缺的那段占几个 1。
+    hints:
+    - 先算出降价后还有多少元。
+    - 把新价当 1，量量还缺的那段占几个 1。
+  - id: q4
+    stem: 先打八折，再按新价打八折。最后要付原价的百分之几？
+    answer:
+      type: number
+      value: 64
+      tolerance: 0
+      unit: '%'
+      common_wrong:
+      - value: 60
+        feedback: 每次都省两成，但第二次的两成是从新价里算的。
+        misconception: percent-adds
+    feedback:
+      correct: 把原价看成 100 份，第一次付 80 份，再付这 80 份的八成，剩 64 份。
+      wrong: 两次各拿当时的价钱乘 0.8。
+    hints:
+    - 可以自己定一个好算的原价。
+    - 两次各拿当时的价钱乘 0.8。
+  - id: q5
+    stem: 如果 100 元每年都涨 10%，第二年结束时是多少元？
+    answer:
+      type: number
+      value: 121
+      tolerance: 0
+      unit: 元
+      common_wrong:
+      - value: 120
+        feedback: 第一年多 10 元。第二年，第一年多出来的钱也参加增长。
+        misconception: linear-growth
+    feedback:
+      correct: 第一年有 110 元。第二年多出 110 元的 10%，也就是 11 元。两年后共 121 元。
+      wrong: 把第一年结束时的钱当成新的 1，再算第二年的涨幅。
+    hints:
+    - 先看第一年结束时柱子有多高。
+    - 把第一年结束时的钱当成新的 1，再算第二年的涨幅。
+# END OF FILE

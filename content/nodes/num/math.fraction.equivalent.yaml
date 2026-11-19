@@ -1,0 +1,45 @@
+id: math.fraction.equivalent
+schema: knode/1
+title: 等值分数：再切一刀
+subjects: [math]
+theme: num
+grade: G5
+unit: 五下 · 分数的意义和性质（分数的基本性质、约分；人教版旧版册次，新版以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第三学段「数与运算」：结合具体情境理解分数的意义，感悟计数单位
+  - textbook: 人教版小学数学五年级下册（旧版）
+    unit: 第四单元 分数的意义和性质
+prerequisites: [math.fraction.unit-fraction, math.fraction.count-on-line]
+related: []
+driving_question: 1/2 变成 2/4，上下两个数都变大了，饼变多了吗？
+objectives:
+  - 知道每一份再平均切成几份，取的份数和总份数同时变成几倍，取到的东西没有变：1/2 = 2/4 = 3/6。
+  - 知道分子和分母同时乘或除以相同的数（0 除外），分数的大小不变。
+  - 会约分，知道最简分数是什么。
+  - 知道数线上的一个点有很多个分数名字。
+misconceptions:
+  - id: bigger-numbers-bigger
+    text: 觉得分子分母的数大，分数就大，例如认为 2/4 比 1/2 大。
+  - id: bigger-piece-bigger
+    text: 只看每一份的大小，例如认为 1/2 比 2/4 大，因为半块比四分之一块大。
+  - id: one-name-only
+    text: 觉得一个分数只有一种写法，数线上一个点只有一个名字。
+  - id: add-same
+    text: 把「同时乘」记成「同时加」或「同时减」，例如认为 3/4 和 4/5 一样大，或者把 6/8 约成 5/7。
+  - id: change-one-only
+    text: 只改分母不改分子，例如把 1/3 换成 1/12。
+sources:
+  - type: textbook
+    ref: 人教版小学数学五年级下册（旧版）第四单元「分数的基本性质」「约分」
+lenses:
+  - band: G3-4
+    approach: 只做「再切一刀」：每份再切成两份，饼没变，名字从 1/2 变成 2/4。不提约分和性质的名字。
+  - band: G5-6
+    approach: 转盘决定每份再切几份，看名字怎么变；把刀口擦掉并起来就是约分，并不齐就约不了；两条数线上下对齐，找同一个点的别的名字。
+  - band: G7-9
+    approach: 分式的基本性质；有理数的每个值是一类分数的共同的值。
+activities: [act.simulation.recut-01, act.quiz.equivalent-01]
+status: draft
+version: 1
+# END OF FILE

@@ -28,6 +28,10 @@ class TestSelect(unittest.TestCase):
     def test_changed_walk_script_selects_its_module(self):
         self.assertEqual(walk_all.select(["tools/walks/act.simulation.fair-cut-01.py"], MODS), ["act.simulation.fair-cut-01"])
 
+    def test_constellation_helper_selects_its_walks(self):
+        dependent = "act.simulation.slide-rule-01"
+        self.assertEqual(walk_all.select(["tools/walks/constellation.py"], MODS + [dependent]), [dependent])
+
     def test_unrelated_changes_select_nothing(self):
         changed = ["docs/handoff.md", "tools/ci_checks.py", "content/nodes/num/x.yaml", "content/activities/act.quiz.unit-fraction-01/activity.yaml",
                    ".claude/skills/curio-anatomy/references/lessons.md"]
