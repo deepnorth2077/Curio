@@ -24,9 +24,11 @@ lenses:
   approach: 先用定滑轮把箱升到刻线，再用动滑轮收同长的绳。自由补收绳，两个箱最后停在同高。
 - band: G7-9
   approach: 忽略轮绳质量和摩擦，匀速；定滑轮一段竖绳承重，动滑轮两段同张力竖绳承重。8 N 箱升 1 m 时输入分别为 8 N×1 m 与 4 N×2 m。
-activities: []
+activities:
+- act.simulation.pulley-dock-01
+- act.quiz.pulley-dock-01
 status: draft
-version: 1
+version: 2
 curriculum:
 - std: 义务教育科学课程标准（2022年版）
   ref: 简单机械与机械能

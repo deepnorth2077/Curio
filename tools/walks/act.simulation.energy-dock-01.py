@@ -20,9 +20,19 @@ def play(w):
     w.btn("松开滑块")
     balance("半坡势能换成动能", (8, 4, 0))
     wheel = w.doc.get_by_role("slider", name="停格手轮")
-    wheel.press("ArrowRight")
+
+    def turn_wheel(key, position):
+        before = len(w.sent("state"))
+        wheel.press(key)
+        w.check("手轮停在第 " + str(position) + " 格", wheel.input_value() == str(position))
+        # 手轮显示先更新，宿主稍后收到 iframe 的 postMessage。等新读数到达后再验算。
+        w.page.wait_for_function("n => window.__got.filter(m => m.type === 'state').length > n",
+                                 arg=before, timeout=3000)
+
+    turn_wheel("ArrowRight", 2)
     balance("手轮移到靠下的刻线", (4, 8, 0))
-    wheel.press("ArrowLeft")
+    turn_wheel("ArrowLeft", 1)
+    balance("手轮退回书签处", (8, 4, 0))
     w.btn("留这格作书签")
     w.btn("滑到下一道刻线")
     w.btn("滑到下一道刻线")

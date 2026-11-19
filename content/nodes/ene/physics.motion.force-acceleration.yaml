@@ -25,9 +25,11 @@ lenses:
   approach: 同质量换净力，再同净力加货；自己配出两辆加速相同但重量不同的车。
 - band: G7-9
   approach: 恒质量、直线、合力不变时 a=F净/m。2 kg受4 N时2 m/s²；4 kg受4 N时1 m/s²；同时把力和质量加倍时加速度不变。
-activities: []
+activities:
+- act.simulation.push-track-01
+- act.quiz.push-track-01
 status: draft
-version: 1
+version: 2
 curriculum:
 - std: 普通高中物理课程标准
   ref: 必修一 · 相互作用与运动定律

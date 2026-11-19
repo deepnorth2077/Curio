@@ -1,0 +1,121 @@
+# author: Codex
+# prompt_ref: prompts/act.simulation.push-track-01.md
+id: act.quiz.push-track-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 给加速小车选推杆
+targets:
+- physics.motion.force-acceleration
+age_band: G3-4
+duration_min: 7
+review: pending
+engine: 1
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 4.3
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42073/index.cnxml
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 打点器每秒记一次向右的车速。甲车三次都是每秒 6 米。乙车三次依次是每秒 1、3、5 米。哪辆在加速？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 甲车
+        misconception: speed-is-acceleration
+        feedback: 甲虽然开得快，但纸带上它的速度读数一直相同。
+      - id: b
+        text: 两车都在加速
+        misconception: speed-is-acceleration
+        feedback: 试着给每辆车的后一格读数减去前一格。
+      - id: c
+        text: 乙车
+        correct: true
+    feedback:
+      correct: 乙每过一秒就多出每秒 2 米的速度。甲的读数从头到尾没有变。
+      wrong: 快慢先看每张读数，变化要看相邻两张。
+    hints:
+    - 快慢先看每张读数，变化要看相邻两张。
+    - 在同一辆车的读数之间标出增加量。
+  - id: q2
+    stem: 总质量为 3 千克的车在水平直轨上受向右 12 牛的恒定合力。每过一秒，它的速度向右增加多少米每秒？
+    answer:
+      type: number
+      value: 4
+      tolerance: 0
+      unit: 米每秒
+      common_wrong:
+      - value: 12
+        misconception: speed-is-acceleration
+        feedback: 推同样的力还得看被推的总质量。
+    feedback:
+      correct: 12 牛除以 3 千克，算出向右的加速度。每过一秒，速度向右增加 4 米每秒。
+      wrong: 圈出合力和带货的总质量。
+    hints:
+    - 圈出合力和带货的总质量。
+    - 把合力除以总质量，就能读到每秒的速度变化。
+  - id: q3
+    stem: 同一起点放两辆静止车。甲车总质量 2 千克，乙车 4 千克。甲受向右 6 牛恒定合力。乙车要和甲每秒加快得一样多，向右合力应怎样调？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 调到 12 牛
+        correct: true
+      - id: b
+        text: 也用 6 牛
+        misconception: speed-is-acceleration
+        feedback: 同样的合力推更重的车，每秒的速度变化会更小。
+      - id: c
+        text: 调到 3 牛
+        misconception: speed-is-acceleration
+        feedback: 车更重又减小推力，每秒的速度变化会更小。
+    feedback:
+      correct: 乙车的质量是甲的两倍，合力也要加倍。两次合力除以质量都相同。
+      wrong: 先比较两辆车的总质量。
+    hints:
+    - 先比较两辆车的总质量。
+    - 让合力和质量按照相同的倍数一起变动。
+  - id: q4
+    stem: 一辆满载车总质量 4 千克。水平拉绳向右用 14 牛，阻力向左为 6 牛，两个力都恒定。每秒车速向右增加多少米每秒？
+    answer:
+      type: number
+      value: 2
+      tolerance: 0
+      unit: 米每秒
+      common_wrong:
+      - value: 5
+        misconception: speed-is-acceleration
+        feedback: 5 来自把两个力相加。阻力与拉绳方向相反。
+    feedback:
+      correct: 先求向右合力 14 − 6 = 8 牛。再除以 4 千克，每过一秒向右增加 2 米每秒。
+      wrong: 先把车身上相反方向的力合成一个。
+    hints:
+    - 先把车身上相反方向的力合成一个。
+    - 再把合力平均分给车的总质量。
+  - id: q5
+    stem: 一辆 2 千克小车正向右滑。此刻水平合力变为向左 4 牛，并保持不变。刚开始、还没停住时，车的加速度和快慢怎样变？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 加速度向右，车继续加快
+        misconception: speed-is-acceleration
+        feedback: 车速指向右，合力已经改向左。加速度跟着合力。
+      - id: b
+        text: 加速度向左，车暂时变慢
+        correct: true
+      - id: c
+        text: 加速度向左，车立刻向左加快
+        misconception: speed-is-acceleration
+        feedback: 向左的力会先减小原有的向右速度，车不会立即反向。
+    feedback:
+      correct: 看合力判出加速度向左。它与原来的速度反向，先让向右的速度减小。
+      wrong: 先只看力的箭头，判断加速度方向。
+    hints:
+    - 先只看力的箭头，判断加速度方向。
+    - 再把这个方向和车原先的行驶方向比较。
+# END OF FILE
