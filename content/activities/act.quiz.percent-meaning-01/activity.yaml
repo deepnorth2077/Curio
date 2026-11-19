@@ -1,7 +1,7 @@
 id: act.quiz.percent-meaning-01
 schema: activity-def/1
 kind: quiz
-version: 1
+version: 2
 title: 百格电量条大挑战
 targets:
 - math.percent.meaning
@@ -102,19 +102,21 @@ body:
     - 先标出拿哪一年的树当 1。
     - 用去年的树做尺子，100% 是一整根，剩下的有多长？
   - id: q5
-    stem: 第一场投 8 个进 6 个，第二场投 12 个进 9 个。合起来的命中率是百分之几？
+    stem: 第一场投 8 个进 6 个，第二场投 12 个进 3 个。把两场的投篮放在一起算，命中率是百分之几？
     answer:
       type: number
-      value: 75
+      value: 45
       tolerance: 0
       unit: '%'
       common_wrong:
-      - value: 150
-        feedback: 你把两场的百分数加起来了。先把两场投出去的球放到同一堆。
+      - value: 50
+        feedback: 你把 75% 和 25% 平均了。第二场投的球更多，每一球都要算一票。合起来投几次、进几次？
+      - value: 100
+        feedback: 你把两场的命中率加起来了。要相加的是进球的个数和投球的次数。
     feedback:
-      correct: 两场一共投 20 个、进 15 个。换成每 100 个进 75 个。
-      wrong: 先合计进球数和投球数，再把命中率换成百分数。
+      correct: 两场一共投 20 个，进 9 个。把两个数都乘 5，换成每 100 个进 45 个。
+      wrong: 两场投球次数不同。把两张记录合成一张，先数一共进了几球，再数一共投了几球。
     hints:
-    - 把两场当成一场，分别统计投了几个、进了几个。
-    - 先合计进球数和投球数，再把命中率换成百分数。
+    - 把两场的每次出手想成一个格子，投进的格子做记号。
+    - 合起来看，有记号的格子占所有格子的几分之几？把这个分数换成百分数。
 # END OF FILE

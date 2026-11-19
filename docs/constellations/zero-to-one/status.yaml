@@ -29,7 +29,7 @@ stars:
   - n: 5
     title: 小数比大小和加减
     state: 等验收
-    prs: [169]
+    prs: [169, 171]
     waiting: Luka 统一验收动手探索和挑战
   - n: 6
     title: 小数点搬家
@@ -74,7 +74,7 @@ stars:
   - n: 14
     title: 比：味道一样的秘密
     state: 等验收
-    prs: [169]
+    prs: [169, 171]
     waiting: Luka 统一验收动手探索和挑战
   - n: 15
     title: 按比分配
@@ -84,12 +84,12 @@ stars:
   - n: 16
     title: 比例和比例尺
     state: 等验收
-    prs: [169]
+    prs: [169, 171]
     waiting: Luka 统一验收动手探索和挑战
   - n: 17
     title: 百分数：都换成 100 份
     state: 等验收
-    prs: [169]
+    prs: [169, 171]
     waiting: Luka 统一验收动手探索和挑战
   - n: 18
     title: 一个点，几个名字

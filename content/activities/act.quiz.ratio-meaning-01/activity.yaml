@@ -1,7 +1,7 @@
 id: act.quiz.ratio-meaning-01
 schema: activity-def/1
 kind: quiz
-version: 1
+version: 2
 title: 调饮料台大挑战
 targets:
 - math.ratio.meaning
@@ -12,9 +12,6 @@ engine: 1
 sources:
 - type: textbook
   ref: 人教版小学数学六年级上册（旧版）第四单元「比的意义」「比的基本性质」
-- type: reference
-  ref: NOAA Ocean Service：海水的平均盐度，按质量约千分之三十五
-  url: https://oceanservice.noaa.gov/education/dyw-pass-salt.html
 body:
   shuffle: false
   items:
@@ -96,21 +93,28 @@ body:
     - 想想大桶怎么均分成小壶。
     - 15 平均分几份，每份才是 3？
   - id: q5
-    stem: 平均每 1000 克海水约有 35 克盐。200 千克这样的海水，约有几千克盐？
+    stem: 甲壶用 4 勺粉兑了 10 杯水，乙壶用 6 勺粉兑了 11 杯水。只许往一壶加清水。怎样让两壶一样浓？
     answer:
-      type: number
-      value: 7
-      tolerance: 0
-      unit: 千克
-      common_wrong:
-      - value: 35
-        feedback: 35 克只是 1 千克海水里的盐。
-      - value: 70
-        feedback: 先算盐有多少克，换算时注意 1000 克才是 1 千克。
+      type: choice
+      choices:
+      - id: a
+        text: 甲壶加 1 杯
+        misconception: one-quantity-only
+        feedback: 这样两壶都有 11 杯水。甲只有 4 勺粉，乙有 6 勺，两壶的味道会怎样？
+      - id: b
+        text: 乙壶加 1 杯
+        misconception: additive-comparison
+        feedback: 这样两壶的杯数都比勺数多 6。甲分成两份，乙分成三份，比比每 2 勺粉配多少杯水。
+      - id: c
+        text: 乙壶加 4 杯
+        correct: true
+      - id: d
+        text: 甲壶加 4 杯
+        feedback: 甲原先每 2 勺粉配 5 杯水。再加水，甲会更淡。先看看较浓的是哪一壶。
     feedback:
-      correct: 200 千克是 200 个 1000 克。35 × 200 = 7000 克，就是 7 千克。
-      wrong: 先把每份的海水换成千克。
+      correct: 甲每 2 勺粉配 5 杯水。同样的味道，乙的 6 勺粉要配 15 杯水。已有 11 杯，还缺 4 杯。
+      wrong: 加水会让味道变淡。先把两壶都换算成每 2 勺粉配多少杯水，再决定给哪壶加。
     hints:
-    - 先把每份的海水换成千克。
-    - 算出盐的总克数，再换成千克。
+    - 只加清水会让饮料更淡。你应该给较浓的壶加，还是给较淡的壶加？
+    - 甲壶每 2 勺粉配多少水？用这个配法算出乙壶所需的总杯数，再和已有的杯数比。
 # END OF FILE

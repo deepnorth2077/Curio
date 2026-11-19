@@ -103,6 +103,11 @@ body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{
 .tk{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round} .tkd{fill:none;stroke:var(--accent);stroke-width:1.1}
 body.narrow .lb{font-size:21px} body.narrow .lbg{font-size:20px} body.narrow .lbm{font-size:20px}
 body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .sign{font-size:28px}
+/* ============ 地月模型的尺带 ============ */
+@media (prefers-reduced-motion:no-preference) {
+  .unroll { animation:expand-tape .45s ease-out both; transform-origin:150px 0; }
+  @keyframes expand-tape { from {transform:scaleX(0)} to {transform:scaleX(1)} }
+}
 </style>
 </head>
 <body>
@@ -353,6 +358,7 @@ const landmarks = [{
 let savedSizes = [],
   savedPins = [],
   savedRoutes = [];
+let savedMoonGuess = null;
 const grid = {
     x: 161,
     y: 357,
@@ -512,17 +518,98 @@ function rulerMap() {
   return pic;
 }
 
-function moonModel() {
-  const earth = 4,
-    moon = 3474 / 12742 * earth,
-    gap = 384400 / 12742 * earth;
-  return TC(400, 68, "把地球缩成乒乓球", "ttl") + P("M144 244H652", "k") +
-    circle(218, 218, 25, "var(--sky)") + P(Sk.ellipse(218, 218, 25, 25, 8, .7)) +
-    circle(569, 236, 7, "var(--apricot)") + P(Sk.ellipse(569, 236, 7, 7, 10, .4)) +
-    TC(215, 288, `地球 · ${earth} 厘米`, "lb") + TC(565, 288, `月球 · 约 ${moon.toFixed(1)} 厘米`, "lb") +
-    TC(400, 355, `两球中心相距约 ${(gap/100).toFixed(1)} 米`, "lb") + TC(400, 397, "距离示意，量的是两球中心", "lbg");
+// NASA JPL：地球和月球平均直径、地月平均中心距；三者共用一个缩尺。
+const earthMoon = {
+  earthKm: 12742, moonKm: 3474, separationKm: 384400, earthCm: 4,
+  left: 150, right: 650, maxEarths: 40
+};
+function modelCm(km) { return km * earthMoon.earthCm / earthMoon.earthKm; }
+const actualMoonCm = modelCm(earthMoon.separationKm);
+const limitCm = earthMoon.maxEarths * earthMoon.earthCm;
+const unitsPerCm = (earthMoon.right - earthMoon.left) / limitCm;
+function modelX(cm) { return earthMoon.left + unitsPerCm * cm; }
+
+function miniatureBodies(y, cm, markerName) {
+  const x = modelX(cm);
+  const earthR = earthMoon.earthCm * unitsPerCm / 2;
+  const moonR = modelCm(earthMoon.moonKm) * unitsPerCm / 2;
+  return P(`M${earthMoon.left} ${y}H${earthMoon.right}`, "kf") +
+    `<circle data-marker="earth" cx="${earthMoon.left}" cy="${y}" r="${earthR}" fill="var(--dad)"/>` +
+    (cm === null ? "" : "<g>" +
+      P(`M${x} ${y-17}v12m0 10v12`, markerName === "actual" ? "kacc" : "k1") +
+      `<circle data-marker="${markerName}" cx="${x}" cy="${y}" r="${moonR}" fill="${markerName === "actual" ? "var(--accent)" : "var(--ink)"}"/></g>`);
 }
 
+function earthTape(y, showCm) {
+  let pic = rect(earthMoon.left, y, earthMoon.right-earthMoon.left, 25, "var(--paper)", 3);
+  for (let n = 0; n <= earthMoon.maxEarths; n++) {
+    const x = modelX(n * earthMoon.earthCm);
+    const major = n % 10 === 0;
+    pic += P(`M${x} ${y}v${major ? 19 : n % 5 === 0 ? 14 : 8}`, "k1");
+    if (major) pic += TC(x, y+52, showCm ? n*earthMoon.earthCm : n, "lbm");
+  }
+  return pic + TC(400, y+91, showCm ? "厘米" : "地球直径的个数", "lb");
+}
+
+function guessHandle() {
+  return frame.guessCm === null ? [546, 116] : [modelX(frame.guessCm), 194];
+}
+
+function moonModel() {
+  if (frame.phase === "compare") {
+    return T(150, 59, "我的摆法", "ttl") +
+      T(150, 96, `两个中心相隔 ${frame.guessCm} 厘米`, "lb") +
+      miniatureBodies(132, frame.guessCm, "guess") +
+      T(150, 199, "按地月平均距离来摆", "ttl") +
+      miniatureBodies(244, actualMoonCm, "actual") +
+      '<g class="unroll">' + earthTape(308, true) + '</g>';
+  }
+  const earthR = 34;
+  const [hx, hy] = guessHandle();
+  let pic = T(144, 48, "把地球缩成乒乓球", "ttl") +
+    circle(188, 119, earthR, "var(--sky)") + P(Sk.ellipse(188,119,earthR,earthR,8,.5)) +
+    P("M155 118h66m-65-5v10m64-10v10","k1") +
+    T(243, 124, `直径 ${earthMoon.earthCm} 厘米`, "lb") +
+    T(448, 71, "月球模型", "lb") +
+    circle(505, 116, earthR*earthMoon.moonKm/earthMoon.earthKm, "var(--apricot)") +
+    P(Sk.ellipse(505,116,earthR*earthMoon.moonKm/earthMoon.earthKm,earthR*earthMoon.moonKm/earthMoon.earthKm,9,.3),"k1") +
+    miniatureBodies(248, frame.guessCm, "guess") + earthTape(276, false);
+  if (frame.guessCm !== null) pic += P(`M${hx} ${hy+20}V239`, "k1");
+  return pic + grip(hx,hy,[1,0]) + TC(400,423,"左端是地球中心。每一小格宽一个地球。","lbg");
+}
+
+function placeMoon(cm) {
+  frame.guessCm = clamp(Math.round(cm / earthMoon.earthCm), 1, earthMoon.maxEarths) * earthMoon.earthCm;
+  touched();
+  paint();
+}
+function moveMoonBy(earths) {
+  placeMoon((frame.guessCm ?? 0) + earths * earthMoon.earthCm);
+}
+
+function moonHit(p) {
+  const [x,y] = guessHandle();
+  const handle = Math.hypot(p.x-x, p.y-y) <= hitR() ||
+    (frame.guessCm === null && Math.hypot(p.x-505,p.y-116) <= hitR());
+  const overTape = q => q.y >= 174 && q.y <= 343 && q.x >= earthMoon.left-hitR() && q.x <= earthMoon.right+hitR();
+  if (!handle && !overTape(p)) return null;
+  function setFromPoint(q) {
+    if (q.y >= 160 && q.y <= 353) placeMoon((q.x-earthMoon.left) / unitsPerCm);
+  }
+  return {start:setFromPoint, move:setFromPoint, end:setFromPoint};
+}
+
+function beginEstimate() {
+  frame.phase = "estimate";
+  disarmCue();
+  head(3, "拉伸相框 · 摆月球");
+  hint("点尺面，或把月球拖到尺面上");
+  say("地球缩成一只乒乓球。用它的直径当一格，你想把月球中心摆在哪格？");
+  installControls();
+  paint();
+  armCue(guessHandle);
+  svg.focus({preventScroll:true});
+}
 function rulerTargets() {
   return [frame.side, frame.side === "a" ? "b" : "a"].map(side => {
     const p = landmarks[frame[side]];
@@ -646,12 +733,16 @@ const lessons = [{
   }), option("4 千米")],
   hint: "拖尺子的端点到地名上",
   task: "量两段路，再转动比例尺。地图上的线没动，实际路程变了多少？",
-  fact: "图上长乘比例尺的后项，就得到同单位的实际长度。按同一个比例把地球缩成直径 4 厘米的球，月球直径约 1.1 厘米，两球中心平均相距约 1.2 米。",
+  get fact() {
+    return `你的两球中心相距 ${frame.guessCm} 厘米。按同一比例缩小，月球直径约 ${modelCm(earthMoon.moonKm).toFixed(1)} 厘米，两球中心平均相距约 ${(actualMoonCm/100).toFixed(2)} 米。`;
+  },
   reset() {
     Object.assign(frame, {
       a: 0,
       b: 1,
       side: "a",
+      phase: "map",
+      guessCm: null,
       scaleIndex: 1,
       routes: new Set(),
       used: new Set()
@@ -659,12 +750,20 @@ const lessons = [{
     rememberRoute();
   },
   buttons() {
+    if (frame.phase === "estimate") return [
+      button("近一格", () => moveMoonBy(-1)), button("远一格", () => moveMoonBy(1))
+    ];
     return [button("换尺子一端", () => {
       frame.side = frame.side === "a" ? "b" : "a";
       paint();
     }), button("换地点", () => this.key("ArrowRight")), button("小一档", () => this.key("[")), button("大一档", () => this.key("]"))];
   },
   key(k) {
+    if (frame.phase === "estimate") {
+      if (k !== "ArrowLeft" && k !== "ArrowRight") return false;
+      moveMoonBy(k === "ArrowRight" ? 1 : -1);
+      return true;
+    }
     if (k === "Tab") frame.side = frame.side === "a" ? "b" : "a";
     else if (k === "ArrowRight" || k === "ArrowLeft") {
       const dir = k === "ArrowRight" ? 1 : 2,
@@ -678,7 +777,7 @@ const lessons = [{
     return true;
   },
   draw() {
-    return S.mode === "reveal" ? moonModel() : rulerMap();
+    return frame.phase === "map" ? rulerMap() : moonModel();
   },
   targets: rulerTargets,
   cue() {
@@ -686,11 +785,18 @@ const lessons = [{
     return [l.x, l.y];
   },
   reading() {
+    if (frame.phase === "estimate") {
+      if (frame.guessCm === null) return "月球还没放好";
+      return `我的位置 · ${frame.guessCm/earthMoon.earthCm} 个地球直径 · ${frame.guessCm} 厘米`;
+    }
     const cm = distance() * scales[frame.scaleIndex];
     return `图上 ${distance()} 厘米 · 比例尺 1 : ${scales[frame.scaleIndex]} · 实际 ${cm} 厘米 = ${cm/100000} 千米`;
   },
   state() {
     return {
+      phase: frame.phase,
+      ...(frame.phase === "map" ? {} : {guess_cm:frame.guessCm}),
+      ...(frame.phase === "compare" ? {actual_cm:actualMoonCm} : {}),
       from: landmarks[frame.a].name,
       to: landmarks[frame.b].name,
       map_cm: distance(),
@@ -699,7 +805,9 @@ const lessons = [{
     };
   },
   done() {
-    return frame.routes.size >= 2 && frame.used.size >= 2;
+    return frame.phase === "map"
+      ? frame.routes.size >= 2 && frame.used.size >= 2
+      : frame.guessCm !== null;
   }
 }];
 
@@ -707,8 +815,8 @@ function drawCard() {
   return '<g transform="translate(70,30) scale(.67)">' + graph(savedPins, false) + '</g>' +
     savedSizes.slice(0, 2).map((w, i) => planet(490, 65 + i * 102, w * 5, w * 3.75) + T(595, 105 + i * 102, `${w} × ${w*.75}`, "lb")).join("") +
     TC(400, 312, `量过：${savedRoutes.map(key=>key.split(":").map(id=>landmarks[id].name).join("到")).join("、")}`, "lb") +
-    P("M175 373H625", "k") + circle(184, 373, 12, "var(--sky)") + circle(617, 373, 4, "var(--apricot)") +
-    TC(400, 419, "乒乓球地球与弹珠月球 · 两球中心相距约 1.2 米", "lb");
+    miniatureBodies(341, savedMoonGuess, "guess") + miniatureBodies(382, actualMoonCm, "actual") +
+    TC(400, 417, `我摆在 ${savedMoonGuess} 厘米 · 模型平均距离约 ${actualMoonCm.toFixed(1)} 厘米`, "lb");
 }
 
 /* ============ 三站的开场、实物操作、揭晓和星卡 ============ */
@@ -811,14 +919,24 @@ function begin() {
 }
 
 function installControls() {
+  const label = S.station === 3
+    ? (frame.phase === "map" ? "摆月球" : "展开尺子")
+    : "看看发现";
   actions([...station().buttons(), {
-    label: "看看发现",
+    label,
     go: finish
   }]);
 }
 
 function finish() {
   if (!station().done()) return;
+  if (S.station === 3) {
+    if (frame.phase === "map") { beginEstimate(); return; }
+    frame.phase = "compare";
+    savedMoonGuess = frame.guessCm;
+    sendState({station:3, ...station().state()});
+    readout(`按平均距离 · ${actualMoonCm.toFixed(1)} 厘米`);
+  }
   S.mode = "reveal";
   disarmCue();
   observedOnce(S.station);
@@ -867,6 +985,7 @@ function paint() {
 }
 
 function hitTarget(p) {
+  if (S.station === 3 && frame.phase === "estimate") return moonHit(p);
   return station().targets?.().find(t => Math.hypot(p.x - t.x, p.y - t.y) <= (t.r || hitR()));
 }
 
