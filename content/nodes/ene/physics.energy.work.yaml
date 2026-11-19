@@ -24,9 +24,11 @@ lenses:
   approach: 先托住箱不移动，核对箱子的读数；直提和沿理想坡推分别铺出长方形格子，比较格子总数。
 - band: G7-9
   approach: 力恒定且同向时 W=Fs。12 N×1 m和3 N×4 m均为12 J。托静止箱时托力对箱做0 J机械功，人仍会累。
-activities: []
+activities:
+- act.simulation.work-dock-01
+- act.quiz.work-dock-01
 status: draft
-version: 1
+version: 2
 curriculum:
 - std: 义务教育物理课程标准（2022年版）
   ref: 机械运动和力、机械能
