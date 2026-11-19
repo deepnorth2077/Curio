@@ -1,0 +1,43 @@
+id: math.fraction.as-division
+schema: knode/1
+title: 分数和除法
+subjects: [math]
+theme: num
+grade: G5
+unit: 五下 · 分数的意义和性质（分数与除法、真分数和假分数；人教版旧版册次，新版以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第三学段「数与运算」：结合具体情境理解分数的意义
+  - textbook: 人教版小学数学五年级下册（旧版）
+    unit: 第四单元 分数的意义和性质
+prerequisites: [math.fraction.count-on-line, math.fraction.the-whole]
+related: [math.fraction.equivalent]
+driving_question: 3 张饼分给 4 个人，3 除以 4 不够除，就没法分了吗？
+objectives:
+  - 知道 3 张饼平均分给 4 个人，每人得到 3/4 张：3 ÷ 4 = 3/4。
+  - 知道被除数除以除数，可以写成被除数作分子、除数作分母的分数，除数不能是 0。
+  - 知道分子大于或等于分母的分数叫假分数，其中分子比分母大的分数比 1 大，可以写成带分数：5/4 是 1 又 1/4。
+  - 会在数线上找到假分数的位置。
+misconceptions:
+  - id: small-cant-divide-big
+    text: 觉得小的数不能除以大的数，3 ÷ 4 没有答案。
+  - id: divide-reversed
+    text: 把被除数和除数的位置写反，例如把 3 ÷ 4 写成 4/3。
+  - id: fractions-below-one
+    text: 觉得分数一定比 1 小，例如认为 5/4 不存在，或者把 11/4 放在 0 和 1 之间。
+  - id: numerator-as-whole
+    text: 把假分数的分子当成整数部分，例如认为 11/4 在 11 和 12 之间。
+sources:
+  - type: textbook
+    ref: 人教版小学数学五年级下册（旧版）第四单元「分数与除法」「真分数和假分数」
+lenses:
+  - band: G3-4
+    approach: 只做分饼：3 张饼 4 个人，每张切 4 份，每人拿 3 个 1/4。不提「除以」的写法。
+  - band: G5-6
+    approach: 把饼一块块发进盘子，读出 3 ÷ 4 = 3/4；5 张饼 4 个人，把盘里的小块拼成一整张再多一块；在 0 到 3 的数线上转出假分数的位置。
+  - band: G7-9
+    approach: 有理数的定义：能写成两个整数相除的数；分数线就是除号。
+activities: [act.simulation.share-table-01, act.quiz.as-division-01]
+status: draft
+version: 1
+# END OF FILE

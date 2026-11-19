@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>显微镜下的小房间</title>
 <style>
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 :root{
   --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
   --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
@@ -78,10 +81,20 @@ body.kbd svg#stage:focus-visible{outline:2px solid var(--accent);outline-offset:
 .qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
 @media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px}
   .t{font-size:22px} .tm{font-size:22px} .num{font-size:22px} .lab{font-size:24px} .ttl{font-size:32px} .big{font-size:34px} .cnt{font-size:40px} .huge{font-size:72px} }
+.wrap.choosing > :not(#station-picker){display:none}
+#station-picker{background:var(--pane);border:1px solid var(--rule);border-radius:18px;padding:14px 18px 18px}
+#picker-title{font:600 20px var(--f-serif);color:var(--ink);margin:0 0 12px}
+#station-choices{justify-content:flex-start}
+#station-menu:not([hidden]){margin-bottom:8px}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <section id="station-picker" hidden aria-labelledby="picker-title">
+    <h2 id="picker-title">选一站</h2>
+    <div id="station-choices" class="actions"></div>
+  </section>
+  <button type="button" id="station-menu" class="btn ghost small" hidden>选站重玩</button>
   <div class="card">
     <header><span class="station" id="station">第 1 站 · 共 4 站</span><h1 id="title">放大</h1></header>
     <svg id="stage" viewBox="0 0 800 610" tabindex="0" role="application" aria-label="动手区">
@@ -165,20 +178,21 @@ function fmtCount(n){
 /* ============ 2. 平台契约 activity/1.1（单独打开时也能玩） ============ */
 const Host = (() => {
   const h = {}, inFrame = window.parent !== window;
-  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  addEventListener("message", e => { const m = e.data; if (inFrame && e.source === parent && m && m.contract === "activity/1.1" && Object.hasOwn(h, m.type)) h[m.type](m.payload || {}); });
   const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); };
-  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.body.scrollHeight })).observe(document.body);
   return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
     state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
 })();
 Host.on("init", p => {
+  $("qarea").hidden = p.question_available === false;
+  restoreStations(p);
   if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
 });
 // 事件只在第一轮发；同一件事只发一次（key 去重）。「再玩一次」不再发 predicted、observed、complete
-let ROUND = 1;
 const SENT = new Set();
 function emit(verb, result, key){
-  if (ROUND > 1) return;
+  if (replayingStation || result.station <= completedStations) return;
   if (key){ if (SENT.has(key)) return; SENT.add(key); }
   Host.event(verb, result);
 }
@@ -223,6 +237,64 @@ const $ = id => document.getElementById(id);
 const svg = $("stage"), gStatic = $("static"), gDyn = $("dyn");
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const STATIONS = 4;
+/* 宿主保存的是完成的站号。只从连续的第一站起恢复，缺一站就从那里继续。 */
+const stationNames = ["放大", "换样本", "细胞是活的", "小房间里的小房间"];
+let completedStations = 0;
+let activityCompleted = false;
+let restored = false;
+let replayingStation = false;
+
+function restoreStations(payload){
+  if (restored || !Array.isArray(payload.completed_stations)) return;
+  restored = true;
+  const saved = new Set(payload.completed_stations);
+  while (completedStations < STATIONS && saved.has(completedStations + 1)) completedStations++;
+  activityCompleted = payload.activity_completed === true;
+  if (completedStations) showStationPicker();
+}
+function hideStationPicker(){
+  $("station-picker").hidden = true;
+  $("station-menu").hidden = true;
+  document.querySelector(".wrap").classList.remove("choosing");
+}
+function showStationPicker(){
+  const panel = $("station-picker"), choices = $("station-choices");
+  choices.replaceChildren();
+  const add = (label, action, primary = false) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = primary ? "btn" : "btn ghost";
+    button.textContent = label;
+    button.addEventListener("click", action);
+    choices.append(button);
+  };
+  if (completedStations < STATIONS){
+    const n = completedStations + 1;
+    add(`继续第 ${n} 站 · ${stationNames[n-1]}`, () => startStation(n, false), true);
+  } else {
+    add("看我的星卡", () => { hideStationPicker(); replayingStation = false; enterEnd(); }, true);
+  }
+  for (let n = 1; n <= completedStations; n++){
+    add(`重玩第 ${n} 站 · ${stationNames[n-1]}`, () => startStation(n, true));
+  }
+  add("从头玩", () => startStation(1, false));
+  panel.hidden = false;
+  document.querySelector(".wrap").classList.add("choosing");
+  choices.firstElementChild.focus({preventScroll:true});
+}
+$("station-menu").addEventListener("click", showStationPicker);
+function finishStation(label, go){
+  if (replayingStation){
+    next("回到选站", showStationPicker);
+    return;
+  }
+  if (S.station === completedStations + 1){
+    completedStations++;
+    Host.event("observed", {station: S.station, item: "station-complete"});
+  }
+  actions([{label, go}, {label:"选站重玩", cls:"ghost", go:showStationPicker}]);
+}
+
 function fresh(){
   return { station: 1, mode: "talk", holdKey: null, z: 0, zt: 0, sample: "cheek", seen: { cheek: false, onion: false, blood: false },
     said: {}, band: -1, want: null, drag: null, cork: false,
@@ -232,6 +304,15 @@ function fresh(){
     found: {}, saidBook: false, saidSeen: false, focus: -1, kbd: false };
 }
 let S = fresh();
+function startStation(n, replay){
+  hideStationPicker();
+  replayingStation = replay;
+  S = fresh();
+  drag = null;
+  if (n >= 2){ S.seen.cheek = true; S.z = S.zt = zOf(MODEL.target.cheek); }
+  [enter1, enter2, enter3, enter4][n-1]();
+  if (replay && n < 4) [act1, () => pick("onion"), act3][n-1]();
+}
 
 function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
 function hint(s){ $("hint").textContent = s || ""; }
@@ -617,7 +698,7 @@ function done1(){
         say(MODEL.cheekNearHair ? "看那根头发：一个口腔细胞，和一根头发差不多粗。" : `一个口腔细胞约 ${fmtMm(MODEL.cheekMm)}，头发约 ${fmtMm(MODEL.hairMm)}。`);
         next("继续", () => {
           say("飞船上的倍数是简化过的。学校显微镜开到同样倍数，细胞看起来更小。");
-          next("去第 2 站", enter2);
+          finishStation("去第 2 站", enter2);
         });
       });
     });
@@ -656,6 +737,7 @@ function seen2(key){
     readout(`放大 <b>${MODEL.target.onion}</b> 倍 · 洋葱细胞约 ${fmtMm(MODEL.onionMm)}长`);
     next("继续", () => {
       say(`一个洋葱细胞，比口腔细胞长 ${MODEL.onionVsCheek} 倍多。`);
+      if (replayingStation){ next("去拿血片", () => pick("blood")); return; }
       next("下一片", () => ask("blood-guess", "血里的细胞，和口腔、洋葱的细胞长得一样吗？", [
         { label: "一样，都是一格一格的", mis: "one-kind", feedback: "都叫细胞，听起来像一样的。可它们样子各不一样。看看吧。" },
         { label: "不一样，形状各不同", correct: true, feedback: "你猜对了。拖血片上去看看。" }
@@ -691,7 +773,7 @@ function doneNeuron(){
   say(`在大人身上，这一个细胞能长到 ${MODEL.neuronM} 米多！`, "good");
   next("继续", () => {
     say(`它比一个红细胞长 ${MODEL.neuronVsRbcWan} 万多倍。`);
-    next("去第 3 站", enter3);
+    finishStation("去第 3 站", enter3);
   });
 }
 // 人和神经细胞都按米画：地面在 floor，每米 perM 个单位
@@ -921,7 +1003,7 @@ function done3(){
         S.earth = true; S.eP = reduced ? 1 : 0; render();
         readout(`红细胞排成一排 · 约 ${Math.round(MODEL.rbcLineKm / 1e4)} 万公里`);
         say(`只把你身体里的红细胞一个挨一个排成一排，能绕地球 ${Math.floor(MODEL.earthLoops)} 圈多。`);
-        next("去第 4 站", enter4);
+        finishStation("去第 4 站", enter4);
       });
     });
   });
@@ -1084,7 +1166,7 @@ function after4(){
   const anyNuc = S.found.cheek || S.found.onion, all = KEYS.every(k => S.found[k]);
   if (anyNuc && !S.saidBook) next("它是做什么的？", () => { S.saidBook = true; say("它是小房间里的小房间，里面放着一份说明书。"); after4(); }, "", keep);
   else if (anyNuc && !S.saidSeen) next("以前见过它吗？", () => { S.saidSeen = true; say("见过！第 3 站细胞分开前，中间先分开的小圆就是它。"); after4(); }, "", keep);
-  else if (all) next("看我的图鉴", enterEnd);
+  else if (all) finishStation("看我的图鉴", enterEnd);
   else actions([]);
   hint(all ? "" : "再点另一片，滴一滴药水");
 }
@@ -1145,11 +1227,13 @@ function neuronIcon(x, y){   // 星卡上的小图：腰上的细胞，一路伸
   return `<path class="thread" stroke-width="3.5" d="M${x} ${y - 12}C${x + 20} ${y - 14} ${x + 34} ${y + 2} ${x + 52} ${y}S${x + 70} ${y - 6} ${x + 74} ${y + 4}"/><circle cx="${x}" cy="${y - 12}" r="7" fill="var(--accent)"/>`;
 }
 function enterEnd(){
+  $("station-menu").hidden = false;
+  if (!CELLS.cheek.length) makeTiles();
   S.station = 5; S.mode = "end"; head(0, "我的显微镜图鉴"); hint(""); readout("");
   fitView(); render();
   say("这是舰长的显微镜图鉴。细胞核里的说明书写了什么？下一颗星见。", "good");
-  if (ROUND === 1) Host.complete({});   // 只在第一轮告诉平台「做完了」，再玩一次不重复记
-  next("再玩一次", () => { ROUND++; S = fresh(); enter1(); }, "ghost");
+  if (!activityCompleted){ activityCompleted = true; Host.complete({}); }   // 只在第一轮告诉平台「做完了」，再玩一次不重复记
+  next("再玩一次", () => startStation(1, false), "ghost");
 }
 
 /* ============ 13. 画面和输入 ============ */

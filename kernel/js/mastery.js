@@ -46,6 +46,21 @@ export function attemptRule(evs) {
     if (e.payload.try !== want) return 5;
     tries.set(id, want);
   }
+  // 6. answer.revealed：之前已有同题 item.answered；同一 item_id 最多一条；之后不再有同题 item.answered（CURIO-013）
+  /** @type {Set<string>} */
+  const answered = new Set();
+  /** @type {Set<string>} */
+  const revealed = new Set();
+  for (const e of evs) {
+    const id = e.payload.item_id;
+    if (e.verb === "item.answered") {
+      if (revealed.has(id)) return 6;
+      answered.add(id);
+    } else if (e.verb === "answer.revealed") {
+      if (!answered.has(id) || revealed.has(id)) return 6;
+      revealed.add(id);
+    }
+  }
   return 0;
 }
 

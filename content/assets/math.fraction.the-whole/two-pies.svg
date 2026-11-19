@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 230" role="img" aria-label="一张小饼和一张大饼，各涂了半张">
+  <title>小饼和大饼，各涂了半张</title>
+  <desc>左边是一张小饼，右边是一张大饼，两张饼都平均分成 2 份，各涂了其中 1 份。</desc>
+  <circle cx="130" cy="100" r="42" fill="none" stroke="#1F1E1C" stroke-width="2"/>
+  <path d="M 130 58 A 42 42 0 0 0 130 142 Z" fill="#C2603F" fill-opacity="0.8"/>
+  <line x1="130" y1="58" x2="130" y2="142" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="130" cy="100" r="42" fill="none" stroke="#1F1E1C" stroke-width="2"/>
+  <text x="130" y="208" fill="#1F1E1C" font-size="18" text-anchor="middle">小饼</text>
+  <circle cx="340" cy="100" r="85" fill="none" stroke="#1F1E1C" stroke-width="2"/>
+  <path d="M 340 15 A 85 85 0 0 0 340 185 Z" fill="#C2603F" fill-opacity="0.8"/>
+  <line x1="340" y1="15" x2="340" y2="185" stroke="#1F1E1C" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="340" cy="100" r="85" fill="none" stroke="#1F1E1C" stroke-width="2"/>
+  <text x="340" y="208" fill="#1F1E1C" font-size="18" text-anchor="middle">大饼</text>
+</svg>

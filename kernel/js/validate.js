@@ -1,20 +1,22 @@
 // 事件信封和 payload 的校验（竖切片 1 规格第 3 节；事件规格第 2 节；schemas/event.schema.json）。
 // 纯函数：不碰 DOM、存储、时间和随机数。字符串长度一律按 Unicode 码点数。
 
-/** 本切片认的 5 个动词。 */
+/** 当前外壳可摄入的动词。 */
 export const SLICE_VERBS = Object.freeze([
   "attempt.started",
+  "sim.observed",
   "item.answered",
   "hint.used",
+  "answer.revealed",
   "attempt.completed",
   "attempt.abandoned",
 ]);
 
-/** schemas/event.schema.json 里 verb 的全部取值（信封校验用；本切片只认其中 5 个）。 */
+/** schemas/event.schema.json 里 verb 的全部取值（信封校验用；可摄入的动词见 SLICE_VERBS）。 */
 const SCHEMA_VERBS = new Set([
   "attempt.started", "attempt.completed", "attempt.abandoned",
   "poe.predicted", "poe.explained", "sim.adjusted", "sim.observed",
-  "item.answered", "hint.used", "reflection.written",
+  "item.answered", "hint.used", "answer.revealed", "reflection.written",
   "question.asked", "question.answered",
   "repair.opened", "repair.linked", "repair.practiced", "repair.resolved",
   "plan.created", "plan.task_done", "plan.task_undone",
@@ -34,6 +36,7 @@ const RE = {
   rel: /^rel_[0-9a-f]{64}$/,
   node: /^[a-z]+(\.[a-z0-9-]+)+$/,
   act: /^act\.[a-z]+\.[a-z0-9-]+$/,
+  grader: /^[a-z][a-z0-9-]*\/[1-9][0-9]*$/,
   ts: /^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}Z$/,
 };
 
@@ -141,7 +144,7 @@ export function checkEnvelope(e) {
 }
 
 /**
- * 本切片 5 个动词各自的规则（第 3 节的表）。调用前信封已经合格。
+ * 当前可摄入动词的规则（第 3 节的表）。调用前信封已经合格。
  * @param {Record<string, any>} e
  * @returns {string|null}
  */
@@ -155,9 +158,10 @@ export function checkVerb(e) {
   const p = e.payload;
   switch (e.verb) {
     case "attempt.started": {
-      const k = keys(p, ["mode"], ["mode"], "payload ");
+      const k = keys(p, ["mode", "grader"], ["mode"], "payload ");
       if (k) return k;
       if (!["first", "retry", "review"].includes(p.mode)) return "mode 不认识";
+      if (has(p, "grader") && (!isStr(p.grader) || codePoints(p.grader) > 32 || !RE.grader.test(p.grader))) return "grader 格式不对";
       return null;
     }
     case "attempt.completed": {
@@ -171,6 +175,14 @@ export function checkVerb(e) {
       if (k) return k;
       if (!["left", "timeout", "error"].includes(p.reason)) return "reason 不认识";
       return null;
+    }
+    case "sim.observed": {
+      const k = keys(p, ["observable", "value"], ["observable", "value"], "payload ");
+      if (k) return k;
+      if (!isStr(p.observable)) return "observable 不是字符串";
+      if (typeof p.value === "boolean" || numberOk(p.value)) return null;
+      if (isStr(p.value) && codePoints(p.value) <= 32) return null;
+      return "value 应为数字、布尔值或不超过 32 个字符的字符串";
     }
     case "item.answered": {
       const req = ["item_id", "response", "correct", "try", "hints_used"];
@@ -190,6 +202,12 @@ export function checkVerb(e) {
       if (k) return k;
       if (has(p, "item_id") && !isStr(p.item_id)) return "item_id 不是字符串";
       if (!isInt(p.level) || p.level < 1 || p.level > 3) return "level 只能是 1～3";
+      return null;
+    }
+    case "answer.revealed": {
+      const k = keys(p, ["item_id"], ["item_id"], "payload ");
+      if (k) return k;
+      if (!isStr(p.item_id)) return "item_id 不是字符串";
       return null;
     }
   }

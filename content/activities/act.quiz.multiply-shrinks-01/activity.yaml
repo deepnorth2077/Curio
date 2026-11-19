@@ -1,0 +1,120 @@
+id: act.quiz.multiply-shrinks-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 伸缩条大挑战
+targets:
+  - math.operation.multiply-shrinks
+age_band: G5-6
+duration_min: 5
+review: pending
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版小学数学五年级上册（旧版）第一单元「小数乘法」；六年级上册（旧版）第一单元「分数乘法」
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: 一根 8 厘米的条拉成原来的 0.9 倍。新条和原条比，哪句对？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 比 8 厘米长
+            misconception: multiply-always-bigger
+            feedback: 0.9 份还差一点才到一整份。
+          - id: b
+            text: 比 8 厘米短
+            correct: true
+          - id: c
+            text: 还是 8 厘米
+            misconception: decimal-ignored
+            feedback: 取一整份才与原条一样长。
+      hints:
+        - 把旋钮先放在 1，再拨到 0.9。
+        - 想一想，你取的是整份还是不到一份？
+      feedback:
+        correct: 把原条平均分成 10 段，只留下 9 段，还差一段才够 8 厘米。
+        wrong: 把旋钮先放在 1，再拨到 0.9。
+    - id: q2
+      stem: 6 厘米的条缩成原来的 0.5 倍，新条长多少厘米？
+      answer:
+        type: number
+        value: 3
+        tolerance: 0
+        unit: 厘米
+        common_wrong:
+          - value: 30
+            misconception: decimal-ignored
+            feedback: 你算的是 5 整份。这里取的比一份还少。
+          - value: 6.5
+            misconception: add-instead
+            feedback: 这里的 0.5 表示取半份，不是加上半厘米。
+      hints:
+        - 把一根 6 厘米的条对折。
+        - 折好后，一段是原来的一半。
+      feedback:
+        correct: 0.5 倍就是一半。把 6 平分，得到 3 厘米。
+        wrong: 把一根 6 厘米的条对折。
+    - id: q3
+      stem: 把边长是 1 的正方形分成百格。圈出宽 0.3、高 0.2 的长方形，占整个正方形的多少？用小数写。
+      answer:
+        type: number
+        value: 0.06
+        tolerance: 0
+        common_wrong:
+          - value: 0.6
+            misconception: ignore-decimal-places
+            feedback: 0.6 要圈 60 格。再看看 3 列和 2 行重叠了几格。
+          - value: 0.5
+            misconception: add-instead
+            feedback: 加起来得到的是两条边的长度和。这里数的是两边围住的小格。
+      hints:
+        - 先数宽占几列，再数高占几行。
+        - 一共圈了几格？每一小格占整个正方形的百分之一。
+      feedback:
+        correct: 3 列和 2 行重叠了 6 个小格，每格是 0.01，合起来是 0.06。
+        wrong: 先数宽占几列，再数高占几行。
+    - id: q4
+      stem: 三个伸缩条原来都是 12 厘米。哪根比原来长？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 12 × 0.99
+            misconception: multiply-always-bigger
+            feedback: 0.99 还不到一整份，条会短一点。
+          - id: b
+            text: 12 × 1
+            misconception: multiply-always-bigger
+            feedback: 取 1 份，条的两端正好和原样对齐。
+          - id: c
+            text: 12 × 1.1
+            correct: true
+      hints:
+        - 摸一摸旋钮，在什么位置条正好和原样一样长？
+        - 从那个位置向哪边转，条才变长？
+      feedback:
+        correct: 1.1 比 1 多 0.1，除了原条还要多出原条的十分之一。
+        wrong: 摸一摸旋钮，在什么位置条正好和原样一样长？
+    - id: q5
+      stem: 1 米的纸条，每次都剪掉剩下的一半。剪 3 次，还剩多少米？
+      answer:
+        type: number
+        value: 0.125
+        tolerance: 0
+        unit: 米
+        common_wrong:
+          - value: 0
+            misconception: reaches-zero
+            feedback: 每次都留下了一半，第三剪也还留了一小段。
+          - value: 0.25
+            feedback: 0.25 米是第二剪的结果。还有一剪。
+      hints:
+        - 从 1 米开始，折一次就把刚才的长度平分。
+        - 把三次折完后的长度按顺序记下来。
+      feedback:
+        correct: 1 米先变 0.5 米，再变 0.25 米，第三剪后还剩 0.125 米。
+        wrong: 从 1 米开始，折一次就把刚才的长度平分。
+# END OF FILE

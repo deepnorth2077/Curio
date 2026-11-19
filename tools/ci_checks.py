@@ -17,6 +17,10 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import module_lint  # noqa: E402  动手探索模块的静态检查（#140）
+import status_gen  # noqa: E402  状态只写一处（#140 第 5 条）
+
 # fnmatch 的 * 会跨过 /，所以 "prompts/*" 覆盖整个 prompts/ 目录。例外只有两条，见地盘检查：
 # kp/ 分支改自己活动的提示词和任务文件；feat/、fix/、chore/ 分支新增任务文件留档（*.task.md）。
 # relay/ 里 Claude 手算的验收用例、跑用例的脚本和领航员说明也只能在 arch/ 改：实现者不能为了通过去改期望值。
@@ -25,12 +29,18 @@ PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "prompts/*", "AGENTS
              "relay/test/cases.json", "relay/test/cases.test.js", "relay/src/navigator.js",
              # 竖切片 1 的黄金向量和验收测试（规格第 7 节）：同上，实现者不能改期望值
              "kernel/vectors/*", "engine/vectors/*", "kernel/test/vectors.test.js", "engine/test/grading.test.js",
-             "engine/test/quiz.test.js", "engine/test/quiz-1b.test.js", "app/test/commit.test.js", "app/test/resume.test.js", "app/test/fake-store.js"]
+             "engine/test/quiz.test.js", "engine/test/quiz-1b.test.js", "app/test/commit.test.js", "app/test/resume.test.js", "app/test/fake-store.js",
+             # 竖切片 6a 的黄金向量、样例文件和验收测试（docs/specs/backup.md）
+             "app/vectors/*", "tests/fixtures/*", "app/test/backup.test.js", "app/test/restore.test.js", "app/test/fake-backup-store.js"]
 ACT_PROMPT = re.compile(r"^prompts/(act\.[A-Za-z0-9._-]+?)(\.task)?\.md$")
 TASK_ARCHIVE = re.compile(r"^prompts/[A-Za-z0-9][A-Za-z0-9._-]*\.task\.md$")
 # kp/ 分支可以新增、修改本知识点活动的审查记录，以及本知识点自己的审查记录（ADR-009 增补 1）；不能删除
 ACT_REVIEW = re.compile(r"^docs/reviews/(act\.[A-Za-z0-9._-]+?)\.md$")
 NODE_REVIEW = re.compile(r"^docs/reviews/([a-z]+(?:\.[a-z0-9-]+)+)\.md$")
+# 星座进度（#140 第 5 条）：任何分支都能改 status.yaml；index.md 和 handoff.md 只能改被 status:begin/end 包起来的生成段落。
+# 这样做完一步，状态跟着那一步的 PR 一起走，不用另开 arch/ 分支。
+STATUS_YAML = re.compile(r"^docs/constellations/[a-z0-9-]+/status\.yaml$")
+STATUS_DOCS = re.compile(r"^docs/(handoff\.md|constellations/[a-z0-9-]+/index\.md)$")
 BRANCH_KINDS = ["kp/", "arch/", "feat/", "fix/", "chore/"]
 OVERRIDE_LABEL = "越界-已批准"
 KID_FACING_NODE = ["title", "driving_question", "lenses"]
@@ -38,6 +48,8 @@ KID_FACING_ACT = ["title", "predict", "explain"]
 FORBIDDEN_WORD = "学习"
 PUBLISH_REQUIRED_TYPES = ["explain", "quiz"]
 PATH_SEGMENT = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
+# 孩子会碰到的外壳页面：样式里要有「长按不选字、不弹菜单」那两条（#156，module_lint.NOSELECT_CSS）。文件不在就不查
+NOSELECT_SHELLS = ["preview/template.html", "app/index.html", "prototype/index.html"]
 
 # 每增加一种能力，就在这里登记它所需的最低引擎等级。
 ENGINE_REQUIREMENTS = {
@@ -325,6 +337,15 @@ def run(repo, base="origin/main", branch="", labels=()):
             return doc.get("targets", []) if isinstance(doc, dict) else None
         return None
 
+    def status_only(p, st):
+        """这个改动是不是只动了星座进度（status.yaml，或 index.md / handoff.md 的生成段落）。"""
+        if STATUS_YAML.match(p):
+            return st != "D"
+        if STATUS_DOCS.match(p) and st == "M":
+            old = base_text(p)
+            return old is not None and status_gen.strip_blocks(old) == status_gen.strip_blocks((repo / p).read_text(encoding="utf-8"))
+        return False
+
     # ---------- 1. 地盘检查 ----------
     prefix = branch.split("/", 1)[0] + "/" if "/" in branch else branch
     if prefix not in BRANCH_KINDS:
@@ -373,6 +394,8 @@ def run(repo, base="origin/main", branch="", labels=()):
                 ok = not match(p, PROTECTED) and not p.startswith("content/")
                 if not ok and TASK_ARCHIVE.match(p) and status_of.get(p) == "A":
                     ok = True   # 整合时新增任务文件留档；改动或删除已有的提示词仍然只能走 arch/
+            if not ok and status_only(p, status_of.get(p)):
+                ok = True
             if not ok and shared:
                 msg = (f"这是共享活动，同时影响 {'、'.join(shared)}。kp/ 分支只能改只针对 {node_id} 的活动；"
                        f"共享活动要单独开 PR，覆盖所有受影响知识点的审核和试玩，并在征得 Luka 同意后加「{OVERRIDE_LABEL}」标签")
@@ -625,6 +648,37 @@ def run(repo, base="origin/main", branch="", labels=()):
             visible = re.sub(r"<[^>]+>", " ", visible)
             if FORBIDDEN_WORD in visible:
                 r.err(f"页面文字里出现了「{FORBIDDEN_WORD}」", rel(repo, html))
+
+    # ---------- 4b. 动手探索模块的静态检查（tools/module_lint.py，#140） ----------
+    starter_path = repo / ".claude/skills/curio-anatomy/references/starter.html"
+    starter = starter_path.read_text(encoding="utf-8") if starter_path.exists() else None
+    for aid, (f, doc) in acts.items():
+        html = f.parent / "index.html"
+        if f.name != "manifest.yaml" or not html.exists():
+            continue
+        targets = doc.get("targets") or []
+        mis = {m["id"] for t in targets if t in nodes for m in nodes[t][1].get("misconceptions", []) if isinstance(m, dict) and "id" in m}
+        errors, warnings = module_lint.lint(html.read_text(encoding="utf-8"), doc, mis if all(t in nodes for t in targets) else None, starter)
+        no_walk = module_lint.missing_walk(html.read_text(encoding="utf-8"), aid, repo)
+        for message in errors + ([no_walk] if no_walk else []):
+            r.err(message, rel(repo, html))
+        # 提醒只对这次改过的模块报，免得每个 PR 都刷同样的提醒
+        if any(p.startswith(rel(repo, f.parent) + "/") for p in changed):
+            for message in warnings:
+                r.warn(message, rel(repo, html))
+
+    # ---------- 4c. 外壳页面长按不选字（#156） ----------
+    for shell in NOSELECT_SHELLS:
+        f = repo / shell
+        if not f.is_file():
+            continue
+        for desc in module_lint.noselect_missing(f.read_text(encoding="utf-8")):
+            r.err(f"样式里少了「{desc}」：iPad 上长按会选中文字、弹出拷贝菜单（#156）。照 tools/module_lint.py 的 NOSELECT_CSS 抄", shell)
+
+    # ---------- 4d. 星座进度：status.yaml 合法，生成段落和它对得上（#140 第 5 条） ----------
+    status_errors, _ = status_gen.sync(repo, write=False)
+    for message in status_errors:
+        r.err(message, "docs/constellations")
 
     # ---------- 5. 署名提醒 ----------
     log = git(repo, "log", f"{base}..HEAD", "--format=%h%x00%s%x00%B%x1e").stdout

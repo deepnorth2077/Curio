@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数线放大镜</title>
+<style>
+/* kit:base —— 颜色、卡片、气泡、按钮。色值不要改；模块自己的样式写在最后一段 */
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --grip:#2A7F7C; --grip-soft:#D3E8E5;
+  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
+  --dad:#4F7FA8; --mom:#C2603F; --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#E0876A; --accent-soft:#3A2A24;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;
+  --dad:#7FA9CF; --mom:#E0876A; --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:820px;margin:0 auto;padding:12px 14px 28px}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;overflow:hidden}
+.card header,.card footer{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px}
+.card header{border-bottom:1px solid var(--rule)}
+.card footer{border-top:1px solid var(--rule);min-height:52px;align-items:center}
+.station{font-size:13px;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+h1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);margin:0;text-align:right}
+.hint{font-size:14px;color:var(--muted)}
+.readout{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15px;text-align:right}
+.readout b{color:var(--accent);font-weight:600}
+svg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+svg#stage:focus,svg#stage:focus-visible{outline:none}
+svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.t{fill:var(--ink);font-family:var(--f-sans);font-size:15px}
+.tm{fill:var(--muted);font-family:var(--f-sans);font-size:15px}
+.talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
+.ava{flex:none;width:42px;height:42px}
+.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
+.bubble.good{background:var(--good-soft);border-color:transparent}
+.bubble.bad{background:var(--bad-soft);border-color:transparent}
+.bubble.hmm{background:var(--paper);border-color:transparent}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:10px 0 0}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:manipulation}
+.btn.ghost{background:var(--pane);color:var(--ink)}
+.btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
+.btn.choice:hover{background:var(--hover)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500} .btn.tight{padding:9px 12px}
+.qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px} .card footer{flex-wrap:wrap;row-gap:2px} .hint{white-space:nowrap} .readout{font-size:14px;flex:1 1 auto} }
+/* kit:grip 2026-11-14 —— 圆钮（「可抓」记号，g1.md A.4 G1～G8）。--grip 只给圆钮、托、按住按钮、焦点框用；--accent 不给任何控件用 */
+.btn.hold{touch-action:none;background:var(--grip);border-color:var(--grip);color:var(--bg);display:inline-flex;align-items:center;gap:10px;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.btn.hold.on{filter:brightness(.82)}
+.btn.hold svg{width:18px;height:18px;flex:none}
+.btn.hold svg path{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.gfill{fill:var(--grip)} .gsoft{fill:var(--grip-soft)}
+.gring{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.gring.on{stroke-width:3.2}
+.gridge{fill:none;stroke:var(--bg);stroke-width:2.2;stroke-linecap:round}
+.garrow{fill:none;stroke:var(--grip);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.gkbd{fill:none;stroke:var(--ink);stroke-width:1.6}
+#cue{fill:none;stroke:var(--grip);stroke-width:2.4;transform-box:fill-box;transform-origin:center;animation:cue 2.4s ease-out infinite}
+@keyframes cue{0%{transform:scale(1);opacity:.95}50%{transform:scale(1.8);opacity:0}100%{transform:scale(1.8);opacity:0}}
+@media (prefers-reduced-motion:reduce){#cue{animation:none;transform:scale(1.3);opacity:.9}}
+/* kit:frac 2026-11-14 —— 分数一律上下结构（A.4 第 2 条）。HTML 里用 .frac，SVG 里用 fracS() */
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.08;font-family:var(--f-mono);font-size:.84em;margin:0 .2em;font-variant-numeric:tabular-nums}
+.frac>span:first-child{border-bottom:1.6px solid currentColor;padding:0 .28em .04em}
+.frac>span:last-child{padding:.04em .28em 0}
+.fl{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round}
+.fs{fill:var(--ink);font-family:var(--f-mono);font-size:16px} .fm{fill:var(--ink);font-family:var(--f-mono);font-size:22px} .fb{fill:var(--ink);font-family:var(--f-mono);font-size:34px}
+body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{font-size:38px}
+/* 模块自己的画面样式写在这里：字号全写在类上，窄屏在 body.narrow 里放大（教训 14、28）。下面几个类可以直接用 */
+.food{fill:var(--apricot)} .lead{fill:var(--accent)} .papr{fill:var(--paper)} .pane{fill:var(--pane)}
+.kacc{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.one{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-dasharray:7 6}
+.faint{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;opacity:.75}
+.lb{fill:var(--ink);font-family:var(--f-sans);font-size:17px}
+.lbg{fill:var(--muted);font-family:var(--f-sans);font-size:16px}
+.lbm{fill:var(--ink);font-family:var(--f-mono);font-size:17px}
+.big{fill:var(--ink);font-family:var(--f-mono);font-size:44px}
+.ttl{fill:var(--ink);font-family:var(--f-serif);font-size:26px}
+.sign{fill:var(--ink);font-family:var(--f-serif);font-size:24px}
+.tk{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round} .tkd{fill:none;stroke:var(--accent);stroke-width:1.1}
+body.narrow .lb{font-size:21px} body.narrow .lbg{font-size:20px} body.narrow .lbm{font-size:20px}
+body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .sign{font-size:28px}
+.wall{fill:var(--paper)} .person{fill:var(--sky)} .door{fill:var(--sage)}
+.rod{fill:var(--accent)} .stick{fill:var(--apricot)} .stick1{fill:var(--sage)} .stick2{fill:var(--sky)}
+.seam{stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.55}
+.amount{white-space:nowrap} .pick{fill:var(--accent-soft)} .place-slot{fill:var(--paper)}
+.zoom-frame{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke}
+.zoom-title{fill:var(--ink);font:600 23px var(--f-sans)}
+.zoom-caption{fill:var(--accent);font:600 19px var(--f-sans)}
+.zoom-value{fill:var(--ink);font:600 20px var(--f-mono)}
+.zoom-lens{fill:var(--bg);stroke:var(--rule);stroke-width:1.5}
+.zoom-guide{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 5;stroke-linecap:round}
+body.narrow .zoom-title{font-size:26px}
+body.narrow .zoom-caption,body.narrow .zoom-value{font-size:23px}
+.card:has(#zoom-prediction-ruler) footer{display:none}
+.scene-name{fill:var(--muted);font:18px var(--f-sans);letter-spacing:.12em}
+body.narrow .scene-name{font-size:21px}
+.hair-guide{fill:var(--accent-soft);fill-opacity:.65;stroke:var(--accent);stroke-width:1.4;stroke-linejoin:round}
+.hair-selection{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.hair-tick{stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
+.hair-tick.major{stroke-width:1.6}
+.hair-strand{fill:var(--text)}
+.hair-section{fill:var(--paper);stroke:var(--text);stroke-width:1.8}
+.hair-fiber{fill:none;stroke:var(--muted);stroke-width:1.3;stroke-linecap:round;opacity:.45}
+.hair-piece{fill:transparent;cursor:zoom-in}
+body.hair-active #touch{pointer-events:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <header><span class="station" id="station"></span><h1 id="title"></h1></header>
+    <svg id="stage" viewBox="0 0 800 610" tabindex="0" role="application" aria-label="动手区">
+      <g id="static"></g>
+      <g id="dyn"></g>
+      <g id="fx"><circle id="cue" cx="0" cy="0" r="10" style="display:none"/></g><!-- 提醒环用 CSS 动画，不跟着每帧重画（教训 23） -->
+      <rect id="touch" x="-400" y="-400" width="1600" height="1410" fill="transparent"/><!-- 永不重画的触摸层（教训 25） -->
+    </svg>
+    <footer><span class="hint" id="hint"></span><span class="readout" id="readout"></span></footer>
+  </div>
+  <div class="talk">
+    <svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="27" r="16" fill="var(--sky)"/>
+      <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+      <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+      <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+      <path class="k1" d="M18 32 C21 35 27 35 30 32"/>
+    </svg>
+    <div class="bubble" id="say" aria-live="polite"></div>
+  </div>
+  <div class="actions" id="actions"></div>
+  <div id="qarea"></div>
+</div>
+
+<script>
+"use strict";
+/* Curio · 动手探索模块骨架。复制本文件，把 {{…}} 换成具体内容，换掉两个示例站。
+   2026-11-14 起以切分机 act.simulation.fair-cut-01 为准（Luka 验收通过后抽出来的）：带 kit: 记号的段落照抄不改，
+   要改就先改这里，再同步到用它的模块。先读 lessons.md 和 docs/constellations/zero-to-one/notes-star1.md。 */
+/* ============ 1. 真相模型：页面上的每个数字都从这里算，每个值旁边写出处。只放数和纯函数，不碰页面 ============ */
+const MODEL = {
+  radix: 10,                 // 人教版四下「小数的意义和性质」：十进制计数
+  objects: [                 // 本站示意物的设定值，以分米为单位
+    { name: "身高", dm: 13 }, { name: "门", dm: 19 }, { name: "桌子", dm: 7 }
+  ],
+  top: 22,                   // 横杆从 2.2 米开始，让孩子从上往下量
+  zoomDepth: 3,              // 本站用十分位、百分位和千分位
+  zoomUnits: ["分米", "厘米", "毫米"], // 1 米的十分之一、百分之一、千分之一
+  lensDepth: 6,              // 十的六次方：1 米 = 100 万微米
+  hairMicrons: 70,           // 沿用 act.simulation.cell-zoom-01 的约 0.07 毫米
+  units: ["米", "分米", "厘米"],
+  places: ["个位", "十分位", "百分位"],
+  goals: [[1, 3, 0], [1, 0, 3]]
+};
+const B = MODEL.radix;
+const power = depth => B ** depth;
+const cm = counts => counts.reduce((sum, digit, i) => sum + digit * power(2 - i), 0);
+const lengthValue = counts => String(cm(counts) / power(2));
+const tenths = MODEL.objects[0].dm % B;
+const held = { label: "按住放大", cls: "hold", hold: true };
+const seen = [[], null, null];
+
+/* ============ 2. 平台契约 activity/1.1（单独打开时也能玩）  kit:host ============ */
+const Host = (() => {
+  const h = {}, inFrame = window.parent !== window;
+  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); else (window.__sent = window.__sent || []).push({ type, payload: payload || {} }); };
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.body.scrollHeight })).observe(document.body);
+  return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
+    state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
+})();
+Host.on("init", p => {
+  if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
+});
+// 每站的猜测和观察只记一次，complete 只发一次（C.0 第 3 条；教训 15、19）
+const sentPred = new Set(), sentObs = new Set();
+let completed = false;
+function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station }); }
+let lastState = "";
+function sendState(o){ const s = JSON.stringify(o); if (s === lastState) return; lastState = s; Host.state(o); }
+
+/* ============ 3. 手绘线条（平台的 sketchLib）  kit:sketch ============ */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,curve,cr,R,f};
+}
+const Sk = sketchLib();
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+const T = (x, y, s, cls, extra) => `<text x="${x}" y="${y}" class="${cls || "t"}"${extra ? " " + extra : ""}>${s}</text>`;
+const TC = (x, y, s, cls, extra) => T(x, y, s, cls, 'text-anchor="middle"' + (extra ? " " + extra : ""));
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const r1 = n => Math.round(n * 10) / 10;
+const box = (x, y, w, h, seed, j) => Sk.line(x, y, x + w, y, seed, j) + Sk.line(x + w, y, x + w, y + h, seed + 1, j) + Sk.line(x + w, y + h, x, y + h, seed + 2, j) + Sk.line(x, y + h, x, y, seed + 3, j);
+// 角度：从正上方起、顺时针，和钟面一样
+const pol = (cx, cy, r, deg) => { const a = deg * Math.PI / 180; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
+function sectorD(cx, cy, r, a0, a1){
+  if (a1 - a0 >= 359.9) return `M${r1(cx - r)} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
+  const p0 = pol(cx, cy, r, a0), p1 = pol(cx, cy, r, a1);
+  return `M${r1(cx)} ${r1(cy)}L${r1(p0[0])} ${r1(p0[1])}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${r1(p1[0])} ${r1(p1[1])}Z`;
+}
+function arcD(cx, cy, r, a0, a1, seed){   // 手绘的一段圆弧
+  const rnd = Sk.R(seed), N = Math.max(2, Math.ceil((a1 - a0) / 14)), pts = [];
+  for (let i = 0; i <= N; i++) pts.push(pol(cx, cy, r * (1 + (rnd() - .5) * .012), a0 + (a1 - a0) * i / N));
+  return Sk.cr(pts, false);
+}
+
+/* ============ 4. 共用零件：分数、「1」记号、圆钮、数线条  kit:parts ============ */
+const narrow = () => document.body.classList.contains("narrow");
+// 4.1 分数：HTML 里的 .frac（带读法）和 SVG 里的 fracS（上下结构，手绘分数线）。任何地方都不用斜杠写法
+const CN1 = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+const cnNum = n => (n = +n, n === 100 ? "百" : n === 1000 ? "千" : !Number.isInteger(n) || n < 1 || n > 99 ? undefined : n <= 10 ? CN1[n] : n < 20 ? "十" + CN1[n - 10] : CN1[Math.floor(n / 10)] + "十" + (n % 10 ? CN1[n % 10] : ""));   // 认 1 到 99、100（百）、1000（千）；别的数（含 0）不认，读出来是 undefined，用到先补这里
+const cnFrac = (a, b) => `${cnNum(b)}分之${cnNum(a)}`;                // 读法：3/4 读作四分之三
+const F = (a, b) => `<span class="frac" role="img" aria-label="${cnFrac(a, b)}"><span aria-hidden="true">${a}</span><span aria-hidden="true">${b}</span></span>`;
+const FSZ = { fs: [16, 20], fm: [22, 26], fb: [34, 38] };
+function fracS(x, y, a, b, cls, seed){   // x 是中线，y 是分数线的高度
+  const sz = FSZ[cls][narrow() ? 1 : 0], w = Math.max(String(a).length, String(b).length) * sz * .62 + sz * .5;
+  return `<g role="img" aria-label="${cnFrac(a, b)}">` + TC(x, r1(y - sz * .3), a, cls) + P(Sk.line(x - w / 2, y, x + w / 2, y, seed || 7, .45), "fl") + TC(x, r1(y + sz * .98), b, cls) + `</g>`;
+}
+// 4.2 「1」记号：整体外面一圈手绘虚线框，左上角挂一块写着 1 的纸色小牌
+function oneMark(x, y, w, h, seed, o){   // o.below：牌子挂在左下角（框上面要留给别的东西时用）
+  const tx = x + 4, ty = o && o.below ? y + h - 15 : y - 15;
+  return P(box(x, y, w, h, seed, .8), "one") +
+    `<g transform="rotate(-5 ${tx + 14} ${ty + 14})"><rect x="${tx}" y="${ty}" width="28" height="30" rx="4" class="papr"/>` + P(box(tx, ty, 28, 30, seed + 9, .4), "k1") + TC(tx + 14, ty + 22, "1", "fm") + `</g>`;
+}
+// 4.3 圆钮：实心圆、墨线外圈、三道防滑纹、两侧箭头（G1）。dir 是能动的方向（单位向量）；arc 给出圆心时箭头沿圆弧
+const vbW = () => svg.viewBox.baseVal.width || 800;
+const pxScale = () => vbW() / (svg.clientWidth || 800);                 // 1 个屏幕像素合多少 viewBox 单位
+const gripR = () => Math.max(17, 15 * pxScale());                       // 画出来直径不小于 28 px（G4）
+const hitR = () => Math.max(30, 26 * pxScale());                        // 能点中的范围不小于 48 px（G4）
+function chevron(px, py, dx, dy, s){ const nx = -dy, ny = dx; return `M${r1(px - dx * s + nx * s)} ${r1(py - dy * s + ny * s)}L${r1(px + dx * s * .7)} ${r1(py + dy * s * .7)}L${r1(px - dx * s - nx * s)} ${r1(py - dy * s - ny * s)}`; }
+function grip(x, y, dir, o){
+  o = o || {}; const g = gripR(), on = !!o.on, k = on ? 1.12 : 1, r = g * k, [dx, dy] = dir, nx = -dy, ny = dx;
+  let s = `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" class="gfill"/>` + P(Sk.ellipse(x, y, r, r, o.seed || 71, .5), "gring" + (on ? " on" : ""));
+  for (const i of [-1, 0, 1]){ const ox = dx * i * r * .36, oy = dy * i * r * .36, L = r * (i ? .36 : .5); s += P(`M${r1(x + ox - nx * L)} ${r1(y + oy - ny * L)}L${r1(x + ox + nx * L)} ${r1(y + oy + ny * L)}`, "gridge"); }
+  const gap = g + 11;
+  if (o.arc){ const [cx, cy] = o.arc, R = Math.hypot(x - cx, y - cy), a0 = Math.atan2(x - cx, cy - y) * 180 / Math.PI, da = gap / R * 180 / Math.PI;
+    for (const sg of [-1, 1]){ const [px, py] = pol(cx, cy, R, a0 + sg * da), a = (a0 + sg * da) * Math.PI / 180; s += P(chevron(px, py, sg * Math.cos(a), sg * Math.sin(a), 6), "garrow"); } }
+  else for (const sg of [-1, 1]) s += P(chevron(x + dx * sg * gap, y + dy * sg * gap, dx * sg, dy * sg, 6), "garrow");
+  if (o.kbd) s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r + 6)}" class="gkbd"/>`;
+  return s;
+}
+// 4.4 数线条：0 和 1 的刻度长，数写在线下面；fracs 是要钉上去的分数 [[分子, 分母], …]，标签太挤时只标一部分
+function lineStrip(lx, ly, lw, fracs, seed){
+  let s = P(Sk.line(lx - 10, ly, lx + lw + 14, ly, seed, .5)) + P(`M${lx} ${ly - 12}v24M${lx + lw} ${ly - 12}v24`) + TC(lx, ly + 38, "0", "lbm") + TC(lx + lw, ly + 38, "1", "lbm"), lastLab = 1e9;
+  for (const [a, b] of fracs.slice().sort((p, q) => q[0] / q[1] - p[0] / p[1])){
+    const x = r1(lx + lw * a / b);
+    s += P(`M${x} ${ly}v-15`, "k1") + `<circle cx="${x}" cy="${ly - 18}" r="5.5" class="lead"/>` + P(Sk.ellipse(x, ly - 18, 5.5, 5.5, seed + a * 13 + b, .3), "k1");
+    if (lastLab - x >= (narrow() ? 44 : 36)){ s += fracS(x, ly - 50, a, b, "fs", seed + b); lastLab = x; }
+  }
+  return s;
+}
+const RIDGES = `<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 3v12M9 3v12M14 3v12"/></svg>`;   // 按住按钮上的防滑纹小图标
+
+/* ============ 5. 页面骨架  kit:shell ============ */
+const $ = id => document.getElementById(id);
+const svg = $("stage"), gDyn = $("dyn"), cueEl = $("cue");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const STATIONS = 3;   // 一共几站
+// t 是孩子操作推到的进度（0～1），p 是画面上缓动跟随的进度；读数和画面都用 p（教训 2）
+const S = { station: 1, mode: "talk", scene: "s1q", hold: false, press: false, kbd: false, dirty: true };
+let gen = 0;          // 每换一站加一：延时回调先确认还在原来的状态（教训 11）
+const later = (ms, f) => { const g = gen; setTimeout(() => { if (g === gen) f(); }, reduced ? Math.min(ms, 60) : ms); };
+
+function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
+function hint(s){ $("hint").textContent = s || ""; }
+function readout(html){ if ($("readout").innerHTML !== (html || "")) $("readout").innerHTML = html || ""; }
+function say(html, tone){ const b = $("say"); b.innerHTML = html; b.className = "bubble" + (tone ? " " + tone : ""); }
+let fingerDown = false;
+addEventListener("pointerdown", () => { fingerDown = true; }, true);
+for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);
+let keysDown = 0;
+addEventListener("keydown", e => { if (!e.repeat) keysDown++; }, true);
+addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true);
+addEventListener("blur", () => { keysDown = 0; releaseZoomHold(); });
+function actions(list){
+  const boxEl = $("actions"); boxEl.replaceChildren();
+  S.dirty = true;   // 换按钮就是换了状态：一律重画一次，免得圆钮留在锁住的画面上
+  const guard = fingerDown, born = performance.now();
+  let keyGuard = keysDown > 0;
+  if (keyGuard){ const off = () => { if (keysDown === 0){ setTimeout(() => { keyGuard = false; }, 0); removeEventListener("keyup", off, true); } }; addEventListener("keyup", off, true); }
+  for (const a of list || []){
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn " + (a.cls || ""); b.innerHTML = (a.hold ? RIDGES : "") + `<span>${a.label}</span>`;
+    if (a.hold){
+      const on = v => {
+        if (v){ S.hold = true; touched(); }
+        else releaseZoomHold();
+        b.classList.toggle("on", v);
+      };
+      b.addEventListener("pointerdown", e => {
+        if (e.button !== 0 || !e.isPrimary) return;
+        e.preventDefault(); b.setPointerCapture(e.pointerId); on(true);
+      });
+      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, e => { if (e.isPrimary) on(false); });
+      b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(true); } });
+      b.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(false); } });
+      b.addEventListener("blur", () => on(false));
+      b.addEventListener("contextmenu", e => e.preventDefault());
+    } else {
+      b.addEventListener("click", e => { if (performance.now() - born < 400 || (keyGuard && e.detail === 0)) return; a.go(e); });
+      if (guard){
+        b.disabled = true;
+        const release = () => {
+          removeEventListener("pointerup", release, true);
+          removeEventListener("pointercancel", release, true);
+          setTimeout(() => { b.disabled = false; }, 120);
+        };
+        addEventListener("pointerup", release, true);
+        addEventListener("pointercancel", release, true);
+      }
+    }
+    boxEl.append(b);
+  }
+  const first = boxEl.querySelector("button");
+  if (first && !/^act/.test(S.mode)) first.focus({ preventScroll: true });
+  return boxEl;
+}
+// 猜测：只记下来，不在这里判对错的颜色。猜错的反馈先接住、再说清，然后一律去动手，让实物来回答
+function ask(question, options, onAnswer){
+  say(question);
+  actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
+    if (!sentPred.has(S.station)){ sentPred.add(S.station); Host.event("predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null }); }
+    S.guess = S.guess || {}; S.guess[S.station] = o;
+    say(o.feedback, o.correct ? "good" : "hmm");
+    onAnswer(o);
+  }})));
+}
+function next(label, go, cls){ actions([{ label, go, cls }]); }
+// 星卡上选站重玩（#154）：replay 是正在重玩的站号，0 是从头往下走。重玩一站跳过开场和猜测题，直接进这一站的动手；
+// 揭晓完，原来「去第 k+1 站」「看我的星卡」的按钮换成「回星卡」（用 nextOr）。不出猜测题就不发 predicted；
+// observed 靠 observedOnce、complete 靠 completed，都只记第一次。每站怎么复位、怎么进动手是模块自己的事，写在 REPLAY[站号] 里
+let replay = 0;
+const REPLAY = {};
+function nextOr(label, go, cls){ if (replay) next("回星卡", enterEnd); else next(label, go, cls); }
+function replayAt(k){ replay = k; gen++; S.station = k; hint(""); readout(""); disarmCue(); REPLAY[k](); }
+function restart(){ replay = 0; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }   // 从头玩：和以前的「再玩一次」一样
+function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站。enterEnd() 最后调它
+  replay = 0;
+  actions([{ label: "从头玩", go: restart, cls: "ghost tight" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1), cls: "tight" }))));   // tight：手机上一行排得下
+}
+
+(function(){   // 「我有个问题」：随时可以问，发到信号站
+  const area = $("qarea");
+  const open = document.createElement("button");
+  open.type = "button"; open.className = "btn ghost small"; open.textContent = "我有个问题";
+  open.style.marginTop = "12px";
+  open.addEventListener("click", () => {
+    if (area.querySelector("textarea")) return;
+    const ta = document.createElement("textarea"); ta.maxLength = 120; ta.placeholder = "想问领航员什么？";
+    const send = document.createElement("button"); send.type = "button"; send.className = "btn small"; send.textContent = "发给领航员";
+    const bx = document.createElement("div"); bx.className = "qbox"; bx.append(ta, send);
+    send.addEventListener("click", () => { const q = ta.value.trim(); if (!q) return; Host.noteQuestion(q); bx.remove(); say("好问题，我记下来了。等会儿一起找答案。"); });
+    area.append(bx); ta.focus();
+  });
+  area.append(open);
+})();
+
+// 第一屏的提醒（G6）：进入动手 1.5 秒还没碰，第一个圆钮外面扩出一圈细环；一碰就再也不出现
+let cuePos = null, cueTimer = 0;
+function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; S.dirty = true; } }, 1500); }
+function disarmCue(){ clearTimeout(cueTimer); cuePos = null; cueEl.style.display = "none"; }
+function touched(){ if (cuePos || cueTimer) disarmCue(); cueTimer = 0; }
+function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }   // 第三个数是被提醒的东西的半径（托里的一个）
+
+// 窄屏：viewBox 缩到中间 600 宽的操作区，字号类放大（教训 13、28）。每个场景写明自己用到的高度
+// 排版规矩：要紧的东西都画在 x = 110～690 之间；每个场景在这里写 [起始 y, 高度]
+const VIEW = { s1q: [72, 330], s2q: [90, 224], s3q: [72, 330], s1: [0, 518],
+  s2: [16, 378], s3: [0, 563], end: [0, 638] };
+function fitView(){
+  const nar = (svg.clientWidth || 800) < 600;
+  const [y, h] = S.scene === "wow" ? hairView() : VIEW[S.scene] || [0, 610];
+  document.body.classList.toggle("narrow", nar);
+  const v = (nar ? [100, y, 600, h] : [0, y, 800, h]).join(" ");
+  if (svg.getAttribute("viewBox") !== v){ svg.setAttribute("viewBox", v); S.dirty = true; }
+}
+addEventListener("resize", fitView);
+function scene(name){ S.scene = name; fitView(); S.dirty = true; }
+
+const rect = (x, y, w, h, cls, r = 0, extra = "") => `<rect x="${r1(x)}" y="${r1(y)}" width="${r1(w)}" height="${r1(h)}" rx="${r}" class="${cls}" ${extra}/>`;
+const line = (x1, y1, x2, y2, seed, cls) => P(Sk.line(x1, y1, x2, y2, seed, .45), cls);
+const point = (x, y, r, cls) => `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r}" class="${cls}"/>`;
+const act = n => S.mode === "act" + n;
+const guessEcho = n => {
+  const guess = S.guess?.[n];
+  return guess ? (guess.correct ? "你刚才就猜到了。" : "看实物，刚才的猜法可以换一换。") : "";
+};
+function startQuestion(n, mode, title, intro, question, options, go){
+  gen++; S.station = n; S.mode = "talk"; head(n, title); hint(""); readout(""); disarmCue(); scene(mode);
+  say(intro); next("然后呢", () => ask(question, options, () => next("动手试", go)));
+}
+function startAct(n, title, mode, message, cue){
+  S.mode = "act" + n; head(n, title); scene(mode);
+  const shortcuts = ["ArrowUp ArrowDown", "ArrowLeft ArrowRight Space Enter", "ArrowLeft ArrowRight Enter Backspace"];
+  svg.setAttribute("aria-keyshortcuts", shortcuts[n - 1]);
+  say(message); svg.focus({ preventScroll: true }); armCue(cue);
+}
+function finishAct(n){
+  S.mode = "talk"; S.hold = false; hint(""); disarmCue(); observedOnce(n);
+}
+function plaque(x, w, title, main, subtitle = ""){
+  return rect(x, 126, w, 224, "wall", 12) + P(box(x, 126, w, 224, x, .7), "k1") +
+    point(x + 16, 143, 3, "pane") + TC(x + w / 2, 192, title, "scene-name") +
+    TC(x + w / 2, 265, main, "big") + TC(x + w / 2, 312, subtitle, "lb");
+}
+
+/* 第 1 站：固定的墙尺；压杆每分米吸一次。 */
+const HEIGHT = { bottom: 464, dm: 17.4, ruler: 268, barStart: 305, barEnd: 610 };
+const hy = dm => HEIGHT.bottom - HEIGHT.dm * dm;
+const knob1 = () => [HEIGHT.barEnd, hy(S.height)];
+const measure = () => MODEL.objects[S.object];
+const marks = (bottom, x, seed) => Array.from({ length: B - 1 }, (_, i) =>
+  line(x, hy(bottom + i + 1), x + (i === B / 2 - 1 ? 23 : 16), hy(bottom + i + 1), seed + i, "k1")).join("");
+const draw1q = () => plaque(205, 390, "身高", measureText(MODEL.objects[0]), "读作一点三米");
+const measureText = o => `${o.dm / B} 米`;
+function wall(){
+  const { bottom, ruler } = HEIGHT;
+  return rect(199, 65, 378, bottom - 65, "wall", 5) + rect(ruler - 3, 72, 42, bottom - 72, "pane", 4) +
+    line(ruler, hy(MODEL.top), ruler, bottom, 21) + line(ruler, bottom, 615, bottom, 22) +
+    [0, B, power(1) * 2].map(dm => line(ruler, hy(dm), ruler + 36, hy(dm), dm + 25) +
+      T(ruler - 12, hy(dm) + 6, `${dm / B} 米`, "lbm", 'text-anchor="end"')).join("");
+}
+function wallObject(which){
+  const o = MODEL.objects[which], y = hy(o.dm), b = HEIGHT.bottom, x = 468;
+  if (which === 0){
+    const body = `M${x - 29} 0q-18 17 -23 63l20 4 10-29 -2 39 -7 48h22l15-40 15 40h22l-7-49 -2-39 10 29 20-4q-8-48-31-63z`;
+    return `<g transform="translate(0 ${y + 53}) scale(1 ${(b - y - 53) / 125})">` + P(body, "person") + P(body) + "</g>" + point(x, y + 25, 25, "person") + P(Sk.ellipse(x, y + 25, 25, 25, 44, .4)) +
+      P(`M${x - 20} ${y + 17}q18 4 30-7l10 8`, "k1");
+  }
+  if (which === 1){
+    return rect(400, y, 126, b - y, "door", 3) + P(box(400, y, 126, b - y, 49, .55)) +
+      P(box(412, y + 14, 102, b - y - 28, 54, .4), "k1") + point(505, y + (b - y) * .53, 5, "pane");
+  }
+  return rect(370, y, 190, 19, "stick", 2) + P(box(370, y, 190, 19, 57, .5)) +
+    P(`M388 ${y + 19}v${b - y - 19}h15V${y + 19}M528 ${y + 19}v${b - y - 19}h15V${y + 19}`, "k");
+}
+function draw1(){
+  const o = measure(), [x, y] = knob1(), whole = S.whole;
+  const top = hy(whole + B), bottom = hy(whole);
+  return oneMark(254, top + 1, 58, bottom - top - 2, 41, { below: true }) +
+    (S.showMarks ? `<g id="height-tenths">${marks(whole, HEIGHT.ruler, 30)}</g>` : "") +
+    wallObject(S.object) + TC(467, 501, o.name, "lb") +
+    `<path id="height-target" class="kf" d="M305 ${hy(o.dm)}H628"/>` +
+    rect(HEIGHT.barStart, y - 6, x - HEIGHT.barStart, 12, "rod", 5) +
+    P(box(HEIGHT.barStart, y - 6, x - HEIGHT.barStart, 12, 52, .35), "k1") +
+    (act(1) ? `<g id="height-grip">${grip(x, y, [0, 1], { on: S.press, kbd: S.kbd })}</g>` : "");
+}
+function enter1(){
+  startQuestion(1, "s1q", "量 · 墙上的身高尺", "身高牌写着 1.3 米，读作一点三米。我想，是 1 米再加 3 厘米？可你比 1 米高出一大截。",
+    "1.3 米，是 1 米再加多少？", [
+      { label: "3 厘米", mis: "tail-as-small-unit", feedback: "我也先想到了厘米。看看这多出来的一截有多长。" },
+      { label: "3 分米", correct: true, feedback: "我想看看杆压到头顶时，尺上有几格。" },
+      { label: "一共才 13 厘米", mis: "glue-digits", feedback: "把两个数字挨着看，很容易读成十三。量一量，先找 1 米的地方。" }
+    ], act1);
+}
+function act1(){
+  seen[0] = []; S.object = 0;
+  startAct(1, "量 · 墙上的身高尺", "s1", (replay ? "" : "带圆钮的地方，都能用手抓。") + "把横杆往下拖，轻轻碰到头顶。", knob1);
+  resetHeight();
+}
+REPLAY[1] = act1;
+function resetHeight(){
+  S.height = MODEL.top; S.whole = Math.floor(measure().dm / B) * B;
+  S.showMarks = false; S.press = false; S.dirty = true;
+  hint(`拖动圆钮 · 还要量 ${MODEL.objects.length - S.object} 样`); actions([]);
+  svg.focus({ preventScroll: true }); updateHeight();
+}
+function updateHeight(){
+  const value = S.height / B, whole = Math.floor(value), part = S.height % B;
+  const active = S.height < MODEL.top;
+  if (S.height < S.whole + B && S.height >= S.whole) S.showMarks = true;
+  readout(active ? `${whole} 米和 ${part} 个 ${F(1, B)} 米 · 写作 <b>${value} 米</b>` : "横杆还没压到要量的地方");
+  sendState({ station: 1, height: value });
+}
+function setHeight(dm){
+  if (!act(1)) return;
+  S.height = clamp(Math.round(dm), measure().dm, MODEL.top); S.dirty = true; updateHeight();
+  if (S.height !== measure().dm) return;
+  S.mode = "measured"; S.press = false; disarmCue();
+  seen[0].push(measure());
+  const left = MODEL.objects.length - seen[0].length;
+  hint(left ? `还要量 ${left} 样` : `量了 ${seen[0].length} 样东西`);
+  if (S.object === 0){
+    say(`这个小圆点叫小数点。它右边第一格数的是几个 ${F(1, B)}，叫十分位。`, "good");
+  } else if (S.object === 1) {
+    say("量好了，门站得很直。下一样去量桌子。", "good");
+  } else {
+    say("三样都量过啦。看看横杆在墙上停过的刻度。", "good");
+  }
+  next(left ? "量下一样" : "看读数", left ? () => {
+    S.mode = "act1"; S.object++;
+    say(`把横杆往下拖，碰到${measure().name}的上边。`);
+    resetHeight();
+  } : done1);
+}
+function done1(){
+  finishAct(1);
+  const value = MODEL.objects[0].dm / B;
+  say(`点 ${tenths} 是 ${tenths} 个 ${F(1, B)} 米。一小格是 1 分米，所以 ${value} 米是 1 米 ${tenths} 分米。` + guessEcho(1), "good");
+  nextOr("去第 2 站", enter2);
+}
+
+/* 第 2 站：上方米尺不动，下方把框里的刻度拉开。 */
+const ZOOM = { x: 163, w: 474, mapY: 79, mapH: 50, lensTop: 197, y: 280 };
+const cells = depth => depth ? B : 1;
+const interval = path => path.reduce((n, digit) => n * B + digit, 0) / power(path.length);
+const decimal = (n, depth) => n.toFixed(depth);
+const meter = (n, depth) => `${decimal(n, depth)} 米`;
+const pinnedText = () => decimal(S.pin, MODEL.zoomDepth);
+const zoomPath = () => S.pin === null ? S.path.slice() : S.path.concat(S.pinTick);
+const stringDigits = (digits, format) => digits.map((digit, i) => format(digit, power(i + 1))).join("、");
+function zoomTape(y, h, highlighted = -1){
+  const { x, w } = ZOOM, cell = w / B, inset = highlighted >= 0 ? 0 : 10;
+  let s = rect(x - inset, y, w + 2 * inset, h, "papr", 8);
+  for (let i = 0; i < B; i++){
+    s += rect(x + i * cell, y + 2, cell, h - 4, i === highlighted ? "pick" : "papr", 0, `data-ruler-segment="${i}"`);
+  }
+  s += P(box(x - inset, y, w + 2 * inset, h, 81, .5), "k1");
+  for (let i = 0; i <= B; i++){
+    const tx = r1(x + i * cell), mark = highlighted >= 0 ? h - 4 : (i === 0 || i === B ? 22 : 14);
+    s += P(`M${tx} ${y + h - 2}v-${mark}`, "k1");
+  }
+  return s;
+}
+function draw2q(){
+  const { x, w } = ZOOM, y = 152, h = 66, cell = w / B;
+  return `<g id="zoom-prediction-ruler">` + TC(x + w / 2, 132, `整把米尺 · 平分成 ${B} 份`, "zoom-title") +
+    zoomTape(y, h, 0) +
+    rect(x, y, cell, h, "zoom-frame", 3) +
+    T(x, 253, meter(0, 0), "zoom-value") + T(x + w, 253, meter(1, 0), "zoom-value", 'text-anchor="end"') +
+    P(`M${r1(x + cell)} ${y + h}L${x + 86} 277h17`, "zoom-guide") +
+    T(x + 113, 283, "这一小段", "zoom-caption") + "</g>";
+}
+const zoomGrips = () => [ZOOM.x + ZOOM.w / 2, ZOOM.y, 15];
+function miniMap(){
+  const { x, w, mapY, mapH, y } = ZOOM;
+  return `<defs><clipPath id="zoom-clip">` + rect(x - 2, y - 19, w + 4, 43, "") + "</clipPath></defs>" +
+    `<g id="minimap">` + TC(x + w / 2, 58, "整把米尺 · 框出你在看的地方", "zoom-title") +
+    zoomTape(mapY, mapH) +
+    T(x + 5, mapY + 24, meter(0, 0), "zoom-value", 'id="zoom-whole-start"') +
+    T(x + w - 5, mapY + 24, meter(1, 0), "zoom-value", 'id="zoom-whole-end" text-anchor="end"') +
+    `<rect class="zoom-window zoom-frame" y="${mapY + 29}" height="${mapH - 26}"/></g>`;
+}
+function updateMap(start, span){
+  const win = $("minimap")?.querySelector(".zoom-window");
+  if (!win) return;
+  win.setAttribute("x", ZOOM.x + start * ZOOM.w);
+  win.setAttribute("width", span * ZOOM.w);
+}
+function zoomRidges(x, y){
+  return point(x, y, 14, "gfill") + P(Sk.ellipse(x, y, 14, 14, 90, .3), "gring") +
+    P(`M${x - 5} ${y - 5}v10m5-10v10m5-10v10`, "gridge");
+}
+function releaseZoomHold(){
+  S.hold = false; S.holdGate = false; S.tZoom = 0;
+}
+function draw2(){
+  const { x, w, mapY, mapH, lensTop, y } = ZOOM, { depth, selected, pZoom } = S;
+  const n = cells(depth), cell = w / n, final = depth === MODEL.zoomDepth;
+  const start = interval(S.path), span = depth ? 1 / power(depth - 1) : 1;
+  const sourceSpan = span / n, sourceStart = start + selected * sourceSpan;
+  const z = reduced ? 0 : pZoom;
+  const bandLeft = lerp(selected * cell, 0, z), bandWidth = lerp(cell, w, z);
+  // 舒展开的那一段始终对应米尺上同样长的一段；用同一比例反推整窗两端。
+  const viewSpan = z ? sourceSpan * w / bandWidth : span;
+  const viewStart = z ? clamp(sourceStart - bandLeft * sourceSpan / bandWidth, 0, 1 - viewSpan) : start;
+  updateMap(viewStart, viewSpan);
+  const left = r1(x + viewStart * w), right = r1(x + (viewStart + viewSpan) * w), guideY = mapY + mapH + 3;
+  const link = depth ? clamp(z * 3) : 0;
+  let s = `<g id="zoom-guides" opacity="${lerp(1, .25, link)}">` +
+    P(`M${left} ${guideY}H${right}L${x + w} ${lensTop}H${x}Z`, "pick", 'opacity=".4"') +
+    P(`M${left} ${guideY}L${x} ${lensTop}`, "zoom-guide", 'data-end="left"') +
+    P(`M${right} ${guideY}L${x + w} ${lensTop}`, "zoom-guide", 'data-end="right"') + "</g>";
+  s += `<g id="zoom-lens">` + rect(x - 20, lensTop, w + 40, 173, "zoom-lens", 13) +
+    TC(x + w / 2, lensTop + 32, "放大窗 · 框里的这一段", "zoom-title");
+  if (link){
+    const sourceLeft = r1(x + sourceStart * w), sourceRight = r1(x + (sourceStart + sourceSpan) * w);
+    const bandX1 = r1(x + bandLeft), bandX2 = r1(x + bandLeft + bandWidth);
+    s += `<g id="zoom-source-guides" opacity="${link}">` +
+      rect(sourceLeft, mapY + 29, sourceRight - sourceLeft, mapH - 26, "zoom-frame", 1) +
+      P(`M${sourceLeft} ${guideY}L${bandX1} ${lensTop}M${bandX1} ${y - 41}V${y - 14}`, "zoom-guide", 'data-source-end="left"') +
+      P(`M${sourceRight} ${guideY}L${bandX2} ${lensTop}M${bandX2} ${y - 41}V${y - 14}`, "zoom-guide", 'data-source-end="right"') + "</g>";
+  }
+  s += `<g clip-path="url(#zoom-clip)">`;
+  if (!final) s += rect(x + bandLeft, y - 14, bandWidth, 34, "pick", 3, 'id="zoom-band"') +
+    P(`M${r1(x + bandLeft)} ${y + 16}h${r1(bandWidth)}`, "kacc");
+  s += line(x, y, x + w, y, 85);
+  s += `<g id="zoom-old-ticks">`;
+  for (let i = 0; i <= n; i++){
+    const center = r1(x + bandLeft + (i - selected) * bandWidth), edge = i === 0 || i === n;
+    const bounds = i === selected || i === selected + 1;
+    const h = edge ? 12 : lerp(8, 12, bounds ? z : 0);
+    s += P(`M${center} ${y - h}v${2 * h}`, "k1");
+  }
+  s += "</g>";
+  if (z > 0){
+    s += `<g id="zoom-new-ticks">`;
+    const h = r1(8 * z);
+    for (let i = 1; i < B; i++){
+      const inner = r1(x + bandLeft + i * bandWidth / B);
+      s += P(`M${inner} ${y - h}v${2 * h}`, "k1");
+    }
+    s += "</g>";
+  }
+  s += "</g>";
+  if (act(2) && depth && !z){
+    for (let i = 0; i < n; i++){
+      const cx = x + (i + (final ? 0 : .5)) * cell;
+      s += rect(cx - cell / 2, y - 43, cell, 73, "", 0, `fill="transparent" data-${final ? "tick" : "cell"}="${i}"`);
+      if (i === selected){
+        const pinned = final && S.pin !== null && i === S.pinTick;
+        if (!pinned) s += zoomRidges(cx, y - 30);
+        if (S.kbd) s += point(cx, y - (pinned ? 23 : 30), 19, "gkbd");
+      }
+    }
+  }
+  const settledPlaces = depth ? Math.max(1, depth - 1) : 0;
+  const places = z && depth ? depth + 1 : settledPlaces;
+  s += T(x, y + 43, meter(viewStart, places), "zoom-value", 'id="zoom-range-start"') +
+    T(x + w, y + 43, meter(viewStart + viewSpan, places), "zoom-value", 'id="zoom-range-end" text-anchor="end"');
+  const unit = z > 0 ? `正分成 ${B} 格` : depth ? `每小格 1 ${MODEL.zoomUnits[depth - 1]}` : "这一段长 1 米";
+  s += TC(x + w / 2, y + 43, unit, "zoom-title", 'id="zoom-unit"');
+  if (depth && !final){
+    s += TC(x + w / 2, y + 75, `选中 <tspan id="zoom-selected-start">${meter(sourceStart, depth)}</tspan> 到 <tspan id="zoom-selected-end">${meter(sourceStart + sourceSpan, depth)}</tspan>`, "zoom-caption");
+  }
+  if (S.pin !== null){
+    const px = x + S.pinTick * cell;
+    s += P(`M${px} ${y - 24}v24`, "kacc") + point(px, y - 23, 7, "lead");
+  }
+  return s + "</g>";
+}
+function enter2(){
+  startQuestion(2, "s2q", "放大 · 一格变十格", `这把 1 米长的尺平分成了 ${B} 份。看看框出的一小段。`,
+    `把这一小段再平分成 ${B} 份。一小格是整条米尺的多少？`, [
+      { label: `${F(1, B * 2)}，${B} 加 ${B}`, mis: "ten-plus-ten", feedback: "两次都数到十，容易想到加法。试试看多少个大格里都能铺进十个小格。" },
+      { label: `还是 ${F(1, B)}`, mis: "still-tenths", feedback: "每回都分成十格，看着确实一样。等会儿对照一下整把米尺。" },
+      { label: F(1, power(2)), correct: true, feedback: "你把最开始那一整段记住了。放大看看。" }
+    ], act2);
+}
+function act2(){
+  Object.assign(S, { depth: 0, path: [], pin: null, pinTick: 0, selected: 0, tZoom: 0, pZoom: 0, hold: false, holdGate: false });
+  startAct(2, "放大 · 一格变十格", "s2", "框里是整把米尺。按住下面的按钮，看看放大窗里会出现什么。", zoomGrips);
+  actions([held]); updateZoom();
+}
+REPLAY[2] = act2;
+function updateZoom(){
+  const { depth, pin } = S, unit = F(1, power(depth));
+  hint(depth === MODEL.zoomDepth ? "点一条刻度，钉下你的点" : depth ? "点一格，再按住放大" : "按住放大，看十格出现");
+  readout(pin !== null ? `你钉的点是 <b>${pinnedText()} 米</b> · ${stringDigits(zoomPath(), (digit, denom) => `<span class="amount">${digit} 个 ${F(1, denom)}</span>`)}` :
+    depth ? `每小格是 ${unit} 米 · 写作 <b>${meter(1 / power(depth), depth)}</b>` : "");
+  sendState({ station: 2, depth, path: zoomPath(), pin });
+  S.dirty = true;
+}
+function advanceZoom(){
+  if (S.depth > 0) S.path.push(S.selected);
+  S.depth++; S.selected = 0; S.tZoom = S.pZoom = 0; S.holdGate = true;
+  if (S.depth === 1) say(`放大窗里出现了 ${B} 格。点一格，再按住放大。`);
+  if (S.depth === 2) say("看，上面的框只圈住了刚才选的那一格。再点一格，接着放大。");
+  if (S.depth === MODEL.zoomDepth){
+    say("现在挑一条刻度，把你的点钉在那里。"); actions([]); svg.focus({ preventScroll: true });
+  }
+  updateZoom();
+}
+function chooseZoom(index){
+  if (S.tZoom) return;
+  S.pZoom = 0;
+  S.selected = clamp(index, 0, cells(S.depth) - 1); S.dirty = true;
+}
+function pinAt(index){
+  chooseZoom(index);
+  S.pinTick = S.selected;
+  S.pin = interval(zoomPathWithTick());
+  seen[1] = { digits: zoomPath(), value: pinnedText() };
+  updateZoom(); hint("点另一条刻度可换位置");
+  if (!$("actions").firstChild) next("看钉下的点", done2);
+}
+const zoomPathWithTick = () => S.path.concat(S.pinTick);
+function done2(){
+  finishAct(2);
+  say("每放大一次，一格又分成十格，就能多看一位。这个点是你亲手选的。" + guessEcho(2), "good");
+  nextOr("去第 3 站", enter3);
+}
+
+/* 第 3 站：位值格固定。每根棒子进格以后，都按同一比例接到零点起的尺上。 */
+const PLACE = { xs: [219, 426, 589], dot: 317, w: 118, y: 58, rack: 226, ruler: 347 };
+const stickNames = MODEL.units.map(unit => unit + "棒");
+const zeroCounts = () => MODEL.units.map(() => 0);
+const goal = i => lengthValue(MODEL.goals[i]);
+const draw3q = () => plaque(142, 244, "第一张牌", `${goal(0)} 米`) + plaque(414, 244, "第二张牌", `${goal(1)} 米`);
+function fixedSlots(){
+  const { xs, dot, y, w } = PLACE;
+  return `<g id="place-value">` + xs.map((x, i) => rect(x - w / 2, y, w, 79, "place-slot", 10, `data-slot="${i}"`) +
+    P(box(x - w / 2, y, w, 79, 150 + 5 * i, .5), "k1") + TC(x, y + 115, MODEL.places[i], "lb")).join("") +
+    `<circle id="decimal-point" cx="${dot}" cy="${y + 58}" r="5" fill="var(--ink)"/></g>`;
+}
+const stockW = [112, 66, 28];
+const stockY = () => PLACE.rack - 10;
+const stickKnob = i => [PLACE.xs[i], stockY() + 24];
+const rackCue = () => stickKnob(0);
+function stock(x, y, i, active){
+  const width = stockW[i], left = x - width / 2, k = 91 + i * 13;
+  const draw = [8, 4, 0].map(d => rect(left + d, y - d, width, 13, i ? "stick" + i : "stick", 3) +
+    P(box(left + d, y - d, width, 13, k, .35), "k1")).join("");
+  return `<g data-stick="${i}">` + (i === 0 ? oneMark(left - 8, y - 10, width + 19, 30, 110) : "") + draw +
+    (active ? grip(...stickKnob(i), [0, -1], { on: S.press && drag?.index === i, kbd: S.kbd && S.stick === i, seed: k }) : "") +
+    TC(x, y + 83, stickNames[i], "lb") + "</g>";
+}
+function strip(id, counts, x, y, scale){
+  const unit = MODEL.units.map((_, i) => power(2 - i));
+  let left = x;
+  const bars = counts.map((count, i) => Array.from({ length: count }, (_, j) => {
+    const w = unit[i] * scale, x0 = left;
+    left += w;
+    return rect(x0, y, w, 22, i ? "stick" + i : "stick", Math.min(2, w / 3)) +
+      `<path d="M${r1(x0)} ${y}v22h${r1(w)}v-22z" fill="none" class="seam"/>`;
+  }).join("")).join("");
+  return `<g id="${id}" data-cm="${cm(counts)}">` + bars + "</g>";
+}
+function ruler(counts){
+  const live = S.build, x = 174, w = 416, top = PLACE.ruler;
+  const rows = [];
+  if (S.first) rows.push(["first-row", S.first]);
+  if (S.second) rows.push(["second-row", S.second]);
+  if (live < 2 || act(3)) rows.push([live === 0 ? "current-row" : live === 1 ? "current-row" : "own-row", counts]);
+  if (live === 2 && !act(3) && S.own) rows.push(["own-row", S.own]);
+  const maxCm = Math.max(power(2) * 2, ...rows.map(([, v]) => cm(v)));
+  const step = maxCm <= 2 * power(2) ? B : power(2);
+  const cap = Math.ceil(maxCm / step) * step;
+  const scale = w / cap;
+  let s = rect(x - 12, top - 19, w + 24, 53, "wall", 5) + line(x, top + 2, x + w, top + 2, 140);
+  for (let t = 0; t <= cap; t += step){
+    const tx = x + t * scale, major = t % power(2) === 0;
+    s += P(`M${tx} ${top + 2}v-${major ? 18 : 8}`, "k1");
+    if (major || t === cap) s += TC(tx, top + 28, t, "lbm");
+  }
+  s += T(x + w + 16, top + 9, "厘米", "lb");
+  s += P(`M${x} ${top + 37}v${rows.length * 48}`, "kf");
+  return s + rows.map(([id, v], i) => {
+    const y = top + 40 + i * 48, txt = `${cm(v)} 厘米`;
+    return strip(id, v, x, y, scale) + T(x + cm(v) * scale + 8, y + 17, txt, "lbm",
+      cm(v) * scale > w - 91 ? `transform="translate(-16 -25)" text-anchor="end"` : "");
+  }).join("");
+}
+function draw3(){
+  const isAct = act(3), { xs, y } = PLACE;
+  let s = S.mode === "compare" ? TC(400, 247, "两排都从零开始", "ttl") :
+    S.counts.map((v, i) => TC(xs[i], y + 59, v, "big")).join("") +
+      xs.map((x, i) => stock(x, stockY(), i, isAct)).join("");
+  if (isAct){
+    S.counts.forEach((count, i) => {
+      if (count) s += zoomRidges(xs[i] + PLACE.w / 2 - 14, y + 17);
+    });
+  }
+  s += ruler(S.counts);
+  if (isAct && drag?.kind === "stick" && drag.moved){
+    const { index, q } = drag, width = stockW[index];
+    s += rect(q.x - width / 2, q.y - 10, width, 20, "rod", 4) +
+      P(box(q.x - width / 2, q.y - 10, width, 20, 155, .45), "k1");
+  }
+  return s;
+}
+function enter3(){
+  startQuestion(3, "s3q", "摆 · 小棒接成一条线", `这里有两张牌。一张写着 ${goal(0)} 米，一张写着 ${goal(1)} 米，读作一点零三米。`,
+    "两个数都有 1 和 3。哪个长？", [
+      { label: `${goal(0)} 米`, correct: true, feedback: "我们把两排棒摆在同一把尺上，看能不能找出差在哪儿。" },
+      { label: "一样长，都是 1 和 3", mis: "ignore-place", feedback: "这两个数确实都有 1 和 3。等小棒站进格子，看看它们会接出多长。" },
+      { label: `${goal(1)} 米，它多一位`, mis: "ignore-place", feedback: "它的数字确实多一位。让小棒排一排，再和另一排比。" }
+    ], act3);
+}
+function act3(){
+  Object.assign(S, { counts: zeroCounts(), first: null, second: null, own: null, build: 0, stick: 0 });
+  startAct(3, "摆 · 小棒接成一条线", "s3", `拖小棒进格子，把 ${goal(0)} 米摆出来。看看尺上接出了多长。`, rackCue);
+  actions([]); updatePlace();
+}
+REPLAY[3] = act3;
+function updatePlace(){
+  const { counts, build } = S;
+  const value = lengthValue(counts);
+  hint(build < 2 ? `拖动圆钮 · 摆出 ${goal(build)} 米` : "拖动圆钮 · 自己摆一个");
+  readout(counts.map((v, i) => `${v} 根${stickNames[i]}`).join(" · ") + ` · <b>${value} 米</b>`);
+  sendState({ station: 3, m: counts[0], dm: counts[1], cm: counts[2], value });
+  const ready = build < 2 ? value === goal(build) : cm(counts) > 0;
+  if (ready && !$("actions").firstChild){
+    const buttons = ["留下这一排", "并排看看", "留下我的长度"];
+    next(buttons[build], () => keepRow(build));
+  } else if (!ready && $("actions").firstChild) actions([]);
+  S.dirty = true;
+}
+function keepRow(build){
+  const row = S.counts.slice();
+  if (build === 0){
+    S.first = row; S.build = 1; S.counts = zeroCounts();
+    say(`第一排留在尺上了。再从空格开始，摆出 ${goal(1)} 米。`);
+    actions([]); updatePlace(); svg.focus({ preventScroll: true });
+  } else if (build === 1){
+    S.second = row; S.mode = "compare"; S.build = 2; S.counts = zeroCounts();
+    readout(`<b>${goal(0)} 米</b> · <b>${goal(1)} 米</b>`);
+    hint("从同一个零点比长短");
+    say(`两排都从零开始。第一排接了 ${tenths} 分米，第二排接了 ${tenths} 厘米。分米棒长，第一排就伸得更远。` + guessEcho(3), "good");
+    next("摆我的长度", () => {
+      S.mode = "act3"; say("这次由你挑。看你能接出什么长度。");
+      actions([]); updatePlace(); svg.focus({ preventScroll: true });
+    });
+  } else {
+    S.own = row; seen[2] = row; done3();
+  }
+}
+function adjustStick(index, delta){
+  if (!act(3)) return;
+  S.stick = index;
+  S.counts[index] = clamp(S.counts[index] + delta, 0, B - 1);
+  updatePlace();
+}
+function done3(){
+  finishAct(3);
+  S.mode = "hair";
+  S.hairPath = [];
+  S.hairPick = HAIR_START;
+  head(3, "量 · 头发丝有多粗");
+  scene("wow");
+  document.body.classList.add("hair-active");
+  svg.setAttribute("aria-label", "尺子。方向键选格，空格放大，退格键返回。");
+  svg.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight Space Enter Backspace");
+  const controls = actions([
+    { label: "退一格", go: backHair, cls: "ghost tight" },
+    { label: "放大一格", go: forwardHair, cls: "tight" },
+    { label: replay ? "回星卡" : "看我的星卡", go: leaveHair, cls: "ghost tight" }
+  ]);
+  updateHair();
+  controls.children[1].focus({ preventScroll: true });
+}
+
+/* 每次把选中的一格展开到原来整把尺的画面宽度。 */
+const HAIR_RULER = { x: 145, w: 510, upperY: 52, lowerY: 176, h: 58 };
+const HAIR_START = Math.floor((B - 1) / 2);
+const HAIR_UNITS = [...MODEL.units, "毫米"];
+const HAIR_MM = HAIR_UNITS.length - 1;
+const hairDepth = () => S.hairPath.length;
+const hairScale = depth => power(MODEL.lensDepth - depth);
+const hairUnit = depth => depth <= HAIR_MM ? `1 ${HAIR_UNITS[depth]}` : `${1 / power(depth - HAIR_MM)} 毫米`;
+function hairView(){
+  const depth = hairDepth();
+  if (depth === MODEL.lensDepth) return [8, 568];
+  if (depth === HAIR_MM) return [8, 452];
+  return depth ? [12, 256] : [100, 166];
+}
+function updateHair(){
+  const depth = hairDepth(), final = depth === MODEL.lensDepth;
+  const [back, forward, exit] = $("actions").children;
+  back.disabled = depth === 0;
+  forward.firstElementChild.textContent = final ? "再量一次" : "放大一格";
+  forward.classList.toggle("ghost", final);
+  exit.classList.toggle("ghost", !final);
+  hint(final ? "沿着刻度量头发的粗细" : "点尺上的一格放大");
+  readout(final ? `${hairUnit(depth)} = <b>${hairScale(depth)} 微米</b>` :
+    depth ? `画面放大 ${B} 倍 · 这段长 <b>${hairUnit(depth)}</b>` : `整把尺长 <b>${hairUnit(depth)}</b>`);
+  if (!depth) say("从一把 1 米长的尺开始。点任意一格，把这一小段展开到整把尺那么宽。");
+  else if (depth === 1) say("十格里挑了一格，这一格长 1 分米。拿普通尺找找，就是 10 厘米。");
+  else if (depth === 2) say("又挑了一格，长 1 厘米。看看你的小指指甲，差不多就这么宽。");
+  else if (depth === HAIR_MM) say(`普通尺上相邻的两道小刻线隔着 1 毫米。这根头发丝约 ${MODEL.hairMicrons / hairScale(depth)} 毫米粗。`);
+  else if (final) say(`展开的那一格长 1 微米。量头发时换一把尺，每小格也是 1 微米。这根头发丝大约有 ${MODEL.hairMicrons} 格粗。`, "good");
+  else say("又把一格展开了。这一段的实际长度是上一段的十分之一。头发还是原来那么粗。");
+  fitView();
+  S.dirty = true;
+}
+function forwardHair(){
+  if (hairDepth() === MODEL.lensDepth) S.hairPath = [];
+  else S.hairPath.push(S.hairPick);
+  S.hairPick = HAIR_START;
+  updateHair();
+}
+function backHair(){
+  if (!hairDepth()) return;
+  S.hairPick = S.hairPath.pop();
+  updateHair();
+  if (!hairDepth() && document.activeElement !== svg) $("actions").children[1].focus({ preventScroll: true });
+}
+function leaveHair(){
+  document.body.classList.remove("hair-active");
+  svg.classList.remove("kbd");
+  svg.setAttribute("aria-label", "动手区");
+  svg.removeAttribute("aria-keyshortcuts");
+  enterEnd();
+}
+svg.addEventListener("click", e => {
+  const piece = e.target.closest("[data-hair-piece]");
+  if (S.mode !== "hair" || !piece || hairDepth() >= MODEL.lensDepth) return;
+  S.hairPick = Number(piece.dataset.hairPiece);
+  forwardHair();
+});
+svg.addEventListener("keydown", e => {
+  if (S.mode !== "hair" || !["ArrowLeft", "ArrowRight", "Enter", " ", "Backspace"].includes(e.key)) return;
+  e.preventDefault();
+  svg.classList.add("kbd");
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight"){
+    if (hairDepth() === MODEL.lensDepth) return;
+    S.hairPick = clamp(S.hairPick + (e.key === "ArrowRight" ? 1 : -1), 0, B - 1);
+    S.dirty = true;
+  } else if (!e.repeat && e.key === "Backspace") backHair();
+  else if (!e.repeat) forwardHair();
+});
+function hairTicks(x, y, w, count, group){
+  return Array.from({ length: count + 1 }, (_, i) => {
+    const at = r1(x + w * i / count), major = i % group === 0;
+    return `<line x1="${at}" y1="${y}" x2="${at}" y2="${y + (major ? 22 : 11)}" class="hair-tick${major ? " major" : ""}" data-hair-tick="${i}"/>`;
+  }).join("");
+}
+const hairBaseline = (x, y, w) => `<line x1="${x}" y1="${y}" x2="${x + w}" y2="${y}" class="hair-tick major" data-hair-baseline/>`;
+function hairRuler(role, depth, y, selected){
+  const { x, w, h } = HAIR_RULER;
+  const final = depth === MODEL.lensDepth, count = final ? 1 : B, cellWidth = w / count;
+  const current = role === "current", control = current && !final;
+  const label = final ? `这一格展开后 · ${hairScale(depth)} 微米` : current ? hairUnit(depth) : `上一段 · ${hairUnit(depth)}`;
+  let s = `<g data-hair-ruler="${role}" data-depth="${depth}" data-intervals="${count}" data-span-microns="${hairScale(depth)}" data-screen-width="${w}"${selected === undefined ? "" : ` data-hair-selected="${selected}"`}>` +
+    rect(x - 10, y - 8, w + 20, h, "wall", 6) + P(box(x - 10, y - 8, w + 20, h, 260 + depth, .4), "k1");
+  if (selected !== undefined) s += rect(x + selected * cellWidth, y, cellWidth, current ? 26 : h - 8, "hair-selection", 1);
+  s += hairBaseline(x, y, w) + hairTicks(x, y, w, count, final ? 1 : B / 2) + TC(x + w / 2, y + (current ? 42 : -18), label, "lb");
+  if (control) s += Array.from({ length: count }, (_, i) => rect(x + cellWidth * i, y - 8, cellWidth, Math.max(h, 48 * pxScale()), "hair-piece", 0, `data-hair-piece="${i}"`)).join("");
+  return s + "</g>";
+}
+function hairStrand(x, y, w, h){
+  const sway = Math.min(w * .28, 28);
+  const top = y - h / 2, bottom = y + h / 2, right = x + w;
+  // 两条发丝边平行移动，量宽的那一端与尺的零点、末端对齐。
+  const low = r1(bottom - h * .16), high = r1(top + h * .22);
+  const leftEdge = `C${r1(x - sway * 1.2)} ${high} ${r1(x + sway * .48)} ${r1(y - h * .14)} ${r1(x - sway * .22)} ${y}` +
+    `C${r1(x - sway * .72)} ${r1(y + h * .14)} ${r1(x + sway * .53)} ${low} ${r1(x)} ${bottom}`;
+  const rightEdge = `C${r1(right + sway * .53)} ${low} ${r1(right - sway * .72)} ${r1(y + h * .14)} ${r1(right - sway * .22)} ${y}` +
+    `C${r1(right + sway * .48)} ${r1(y - h * .14)} ${r1(right - sway * 1.2)} ${high} ${r1(right - sway * .65)} ${top}`;
+  return P(`M${r1(x - sway * .65)} ${top}${leftEdge}H${r1(right)}${rightEdge}Z`, "hair-strand");
+}
+function hairDiameter(x, y, w, scaleY){
+  const right = r1(x + w), left = r1(x);
+  return `<line x1="${left}" y1="${y}" x2="${right}" y2="${y}" class="kacc" data-hair-diameter/>` +
+    P(chevron(left + 3, y, -1, 0, 6) + chevron(right - 3, y, 1, 0, 6), "kacc") +
+    P(`M${left} ${y - 10}V${scaleY}M${right} ${y - 10}V${scaleY}`, "k1");
+}
+function hairLandmark(){
+  const { x, w } = HAIR_RULER;
+  const width = w * MODEL.hairMicrons / hairScale(HAIR_MM), start = x + (w - width) / 2;
+  return `<g data-hair-landmark data-span-microns="${MODEL.hairMicrons}">` +
+    hairStrand(start, 310, width, 80) + hairDiameter(start, 368, width, 374) +
+    TC(x + w / 2, 411, `头发丝 · 约 ${MODEL.hairMicrons / hairScale(HAIR_MM)} 毫米粗`, "lb") + "</g>";
+}
+function hairComparison(){
+  const center = 400, y = 355, w = 232, x = center - w / 2, scaleY = 495, count = MODEL.hairMicrons;
+  const labels = Array.from({ length: Math.floor(count / B) + 1 }, (_, i) => TC(x + w * i * B / count, scaleY + 43, i * B, "lbm")).join("");
+  return '<g id="hair">' +
+    `<ellipse cx="${center}" cy="${y}" rx="${w / 2}" ry="104" class="hair-section"/>` +
+    P("M306 329Q314 292 359 275M478 390Q466 424 432 432M350 399q17 14 39 17M429 299q17 4 29 16", "hair-fiber") +
+    TC(center, y - 22, "头发横切面", "lb") +
+    hairDiameter(x, y, w, scaleY) + "</g>" +
+    `<g data-hair-ruler="measure" data-depth="${MODEL.lensDepth}" data-intervals="${count}" data-span-microns="${count}" data-screen-width="${w}">` +
+    rect(x - 9, scaleY - 5, w + 18, 58, "wall", 5) + rect(x, scaleY, w / count, 22, "pick") +
+    hairBaseline(x, scaleY, w) + hairTicks(x, scaleY, w, count, B) + labels + "</g>" +
+    TC(center, 566, `量头发粗细 · 每小格 ${hairScale(MODEL.lensDepth)} 微米`, "lb");
+}
+function drawWow(){
+  const { x, w, upperY, lowerY, h } = HAIR_RULER;
+  const depth = hairDepth(), final = depth === MODEL.lensDepth;
+  let s = "";
+  if (depth){
+    const previous = S.hairPath[depth - 1], left = x + w * previous / B, right = left + w / B;
+    s += P(`M${left} ${upperY + h - 8}H${right}L${x + w} ${lowerY}H${x}Z`, "hair-guide");
+    s += hairRuler("parent", depth - 1, upperY, previous);
+  }
+  s += hairRuler("current", depth, lowerY, final ? undefined : S.hairPick);
+  if (depth === HAIR_MM) s += hairLandmark();
+  if (final) s += hairComparison();
+  return s;
+}
+
+/* 星卡上保留第二站的记号。 */
+function paintLenses(cx, cy, radii){
+  return radii.map((r, i) => `<g data-lens="${i + 1}">` +
+    point(cx + i * 9, cy, r, i % 2 ? "pane" : "wall") +
+    P(Sk.ellipse(cx + i * 9, cy, r, r, 181 + i, .55), i === radii.length - 1 ? "kacc" : "k1") +
+    "</g>").join("");
+}
+function drawEnd(){
+  const { digits, value } = seen[1];
+  const measured = seen[0];
+  const own = seen[2];
+  const x = 172, w = 456, stripY = 550;
+  const px = x + w * Number(value);
+  let s = rect(124, 16, 552, 600, "pane", 14) + P(box(124, 16, 552, 600, 204, .5), "k1") +
+    T(151, 63, "我的小数", "ttl") + T(151, 105, `量了 ${measured.length} 样东西`, "lb");
+  s += line(228, 127, 228, 252, 200) + line(178, 245, 228, 245, 201) +
+    measured.slice().sort((a, b) => b.dm - a.dm).map(o => {
+      const y = 251 - o.dm * 6;
+      return line(181, y, 233, y, 205 + o.dm, "kacc") + T(247, y + 6, `${o.name} ${measureText(o)}`, "lb");
+    }).join("");
+  s += paintLenses(520, 184, [67, 43, 19]);
+  s += TC(400, 311, `我的小数：${value}`, "ttl");
+  const dx = [227, 400, 573];
+  s += digits.map((digit, i) => T(dx[i] - 53, 358, `${digit} 个`, "lb") +
+    fracS(dx[i] + 34, 351, 1, power(i + 1), "fs", digit + i + 229)).join("");
+  s += T(151, 424, `我摆的长度：${lengthValue(own)} 米`, "lb") +
+    strip("card-own-row", own, 151, 444, 460 / Math.max(cm(own), power(2) * 2));
+  s += lineStrip(x, stripY, w, [], 240) + P(`M${px} ${stripY - 16}v16`, "kacc") + point(px, stripY - 16, 6, "lead");
+  return s;
+}
+function enterEnd(){
+  gen++; S.station = STATIONS + 1; S.mode = "end"; head(0, "我的小数"); hint("");
+  readout(`量了 ${seen[0].length} 样东西 · 我的小数：<b>${seen[1].value}</b> · 放大 ${MODEL.zoomDepth} 次，一格是 1 的 ${F(1, power(MODEL.zoomDepth))}`);
+  disarmCue(); scene("end");
+  say("把这张星卡翻回来，就能看见你量过的东西、亲手钉的点和小棒接出的长度。", "good");
+  if (!completed){ completed = true; Host.complete({}); }
+  endActions();
+}
+
+/* 永不重画的触摸层处理直接操作，固定图层只在换场景时替换。 */
+const DRAW = { s1q: draw1q, s2q: draw2q, s3q: draw3q, s1: draw1, s2: draw2, s3: draw3, wow: drawWow, end: drawEnd };
+const FIXED = { s1: wall, s2: miniMap, s3: fixedSlots };
+let backdrop = "";
+function render(){
+  if (backdrop !== S.scene){
+    backdrop = S.scene;
+    $("static").innerHTML = FIXED[backdrop]?.() || "";
+  }
+  $("static").style.visibility = S.mode === "compare" ? "hidden" : "";
+  gDyn.innerHTML = DRAW[S.scene]();
+  placeCue();
+}
+function toSvg(e){
+  const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+function hit(q){
+  if (act(1)){
+    const [x, y] = knob1();
+    if (Math.hypot(q.x - x, q.y - y) < hitR()) return { kind: "height" };
+  }
+  if (act(2)){
+    const { x, w, y } = ZOOM, final = S.depth === MODEL.zoomDepth, n = cells(S.depth);
+    const margin = final ? w / (n * 2) : 0;
+    if (S.depth && q.x >= x - margin && q.x <= x + w - margin && q.y >= y - 43 && q.y <= y + 30){
+      const i = (q.x - x) / w * n, index = clamp(final ? Math.round(i) : Math.floor(i), 0, n - 1);
+      return { kind: final ? "pin" : "cell", index };
+    }
+  }
+  if (act(3)){
+    const i = PLACE.xs.findIndex((x, i) => Math.hypot(q.x - x, q.y - stickKnob(i)[1]) < hitR());
+    if (i >= 0) return { kind: "stick", index: i };
+    const j = slotAt(q);
+    if (j >= 0 && S.counts[j]) return { kind: "return", index: j };
+  }
+  return null;
+}
+const slotAt = q => PLACE.xs.findIndex(x => Math.abs(q.x - x) < PLACE.w / 2 && q.y >= PLACE.y && q.y <= PLACE.y + 79);
+let drag = null;
+svg.addEventListener("touchstart", e => {
+  const t = e.touches[0];
+  if (t && hit(toSvg(t))) e.preventDefault();
+}, { passive: false });
+svg.addEventListener("pointerdown", e => {
+  if (drag || e.button !== 0) return;
+  const q = toSvg(e), h = hit(q);
+  if (!h) return;
+  S.kbd = false; svg.classList.remove("kbd"); touched();
+  drag = { ...h, pointer: e.pointerId, q, origin: q, start: S.height, moved: false };
+  S.press = true; S.dirty = true; svg.setPointerCapture(e.pointerId); e.preventDefault();
+  if (h.kind === "height" || h.kind === "stick" || h.kind === "return") svg.style.cursor = "grabbing";
+});
+svg.addEventListener("pointermove", e => {
+  const q = toSvg(e);
+  if (!drag){
+    const h = hit(q);
+    svg.style.cursor = !h ? "" : h.kind === "cell" || h.kind === "pin" ? "pointer" : "grab";
+    return;
+  }
+  if (e.pointerId !== drag.pointer) return;
+  drag.q = q;
+  drag.moved ||= Math.hypot(q.x - drag.origin.x, q.y - drag.origin.y) > 8;
+  if (drag.kind === "height") setHeight(drag.start + (drag.origin.y - q.y) / HEIGHT.dm);
+  if (drag.kind === "stick" || drag.kind === "return") S.dirty = true;
+});
+function release(e){
+  if (!drag || e.pointerId !== drag.pointer) return;
+  const lastDrag = drag;
+  drag = null;
+  S.press = false; S.dirty = true; svg.style.cursor = "";
+  if (e.type !== "pointerup") return;
+  const { kind, index, moved } = lastDrag, q = toSvg(e);
+  if (kind === "height") setHeight(lastDrag.start + (lastDrag.origin.y - q.y) / HEIGHT.dm);
+  if (act(2) && (kind === "cell" || kind === "pin")){
+    const dest = hit(q);
+    if (dest?.kind === kind){
+      if (kind === "cell") chooseZoom(dest.index);
+      else pinAt(dest.index);
+    }
+  }
+  if (kind === "stick" && (slotAt(q) === index)) adjustStick(index, 1);
+  if (kind === "return" && moved && (q.y >= PLACE.rack - 35)) adjustStick(index, -1);
+}
+for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) svg.addEventListener(ev, release);
+svg.addEventListener("keydown", e => {
+  if (!/^act/.test(S.mode)) return;
+  const horizontal = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+  const vertical = e.key === "ArrowUp" ? 1 : e.key === "ArrowDown" ? -1 : 0;
+  if (act(1) && !vertical) return;
+  if (act(2) && !(horizontal || e.key === " " || e.key === "Enter")) return;
+  if (act(3) && !(horizontal || e.key === "Backspace" || e.key === "Enter")) return;
+  e.preventDefault(); S.kbd = true; svg.classList.add("kbd"); touched(); S.dirty = true;
+  if (act(1)) setHeight(S.height + vertical);
+  if (act(2)){
+    if (horizontal) chooseZoom(S.selected + horizontal);
+    if (e.key === " " && S.depth < MODEL.zoomDepth) S.hold = true;
+    if (e.key === "Enter" && S.depth === MODEL.zoomDepth) pinAt(S.selected);
+  }
+  if (act(3)){
+    if (horizontal) S.stick = clamp(S.stick + horizontal, 0, MODEL.units.length - 1);
+    if (e.key === "Enter" && !e.repeat) adjustStick(S.stick, 1);
+    if (e.key === "Backspace" && !e.repeat) adjustStick(S.stick, -1);
+  }
+});
+svg.addEventListener("keyup", e => { if (e.key === " ") releaseZoomHold(); });
+svg.addEventListener("blur", () => { releaseZoomHold(); S.kbd = false; S.dirty = true; });
+let last = performance.now();
+function tick(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (act(2) && S.depth < MODEL.zoomDepth){
+    const active = S.hold && !S.holdGate;
+    S.tZoom = active ? clamp(S.tZoom + dt / .83) : 0;
+    if (!reduced && S.tZoom !== S.pZoom){
+      const k = 1 - Math.exp(-dt / .085);
+      S.pZoom = Math.abs(S.tZoom - S.pZoom) < .001 ? S.tZoom : lerp(S.pZoom, S.tZoom, k);
+      S.dirty = true;
+    }
+    if (S.tZoom >= .985 && (reduced || S.pZoom > .975)) advanceZoom();
+  }
+  if (S.dirty){ S.dirty = false; render(); }
+  requestAnimationFrame(tick);
+}
+Host.ready();
+fitView();
+enter1();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

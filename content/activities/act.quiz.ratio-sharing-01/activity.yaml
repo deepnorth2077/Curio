@@ -1,0 +1,111 @@
+id: act.quiz.ratio-sharing-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 分配槽大挑战
+targets:
+- math.ratio.sharing
+age_band: G5-6
+duration_min: 5
+review: pending
+engine: 1
+sources:
+- type: textbook
+  ref: 人教版小学数学六年级上册（旧版）第四单元「比的应用」
+- type: reference
+  ref: IUPAC Gold Book：干燥空气的体积组成
+  url: https://goldbook.iupac.org/terms/view/C01214
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: '20 块糖按 2 : 3 分，拿得少的人有几块？'
+    answer:
+      type: number
+      value: 8
+      tolerance: 0
+      unit: 块
+      common_wrong:
+      - value: 2
+        feedback: 2 数的是份数。先求每份有几块。
+        misconception: ratio-as-count
+    feedback:
+      correct: 20 块分成 5 份，每份 4 块。少的那人拿两份，一共 8 块。
+      wrong: 数一数一共有几份。
+    hints:
+    - 数一数一共有几份。
+    - 20 块平均分成这些份，每份再乘 2。
+  - id: q2
+    stem: '男生和女生人数的比是 4 : 5。男生占全班的几分之几？'
+    answer:
+      type: fraction
+      numerator: 4
+      denominator: 9
+      accept_equivalent: true
+      common_wrong:
+      - numerator: 4
+        denominator: 5
+        feedback: 五分之四用女生当 1。题目问的是占全班多少。
+        misconception: part-part-as-part-whole
+    feedback:
+      correct: 全班是 4 + 5 = 9 份。男生有其中 4 份，占九分之四。
+      wrong: 这一题拿谁当 1？
+    hints:
+    - 这一题拿谁当 1？
+    - 全班有男生也有女生。把两边的份数加起来。
+  - id: q3
+    stem: '男生和女生人数的比是 4 : 5。男生人数是女生人数的几分之几？'
+    answer:
+      type: fraction
+      numerator: 4
+      denominator: 5
+      accept_equivalent: true
+      common_wrong:
+      - numerator: 4
+        denominator: 9
+        feedback: 九分之四是男生占全班的分数。这次只跟女生比。
+    feedback:
+      correct: 女生的 5 份当 1，男生有同样大小的 4 份，所以是五分之四。
+      wrong: 先圈出这次拿来当 1 的人。
+    hints:
+    - 先圈出这次拿来当 1 的人。
+    - 女生有几份？男生有几份？
+  - id: q4
+    stem: '30 颗糖按 1 : 2 : 3 分给三个人。拿得最多的人拿几颗？'
+    answer:
+      type: number
+      value: 15
+      tolerance: 0
+      unit: 颗
+      common_wrong:
+      - value: 10
+        feedback: 每人 10 颗是平均分。看看最多的那个人要拿几份。
+        misconception: equal-share-ignores-ratio
+      - value: 3
+        feedback: 3 是份数，还要看看每份有几颗糖。
+        misconception: ratio-as-count
+    feedback:
+      correct: 一共 6 份，每份 5 颗。最多的人拿 3 份，共 15 颗。
+      wrong: 把三个人的份数加起来。
+    hints:
+    - 把三个人的份数加起来。
+    - 先算每份有几颗，再算三份。
+  - id: q5
+    stem: '两人按 3 : 2 分糖。多的那个人比少的多拿 4 块。一共有多少块糖？'
+    answer:
+      type: number
+      value: 20
+      tolerance: 0
+      unit: 块
+      common_wrong:
+      - value: 4
+        feedback: 4 块是差，把两人的份数也相减看看。
+      - value: 10
+        feedback: 先用相差的块数找出每份的大小。
+    feedback:
+      correct: 两人差 1 份，正好是 4 块。两人合起来 5 份，一共 20 块。
+      wrong: 多拿的是几份？
+    hints:
+    - 多拿的是几份？
+    - 一共几份？每份有几块？
+# END OF FILE

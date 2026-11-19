@@ -1,0 +1,53 @@
+id: math.operation.multiply-shrinks
+schema: knode/1
+title: 乘了反而变小
+subjects:
+  - math
+theme: num
+grade: G5
+unit: 五上 · 小数乘法；六上 · 分数乘法（人教版旧版册次，新版以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第三学段「数与运算」：能进行简单的小数、分数四则运算，感悟运算的一致性
+  - textbook: 人教版小学数学五年级上册、六年级上册（旧版）
+    unit: 小数乘法；分数乘法
+prerequisites:
+  - math.decimal.tenths
+  - math.fraction.unit-fraction
+related:
+  - math.operation.distributive-law
+driving_question: 6 乘 0.5 等于 3。乘法不是越乘越大吗？
+objectives:
+  - 知道对一个正数，乘 2 是取两份，乘 1 是原样，乘 0.5 是取半份；乘大于 0、小于 1 的数，结果比原来小。
+  - 知道 0.5 × 0.5 = 0.25：半格宽、半格高的一块，是百格里的 25 小格。
+  - 知道一次次乘 0.5，结果越来越小，但在数上永远到不了 0。
+  - 会先估一估：乘的数比 1 大还是比 1 小，结果该变大还是变小。
+misconceptions:
+  - id: multiply-always-bigger
+    text: 觉得乘法一定越乘越大，例如认为 6 × 0.5 比 6 大，12 × 0.99 比 12 大。
+  - id: decimal-ignored
+    text: 不把小数当回事，例如把 6 × 0.5 算成 30，或者觉得乘 0.5 等于没乘。
+  - id: ignore-decimal-places
+    text: 小数相乘时小数点放错，例如把 0.5 × 0.5 算成 2.5，把 0.3 × 0.2 算成 0.6。
+  - id: add-instead
+    text: 把乘算成加，例如把 0.5 × 0.5 算成 1，把 0.3 × 0.2 算成 0.5。
+  - id: linear-shrink
+    text: 觉得每次取一半是每次少一样多，例如认为 1 米的纸条剪 10 次一半还剩 10 厘米左右。
+  - id: reaches-zero
+    text: 觉得一次次取一半，取几次就正好没了。
+sources:
+  - type: textbook
+    ref: 人教版小学数学五年级上册（旧版）第一单元「小数乘法」；六年级上册（旧版）第一单元「分数乘法」
+lenses:
+  - band: G3-4
+    approach: 只说「取一半」「取一半的一半」，用折纸和剪纸条，不写乘法算式。
+  - band: G5-6
+    approach: 一个旋钮从 0 拧到 3，看 6 厘米的条怎么伸缩；在百格上拉出半格宽、半格高的一块；把 1 米的纸条一次次剪掉一半。
+  - band: G7-9
+    approach: 乘以 0 到 1 之间的数是缩小，乘负数是反向；指数衰减。
+activities:
+  - act.simulation.stretch-bar-01
+  - act.quiz.multiply-shrinks-01
+status: draft
+version: 1
+# END OF FILE

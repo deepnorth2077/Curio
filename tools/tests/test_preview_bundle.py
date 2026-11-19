@@ -103,5 +103,19 @@ class PreviewBundleReviewGate(unittest.TestCase):
         self.assertIn(EXPLAIN, [a["id"] for a in star["activities"]])
 
 
+class MathConstellationPreview(unittest.TestCase):
+    def test_all_nineteen_stars_have_an_exploration_and_five_questions(self):
+        data = build.build([REPO], "zero-to-one")
+        self.assertEqual(len(data["stars"]), 19)
+        group_starts = [i for i, star in enumerate(data["stars"], 1) if star["id"] in data["groups"]]
+        self.assertEqual(group_starts, [1, 4, 7, 11, 14, 17])
+        for star in data["stars"]:
+            with self.subTest(star=star["id"]):
+                activities = star["activities"]
+                self.assertEqual([a["kind"] for a in activities], ["simulation", "quiz"])
+                self.assertTrue(all(a["targets"] == [star["id"]] for a in activities))
+                self.assertEqual(len(activities[1]["body"]["items"]), 5)
+
+
 if __name__ == "__main__":
     unittest.main()

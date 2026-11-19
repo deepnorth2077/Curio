@@ -1,5 +1,5 @@
 # PR 检查：先跑检查脚本自己的测试，再检查这个 PR。工作流见 docs/collaboration.md。
-# 在分支保护里把「检查」设为必须通过。
+# 在分支保护里把「检查」和「走查」设为必须通过。「走查」只在改了动手探索模块或走查代码时才真跑，别的 PR 几秒结束。
 name: PR 检查
 
 on:
@@ -49,3 +49,39 @@ jobs:
           else
             echo "还没有 kernel/js/log.js，跳过"
           fi
+
+  walk:
+    name: 走查
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 选这次要走查的模块
+        id: pick
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          n=$(python -c "import sys; sys.path.insert(0, 'tools'); import walk_all; print(len(walk_all.select(walk_all.changed_files(), walk_all.modules())))")
+          echo "要走查 $n 个模块"
+          echo "n=$n" >> "$GITHUB_OUTPUT"
+      - name: 装 playwright 和 chromium
+        if: steps.pick.outputs.n != '0'
+        run: |
+          pip install --quiet -r tools/requirements-walk.txt
+          python -m playwright install --with-deps chromium
+      - name: 走查
+        if: steps.pick.outputs.n != '0'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: python tools/walk_all.py --out walk-shots
+      - name: 上传截图
+        if: always() && steps.pick.outputs.n != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: walk-shots
+          path: walk-shots
+          if-no-files-found: ignore

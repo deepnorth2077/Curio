@@ -1,7 +1,7 @@
 id: act.simulation.chromosome-pack-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 把说明书收进细胞核
 targets: [biology.genetics.chromosome-intro]
 age_band: G3-4

@@ -6,6 +6,9 @@
 <meta name="color-scheme" content="light dark">
 <title>Curio</title>
 <style>
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 /* 和原型同一套颜色：浅色是暖纸面加手绘墨线，深色是 Obsidian 风格（prototype/index.html 的 CSS 变量） */
 :root{
   --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
@@ -85,7 +88,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 .pill.lit{background:var(--ink);color:var(--pane)}
 
 /* 星图 */
-.chart{position:relative;flex:1;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 40px;overflow:hidden;background:var(--pane)}
+.chart{position:relative;flex:1;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 8px;overflow:hidden;background:var(--pane)}
 .sky{position:absolute;inset:0;width:100%;height:100%}
 .sky-dot{fill:var(--muted);opacity:.45}
 .sky-line{opacity:.22}
@@ -98,7 +101,73 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 .star svg{display:block}
 .star-name{font-family:var(--f-serif);font-weight:600;color:var(--ink);font-size:19px}
 .chart-tip{position:relative;margin-top:18px;font-size:15px}
-.toast{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--pane);border-radius:12px;padding:8px 16px;font-size:15px;max-width:90%;text-align:center;box-shadow:var(--shadow)}
+/* 底部的「家长」和小字跟在内容后面（不叠在上面）；上下两个弹性空白让星星在高屏幕上照旧居中 */
+.chart::before{content:"";flex:1 1 0}
+.chart-foot{position:relative;flex:1 1 0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;margin-top:18px;padding:0 12px max(0px,env(safe-area-inset-bottom,0px))}
+.chart-note{text-align:center;font-size:12px}
+.parent-link{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:0 14px;border-radius:10px;color:var(--muted);font-size:14px;text-decoration:none}
+.parent-link:hover{background:var(--hover);color:var(--ink)}
+.parent-link .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.clean-hint{position:relative;margin-top:14px;font-size:16px;text-align:center}
+.clean-hint a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:4px;text-decoration-thickness:2px}
+.banner-btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* 家长页（backup.md 第 10 节） */
+.parent{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default} /* 家长页照常能选字（复制恢复密钥等，#156） */
+.parent{width:100%;max-width:720px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+.p-head{display:flex;align-items:center;gap:12px}
+.p-head h1{font-size:24px}
+.p-head h1:focus{outline:none}
+a.back{text-decoration:none}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;padding:18px 20px;margin-top:14px;box-shadow:var(--shadow);color:var(--ink)}
+.card h2{font-size:20px;margin-bottom:8px}
+.card p+p{margin-top:6px}
+.card.main-card{border:1.5px solid var(--ink)}
+.card.warn-card{background:var(--bad-soft);border-color:transparent}
+.card.good-card{background:var(--good-soft);border-color:transparent}
+.btns.start{justify-content:flex-start}
+.card .btns+p{margin-top:10px}
+a.btn{text-decoration:none}
+.p-stat{font-size:18px}
+.p-stat .loud{color:var(--bad)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.p-msg{margin-top:12px;background:var(--bad-soft);color:var(--ink);border-radius:12px;padding:10px 14px;font-weight:600}
+.p-ok{margin-top:12px;background:var(--good-soft);color:var(--ink);border-radius:12px;padding:10px 14px}
+.p-busy{font-size:18px;padding:12px 0}
+.p-note{margin-top:18px;line-height:1.7}
+.p-form{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.p-label{font-weight:600;color:var(--ink);margin-top:8px}
+.p-input{font:inherit;font-family:var(--f-mono);font-size:24px;letter-spacing:.08em;max-width:280px;min-height:52px;padding:8px 14px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink)}
+.p-file{font:inherit;font-size:16px;max-width:100%;padding:8px 0;color:var(--ink)}
+.p-file::file-selector-button{font:inherit;min-height:44px;padding:0 16px;margin-right:12px;border-radius:12px;border:1.5px solid var(--ink);background:var(--pane);color:var(--ink);cursor:pointer}
+.p-list{margin:8px 0 0;padding-left:1.3em;font-size:17px}
+.keybig{font-size:clamp(46px,13vw,76px);line-height:1.2;letter-spacing:.06em;text-align:center;color:var(--ink);background:var(--bg);border:2px dashed var(--muted);border-radius:16px;padding:18px 8px;margin-bottom:12px;white-space:nowrap}
+#printSheet{display:none}
+@media print{
+  .app{display:none!important}
+  #printSheet{display:block;color:#000;font-family:var(--f-sans);padding:24px}
+  #printSheet h1{font-size:22px;color:#000}
+  #printSheet .print-key{font-family:var(--f-mono);font-size:56px;letter-spacing:.08em;margin:18px 0}
+}
+.toast{position:absolute;bottom:72px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--pane);border-radius:12px;padding:8px 16px;font-size:15px;max-width:90%;text-align:center;box-shadow:var(--shadow)}
+
+/* 在星上选择活动，进入后把可用宽度留给实物。 */
+.activity-menu,.exploration{width:100%;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 32px max(16px,env(safe-area-inset-left,0px))}
+.activity-menu{position:relative;max-width:760px}
+.activity-menu h1{font-size:clamp(24px,4vw,34px);margin:18px 0 24px}
+.activity-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:14px}
+.activity-option{display:grid;text-align:left;align-content:start;gap:8px;border:1px solid var(--rule);border-radius:18px;padding:18px 20px;background:var(--pane);color:var(--ink)}
+.activity-option:hover{border-color:var(--ink)}
+.activity-option strong{font-family:var(--f-serif);font-size:20px}
+.activity-meta{font-size:14px;color:var(--muted)}
+.activity-go{margin-top:12px}
+.exploration{max-width:900px}
+/* 手机上实物比一屏长；退出始终在屏上，免得在滑回页首时错触实物。 */
+main:has(>.exploration){overflow:visible}
+.exploration .quiz-head{position:sticky;top:0;z-index:1;background:var(--bg);padding-block:6px;margin-bottom:10px}
+.workbench iframe{display:block;width:100%;border:0}
+.explore-status{background:var(--pane);border-radius:12px;padding:12px 16px}
+@media (max-width:520px){.exploration{padding-left:0;padding-right:0}.exploration .quiz-head{padding:6px 12px}.activity-menu h1{margin:10px 0 16px}}
 
 /* 挑战 */
 .quiz{width:100%;max-width:760px;margin:0 auto;padding:14px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px))}
@@ -159,7 +228,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 .stop h1{font-size:22px;margin-bottom:8px}
 
 @media (prefers-reduced-motion:no-preference){
-  .choice,.btn,.star,.back{transition:background-color .15s ease,border-color .15s ease}
+  .choice,.btn,.star,.back,.parent-link{transition:background-color .15s ease,border-color .15s ease}
   /* 点亮动效：一共 1.2 秒（规格 6.4：不超过 1.5 秒）；reduced-motion 时没有这些规则，直接是亮的样子 */
   .result-star.lighting svg{animation:light-pop 1.2s cubic-bezier(.2,.8,.3,1) both;transform-origin:50% 52%}
   .result-star.lighting .star-fill{animation:light-fill .8s ease-out .15s both}
@@ -168,6 +237,8 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 @keyframes light-pop{0%{transform:scale(.72) rotate(-10deg)}55%{transform:scale(1.12) rotate(3deg)}100%{transform:none}}
 @keyframes light-fill{from{fill:var(--pane)}to{fill:var(--gold)}}
 @keyframes light-ray{from{opacity:0}to{opacity:1}}
+/* 窄屏上三颗星竖着排，给左上角的「星图」标题留出位置 */
+@media (max-width:759px){.chart{padding-top:84px}}
 @media (min-width:760px){
   .chart-head h1{font-size:28px}
   .stem{font-size:20px}
@@ -189,6 +260,7 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
   <div id="live" class="sr" aria-live="polite" aria-atomic="true"></div>
   <main id="main"><section class="stop"><p class="muted">正在打开……</p></section></main>
 </div>
+<div id="printSheet" aria-hidden="true"></div>
 <script type="module" src="./app.js"></script>
 </body>
 </html>

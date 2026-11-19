@@ -1,0 +1,2 @@
+# 走查（CI 的「走查」job）要的依赖。装完还要：python -m playwright install --with-deps chromium
+playwright==1.63.0

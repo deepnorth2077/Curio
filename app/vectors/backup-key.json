@@ -1,0 +1,264 @@
+{
+ "about": "恢复密钥：生成（2.1）、显示、输入规整（2.2）。backup.js 的 generateKey、formatKey、parseKey。",
+ "generate": [
+  {
+   "u32": [
+    4294000000,
+    4294967295,
+    7
+   ],
+   "expect": "000007",
+   "why": "2.1：4294000000、4294967295 都 ≥ 4294000000，丢掉重取；7 mod 10^6 = 7，左边补零到 6 位（规格测试表第 1 行）"
+  },
+  {
+   "u32": [
+    123456789
+   ],
+   "expect": "456789",
+   "why": "2.1：123456789 mod 1000000 = 456789"
+  },
+  {
+   "u32": [
+    4293999999
+   ],
+   "expect": "999999",
+   "why": "2.1：4293999999 < 4294000000，不丢；mod 10^6 = 999999（丢弃线的边界，差一就丢）"
+  },
+  {
+   "u32": [
+    0
+   ],
+   "expect": "000000",
+   "why": "2.1：0 mod 10^6 = 0，补零成 000000"
+  },
+  {
+   "u32": [
+    4294000000,
+    1000000
+   ],
+   "expect": "000000",
+   "why": "2.1：第一个正好等于丢弃线，丢掉；1000000 mod 10^6 = 0"
+  },
+  {
+   "u32": [
+    482105
+   ],
+   "expect": "482105",
+   "why": "2.1：小于 10^6 的数原样，正好 6 位"
+  }
+ ],
+ "format": [
+  {
+   "digits": "482105",
+   "expect": "482 105",
+   "why": "2.1：显示成两组，中间一个空格"
+  },
+  {
+   "digits": "000007",
+   "expect": "000 007",
+   "why": "2.1：补的零也照样分组"
+  }
+ ],
+ "parse": [
+  {
+   "input": "482105",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2：本来就是 6 个 ASCII 数字"
+  },
+  {
+   "input": "482 105",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2 第 2 步：去掉 U+0020（显示的写法能原样输回来）"
+  },
+  {
+   "input": "482-105",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2 第 2 步：去掉 -（U+002D）"
+  },
+  {
+   "input": "４８２１０５",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2 第 1 步：NFKC 把全角数字 U+FF14… 变成半角"
+  },
+  {
+   "input": "４８２\u3000１０５",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2：全角数字 + 全角空格 U+3000（NFKC 变 U+0020，再被去掉）"
+  },
+  {
+   "input": "482－105",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2：全角横线 U+FF0D 经 NFKC 变成 -，再被去掉"
+  },
+  {
+   "input": "482−105",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2 第 2 步：U+2212（减号）NFKC 不变，在封闭表里，去掉"
+  },
+  {
+   "input": "482ー105",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2 第 2 步：U+30FC（长音符，中文输入法常打出来）在封闭表里，去掉"
+  },
+  {
+   "input": "48‐2‑‒–—―105",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2 第 2 步：U+2010～U+2015 都在封闭表里"
+  },
+  {
+   "input": "\t482\u00a0105\r\n\u000b\f",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2 第 2 步：U+0009～U+000D、U+00A0 都在封闭表里"
+  },
+  {
+   "input": "482\u2003105",
+   "expect": {
+    "ok": true,
+    "digits": "482105"
+   },
+   "why": "2.2 第 1 步：U+2003（全身空格）NFKC 变成 U+0020，第 2 步去掉"
+  },
+  {
+   "input": "①②③④⑤⑥",
+   "expect": {
+    "ok": true,
+    "digits": "123456"
+   },
+   "why": "2.2 第 1 步：NFKC 把带圈数字变成 ASCII 数字，之后照常"
+  },
+  {
+   "input": "48210O",
+   "expect": {
+    "ok": false,
+    "error": "key_not_digits"
+   },
+   "why": "2.2 第 3 步：字母 O 不是 0～9（规格测试表）"
+  },
+  {
+   "input": "4821O",
+   "expect": {
+    "ok": false,
+    "error": "key_not_digits"
+   },
+   "why": "2.2：既有字母又少一位，第 3 步在第 4 步之前，报「只有数字」（规格测试表）"
+  },
+  {
+   "input": "48210",
+   "expect": {
+    "ok": false,
+    "error": "key_length"
+   },
+   "why": "2.2 第 4 步：五位"
+  },
+  {
+   "input": "4821050",
+   "expect": {
+    "ok": false,
+    "error": "key_length"
+   },
+   "why": "2.2 第 4 步：七位"
+  },
+  {
+   "input": "",
+   "expect": {
+    "ok": false,
+    "error": "key_length"
+   },
+   "why": "2.2 第 4 步：空的，0 个数字"
+  },
+  {
+   "input": "   ",
+   "expect": {
+    "ok": false,
+    "error": "key_length"
+   },
+   "why": "2.2：只有空格，去掉以后 0 个数字"
+  },
+  {
+   "input": "482\ufeff105",
+   "expect": {
+    "ok": false,
+    "error": "key_not_digits"
+   },
+   "why": "2.2：U+FEFF 不在封闭表里（JS 的 \\s 包括它，不能用 \\s）"
+  },
+  {
+   "input": "482\u2028105",
+   "expect": {
+    "ok": false,
+    "error": "key_not_digits"
+   },
+   "why": "2.2：U+2028 不在封闭表里，NFKC 也不变它（JS 的 \\s 包括它）"
+  },
+  {
+   "input": "482\u0085105",
+   "expect": {
+    "ok": false,
+    "error": "key_not_digits"
+   },
+   "why": "2.2：U+0085 不在封闭表里（Python 的 isspace 认它是空白，不能用）"
+  },
+  {
+   "input": "482\u200b105",
+   "expect": {
+    "ok": false,
+    "error": "key_not_digits"
+   },
+   "why": "2.2：U+200B（零宽空格）不在封闭表里"
+  },
+  {
+   "input": "482_105",
+   "expect": {
+    "ok": false,
+    "error": "key_not_digits"
+   },
+   "why": "2.2：下划线不在封闭表里"
+  },
+  {
+   "input": "٤٨٢١٠٥",
+   "expect": {
+    "ok": false,
+    "error": "key_not_digits"
+   },
+   "why": "2.2 第 3 步：阿拉伯-印度数字 NFKC 不变，不是 0～9（不能用「是不是数字」的通用判断）"
+  },
+  {
+   "input": "４８２１０",
+   "expect": {
+    "ok": false,
+    "error": "key_length"
+   },
+   "why": "2.2：全角五位，规整后 5 个数字"
+  }
+ ]
+}
