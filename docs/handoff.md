@@ -38,6 +38,7 @@ gh api repos/deepnorth2077/curio/issues/<号>/comments -q '.[-1].body'   # 最�
 - **「Unverified」的提醒可以忽略**：GitHub 生成的合并提交用自己的密钥签，`gh api repos/deepnorth2077/curio/commits/<号> -q .commit.verification` 能看到 `verified: true`。**不要**改写 `main` 的历史。
 - **`main` 要求分支和它同步**：合入前 `main` 有新提交，先把 `main` 合进分支，等 CI 重新通过。必须通过的两项是「检查」和「走查」。
 - **更新首页内容包**。本地修改知识点、活动或试玩清单后，运行 `python preview/build.py --root . --bundle prototype/content.js --trial-bundle prototype/trial-content.js`。Pages 发布时从 `main` 重新生成两份内容包，并复制试玩清单里的动手模块。
+- **接入新星时核对旧占位**。按知识点的目标对照原型里的示例星，新课接替了哪个入口，就从星图和地铁同时撤下那个占位。用旧名字搜一遍，确认能找到新星，也能找回原来的记录。只有新旧目标等价时才继承点亮状态。
 - **大附件别整个读进上下文**，用工具处理；DeepSeek 等服务的密钥不要让 Luka 发进对话，只让他填进中转服务的设置里。
 
 ## 4. 现在
