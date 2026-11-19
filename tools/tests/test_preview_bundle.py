@@ -117,5 +117,98 @@ class MathConstellationPreview(unittest.TestCase):
                 self.assertEqual(len(activities[1]["body"]["items"]), 5)
 
 
+class HomepageTrialBundle(unittest.TestCase):
+    def test_named_stars_groups_and_activities_match_the_real_cards(self):
+        data = build.build_trial_bundle([REPO], REPO / "prototype")
+        formal = build.build_bundle([REPO])
+        approved_nodes = {node["id"]: node for node in formal["nodes"]}
+        trial_nodes = {node["id"]: node for node in data["nodes"]}
+        catalog = data["catalog"]
+        self.assertEqual(len(catalog), 23)
+        self.assertFalse(approved_nodes.keys() & trial_nodes.keys())
+        self.assertTrue(set(catalog) <= approved_nodes.keys() | trial_nodes.keys())
+        self.assertTrue(trial_nodes.keys() <= set(catalog))
+        self.assertFalse(formal["activities"].keys() & data["activities"].keys())
+
+        math_stars = sorted((meta for meta in catalog.values() if meta["series"] == "zero-to-one"),
+                            key=lambda meta: meta["star"])
+        self.assertEqual([meta["star"] for meta in math_stars], list(range(1, 20)))
+        groups = [meta for meta in math_stars if meta["group_order"] == 1]
+        self.assertEqual([meta["star"] for meta in groups], [1, 4, 7, 11, 14, 17])
+        self.assertEqual([meta["group"] for meta in groups], list(range(1, 7)))
+        self.assertEqual([meta["group_title"] for meta in groups], list(build.ZERO_TO_ONE_GROUPS.values()))
+        life = [nid for nid, meta in catalog.items() if meta["series"] == "life-manual"]
+        self.assertEqual(len(life), 3)
+        self.assertTrue(all(nid in approved_nodes and catalog[nid]["chart_theme"] == "life" for nid in life))
+        chocolate = catalog["math.operation.distributive-law"]
+        self.assertEqual((chocolate["series"], chocolate["series_title"]), ("chocolate", "乘法的秘密"))
+        self.assertEqual(chocolate["group_title"], "掰巧克力")
+        self.assertEqual(data["activities"]["act.simulation.chocolate-split-01"]["title"], "掰巧克力")
+
+        for nid, node in trial_nodes.items():
+            with self.subTest(nid=nid):
+                card = yaml.safe_load(build.find_node([REPO], nid).read_text(encoding="utf-8"))
+                self.assertEqual([node["theme"], node["grade"]], [card["theme"], card["grade"]])
+                series = catalog[nid]["series"]
+                allowed = dict(build.CONSTELLATIONS[series][1])[nid]
+                self.assertEqual(node["activities"], [aid for aid in allowed if aid in card["activities"]])
+                for aid in node["activities"]:
+                    activity = data["activities"][aid]
+                    self.assertIn(nid, activity["targets"])
+                    if activity["kind"] == "simulation":
+                        self.assertNotIn("html", activity)
+                        self.assertEqual((REPO / "prototype" / activity["src"]).resolve(),
+                                         REPO / "content/activities" / aid / "index.html")
+
+    def test_unlisted_draft_or_extra_activity_on_a_named_card_is_excluded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            shutil.copytree(REPO / "content", root / "content")
+            path = build.find_node([root], "math.operation.distributive-law")
+            node = yaml.safe_load(path.read_text(encoding="utf-8"))
+            node["activities"].append("act.simulation.not-in-trial")
+            path.write_text(yaml.safe_dump(node), encoding="utf-8")
+            node["id"] = "math.operation.extra"
+            path.with_name(node["id"] + ".yaml").write_text(yaml.safe_dump(node), encoding="utf-8")
+            # 若试玩清单扫描所有草稿或照搬卡上的额外活动，它会收进这两条或找不到活动。
+            data = build.build_trial_bundle([root], root / "prototype")
+            self.assertNotIn(node["id"], data["catalog"])
+            self.assertNotIn(node["id"], [n["id"] for n in data["nodes"]])
+            self.assertNotIn("act.simulation.not-in-trial", data["activities"])
+            chocolate = next(n for n in data["nodes"] if n["id"] == "math.operation.distributive-law")
+            self.assertEqual(chocolate["activities"], ["act.simulation.chocolate-split-01"])
+
+    def test_promoted_math_star_uses_only_formal_approval_and_site_copies_only_trial_modules(self):
+        nid, simulation, quiz = "math.fraction.unit-fraction", "act.simulation.fair-cut-01", "act.quiz.unit-fraction-01"
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            shutil.copytree(REPO / "content", root / "content")
+            site = root / "site"
+            build.build_trial_bundle([root], site, copy_modules=True)
+            self.assertTrue((site / "trial-modules" / f"{simulation}.html").is_file())
+            path = build.find_node([root], nid)
+            node = yaml.safe_load(path.read_text(encoding="utf-8"))
+            node["status"] = "published"
+            path.write_text(yaml.safe_dump(node), encoding="utf-8")
+            set_review(root, simulation, "pending")
+            set_review(root, quiz, "approved")
+            formal, _ = bundle(root)
+            self.assertEqual(node_acts(formal, nid), [quiz])
+            data = build.build_trial_bundle([root], site, copy_modules=True)
+            self.assertIn(nid, data["catalog"])
+            self.assertNotIn(nid, [n["id"] for n in data["nodes"]])
+            self.assertNotIn(simulation, data["activities"])
+            self.assertNotIn(quiz, data["activities"])
+            # 第一个目录里还是旧草稿，第二个目录里已正式发布。正式包的同 ID 始终优先。
+            merged = build.build_trial_bundle([REPO, root], site)
+            self.assertNotIn(nid, [n["id"] for n in merged["nodes"]])
+            self.assertNotIn(simulation, merged["activities"])
+            sources = {a["src"] for a in data["activities"].values() if a["kind"] == "simulation"}
+            self.assertEqual(sources, {f.relative_to(site).as_posix() for f in site.rglob("*.html")})
+            for src in sources:
+                path = site / src
+                self.assertEqual(path.read_bytes(), (root / "content/activities" / path.stem / "index.html").read_bytes())
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -37,7 +37,7 @@ gh api repos/deepnorth2077/curio/issues/<号>/comments -q '.[-1].body'   # 最�
 - **Pages 部署可能报「失败」，其实已经发布**：以 Luka 在 Settings → Pages 看到的「Last deployed」或 iPad 上打开为准，不要去改 Pages 设置。这个环境打不开 github.io。
 - **「Unverified」的提醒可以忽略**：GitHub 生成的合并提交用自己的密钥签，`gh api repos/deepnorth2077/curio/commits/<号> -q .commit.verification` 能看到 `verified: true`。**不要**改写 `main` 的历史。
 - **`main` 要求分支和它同步**：合入前 `main` 有新提交，先把 `main` 合进分支，等 CI 重新通过。必须通过的两项是「检查」和「走查」。
-- **内容改了要重新生成内容包**：原型读 `prototype/content.js`，不是 `content/`。知识点或活动合入、改版以后跑 `python preview/build.py --root . --bundle prototype/content.js`，开 `chore/` 分支合入。试玩页只从 `main` 发布。
+- **更新首页内容包**。本地修改知识点、活动或试玩清单后，运行 `python preview/build.py --root . --bundle prototype/content.js --trial-bundle prototype/trial-content.js`。Pages 发布时从 `main` 重新生成两份内容包，并复制试玩清单里的动手模块。
 - **大附件别整个读进上下文**，用工具处理；DeepSeek 等服务的密钥不要让 Luka 发进对话，只让他填进中转服务的设置里。
 
 ## 4. 现在

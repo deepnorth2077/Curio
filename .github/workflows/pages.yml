@@ -6,7 +6,7 @@ name: 发布原型到 GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ["prototype/**", "relay/**", "app/**", "kernel/**", "engine/**", "tools/build_release.py", "content/**", ".github/workflows/pages.yml"]
+    paths: ["prototype/**", "preview/build.py", "relay/**", "app/**", "kernel/**", "engine/**", "tools/build_release.py", "content/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -41,10 +41,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: 构建首页的正式内容包和试玩包
+        run: |
+          pip install --quiet -r tools/requirements.txt
+          python preview/build.py --root . --bundle _site/content.js --trial-bundle _site/trial-content.js --copy-trial-modules
       - name: 竖切片 1 演示页（https://deepnorth2077.github.io/Curio/app/）
         run: |
           if [ -f app/index.html ]; then
-            pip install --quiet -r tools/requirements.txt
             python tools/build_release.py --content content --out _site/release
             mkdir -p _site/app _site/kernel _site/engine
             cp -r kernel/js _site/kernel/js
