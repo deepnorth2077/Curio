@@ -240,8 +240,7 @@ def play(w):
             w.check("整把尺的框缩到原来的十分之一", abs(width * 10 - old_width) < .01, [width, old_width])
         w.shot(f"2d-depth-{depth}")
 
-    hold(80)
-    w.check("点一下立即松开不会完成放大", state().get("depth") == 0, state())
+    # 核对初始画面。短按松手后，回弹的每一帧都会替换放大窗的 SVG 标签。
     map_label = w.doc.locator("#minimap text", has_text="整把米尺")
     lens_label = w.doc.locator("#zoom-lens text", has_text="放大窗")
     guides = w.doc.locator("#zoom-guides [data-end]")
@@ -249,6 +248,8 @@ def play(w):
             map_label.is_visible() and lens_label.is_visible() and guides.count() == 2
             and map_label.evaluate("el => el.getBBox().y") < lens_label.evaluate("el => el.getBBox().y"))
     endpoints("range", "0", "1")
+    hold(80)
+    w.check("点一下立即松开不会完成放大", state().get("depth") == 0, state())
     zoom_to(1, 10, "0.1", by_key=w.name == "desk")
     if w.name == "desk":
         press("ArrowRight", 4)
