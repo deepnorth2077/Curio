@@ -4,11 +4,11 @@
 # prs 写主要的几个 PR，不用写全；waiting 只有「在做」「等验收」才写，写在等谁、等什么。
 constellation: zero-to-one
 title: 0 和 1 之间
-updated: 2026-11-18
+updated: 2026-11-19
 issue: 127
 total: 19
 preview: https://deepnorth2077.github.io/Curio/preview/zero-to-one/
-now: 等 Luka 在 iPad 上一起验收第 3 颗星「谁的几分之几」和第 4 颗星「小数是什么」的动手探索和挑战。知识点都还是 `draft`，等第 4 步定讲解。
+now: Luka 已验收前 4 颗星。第 5 到 19 颗按组连续开发和走查，最后在同一试玩页统一验收。
 stars:
   - n: 1
     title: 几分之一：越分越小
@@ -20,10 +20,69 @@ stars:
     prs: [151, 159]
   - n: 3
     title: 谁的几分之几
-    state: 等验收
-    prs: [163, 164]
-    waiting: Luka 在 iPad 上验收动手探索和挑战
+    state: 完成
+    prs: [163, 164, 165, 166]
   - n: 4
     title: 小数是什么
-    state: 等验收
-    waiting: Luka 在 iPad 上和第 3 颗星一起验收动手探索和挑战
+    state: 完成
+    prs: [167, 168]
+  - n: 5
+    title: 小数比大小和加减
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 6
+    title: 小数点搬家
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 7
+    title: 等值分数：再切一刀
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 8
+    title: 分数和除法
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 9
+    title: 分数比大小
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 10
+    title: 分数加减
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 11
+    title: 乘了反而变小
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 12
+    title: 分数乘分数
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 13
+    title: 除以分数
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 14
+    title: 比：味道一样的秘密
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 15
+    title: 按比分配
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 16
+    title: 比例和比例尺
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 17
+    title: 百分数：都换成 100 份
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 18
+    title: 一个点，几个名字
+    state: 在做
+    waiting: 动手探索和挑战走查
+  - n: 19
+    title: 涨一半再跌一半
+    state: 在做
+    waiting: 动手探索和挑战走查
