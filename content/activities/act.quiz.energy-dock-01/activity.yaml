@@ -1,0 +1,116 @@
+# author: Codex
+# prompt_ref: prompts/act.simulation.energy-dock-01.md
+id: act.quiz.energy-dock-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 沿轨道追能量
+targets:
+- physics.energy.transfer
+age_band: G3-4
+duration_min: 7
+review: pending
+engine: 1
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 7.6
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42151/index.cnxml
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 滑块从坡顶静止滑下，轨道光滑。把滑块、轨道和地球一起算，忽略空气阻力及声音。滑块还在半坡，哪两栏该一起改？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 势能增加，动能减少
+        misconception: stopped-is-gone
+        feedback: 滑块正在下降并且加速。
+      - id: b
+        text: 势能减少，动能也减少
+        misconception: stopped-is-gone
+        feedback: 变快的滑块会占用更多动能格。
+      - id: c
+        text: 势能减少，动能增加
+        correct: true
+    feedback:
+      correct: 滑块在下降，重力势能格减少。它越跑越快，动能格增加。
+      wrong: 先看滑块离坡底的高度。
+    hints:
+    - 先看滑块离坡底的高度。
+    - 再比较滑块在同样长时间内走过的路。
+  - id: q2
+    stem: 滑块从静止沿光滑坡下滑。滑块与地球的重力势能少了 14 焦。忽略转动、空气阻力，没有其他能量交换。滑块的动能是几焦？
+    answer:
+      type: number
+      value: 14
+      tolerance: 0
+      unit: 焦
+      common_wrong:
+      - value: 0
+        misconception: stopped-is-gone
+        feedback: 刚松手时速度为零，到这个位置时滑块已经在动。
+    feedback:
+      correct: 势能减去的 14 焦都转成了动能。滑块此刻有 14 焦动能。
+      wrong: 圈起坡顶那个刚松手的时刻。
+    hints:
+    - 圈起坡顶那个刚松手的时刻。
+    - 把高度下降时移出的格子，填到加速的那一栏。
+  - id: q3
+    stem: 滑块进入粗糙的水平垫，慢慢停下。把滑块、垫和地球一起算，没有能量传到外面，忽略声音。动能栏清空时，哪一栏会增加？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 滑块和垫的内能
+        correct: true
+      - id: b
+        text: 重力势能
+        misconception: stopped-is-gone
+        feedback: 垫子是水平的，滑块没有升到更高的地方。
+      - id: c
+        text: 没有一栏增加
+        misconception: stopped-is-gone
+        feedback: 把滑块和垫都圈进去，再找摩擦带来的变化。
+    feedback:
+      correct: 摩擦让接触处的内能增加。滑块停下来后，这些格子仍留在系统的账本里。
+      wrong: 沿水平垫看看滑块的高度变没变。
+    hints:
+    - 沿水平垫看看滑块的高度变没变。
+    - 手指搓一搓，留意接触处有什么变化。
+  - id: q4
+    stem: 水平垫上，滑块的动能从 15 焦变为 9 焦。把滑块和垫一起算，没有外界做功或传热，只计动能和内能。内能增加几焦？
+    answer:
+      type: number
+      value: 6
+      tolerance: 0
+      unit: 焦
+      common_wrong:
+      - value: 15
+        misconception: stopped-is-gone
+        feedback: 滑块还留有一部分动能，并没有全部滑停。
+    feedback:
+      correct: 从动能栏移出的 15 − 9 = 6 焦，进了滑块和垫的内能栏。
+      wrong: 看看滑块走到这里时动能栏还剩多少。
+    hints:
+    - 看看滑块走到这里时动能栏还剩多少。
+    - 用刚上垫时的格数减去余下的格数。
+  - id: q5
+    stem: 滑块从静止滑下。滑块、垫和地球无能量进出，只计势能、动能和内能。势能少了 18 焦，两段垫分别使内能增加 3 焦和 5 焦。滑块还有几焦动能？
+    answer:
+      type: number
+      value: 10
+      tolerance: 0
+      unit: 焦
+      common_wrong:
+      - value: 18
+        misconception: stopped-is-gone
+        feedback: 势能移出的格子中，已有一部分记入了内能。
+    feedback:
+      correct: 先合并两段垫的内能增量，3 + 5 = 8 焦。剩在动能栏的是 18 − 8 = 10 焦。
+      wrong: 把两段垫对应的内能格先放到同一栏。
+    hints:
+    - 把两段垫对应的内能格先放到同一栏。
+    - 从势能移出的总量里扣掉这一栏，再看滑块还带着多少。
+# END OF FILE
