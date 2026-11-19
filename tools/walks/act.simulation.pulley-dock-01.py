@@ -27,6 +27,11 @@ def play(w):
         actual = w.sent("state")[-1]["payload"]
         w.check(str(expected), all(actual.get(k) == v for k, v in expected.items()), actual)
 
+    def wheel_turn():
+        return w.doc.locator("#wheelSpokes").evaluate(
+            "(g) => g.transform.baseVal.getItem(0).angle"
+        )
+
     w.btn("要看绳子怎样托住箱子")
     w.btn("拉起第一箱")
     w.shot("fixed", first=True)
@@ -34,11 +39,13 @@ def play(w):
     w.check("没拉绳不能交货", "还要" in w.said())
     drag(0, 67)
     expect(station=1, strands=1, rope=1, height=1, force=8, work=8)
+    w.check("定滑轮右边沿着手拉方向向下转", wheel_turn() > 0)
     w.btn("对齐刻线")
     w.btn("把轮子挂到箱上")
     w.shot("moving", first=True)
     press("ArrowUp", 4)
     expect(station=2, strands=2, rope=1, height=.5, force=4, work=4)
+    w.check("动滑轮左边绕固定绳段滚动", wheel_turn() < 0)
     w.btn("补收一段绳")
     press("ArrowUp", 2)
     w.btn("在绳上留印")
@@ -46,7 +53,7 @@ def play(w):
     expect(strands=2, rope=2, height=1, force=4, work=8)
     w.btn("对齐刻线")
     w.btn("收下吊运单")
-    card = w.doc.locator("#dyn").inner_text()
+    card = w.doc.locator("#dyn").text_content()
     w.check("星卡记录自己的绳印", "1.5 m" in card and "0.75 m" in card, card)
 
     expected_stations = list(range(1, 2 + 1))
