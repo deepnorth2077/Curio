@@ -1,0 +1,121 @@
+# author: Codex
+# prompt_ref: prompts/act.simulation.balance-track-01.md
+id: act.quiz.balance-track-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 给小车配力箭头
+targets:
+- p.g8.force
+age_band: G3-4
+duration_min: 7
+review: pending
+engine: 1
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 4.3
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42073/index.cnxml
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 水平轨道上，小车受向右 5 牛和向左 5 牛的两股拉力，没有其他水平力。小车的水平合力是多少？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 0 牛
+        correct: true
+      - id: b
+        text: 向右 10 牛
+        misconception: add-both
+        feedback: 向左的拉力没有跟向右的拉力站在同一边。
+      - id: c
+        text: 向左 10 牛
+        misconception: add-both
+        feedback: 向右的拉力和向左的一样大。
+    feedback:
+      correct: 把两张相反的箭头首尾接好，箭尖恰好回到起点，水平合力为零。
+      wrong: 把两根一样长的箭头摆成题里给的方向。
+    hints:
+    - 把两根一样长的箭头摆成题里给的方向。
+    - 让后一根从前一根的箭尖出发，看最后离起点多远。
+  - id: q2
+    stem: 小车水平方向只受两股力，两人都向右拉，一人用 4 牛，另一人用 7 牛。向右的合力有几牛？
+    answer:
+      type: number
+      value: 11
+      tolerance: 0
+      unit: 牛
+      common_wrong:
+      - value: 3
+        misconception: add-both
+        feedback: 只有相向的拉力才要比差。这次两个人都向右拉。
+    feedback:
+      correct: 两个箭头都朝右，可以首尾接起来。向右的合力是 4 + 7 = 11 牛。
+      wrong: 先检查两个人拉的是不是同一辆车。
+    hints:
+    - 先检查两个人拉的是不是同一辆车。
+    - 把两个箭头照原方向接起来。
+  - id: q3
+    stem: 车正向左滑。水平力只有拉绳向右的 7 牛和另一根绳向左的 3 牛。哪张水平合力标签该贴在车上？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 向左 4 牛
+        misconception: add-both
+        feedback: 车正在向左走，拉得更用力的一侧却在右方。
+      - id: b
+        text: 向右 10 牛
+        misconception: add-both
+        feedback: 先让相反方向的力各抵掉同样多，再看哪边剩下。
+      - id: c
+        text: 向右 4 牛
+        correct: true
+    feedback:
+      correct: 向左的 3 牛抵去向右力的一部分，剩下向右 4 牛。车速方向不用加进力的账。
+      wrong: 把小车运动的箭头先盖起来。
+    hints:
+    - 把小车运动的箭头先盖起来。
+    - 两根拉绳对车的力抵掉相等部分后，看剩下哪一头。
+  - id: q4
+    stem: 轨道车受一个向左的 9 牛拉力，其他水平力只有右边的两根拉绳。一根向右拉 4 牛，另一根向右拉几牛才能让水平合力为零？
+    answer:
+      type: number
+      value: 5
+      tolerance: 0
+      unit: 牛
+      common_wrong:
+      - value: 13
+        misconception: add-both
+        feedback: 右边已经有一根绳在帮忙，只需补上缺的那部分。
+    feedback:
+      correct: 右边两根合计要有 9 牛。已有 4 牛，另一根需要 9 − 4 = 5 牛。
+      wrong: 把向右的两根绳记在同一栏。
+    hints:
+    - 把向右的两根绳记在同一栏。
+    - 看看右栏还缺多少才能和左栏一样大。
+  - id: q5
+    stem: 车正匀速向左滑。此刻挂上向右 8 牛和向左 3 牛的拉绳，其他水平力可忽略。要让车继续按原速度滑，第三根绳应怎样拉？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 向右拉 5 牛
+        misconception: add-both
+        feedback: 原先两根绳合起来已偏向右，再向右拉会更不平衡。
+      - id: b
+        text: 向左拉 5 牛
+        correct: true
+      - id: c
+        text: 向左拉 11 牛
+        misconception: add-both
+        feedback: 两根绳原来方向相反。先比较它们各自还剩多少。
+    feedback:
+      correct: 先合成向右 5 牛，再用向左 5 牛抵消。合力为零，车可以保持原来的速度。
+      wrong: 先把已挂的两根绳合成一个箭头。
+    hints:
+    - 先把已挂的两根绳合成一个箭头。
+    - 让新绳和这个箭头接起来，看看能否回到起点。
+# END OF FILE
