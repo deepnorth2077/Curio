@@ -435,7 +435,7 @@ function startRun(done){
   for(const input of $("bench").querySelectorAll("input")) input.disabled=true;
   const start = performance.now();
   function step(now){
-    elapsed = reduced ? MODEL.seconds : Math.min(MODEL.seconds, (now-start)/1000);
+    elapsed = reduced ? MODEL.seconds : Math.max(0, Math.min(MODEL.seconds, (now-start)/1000));
     paint();
     if(elapsed < MODEL.seconds) frame=requestAnimationFrame(step);
     else {
