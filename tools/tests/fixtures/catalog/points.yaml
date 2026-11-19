@@ -1,0 +1,22 @@
+schema: catalog/1
+version: 1
+points:
+  - id: m.g1.count
+    title: 数一数
+    grade: G1
+    theme: num
+    unit: 一上
+    prerequisites: []
+  - id: math.number.fraction-intro
+    title: 分数的初步认识
+    grade: G3
+    theme: num
+    unit: 三上
+    prerequisites: [m.g1.count]
+retired:
+  - id: m.g3.old
+    title: 旧分数星
+    grade: G3
+    theme: num
+    unit: 三上
+    replaced_by: math.number.fraction-intro

@@ -75,3 +75,22 @@ test("engine_min 大于 1：需要更新（不往下读）", async () => {
 test("缺文件：broken", async () => {
   await assert.rejects(loadRelease(pathToFileURL("/nonexistent/release.json"), fileFetch), (e) => e.kind === "broken");
 });
+
+test("带知识点目录的发布包仍能打开课程；目录摘要受 content_hash 保护（#188）", async () => {
+  const dir = tempDir("curio-catalog-");
+  const fixtures = join(root, "tools/tests/fixtures");
+  const content = join(dir, "content");
+  cpSync(join(fixtures, "content"), content, { recursive: true });
+  cpSync(join(fixtures, "catalog"), join(content, "catalog"), { recursive: true });
+  const release = join(dir, "release");
+  execFileSync("python3", [join(root, "tools/build_release.py"), "--content", content,
+    "--out", release, "--commit", "0".repeat(40)]);
+  const result = await loadRelease(urlOf(release), fileFetch);
+  const golden = JSON.parse(readFileSync(join(fixtures, "expected/catalog-release.json"), "utf8"));
+  assert.equal(result.release.release_id, golden.release_id);
+  assert.deepEqual(result.nodes.map((n) => n.id), ["math.number.fraction-intro"]);
+  const manifest = result.release;
+  manifest.catalog.json.sha256 = "0".repeat(64);
+  writeFileSync(join(release, "release.json"), JSON.stringify(manifest));
+  await assert.rejects(loadRelease(urlOf(release), fileFetch), (err) => err.kind === "broken");
+});
