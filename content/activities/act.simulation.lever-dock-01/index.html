@@ -103,12 +103,14 @@ body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{
 .tk{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round} .tkd{fill:none;stroke:var(--accent);stroke-width:1.1}
 body.narrow .lb{font-size:21px} body.narrow .lbg{font-size:20px} body.narrow .lbm{font-size:20px}
 body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .sign{font-size:28px}
+/* ============ 台架样式 ============ */
 #stage{max-height:58vh}
 .rope{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
 .steel{fill:var(--sky);stroke:var(--ink);stroke-width:2}
 .wood{fill:var(--apricot);stroke:var(--ink);stroke-width:2}
+.activePart{fill:var(--accent);stroke:var(--ink);stroke-width:2}
 body.narrow .lb,body.narrow .lbm,body.narrow .lbg{font-size:21px}
-@media (max-width:520px){.card footer{display:block}.hint{white-space:normal}.readout{text-align:left}}
+@media (max-width:520px){.card footer{display:flex;flex-direction:column;align-items:flex-start;gap:3px}.hint{white-space:normal}.readout{text-align:left}}
 </style>
 </head>
 <body>
@@ -350,7 +352,7 @@ function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站�
 
 // 第一屏的提醒（G6）：进入动手 1.5 秒还没碰，第一个圆钮外面扩出一圈细环；一碰就再也不出现
 let cuePos = null, cueTimer = 0;
-function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; S.dirty = true; } }, 1500); }
+function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; placeCue(); } }, 1500); }
 function disarmCue(){ clearTimeout(cueTimer); cuePos = null; cueEl.style.display = "none"; }
 function touched(){ if (cuePos || cueTimer) disarmCue(); cueTimer = 0; }
 function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }   // 第三个数是被提醒的东西的半径（托里的一个）
@@ -365,8 +367,8 @@ addEventListener("resize",()=>{fitView();paint();});
 const fmt=value=>String(Math.round(value*100)/100);
 const line=(x1,y1,x2,y2,cls="k",seed=19)=>P(Sk.line(x1,y1,x2,y2,seed,.45),cls);
 const label=(x,y,text,cls="lb")=>TC(x,y,text,cls);
-function crate(x,y,w,h){
-  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" class="wood"/>`+
+function crate(x,y,w,h,cls="wood"){
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" class="${cls}"/>`+
     line(x+5,y+5,x+w-5,y+h-5,"k1")+line(x+5,y+h-5,x+w-5,y+5,"k1");
 }
 function station(number,title,mode){
@@ -450,8 +452,8 @@ function pan(i,weight,heavy){
   const [x,y]=hole(i),base=y+61;
   let shape=line(x,y,x-25,base,"k1")+line(x,y,x+25,base,"k1");
   shape+=P(`M${x-28} ${base}q28 18 56 0z`,"steel");
-  shape+=heavy?crate(x-19,base-36,38,35):`<path class="wood" d="M${x-14} ${base}l3-21h22l3 21z"/>`;
-  return shape+label(x,base-43,weight+" N","lbm");
+  shape+=heavy?crate(x-19,base-36,38,35):`<path class="${S.mode==="actTray"?"activePart":"wood"}" d="M${x-14} ${base}l3-21h22l3 21z"/>`;
+  return shape+label(x,y-18,weight+" N","lbm");
 }
 function drawing(){
   if(S.mode==="end"){
@@ -460,7 +462,7 @@ function drawing(){
       label(400,345,"每一格的长度都相同","lbg");
   }
   const px=holeX(arm.pivot),[x0,y0]=hole(0),[x1,y1]=hole(MODEL.lastHole);
-  let out=P(`M${px} 163l-38 109h76z`,"steel")+P(box(px-43,272,86,16,8,.5),"k1")+
+  let out=P(`M${px} 163l-38 109h76z`,S.mode==="actPivot"?"activePart":"steel")+P(box(px-43,272,86,16,8,.5),"k1")+
     P(`M${x0} ${y0-6}L${x1} ${y1-6}l0 12L${x0} ${y0+6}z`,"wood");
   for(let i=0;i<=MODEL.lastHole;i++){
     const [x,y]=hole(i);out+=`<circle cx="${x}" cy="${y}" r="${i===arm.pivot?5:2.1}" fill="var(--ink)"/>`;
@@ -470,7 +472,7 @@ function drawing(){
 function updateReading(){
   const r=load();
   if(S.mode==="guess"){readout("两盘离支点一样远");return;}
-  readout(`左 ${MODEL.light} N × ${r.leftArm} 格 = ${r.left} N·格<br>右 ${MODEL.heavy} N × ${r.rightArm} 格 = ${r.right} N·格`);
+  readout(`轻杆水平时（每格等长）<br>左 ${MODEL.light} N × ${r.leftArm} 格 = ${r.left} N·格<br>右 ${MODEL.heavy} N × ${r.rightArm} 格 = ${r.right} N·格`);
   sendState({station:S.station,leftArm:r.leftArm,rightArm:r.rightArm,leftMoment:r.left,rightMoment:r.right});
 }
 function enter1(){
@@ -484,7 +486,7 @@ function enter1(){
 function startTray(n){
   station(n,n===1?"给轻盘找个孔":"在新支点上配平","actTray");
   controls([{label:"核对平衡",go:checkBalance}],
-    n===1?"右端先沉下去。拖轻盘下面的圆钮，试试别的挂孔。":"支点锁好了。拖轻盘，让横杆回到水平刻线。",
+    n===1?"横杆本身很轻，右端先沉下去。拖轻盘下面的圆钮，试试别的挂孔。":"支点锁好了。拖轻盘，让横杆回到水平刻线。",
     "拖动轻盘，或按左右键");
 }
 function checkBalance(){
