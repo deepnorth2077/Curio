@@ -1,0 +1,32 @@
+constellation: newton-track
+title: 力怎样改变运动
+updated: '2026-11-19'
+issue: 194
+total: 4
+preview: https://deepnorth2077.github.io/Curio/preview/newton-track/
+now: 已制作动手探索与五题挑战，等 Luka 和舰长统一试玩。
+stars:
+- n: 1
+  title: 力
+  state: 等验收
+  prs:
+  - 212
+  waiting: Luka 和舰长试玩
+- n: 2
+  title: 牛顿第一定律：松手后还会走吗
+  state: 等验收
+  prs:
+  - 213
+  waiting: Luka 和舰长试玩
+- n: 3
+  title: 牛顿第二定律：同一推力推两辆车
+  state: 等验收
+  prs:
+  - 214
+  waiting: Luka 和舰长试玩
+- n: 4
+  title: 牛顿第三定律：两辆车互推
+  state: 等验收
+  prs:
+  - 215
+  waiting: Luka 和舰长试玩

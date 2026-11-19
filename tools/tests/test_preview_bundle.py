@@ -135,7 +135,17 @@ class HomepageTrialBundle(unittest.TestCase):
         approved_nodes = {node["id"]: node for node in formal["nodes"]}
         trial_nodes = {node["id"]: node for node in data["nodes"]}
         catalog = data["catalog"]
-        self.assertEqual(len(catalog), 23)
+        original = {"zero-to-one", "chocolate", "life-manual"}
+        self.assertEqual(sum(meta["series"] in original for meta in catalog.values()), 23)
+        self.assertEqual(data["diagram_series"], ["life-manual", "energy-dock", "newton-track"])
+        for slug, starts in (("energy-dock", [1, 3, 5]), ("newton-track", [1, 3])):
+            stars = sorted((v for v in catalog.values() if v["series"] == slug), key=lambda v: v["star"])
+            self.assertEqual([v["star"] for v in stars], list(range(1, 2 * len(starts) + 1)))
+            self.assertEqual([v["star"] for v in stars if v["group_order"] == 1], starts)
+            self.assertTrue(all(v["chart_theme"] == "ene" for v in stars))
+        self.assertNotIn("p.g10.newton", catalog)
+        self.assertEqual(data["overviews"]["p.g10.newton"]["children"],
+                         ["physics.motion.inertia", "physics.motion.force-acceleration", "physics.motion.action-reaction"])
         self.assertFalse(approved_nodes.keys() & trial_nodes.keys())
         self.assertTrue(set(catalog) <= approved_nodes.keys() | trial_nodes.keys())
         self.assertTrue(trial_nodes.keys() <= set(catalog))

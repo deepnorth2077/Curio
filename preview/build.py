@@ -76,6 +76,23 @@ ZERO_TO_ONE_GROUPS = {
 }
 
 
+# 首页、地铁和独立试玩页共用这份星序与分组；卡片仍决定唯一的年级和主题。
+COURSE_DATA = yaml.safe_load(Path(__file__).with_name("courses.yaml").read_text(encoding="utf-8"))
+if COURSE_DATA["version"] != 1:
+    raise ValueError("不支持的试玩课程目录版本")
+GROUPS = {"zero-to-one": ZERO_TO_ONE_GROUPS}
+CHART_THEMES = {"zero-to-one": "num", "chocolate": "num", "life-manual": "life"}
+for slug, course in COURSE_DATA["courses"].items():
+    stars = []
+    GROUPS[slug] = {}
+    for group in course["groups"]:
+        GROUPS[slug][group["stars"][0][0]] = group["title"]
+        for nid, activity in group["stars"]:
+            stars.append((nid, [f"act.simulation.{activity}-01", f"act.quiz.{activity}-01"]))
+    CONSTELLATIONS[slug] = course["title"], stars
+    CHART_THEMES[slug] = course["theme"]
+
+
 def find(roots, rel, required=True):
     for r in roots:
         p = r / rel
@@ -196,7 +213,7 @@ def build_bundle(roots):
 
 
 def build_trial_bundle(roots, output_dir, copy_modules=False):
-    """首页额外读的试玩清单。只有这两组数学活动允许先于正式发布试玩。"""
+    """首页额外读的试玩清单。只让点名的未发布活动进入试玩包。"""
     nodes, activities, figures, catalog = [], {}, {}, {}
 
     def module_src(entry, aid):
@@ -207,7 +224,7 @@ def build_trial_bundle(roots, output_dir, copy_modules=False):
             return dest.relative_to(output_dir).as_posix()
         return Path(os.path.relpath(entry, output_dir)).as_posix()
 
-    for series, chart_theme in (("zero-to-one", "num"), ("chocolate", "num"), ("life-manual", "life")):
+    for series, chart_theme in CHART_THEMES.items():
         name, stars = CONSTELLATIONS[series]
         group, group_start = 1, 1
         group_title = "掰巧克力" if series == "chocolate" else name
@@ -218,10 +235,10 @@ def build_trial_bundle(roots, output_dir, copy_modules=False):
             published = node["status"] == "published"
             if series == "life-manual" and not published:
                 continue
-            if series == "zero-to-one" and nid in ZERO_TO_ONE_GROUPS:
+            if nid in GROUPS.get(series, {}):
                 if star > 1:
                     group += 1
-                group_start, group_title = star, ZERO_TO_ONE_GROUPS[nid]
+                group_start, group_title = star, GROUPS[series][nid]
             catalog[nid] = {
                 "series": series, "series_title": name, "star": star, "chart_theme": chart_theme,
                 "group": group, "group_title": group_title, "group_order": star - group_start + 1,
@@ -241,7 +258,8 @@ def build_trial_bundle(roots, output_dir, copy_modules=False):
         for old in (output_dir / "trial-modules").glob("act.simulation.*.html"):
             if old.stem not in activities:
                 old.unlink()
-    return {"nodes": nodes, "activities": activities, "figures": figures, "catalog": catalog}
+    return {"nodes": nodes, "activities": activities, "figures": figures, "catalog": catalog,
+            "diagram_series": ["life-manual", *COURSE_DATA["courses"]], "overviews": COURSE_DATA["overviews"]}
 
 
 def build(roots, constellation="life-manual"):
@@ -258,8 +276,8 @@ def build(roots, constellation="life-manual"):
             "activities": acts,
         })
     data = {"constellation": name, "stars": stars, "figures": figures}
-    if constellation == "zero-to-one":
-        data["groups"] = ZERO_TO_ONE_GROUPS
+    if constellation in GROUPS:
+        data["groups"] = GROUPS[constellation]
     return data
 
 
@@ -269,7 +287,7 @@ def main():
     ap.add_argument("--out", type=Path, help="试玩页（单个 HTML 文件）")
     ap.add_argument("--bundle", type=Path, help="原型读的内容包（JS 文件）")
     ap.add_argument("--trial-bundle", type=Path, help="首页额外加载的试玩包（JS 文件）")
-    ap.add_argument("--copy-trial-modules", action="store_true", help="把数学试玩模块复制到可独立部署的同级目录")
+    ap.add_argument("--copy-trial-modules", action="store_true", help="把试玩模块复制到可独立部署的同级目录")
     ap.add_argument("--constellation", default="life-manual", choices=sorted(CONSTELLATIONS), help="试玩页做哪个星座")
     a = ap.parse_args()
     if not (a.out or a.bundle or a.trial_bundle):

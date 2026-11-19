@@ -1,0 +1,41 @@
+version: 1
+courses:
+  energy-dock:
+    title: 省力的机器和能量账本
+    theme: ene
+    groups:
+      - title: 手里的力
+        stars:
+          - [physics.machine.lever, lever-dock]
+          - [physics.machine.pulley, pulley-dock]
+      - title: 送到同样高
+        stars:
+          - [physics.machine.ramp, ramp-dock]
+          - [physics.energy.work, work-dock]
+      - title: 看秒表，追能量
+        stars:
+          - [physics.energy.power, power-dock]
+          - [physics.energy.transfer, energy-dock]
+  newton-track:
+    title: 力怎样改变运动
+    theme: ene
+    groups:
+      - title: 先盯一辆车
+        stars:
+          - [p.g8.force, balance-track]
+          - [physics.motion.inertia, glide-track]
+      - title: 改变运动，再看伙伴
+        stars:
+          - [physics.motion.force-acceleration, push-track]
+          - [physics.motion.action-reaction, pair-track]
+overviews:
+  p.g10.newton:
+    text: 牛顿的三条运动定律，可以一条一条动手试。
+    children:
+      - physics.motion.inertia
+      - physics.motion.force-acceleration
+      - physics.motion.action-reaction
+  m.g4.laws:
+    text: 交换律、结合律和分配律都属于运算定律。分配律已经可以动手试了。
+    children:
+      - math.operation.distributive-law
