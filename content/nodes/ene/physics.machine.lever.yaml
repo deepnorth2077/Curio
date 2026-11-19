@@ -24,9 +24,11 @@ lenses:
   approach: 先在等臂处挂轻重两盘，看哪头沉。再把轻盘推远，刚好停在平衡线。换一个支点重新配平。
 - band: G7-9
   approach: 水平轻杆，两边竖直向下，比较力乘到支点的距离。6 N 在一格与 2 N 在三格平衡。格子等长。
-activities: []
+activities:
+- act.simulation.lever-dock-01
+- act.quiz.lever-dock-01
 status: draft
-version: 1
+version: 2
 curriculum:
 - std: 义务教育科学课程标准（2022年版）
   ref: 简单机械与机械能

@@ -1,0 +1,121 @@
+# author: Codex
+# prompt_ref: prompts/act.simulation.lever-dock-01.md
+id: act.quiz.lever-dock-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 杠杆配平挑战
+targets:
+- physics.machine.lever
+age_band: G3-4
+duration_min: 7
+review: pending
+engine: 1
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 9.5
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42174/index.cnxml
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 水平轻杆两头各挂一枚相同砝码。左边离支点一格，右边离支点三格。松开手，哪头先下沉？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 左头
+        misconception: heavy-wins
+        feedback: 左边的砝码离支点更近。
+      - id: b
+        text: 右头
+        correct: true
+      - id: c
+        text: 两头都不动
+        misconception: heavy-wins
+        feedback: 两枚一样重，可它们离支点的距离不同。
+    feedback:
+      correct: 同一枚砝码挂得越远，转动横杆的作用越大。右端先沉。
+      wrong: 从支点开始数两边的格。
+    hints:
+    - 从支点开始数两边的格。
+    - 试想把右边的砝码挪近支点，横杆会更容易摆平吗？
+  - id: q2
+    stem: 水平轻杆左边第二格挂着 6 牛的货。右边挂 3 牛的砝码，要挂在离支点第几格才能平衡？
+    answer:
+      type: number
+      value: 4
+      tolerance: 0
+      unit: 格
+      common_wrong:
+      - value: 2
+        misconception: heavy-wins
+        feedback: 把两边挂在同一格，较重的货会把左端压下去。
+    feedback:
+      correct: 左边是 6 × 2，右边是 3 × 4。两边转动横杆的作用相同。
+      wrong: 把每边的重力和格数配成一对。
+    hints:
+    - 把每边的重力和格数配成一对。
+    - 先算左边的重力乘格数，再除以右边的重力。
+  - id: q3
+    stem: 水平轻杆左边第三格挂 2 牛，右边第一格挂 6 牛，刚好平衡。把左盘挪近支点一格，松手会怎样？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 右端先沉
+        correct: true
+      - id: b
+        text: 左端先沉
+        misconception: heavy-wins
+        feedback: 左盘靠近支点，转动横杆的作用变小了。
+      - id: c
+        text: 两端仍平齐
+        misconception: heavy-wins
+        feedback: 砝码没变，两边到支点的距离配合变了。
+    feedback:
+      correct: 挪过以后左边是 2 × 2，右边还是 6 × 1。右边占上风。
+      wrong: 只在记录纸上改动左盘的距离。
+    hints:
+    - 只在记录纸上改动左盘的距离。
+    - 把改过的左边乘积与原来右边的乘积比一比。
+  - id: q4
+    stem: 水平轻杆左边第六格挂 2 牛，右边第二格有一只轻空钩。钩上挂几牛的货能配平？
+    answer:
+      type: number
+      value: 6
+      tolerance: 0
+      unit: 牛
+      common_wrong:
+      - value: 2
+        misconception: heavy-wins
+        feedback: 左右挂得一样重时，左边离支点更远，仍会下沉。
+    feedback:
+      correct: 左边是 2 × 6。右边离支点两格，所以需要 12 ÷ 2 = 6 牛。
+      wrong: 看看轻钩在支点哪一格。
+    hints:
+    - 看看轻钩在支点哪一格。
+    - 让右边的重力乘格数，正好等于左边的乘积。
+  - id: q5
+    stem: 水平轻杆左边的 4 牛挂盘从第二格挪到第三格。右边有 2 牛和 6 牛砝码。只挂一枚，怎样摆平？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 6 牛挂第一格
+        misconception: heavy-wins
+        feedback: 试着算一下，右边的格数够不够。
+      - id: b
+        text: 2 牛挂第三格
+        misconception: heavy-wins
+        feedback: 相同格数配上不同的重力，大的一边仍会下沉。
+      - id: c
+        text: 6 牛挂第二格
+        correct: true
+    feedback:
+      correct: 先把左边更新成 4 × 3，再找出右边的 6 × 2。两边都是 12 牛·格。
+      wrong: 先把左边的旧格数划掉。
+    hints:
+    - 先把左边的旧格数划掉。
+    - 给每种挂法都算一次重力乘格数，和新左盘比较。
+# END OF FILE
