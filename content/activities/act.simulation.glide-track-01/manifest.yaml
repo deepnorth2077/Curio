@@ -1,0 +1,23 @@
+id: act.simulation.glide-track-01
+contract: activity/1.1
+type: simulation
+version: 1
+title: 松手留印轨
+targets:
+- physics.motion.inertia
+age_band: G3-4
+entry: index.html
+duration_min: 6
+pedagogy: explain
+capabilities:
+- pointer
+- keyboard
+misconceptions:
+- keep-pushing
+emits:
+- predicted
+- observed
+author:
+  model: Codex
+  prompt_ref: prompts/act.simulation.glide-track-01.md
+review: pending

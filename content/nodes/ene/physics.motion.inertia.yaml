@@ -24,9 +24,11 @@ lenses:
   approach: 先从静止观察，再给车初速度后松手，对照有阻力轨和理想轨的等时印迹。
 - band: G7-9
   approach: 在惯性参考系中合力为零时，静止或匀速直线运动。无阻力直轨模型上已在动的小车每秒走相同距离；普通轨上阻力使它减速。
-activities: []
+activities:
+- act.simulation.glide-track-01
+- act.quiz.glide-track-01
 status: draft
-version: 1
+version: 2
 curriculum:
 - std: 义务教育物理课程标准（2022年版）
   ref: 机械运动和力、机械能
