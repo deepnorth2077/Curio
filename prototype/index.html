@@ -184,14 +184,6 @@ button.sitem:hover{background:var(--hover);color:var(--ink)}
 .shape-mark.lit .shape-face{fill:var(--l2)}
 .shape-outline,.star-rays{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .shape-mark.untouched .shape-outline{stroke:var(--muted)}
-.graph.shape-inside>svg{height:clamp(215px,43vh,390px);width:100%;margin:0 auto}
-.shape-inside .shape-stroke{stroke-width:1.5}
-.star-index{font:600 18px var(--f-mono);fill:var(--ink);paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
-.shape-contents{max-width:680px;list-style:none;margin:0 auto;padding:8px 18px 22px;display:grid;gap:0 16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))}
-.shape-contents button{display:flex;width:100%;min-height:44px;align-items:center;gap:8px;text-align:left;border-top:1px solid var(--rule);font-size:14px;line-height:1.4}
-.shape-contents button:hover,.shape-contents button:focus-visible{color:var(--accent)}
-.star-no{font:12px var(--f-mono);color:var(--muted);min-width:1.5em}
-.shape-point:focus-visible .shape-outline{stroke:var(--accent);stroke-width:3}
 
 /* ---------- metro ---------- */
 .metro{position:absolute;inset:0;display:flex;flex-direction:column}
@@ -867,7 +859,8 @@ function chartStar(state,r){
   if(lit) mark+='<path d="M0 -12v-2.4 M9 -9l1.8 -1.8 M12 0h2.4 M9 9l1.8 1.8 M0 12v2.4 M-9 9l-1.8 1.8 M-12 0h-2.4 M-9 -9l-1.8 -1.8" class="star-rays"/>';
   return '<g class="shape-mark '+(lit?'lit':explored?'explored':'untouched')+'" transform="scale('+r/10+')">'+mark+'</g>';
 }
-function chartShapeFigure(c,scale,r,detail){
+function chartShapeFigure(c,radius){
+  const scale=radius/55, r=7.2*scale;
   const {strokes,pts}=chartShape(c);
   const point=([x,y])=>[x*scale,y*scale];
   let fig=strokes.map((stroke,i)=>`<path class="shape-stroke" d="${Sk.poly(stroke.map(point),340+i*80,false,.18)}"/>`).join("");
@@ -875,18 +868,11 @@ function chartShapeFigure(c,scale,r,detail){
     const [x,y]=point(pts[i]), state=nodeState(node), at=`translate(${x} ${y})`;
     let mark=chartStar(state,r);
     if(node.acts.length){
-      // Place the activity sparkle opposite the number and outside the star's rays.
-      const offset=r*1.22+1, arm=detail?2.9:Math.max(1.2,r*.43);
+      // Keep the activity sparkle outside the star's rays.
+      const offset=r*1.22+1, arm=Math.max(1.2,r*.43);
       mark+=`<g class="activity-spark" transform="translate(${-offset} ${-offset})"><title>有活动</title><path class="k1" style="stroke:var(--accent)" d="${Sk.line(-arm,arm,arm,-arm,node.seed,.1)+Sk.line(-arm,-arm,arm,arm,node.seed+1,.1)}"/></g>`;
     }
-    if(!detail){
-      fig+=`<g class="shape-point" data-node-id="${esc(node.id)}" transform="${at}">${mark}</g>`;
-      return;
-    }
-    const name=`${i+1} · ${node.title}，${STATE_WORD[state]}${node.acts.length?"，有活动":""}`;
-    fig+=`<g class="node shape-point" tabindex="0" role="button" aria-label="${esc(name)}" data-id="${esc(node.id)}" transform="${at}">
-      <title>${esc(name)}</title><circle class="hit" r="24"/>${selected===node.id?`<circle class="sel-ring" r="${r+8}"/>`:""}${mark}
-      <text class="star-index" x="${r+4}" y="${-r+2}">${i+1}</text></g>`;
+    fig+=`<g class="shape-point" data-node-id="${esc(node.id)}" transform="${at}">${mark}</g>`;
   });
   return fig;
 }
@@ -894,27 +880,21 @@ function shapeLegend(){
   return [["lit","点亮"],["landed","探过"],["new","未探"]].map(([state,word])=>
     `<span><svg aria-hidden="true" width="16" height="16" viewBox="-16 -16 32 32">${chartStar(state,10)}</svg>${word}</span>`).join("");
 }
-function renderShapeInside(c,graph){
-  const svg=graph.querySelector("svg");
-  graph.classList.add("shape-inside");
-  svg.setAttribute("viewBox","-265 -217 530 434");
-  svg.setAttribute("role","group");
-  svg.innerHTML=`<path d="${Sk.blob(0,0,246,190,c.band+7)}" fill="var(${THEMES[c.theme].c})" opacity=".065"/>`+chartShapeFigure(c,3.7,12,true);
-  const list=document.createElement("ol");
-  list.className="shape-contents";
-  list.setAttribute("aria-label","星座里的知识点");
-  list.innerHTML=c.nodes.map((n,i)=>`<li><button data-id="${esc(n.id)}" aria-label="${esc(n.title)}，${STATE_WORD[nodeState(n)]}"><span class="star-no">${i+1}</span><span>${esc(n.short)}</span></button></li>`).join("");
-  graph.appendChild(list);
-  list.onclick=e=>{ const button=e.target.closest("button"); if(button) select(button.dataset.id,true); };
-}
-
-const BANDS=[[40,84],[84,216],[216,264],[264,310],[310,350]];   // fisheye: the current band gets the room
+const BANDS=[[40,84],[84,216],[216,264],[264,310],[310,350]];   // The original chart gives grades 3–4 the widest ring.
 const C=380, polar=(th,r)=>[C+r*Math.cos(th*Math.PI/180), C-r*Math.sin(th*Math.PI/180)];
 let floatRaf=0;
 function consGeom(c){ const t=THEMES[c.theme], [a,b]=BANDS[c.band], th=(t.sec[0]+t.sec[1])/2, cur=c.band===CURRENT_BAND;
-  const r=(a+b)/2 + (cur? (THEME_ORDER.indexOf(c.theme)%2? 18:-14) : 0); const [x,y]=polar(th,r); const rr=cur?Math.min(44,14+c.nodes.length*2.4):Math.min(14,6+c.nodes.length*1.5);
+  const stagger=cur?(THEME_ORDER.indexOf(c.theme)%2?18:-14):0;
+  if(shapePreview&&cur){
+    const halfWidth=(b-a)/2, rr=Math.min(34,halfWidth-4);
+    const room=Math.max(0,halfWidth-rr-4);
+    const [x,y]=polar(th,(a+b)/2+Math.max(-room,Math.min(stagger,room)));
+    return {x,y,rr,cur};
+  }
+  const [x,y]=polar(th,(a+b)/2+stagger);
+  const rr=cur?Math.min(44,14+c.nodes.length*2.4):Math.min(14,6+c.nodes.length*1.5);
   const pts=c.nodes.map((n,i)=>{ const ang=i*2.39996+c.band, rad=rr*Math.sqrt((i+.6)/c.nodes.length); return [Math.cos(ang)*rad, Math.sin(ang)*rad]; });
-  return {x,y,rr:shapePreview?(cur?34:14):rr,pts,cur}; }
+  return {x,y,rr,pts,cur}; }
 function renderChart(){ cancelAnimationFrame(floatRaf); if(chartZoom&&CONS[chartZoom]) renderConstellation(CONS[chartZoom]); else { chartZoom=null; renderOverview(); } }
 function renderOverview(){
   const wrap=$("#chartWrap"), rec=recommend(), recC=consId(rec);
@@ -924,7 +904,8 @@ function renderOverview(){
     <div class="graph" id="graph"><svg id="gsvg" role="img" aria-label="Curio 星图：年级环与学科扇区"></svg></div>`;
   const g=$("#graph"), svg=$("#gsvg"), narrow=g.clientWidth<620; g.classList.toggle("narrow",narrow);
   svg.setAttribute("viewBox",narrow?"6 40 748 690":"0 0 760 760");
-  let h=`<circle class="band-now" cx="${C}" cy="${C}" r="${(BANDS[1][0]+BANDS[1][1])/2}" stroke-width="${BANDS[1][1]-BANDS[1][0]}"/>`;
+  const [bandStart,bandEnd]=BANDS[shapePreview?CURRENT_BAND:1];
+  let h=`<circle class="band-now" cx="${C}" cy="${C}" r="${(bandStart+bandEnd)/2}" stroke-width="${bandEnd-bandStart}"/>`;
   BANDS.forEach(([a,b],i)=>{ h+=`<path class="kq" d="${Sk.ellipse(C,C,b,b,200+i,.6)}" ${i>=3?'stroke-dasharray="3 6"':""}/>`; });
   h+=`<path class="kq" d="${Sk.ellipse(C,C,40,40,190,.6)}"/>`;
   BANDS.forEach(([a,b],i)=>{ h+=`<text class="${i===CURRENT_BAND?"anno":"ring-lbl"}" x="${C}" y="${C+(a+b)/2+6}" text-anchor="middle">${i===CURRENT_BAND?"你在这一圈":BAND_NAME[i]}</text>`; });
@@ -944,7 +925,7 @@ function renderOverview(){
   // constellations
   Object.values(CONS).forEach((c,ci)=>{ const geo=G[c.id], t=THEMES[c.theme], litN=c.nodes.filter(n=>nodeState(n)==="lit").length;
     let fig="";
-    if(shapePreview) fig=chartShapeFigure(c,geo.cur?.62:.235,geo.cur?4.45:2.1,false);
+    if(shapePreview&&geo.cur) fig=chartShapeFigure(c,geo.rr);
     else {
       const idx=Object.fromEntries(c.nodes.map((n,i)=>[n.id,i]));
       c.nodes.forEach((n,i)=>n.prereq.forEach(p=>{ if(p in idx){ const A=geo.pts[idx[p]], B=geo.pts[i]; fig+=`<path class="${geo.cur?"k1":"kq"}" d="${Sk.line(A[0],A[1],B[0],B[1],ci*31+i,.25)}" opacity="${geo.cur?.55:.6}"/>`; } }));
@@ -992,9 +973,6 @@ function renderConstellation(c){
   wrap.innerHTML=`<div class="vhead"><div><div class="crumb"><button data-zout>← 星图</button><span>/</span><span>${BAND_NAME[c.band]}</span></div><h1>${esc(consName(c))}座</h1><p class="sub">${c.nodes.length} 颗星球 · 已点亮 ${litN} · 属于「${esc(t.line)}」</p></div>
     <div class="legend"><a class="wikilink" href="#metro" data-metroline="${c.theme}">在地铁上看这条线</a></div></div>
     <div class="graph scroll" id="graph"><svg id="gsvg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(consName(c))}座的星球"></svg></div>`;
-  const svg=$("#gsvg");
-  if(shapePreview) renderShapeInside(c,$("#graph"));
-  else {
   let h=`<path d="${Sk.blob(W/2,H/2,W/2-20,H/2-10,c.band+7)}" style="fill:var(${t.c})" opacity=".05"/>`;
   rows.forEach((r,ri)=>{ const y=70+ri*RH; if(r.name) h+=`<text class="unit-lbl" x="28" y="${y+6}">${esc(r.name.split(" · ").slice(0,2).join(" · "))}</text>`; });
   // edges inside the constellation
@@ -1013,8 +991,7 @@ function renderConstellation(c){
     h+=`<g class="node" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.title)}，${STATE_WORD[st]}" transform="translate(${x} ${y})"><circle class="hit" r="30"/>
       ${n.id===rec.id?`<circle class="ping" r="${r+6}"/>`:""}${n.id===selected?`<path class="sel-ring" d="${Sk.ellipse(0,0,r+9,r+9,n.seed+9,.8)}"/>`:""}${body}${task}${rep}
       <text class="lbl" y="${r+22}" text-anchor="middle">${esc(n.short)}</text></g>`; });
-  svg.innerHTML=h;
-  }
+  const svg=$("#gsvg"); svg.innerHTML=h;
   svg.querySelectorAll(".node").forEach(el=>{ el.onclick=()=>select(el.dataset.id,true); el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); select(el.dataset.id,true);} }; });
   wrap.querySelector("[data-zout]").onclick=zoomOut;
   const ml=wrap.querySelector("[data-metroline]"); if(ml) ml.onclick=e=>{ e.preventDefault(); metroMode="lines"; metroFocusLine=c.theme; location.hash="#metro"; };
