@@ -24,9 +24,11 @@ lenses:
   approach: 跑同一单任务改用时；接着给第二台不同货量，两台同时开，比较完成时间和每秒做功。
 - band: G7-9
   approach: 平均功率=W/t；12 J用3 s为4 W，用6 s为2 W。比较不同工作量必须同时看时间。
-activities: []
+activities:
+- act.simulation.power-dock-01
+- act.quiz.power-dock-01
 status: draft
-version: 1
+version: 2
 curriculum:
 - std: 义务教育物理课程标准（2022年版）
   ref: 机械运动和力、机械能
