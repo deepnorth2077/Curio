@@ -27,6 +27,10 @@ def select(changed, modules, everything=False):
     if everything or any(p in CORE for p in changed):
         return sorted(modules)
     hit = set()
+    if "tools/walks/constellation.py" in changed:
+        for script in (REPO / WALKS).glob("act.simulation.*.py"):
+            if "from constellation import " in script.read_text(encoding="utf-8"):
+                hit.add(script.stem)
     for p in changed:
         if p.startswith(ACT):
             hit.add(p[len(ACT):].split("/")[0])

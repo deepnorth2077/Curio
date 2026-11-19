@@ -1,0 +1,120 @@
+id: act.quiz.percent-meaning-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 百格电量条大挑战
+targets:
+- math.percent.meaning
+age_band: G5-6
+duration_min: 5
+review: pending
+engine: 1
+sources:
+- type: textbook
+  ref: 人教版小学数学六年级上册（旧版）第六单元「百分数（一）」
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 投了 20 个球，进了 13 个。命中率是百分之几？
+    answer:
+      type: number
+      value: 65
+      tolerance: 0
+      unit: '%'
+      common_wrong:
+      - value: 13
+        feedback: 13 是进球的个数。把投球总数换成 100，进球数也要跟着变。
+        misconception: percent-as-amount
+    feedback:
+      correct: 每 20 个进 13 个，按同样的比例，每 100 个就进 65 个。
+      wrong: 把每一格再切成一样多的小格，让整条正好有 100 格。
+    hints:
+    - 把命中率想成一根格条。整条表示什么？
+    - 把每一格再切成一样多的小格，让整条正好有 100 格。
+  - id: q2
+    stem: 甲投 25 个进 19 个，乙投 50 个进 36 个。谁更准？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 乙
+        misconception: compare-counts-only
+        feedback: 乙进得多，也投得多。把甲乙的投球数换成一样多再比。
+      - id: b
+        text: 甲
+        correct: true
+      - id: c
+        text: 没法比
+        misconception: cant-compare-different-wholes
+        feedback: 两个人投的个数不同。两根条可以各再切一次。
+    feedback:
+      correct: 换成每 100 个，甲进 76 个，乙进 72 个。甲更准。
+      wrong: 一条原有 25 格，另一条原有 50 格，怎样让格数一样？
+    hints:
+    - 把两个人投的球都记在一样长的格条上。
+    - 一条原有 25 格，另一条原有 50 格，怎样让格数一样？
+  - id: q3
+    stem: 电量还剩四分之三。屏幕会显示百分之几？
+    answer:
+      type: number
+      value: 75
+      tolerance: 0
+      unit: '%'
+      common_wrong:
+      - value: 34
+        feedback: 你看到了 3 和 4。先把 100 格平均分成 4 份，再取 3 份。
+        misconception: glue-digits
+      - value: 4
+        feedback: 4 表示分成了几份。每一份有多少格？
+        misconception: denominator-as-percent
+    feedback:
+      correct: 每份 25 格，3 份亮了 75 格，就是 75%。
+      wrong: 先看满格的四分之一有多少格，再数三份。
+    hints:
+    - 满电时一共有 100 格。
+    - 先看满格的四分之一有多少格，再数三份。
+    figure:
+      type: rect
+      parts: 4
+      shaded: 3
+      direction: h
+  - id: q4
+    stem: 小树今年的高度是去年的 150%。这句话怎么读懂？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 写错了，最多 100%
+        misconception: percent-capped
+        feedback: 一根树和另一年的高度比，能超过原来的一整根吗？
+      - id: b
+        text: 今年长高了 150 厘米
+        misconception: percent-as-amount
+        feedback: 150% 给了两次高度的关系。你知道去年的树有几厘米高吗？
+      - id: c
+        text: 今年是去年的一个半
+        correct: true
+    feedback:
+      correct: 把去年当 100 格。今年有 150 格，装下一整根去年的树，还多半根。
+      wrong: 用去年的树做尺子，100% 是一整根，剩下的有多长？
+    hints:
+    - 先标出拿哪一年的树当 1。
+    - 用去年的树做尺子，100% 是一整根，剩下的有多长？
+  - id: q5
+    stem: 第一场投 8 个进 6 个，第二场投 12 个进 9 个。合起来的命中率是百分之几？
+    answer:
+      type: number
+      value: 75
+      tolerance: 0
+      unit: '%'
+      common_wrong:
+      - value: 150
+        feedback: 你把两场的百分数加起来了。先把两场投出去的球放到同一堆。
+    feedback:
+      correct: 两场一共投 20 个、进 15 个。换成每 100 个进 75 个。
+      wrong: 先合计进球数和投球数，再把命中率换成百分数。
+    hints:
+    - 把两场当成一场，分别统计投了几个、进了几个。
+    - 先合计进球数和投球数，再把命中率换成百分数。
+# END OF FILE

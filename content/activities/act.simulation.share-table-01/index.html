@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>分饼台</title>
+<style>
+/* kit:base —— 颜色、卡片、气泡、按钮。色值不要改；模块自己的样式写在最后一段 */
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --grip:#2A7F7C; --grip-soft:#D3E8E5;
+  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
+  --dad:#4F7FA8; --mom:#C2603F; --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#E0876A; --accent-soft:#3A2A24;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;
+  --dad:#7FA9CF; --mom:#E0876A; --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:820px;margin:0 auto;padding:12px 14px 28px}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;overflow:hidden}
+.card header,.card footer{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px}
+.card header{border-bottom:1px solid var(--rule)}
+.card footer{border-top:1px solid var(--rule);min-height:52px;align-items:center}
+.station{font-size:13px;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+h1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);margin:0;text-align:right}
+.hint{font-size:14px;color:var(--muted)}
+.readout{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15px;text-align:right}
+.readout b{color:var(--accent);font-weight:600}
+svg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+svg#stage:focus,svg#stage:focus-visible{outline:none}
+svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.t{fill:var(--ink);font-family:var(--f-sans);font-size:15px}
+.tm{fill:var(--muted);font-family:var(--f-sans);font-size:15px}
+.talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
+.ava{flex:none;width:42px;height:42px}
+.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
+.bubble.good{background:var(--good-soft);border-color:transparent}
+.bubble.bad{background:var(--bad-soft);border-color:transparent}
+.bubble.hmm{background:var(--paper);border-color:transparent}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:10px 0 0}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:manipulation}
+.btn.ghost{background:var(--pane);color:var(--ink)}
+.btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
+.btn.choice:hover{background:var(--hover)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500} .btn.tight{padding:9px 12px}
+.qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px} .card footer{flex-wrap:wrap;row-gap:2px} .hint{white-space:nowrap} .readout{font-size:14px;flex:1 1 auto} }
+/* kit:grip 2026-11-14 —— 圆钮（「可抓」记号，g1.md A.4 G1～G8）。--grip 只给圆钮、托、按住按钮、焦点框用；--accent 不给任何控件用 */
+.btn.hold{touch-action:none;background:var(--grip);border-color:var(--grip);color:var(--bg);display:inline-flex;align-items:center;gap:10px;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.btn.hold.on{filter:brightness(.82)}
+.btn.hold svg{width:18px;height:18px;flex:none}
+.btn.hold svg path{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.gfill{fill:var(--grip)} .gsoft{fill:var(--grip-soft)}
+.gring{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.gring.on{stroke-width:3.2}
+.gridge{fill:none;stroke:var(--bg);stroke-width:2.2;stroke-linecap:round}
+.garrow{fill:none;stroke:var(--grip);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.gkbd{fill:none;stroke:var(--ink);stroke-width:1.6}
+#cue{fill:none;stroke:var(--grip);stroke-width:2.4;transform-box:fill-box;transform-origin:center;animation:cue 2.4s ease-out infinite}
+@keyframes cue{0%{transform:scale(1);opacity:.95}50%{transform:scale(1.8);opacity:0}100%{transform:scale(1.8);opacity:0}}
+@media (prefers-reduced-motion:reduce){#cue{animation:none;transform:scale(1.3);opacity:.9}}
+/* kit:frac 2026-11-14 —— 分数一律上下结构（A.4 第 2 条）。HTML 里用 .frac，SVG 里用 fracS() */
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.08;font-family:var(--f-mono);font-size:.84em;margin:0 .2em;font-variant-numeric:tabular-nums}
+.frac>span:first-child{border-bottom:1.6px solid currentColor;padding:0 .28em .04em}
+.frac>span:last-child{padding:.04em .28em 0}
+.fl{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round}
+.fs{fill:var(--ink);font-family:var(--f-mono);font-size:16px} .fm{fill:var(--ink);font-family:var(--f-mono);font-size:22px} .fb{fill:var(--ink);font-family:var(--f-mono);font-size:34px}
+body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{font-size:38px}
+/* 模块自己的画面样式写在这里：字号全写在类上，窄屏在 body.narrow 里放大（教训 14、28）。下面几个类可以直接用 */
+.food{fill:var(--apricot)} .lead{fill:var(--accent)} .papr{fill:var(--paper)} .pane{fill:var(--pane)}
+.kacc{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.one{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-dasharray:7 6}
+.faint{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;opacity:.75}
+.lb{fill:var(--ink);font-family:var(--f-sans);font-size:17px}
+.lbg{fill:var(--muted);font-family:var(--f-sans);font-size:16px}
+.lbm{fill:var(--ink);font-family:var(--f-mono);font-size:17px}
+.big{fill:var(--ink);font-family:var(--f-mono);font-size:44px}
+.ttl{fill:var(--ink);font-family:var(--f-serif);font-size:26px}
+.sign{fill:var(--ink);font-family:var(--f-serif);font-size:24px}
+.tk{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round} .tkd{fill:none;stroke:var(--accent);stroke-width:1.1}
+body.narrow .lb{font-size:21px} body.narrow .lbg{font-size:20px} body.narrow .lbm{font-size:20px}
+.hint{white-space:normal}.sky{fill:var(--sky)}.sage{fill:var(--sage)}
+body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .sign{font-size:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <header><span class="station" id="station"></span><h1 id="title"></h1></header>
+    <svg id="stage" viewBox="0 0 800 610" tabindex="0" role="application" aria-label="动手区">
+      <g id="dyn"></g>
+      <g id="fx"><circle id="cue" cx="0" cy="0" r="10" style="display:none"/></g><!-- 提醒环用 CSS 动画，不跟着每帧重画（教训 23） -->
+      <rect id="touch" x="-50" y="0" width="660" height="365" fill="transparent"/><!-- 永不重画的触摸层（教训 25） -->
+    </svg>
+    <footer><span class="hint" id="hint"></span><span class="readout" id="readout"></span></footer>
+  </div>
+  <div class="talk">
+    <svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="27" r="16" fill="var(--sky)"/>
+      <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+      <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+      <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+      <path class="k1" d="M18 32 C21 35 27 35 30 32"/>
+    </svg>
+    <div class="bubble" id="say" aria-live="polite"></div>
+  </div>
+  <div class="actions" id="actions"></div>
+  <div id="qarea"></div>
+</div>
+
+<script>
+"use strict";
+/* ============ 2. 平台契约 activity/1.1（单独打开时也能玩）  kit:host ============ */
+const Host = (() => {
+  const h = {}, inFrame = window.parent !== window;
+  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); else (window.__sent = window.__sent || []).push({ type, payload: payload || {} }); };
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
+    state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
+})();
+Host.on("init", p => {
+  if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
+});
+// 每站的猜测和观察只记一次，complete 只发一次（C.0 第 3 条；教训 15、19）
+const sentPred = new Set(), sentObs = new Set();
+let completed = false;
+function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station }); }
+let lastState = "";
+function sendState(o){ const s = JSON.stringify(o); if (s === lastState) return; lastState = s; Host.state(o); }
+
+/* ============ 3. 手绘线条（平台的 sketchLib）  kit:sketch ============ */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,curve,cr,R,f};
+}
+const Sk = sketchLib();
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+const T = (x, y, s, cls, extra) => `<text x="${x}" y="${y}" class="${cls || "t"}"${extra ? " " + extra : ""}>${s}</text>`;
+const TC = (x, y, s, cls, extra) => T(x, y, s, cls, 'text-anchor="middle"' + (extra ? " " + extra : ""));
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const r1 = n => Math.round(n * 10) / 10;
+const box = (x, y, w, h, seed, j) => Sk.line(x, y, x + w, y, seed, j) + Sk.line(x + w, y, x + w, y + h, seed + 1, j) + Sk.line(x + w, y + h, x, y + h, seed + 2, j) + Sk.line(x, y + h, x, y, seed + 3, j);
+// 角度：从正上方起、顺时针，和钟面一样
+const pol = (cx, cy, r, deg) => { const a = deg * Math.PI / 180; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
+function sectorD(cx, cy, r, a0, a1){
+  if (a1 - a0 >= 359.9) return `M${r1(cx - r)} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
+  const p0 = pol(cx, cy, r, a0), p1 = pol(cx, cy, r, a1);
+  return `M${r1(cx)} ${r1(cy)}L${r1(p0[0])} ${r1(p0[1])}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${r1(p1[0])} ${r1(p1[1])}Z`;
+}
+function arcD(cx, cy, r, a0, a1, seed){   // 手绘的一段圆弧
+  const rnd = Sk.R(seed), N = Math.max(2, Math.ceil((a1 - a0) / 14)), pts = [];
+  for (let i = 0; i <= N; i++) pts.push(pol(cx, cy, r * (1 + (rnd() - .5) * .012), a0 + (a1 - a0) * i / N));
+  return Sk.cr(pts, false);
+}
+
+/* ============ 4. 共用零件：分数、「1」记号、圆钮、数线条  kit:parts ============ */
+const narrow = () => document.body.classList.contains("narrow");
+// 4.1 分数：HTML 里的 .frac（带读法）和 SVG 里的 fracS（上下结构，手绘分数线）。任何地方都不用斜杠写法
+const CN1 = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+const cnNum = n => (n = +n, n === 0 ? CN1[0] : n === 100 ? "百" : n === 999 ? "九百九十九" : n === 1000 ? "千" : !Number.isInteger(n) || n < 1 || n > 99 ? undefined : n <= 10 ? CN1[n] : n < 20 ? "十" + CN1[n - 10] : CN1[Math.floor(n / 10)] + "十" + (n % 10 ? CN1[n % 10] : ""));   // 认 1 到 99、100（百）、1000（千）；别的数（含 0）不认，读出来是 undefined，用到先补这里
+const cnFrac = (a, b) => `${cnNum(b)}分之${cnNum(a)}`;                // 读法：3/4 读作四分之三
+const F = (a, b) => `<span class="frac" role="img" aria-label="${cnFrac(a, b)}"><span aria-hidden="true">${a}</span><span aria-hidden="true">${b}</span></span>`;
+const FSZ = { fs: [16, 20], fm: [22, 26], fb: [34, 38] };
+function fracS(x, y, a, b, cls, seed){   // x 是中线，y 是分数线的高度
+  const sz = FSZ[cls][narrow() ? 1 : 0], w = Math.max(String(a).length, String(b).length) * sz * .62 + sz * .5;
+  return `<g role="img" aria-label="${cnFrac(a, b)}">` + TC(x, r1(y - sz * .3), a, cls) + P(Sk.line(x - w / 2, y, x + w / 2, y, seed || 7, .45), "fl") + TC(x, r1(y + sz * .98), b, cls) + `</g>`;
+}
+// 4.2 「1」记号：整体外面一圈手绘虚线框，左上角挂一块写着 1 的纸色小牌
+function oneMark(x, y, w, h, seed, o){   // o.below：牌子挂在左下角（框上面要留给别的东西时用）
+  const tx = x + 4, ty = o && o.below ? y + h - 15 : y - 15;
+  return P(box(x, y, w, h, seed, .8), "one") +
+    `<g transform="rotate(-5 ${tx + 14} ${ty + 14})"><rect x="${tx}" y="${ty}" width="28" height="30" rx="4" class="papr"/>` + P(box(tx, ty, 28, 30, seed + 9, .4), "k1") + TC(tx + 14, ty + 22, "1", "fm") + `</g>`;
+}
+// 4.3 圆钮：实心圆、墨线外圈、三道防滑纹、两侧箭头（G1）。dir 是能动的方向（单位向量）；arc 给出圆心时箭头沿圆弧
+const vbW = () => svg.viewBox.baseVal.width || 800;
+const pxScale = () => vbW() / (svg.clientWidth || 800);                 // 1 个屏幕像素合多少 viewBox 单位
+const gripR = () => Math.max(17, 15 * pxScale());                       // 画出来直径不小于 28 px（G4）
+const hitR = () => Math.max(30, 26 * pxScale());                        // 能点中的范围不小于 48 px（G4）
+function chevron(px, py, dx, dy, s){ const nx = -dy, ny = dx; return `M${r1(px - dx * s + nx * s)} ${r1(py - dy * s + ny * s)}L${r1(px + dx * s * .7)} ${r1(py + dy * s * .7)}L${r1(px - dx * s - nx * s)} ${r1(py - dy * s - ny * s)}`; }
+function grip(x, y, dir, o){
+  o = o || {}; const g = gripR(), on = !!o.on, k = on ? 1.12 : 1, r = g * k, [dx, dy] = dir, nx = -dy, ny = dx;
+  let s = `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" class="gfill"/>` + P(Sk.ellipse(x, y, r, r, o.seed || 71, .5), "gring" + (on ? " on" : ""));
+  for (const i of [-1, 0, 1]){ const ox = dx * i * r * .36, oy = dy * i * r * .36, L = r * (i ? .36 : .5); s += P(`M${r1(x + ox - nx * L)} ${r1(y + oy - ny * L)}L${r1(x + ox + nx * L)} ${r1(y + oy + ny * L)}`, "gridge"); }
+  const gap = g + 11;
+  if (o.arc){ const [cx, cy] = o.arc, R = Math.hypot(x - cx, y - cy), a0 = Math.atan2(x - cx, cy - y) * 180 / Math.PI, da = gap / R * 180 / Math.PI;
+    for (const sg of [-1, 1]){ const [px, py] = pol(cx, cy, R, a0 + sg * da), a = (a0 + sg * da) * Math.PI / 180; s += P(chevron(px, py, sg * Math.cos(a), sg * Math.sin(a), 6), "garrow"); } }
+  else for (const sg of [-1, 1]) s += P(chevron(x + dx * sg * gap, y + dy * sg * gap, dx * sg, dy * sg, 6), "garrow");
+  if (o.kbd) s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r + 6)}" class="gkbd"/>`;
+  return s;
+}
+// 4.4 数线条：0 和 1 的刻度长，数写在线下面；fracs 是要钉上去的分数 [[分子, 分母], …]，标签太挤时只标一部分
+function lineStrip(lx, ly, lw, fracs, seed){
+  let s = P(Sk.line(lx - 10, ly, lx + lw + 14, ly, seed, .5)) + P(`M${lx} ${ly - 12}v24M${lx + lw} ${ly - 12}v24`) + TC(lx, ly + 38, "0", "lbm") + TC(lx + lw, ly + 38, "1", "lbm"), lastLab = 1e9;
+  for (const [a, b] of fracs.slice().sort((p, q) => q[0] / q[1] - p[0] / p[1])){
+    const x = r1(lx + lw * a / b);
+    s += P(`M${x} ${ly}v-15`, "k1") + `<circle cx="${x}" cy="${ly - 18}" r="5.5" class="lead"/>` + P(Sk.ellipse(x, ly - 18, 5.5, 5.5, seed + a * 13 + b, .3), "k1");
+    if (lastLab - x >= (narrow() ? 44 : 36)){ s += fracS(x, ly - 50, a, b, "fs", seed + b); lastLab = x; }
+  }
+  return s;
+}
+const RIDGES = `<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 3v12M9 3v12M14 3v12"/></svg>`;   // 按住按钮上的防滑纹小图标
+
+/* ============ 5. 页面骨架  kit:shell ============ */
+const $ = id => document.getElementById(id);
+const svg = $("stage"), gDyn = $("dyn"), cueEl = $("cue");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const STATIONS = 3;   // 一共几站
+// t 是孩子操作推到的进度（0～1），p 是画面上缓动跟随的进度；读数和画面都用 p（教训 2）
+const S = { station: 1, mode: "talk", scene: "s1q", hold: false, press: false, kbd: false, dirty: true, t1: 0, p1: 0, t2: 0, p2: 0 };
+let gen = 0;          // 每换一站加一：延时回调先确认还在原来的状态（教训 11）
+const later = (ms, f) => { const g = gen; setTimeout(() => { if (g === gen) f(); }, reduced ? Math.min(ms, 60) : ms); };
+
+function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
+function hint(s){ $("hint").textContent = s || ""; }
+function readout(html){ if ($("readout").innerHTML !== (html || "")) $("readout").innerHTML = html || ""; }
+function say(html, tone){ const b = $("say"); b.innerHTML = html; b.className = "bubble" + (tone ? " " + tone : ""); }
+let fingerDown = false;
+addEventListener("pointerdown", () => { fingerDown = true; }, true);
+for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);
+let keysDown = 0;
+addEventListener("keydown", e => { if (!e.repeat) keysDown++; }, true);
+addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true);
+addEventListener("blur", () => { keysDown = 0; S.hold = false; });
+function actions(list){
+  const boxEl = $("actions"); boxEl.replaceChildren();
+  S.dirty = true;   // 换按钮就是换了状态：一律重画一次，免得圆钮留在锁住的画面上
+  const guard = fingerDown, born = performance.now();
+  let keyGuard = keysDown > 0;
+  if (keyGuard){ const off = () => { if (keysDown === 0){ setTimeout(() => { keyGuard = false; }, 0); removeEventListener("keyup", off, true); } }; addEventListener("keyup", off, true); }
+  for (const a of list || []){
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn " + (a.cls || ""); b.innerHTML = (a.hold ? RIDGES : "") + `<span>${a.label}</span>`;
+    if (a.hold){
+      const on = v => { S.hold = v; b.classList.toggle("on", v); if (v) touched(); };
+      b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); on(true); });
+      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => on(false));
+      b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(true); } });
+      b.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(false); } });
+      b.addEventListener("blur", () => on(false));
+      b.addEventListener("contextmenu", e => e.preventDefault());
+    } else {
+      b.addEventListener("click", e => { if (performance.now() - born < 400 || (keyGuard && e.detail === 0)) return; a.go(e); });
+      if (guard){ b.disabled = true; const en = () => { setTimeout(() => { b.disabled = false; }, 120); removeEventListener("pointerup", en, true); }; addEventListener("pointerup", en, true); }
+    }
+    boxEl.append(b);
+  }
+  const first = boxEl.querySelector("button");
+  if (first && !/^act/.test(S.mode)) first.focus({ preventScroll: true });
+  return boxEl;
+}
+// 猜测：只记下来，不在这里判对错的颜色。猜错的反馈先接住、再说清，然后一律去动手，让实物来回答
+function ask(question, options, onAnswer){
+  say(question);
+  actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
+    if (!sentPred.has(S.station)){ sentPred.add(S.station); Host.event("predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null }); }
+    S.guess = S.guess || {}; S.guess[S.station] = o;
+    say(o.feedback, o.correct ? "good" : "hmm");
+    onAnswer(o);
+  }})));
+}
+function next(label, go, cls){ actions([{ label, go, cls }]); }
+// 星卡上选站重玩（#154）：replay 是正在重玩的站号，0 是从头往下走。重玩一站跳过开场和猜测题，直接进这一站的动手；
+// 揭晓完，原来「去第 k+1 站」「看我的星卡」的按钮换成「回星卡」（用 nextOr）。不出猜测题就不发 predicted；
+// observed 靠 observedOnce、complete 靠 completed，都只记第一次。每站怎么复位、怎么进动手是模块自己的事，写在 REPLAY[站号] 里
+let replay = 0;
+const REPLAY = {};
+function nextOr(label, go, cls){ if (replay) next("回星卡", enterEnd); else next(label, go, cls); }
+function replayAt(k){ replay = k; gen++; S.station = k; hint(""); readout(""); disarmCue(); REPLAY[k](); }
+function restart(){ replay = 0; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }   // 从头玩：和以前的「再玩一次」一样
+function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站。enterEnd() 最后调它
+  replay = 0;
+  actions([{ label: "从头玩", go: restart, cls: "ghost tight" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1), cls: "tight" }))));   // tight：手机上一行排得下
+}
+
+(function(){   // 「我有个问题」：随时可以问，发到信号站
+  const area = $("qarea");
+  const open = document.createElement("button");
+  open.type = "button"; open.className = "btn ghost small"; open.textContent = "我有个问题";
+  open.style.marginTop = "12px";
+  open.addEventListener("click", () => {
+    if (area.querySelector("textarea")) return;
+    const ta = document.createElement("textarea"); ta.maxLength = 120; ta.placeholder = "想问领航员什么？";
+    const send = document.createElement("button"); send.type = "button"; send.className = "btn small"; send.textContent = "发给领航员";
+    const bx = document.createElement("div"); bx.className = "qbox"; bx.append(ta, send);
+    send.addEventListener("click", () => { const q = ta.value.trim(); if (!q) return; Host.noteQuestion(q); bx.remove(); say("好问题，我记下来了。等会儿一起找答案。"); });
+    area.append(bx); ta.focus();
+  });
+  area.append(open);
+})();
+
+// 第一屏的提醒（G6）：进入动手 1.5 秒还没碰，第一个圆钮外面扩出一圈细环；一碰就再也不出现
+let cuePos = null, cueTimer = 0;
+function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; placeCue(); } }, 1500); }
+function disarmCue(){ clearTimeout(cueTimer); cuePos = null; cueEl.style.display = "none"; }
+function touched(){ if (cuePos || cueTimer) disarmCue(); cueTimer = 0; }
+function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }   // 第三个数是被提醒的东西的半径（托里的一个）
+
+// All geometry is expressed in the same coordinates as the fraction strips.
+const left = 65, width = 430;
+const mid = 280;
+const saved = {};
+let values = {}, handles = [], dragging = null;
+const ratio = (a,b) => [a,b].join("/");
+const mixed = (a,b) => a % b === 0 ? String(a/b) : (a >= b ? Math.floor(a/b) + " 又 " : "") + F(a%b,b);
+const mixedName = (a,b) => a % b === 0 ? String(a/b) : (a>=b ? Math.floor(a/b)+" 又 " : "")+ratio(a%b,b);
+const rect = (x,y,w,h,cls="pane",r=0) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" class="${cls}"/>`;
+const circ = (x,y,r,cls) => `<circle cx="${x}" cy="${y}" r="${r}" class="${cls}"/>`;
+function segment(x,y,ex,ey,cls="k1"){return P(`M${x} ${y} L${ex} ${ey}`,cls)}
+function ticks(count,x,y,w,h){
+  return Array.from({length:count-1},(_,i)=>segment(x+w*(i+1)/count,y,x+w*(i+1)/count,y+h)).join("");
+}
+function strip(y,n,d,parts=d,opts={}){
+  const w=width, h=opts.h || 39;
+  return rect(left,y,w,h,"papr",3)+rect(left,y,w*n/d,h,opts.color || "food",3)+
+    P(box(left,y,w,h,12,.45))+ticks(parts,left,y,w,h)+
+    (opts.one===false ? "" : oneMark(left-5,y-5,w+10,h+10,20));
+}
+function axis(y,divisions=0,max=1) {
+  let s=segment(left,y,left+width,y,"k");
+  for(let i=0;i<=max;i++){
+    const x=left+i*width/max;
+    s+=segment(x,y-10,x,y+10)+TC(x,y+32,i,"lbm");
+  }
+  return s+(divisions?ticks(divisions,left,y-5,width,10):"");
+}
+function pin(x,y){return segment(x,y-22,x,y)+circ(x,y-24,5.5,"lead")}
+function labelFraction(x,y,n,d){
+  return rect(x-26,y-30,52,60,"papr",5)+fracS(x,y,n,d,"fs",21);
+}
+function control(x,y,dir,onDown,onMove,onUp){
+  if(S.mode!=="act")return "";
+  handles.push({x,y,onDown,onMove,onUp});
+  return grip(x,y,dir);
+}
+function dial(x,y,value,min,max,set,label,display=value){
+  const t=(value-min)/(max-min);
+  const a=(-130+t*260)*Math.PI/180, r=39;
+  const xy=[x+Math.sin(a)*r,y-Math.cos(a)*r];
+  const adjust=q=>{
+    const raw=Math.atan2(q.x-x,y-q.y)*180/Math.PI;
+    set(Math.round(min+(max-min)*clamp((raw+130)/260)));
+  };
+  return circ(x,y,r,"papr")+P(Sk.ellipse(x,y,r,r,44,.45))+
+    TC(x,y+6,display,"lbm")+TC(x,y+68,label,"lbg")+
+    control(...xy,[Math.cos(a),Math.sin(a)],null,adjust,adjust);
+}
+function button(label,go){return {label,go:()=>{go();refresh()},cls:"ghost"}}
+function setControls(list,ready){
+  if(ready)list.push({label:"看发现",go:reveal});
+  // Preserve focus while the instrument is moving.
+  const id=list.map(i=>i.label).join("|");
+  if(id!==S.controls){S.controls=id; actions(list);}
+}
+function refresh(){
+  if(S.mode!=="act")return;
+  handles=[]; const view=stations[S.station-1].draw(values);
+  gDyn.innerHTML=view.picture; readout(view.reading); hint(view.hint);
+  sendState({station:S.station,...view.state});
+  setControls(view.controls || [],view.ready);
+  placeCue();
+}
+function enter1(){Object.keys(saved).forEach(k=>delete saved[k]);openStation(1)}
+function openStation(n){
+  gen++; disarmCue(); dragging=null; S.station=n; S.mode="guess"; handles=[];
+  const st=stations[n-1]; head(n,st.title); hint("");readout("");gDyn.innerHTML=st.open();
+  ask(st.question,st.choices,()=>next("去动手",()=>play(n)));
+}
+function play(n){
+  gen++; S.station=n; S.mode="act"; S.controls=null; dragging=null;
+  const st=stations[n-1]; values=st.init(); head(n,st.title);say((n===1 && !replay?"带圆钮的地方，都能用手抓。":"")+st.prompt);
+  refresh(); svg.focus({preventScroll:true});
+  if(handles.length)armCue(()=>[handles[0]?.x ?? mid,handles[0]?.y ?? 230]);
+}
+function reveal(){
+  const n=S.station, st=stations[n-1]; saved[n]=st.save(values);
+  observedOnce(n);disarmCue();S.mode="reveal";handles=[];head(n,st.title);hint("");readout("");
+  gDyn.innerHTML=st.revealArt ? st.revealArt(values) : st.draw(values).picture;
+  say((!replay && S.guess?.[n]?.correct ? "跟你猜的一样。" : "")+st.discovery,"good");nextOr(n===3?"看我的星卡":`去第 ${n+1} 站`,()=>n===3?enterEnd():openStation(n+1));
+}
+function enterEnd(){
+  S.mode="end"; handles=[]; disarmCue();head(0,cardTitle);hint("");readout("");gDyn.innerHTML=cardArt(saved);
+  say(cardCaption(saved),"good");
+  if(!completed){completed=true;Host.complete({});}
+  endActions();
+}
+for(let n=1;n<=STATIONS;n++)REPLAY[n]=()=>play(n);
+function point(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
+function target(q){return handles.find(h=>Math.hypot(h.x-q.x,h.y-q.y)<=hitR())}
+svg.addEventListener("touchstart",e=>{if(e.touches.length===1 && target(point(e.touches[0])))e.preventDefault()},{passive:false});
+svg.addEventListener("pointerdown",e=>{
+  if(dragging || S.mode!=="act")return;
+  const q=point(e),h=target(q);if(!h)return;
+  touched(); dragging={id:e.pointerId,handle:h};svg.setPointerCapture(e.pointerId);
+  h.onDown?.(q);refresh();
+});
+svg.addEventListener("pointermove",e=>{
+  if(dragging?.id!==e.pointerId)return;
+  dragging.handle.onMove?.(point(e));refresh();
+});
+svg.addEventListener("pointerup",e=>{
+  if(dragging?.id!==e.pointerId)return;
+  dragging.handle.onUp?.(point(e));dragging=null;refresh();
+});
+for(const ev of ["lostpointercapture","pointercancel"])svg.addEventListener(ev,()=>{dragging=null});
+svg.addEventListener("keydown",e=>{
+  if(S.mode!=="act")return;
+  if(stations[S.station-1].key(values,e.key)){
+    e.preventDefault();touched();refresh();
+  }
+});
+function fitView(){
+  document.body.classList.toggle("narrow",svg.clientWidth<600);
+  svg.setAttribute("viewBox",narrow()?"0 0 560 365":"-50 0 660 365");
+}
+new ResizeObserver(()=>{fitView();if(S.mode==="act")refresh()}).observe(svg);
+
+function pastry(x,y,r,eaten,parts){
+  let s=circ(x,y,r,"pane")+P(Sk.ellipse(x,y,r,r,12,.5));
+  for(let i=0;i<parts;i++){
+    if(i<eaten)s+=P(sectorD(x,y,r,360*i/parts,360*(i+1)/parts),"food");
+    const [px,py]=pol(x,y,r,360*i/parts);s+=segment(x,y,px,py);
+  }
+  return s+P(Sk.ellipse(x,y,r,r,13,.4),"k1");
+}
+function batch(v,pies,people){Object.assign(v,{pies,people,dealt:0,cut:false})}
+function slice(v){v.cut=true}
+function deal(v){if(v.cut && v.dealt<v.pies){v.dealt++;if(v.dealt===v.pies)v.done.add(v.pies)}}
+function assemble(v){v.placed=Math.min(v.pies,v.placed+1);if(v.placed===v.pies)v.done.add(v.pies)}
+function turn(v,n){v.num=clamp(n,0,12);v.visited.add(v.num)}
+function tabletop(v,active){
+  let s="";
+  for(let i=0;i<v.pies;i++){
+    const x=mid+(i-(v.pies-1)/2)*94;
+    if(i<v.dealt)s+=P(Sk.ellipse(x,99,36,36,12,.6),"kf");
+    else s+=pastry(x,99,34,v.cut?v.people:1,v.cut?v.people:1);
+    if(i===0)s+=oneMark(x-40,56,80,86,5);
+  }
+  for(let i=0;i<v.people;i++){
+    const x=mid+(i-(v.people-1)/2)*90;
+    s+=circ(x,235,39,"sky")+P(Sk.ellipse(x,235,41,42,30+i,.5));
+    if(v.dealt>0)s+=pastry(x,235,29,v.dealt,v.people);
+    s+=TC(x,305,"盘 "+(i+1),"lbg");
+  }
+  if(active && v.dealt<v.pies){
+    const x=mid+(v.dealt-(v.pies-1)/2)*94+23;
+    s+=control(x,125,[0,1],null,null,()=>v.cut?deal(v):slice(v));
+  }
+  return s;
+}
+function plate(v){
+  const {pies,people,placed}=v;
+  let s="";
+  for(let i=placed;i<pies;i++){
+    const x=72+i*62;s+=P(sectorD(x,95,31,0,360/people),"food")+P(sectorD(x,95,31,0,360/people));
+  }
+  if(placed<pies){
+    const x=72+placed*62;
+    if(v.drag)s+=P(sectorD(v.drag.x,v.drag.y,31,0,360/people),"food");
+    s+=control(v.drag?.x??x,v.drag?.y??101,[0,1],null,q=>{v.drag=q},q=>{v.drag=null;if(q.y>141)assemble(v)});
+  }
+  const plates=Math.ceil(pies/people);
+  for(let i=0;i<plates;i++){
+    const x=mid+(i-(plates-1)/2)*109,n=clamp(placed-i*people,0,people);
+    s+=circ(x,217,48,"sky")+P(Sk.ellipse(x,217,48,48,40,.6),"k1");
+    if(n)s+=pastry(x,217,34,n,people);
+    if(n===people)s+=oneMark(x-40,177,80,80,15);
+  }
+  return s+TC(mid,309,"把上面的小块拼进盘子","lbg");
+}
+function fractionTrack(v){
+  const x=left+width*v.num/12;
+  return oneMark(left-4,136,width/3+8,41,2)+axis(159,12,3)+pin(x,159)+
+    fracS(x,90,v.num,4,"fm",11)+(v.num%4===0?TC(x,43,String(v.num/4),"lbm"):"");
+}
+const stations=[
+  {title:"把饼发进盘子",question:"3 张饼平均分给 4 个人，每人得到多少？",
+    choices:[{label:"分不了，3 比 4 小",mis:"small-cant-divide-big",feedback:"整张不够每人拿一张。把每张切开看看。"},
+      {label:"每人 "+F(3,4)+" 张",correct:true,feedback:"把你的分法摆进盘子，数数每人几块。"},
+      {label:"每人 "+F(4,3)+" 张",mis:"divide-reversed",feedback:"先看看有几个人，再决定一张该切几份。"}],
+    open:()=>tabletop({pies:3,people:4,dealt:0,cut:false},false),
+    init:()=>({pies:3,people:4,dealt:0,cut:false,done:new Set()}),
+    prompt:"先切饼，再把每张饼的每一份发给一个人。换一种人数也试试。",
+    draw(v){
+      const controls=[];
+      if(v.dealt<v.pies)controls.push(button(v.cut?"发一轮":"切饼",()=>v.cut?deal(v):slice(v)));
+      if(v.done.has(3))for(const [p,n] of [[2,3],[1,5]])if(p!==v.pies)controls.push(button(`分 ${p} 张饼`,()=>batch(v,p,n)));
+      return {picture:tabletop(v,true),reading:v.dealt===v.pies?`${v.pies} ÷ ${v.people} = `+F(v.dealt,v.people):"每个盘里有 "+v.dealt+" 小块",
+        hint:`${v.pies} 张饼，${v.people} 个人`,controls,ready:v.done.has(3)&&v.done.size>=2,state:{pies:v.pies,people:v.people,each:ratio(v.dealt,v.people)}};
+    },key(v,k){if(k==="Enter"){slice(v);return true}if(k===" "){deal(v);return true}if(v.done.has(3)&&["ArrowLeft","ArrowRight"].includes(k)){batch(v,v.pies===2?1:2,v.pies===2?5:3);return true}},
+    discovery:"每个人从每张饼拿一小块。3 张饼平均分给 4 人，每人拿到四分之三张。小的数也能除以大的数，除数不能是零。",
+    save:v=>({pies:v.pies,people:v.people})
+  },{
+    title:"拼出整张饼",question:"5 张饼平均分给 4 人，每人能分到多少？",
+    choices:[{label:"比 1 张多",correct:true,feedback:"看看盘里能不能拼出一整张，还多出一点。"},
+      {label:"比 1 张少，分数都小",mis:"fractions-below-one",feedback:"我们把分到的小块拼在一起，看能不能拼满一张。"},
+      {label:"正好一张，多的那张不算",mis:"fractions-below-one",feedback:"每一张饼都要发完。把最后那张切开一起发。"}],
+    open:()=>TC(mid,170,"5 张饼，4 个人","ttl"),init:()=>({pies:5,people:4,placed:0,done:new Set()}),
+    prompt:"这是一个人分到的小块。把它们拖进下面的盘子，看看能拼出几整张。",
+    draw(v){
+      const controls=[];
+      if(v.placed<v.pies)controls.push(button("拼一块",()=>assemble(v)));
+      if(v.pies===5&&v.done.has(5))controls.push(button("换 7 张饼",()=>Object.assign(v,{pies:7,people:2,placed:0})));
+      return {picture:plate(v),reading:F(v.placed,v.people)+" 张 = "+mixed(v.placed,v.people)+" 张",hint:`每人 ${v.pies} 块，每块是整张的`+cnFrac(1,v.people),
+        controls,ready:v.done.size===2,state:{pies:v.pies,people:v.people,improper:ratio(v.placed,v.people),mixed:mixedName(v.placed,v.people)}};
+    },key(v,k){if(k===" "){assemble(v);return true}},
+    discovery:"分到的比一整张还多，分子就比分母大。五个四分之一，拼成一整张还多四分之一。",save:v=>v.placed
+  },{
+    title:"数线走过 1",question:F(11,4)+" 在哪两个整数之间？",
+    choices:[{label:"0 和 1",mis:"fractions-below-one",feedback:"每走四小格，就能到下一整个。再走几步看看。"},
+      {label:"11 和 12",mis:"numerator-as-whole",feedback:"11 数的是几小格，每小格有一整张大吗？"},
+      {label:"2 和 3",correct:true,feedback:"把钉子转到第十一小格，检查你猜的位置。"}],
+    open:()=>axis(206,0,3)+fracS(mid,112,11,4,"fb",5),init:()=>({num:0,visited:new Set([0])}),
+    prompt:"转分子盘。找一个刚好的整数，再去找四分之十一。",
+    draw(v){return {picture:fractionTrack(v)+dial(mid,250,v.num,0,12,n=>turn(v,n),"分子"),
+      reading:F(v.num,4)+" = "+mixed(v.num,4),hint:"分母一直是 4，每一小格都是四分之一。",ready:v.visited.has(11)&&[4,8,12].some(n=>v.visited.has(n)),
+      state:{num:v.num,den:4,mixed:mixedName(v.num,4)}}},
+    key(v,k){if(["ArrowLeft","ArrowRight"].includes(k)){turn(v,v.num+(k==="ArrowRight"?1:-1));return true}},
+    revealArt:()=>rect(66,76,265,176,"papr",18)+P(box(66,76,265,176,5,.5))+rect(87,96,220,50,"sage",3)+TC(197,132,"0.333333…","ttl")+
+      Array.from({length:8},(_,i)=>rect(89+i%4*56,168+35*Math.floor(i/4),40,20,"pane",4)).join("")+labelFraction(420,158,1,3),
+    discovery:"四分之八就是 2，整数也能写成分数。1 除以 3 写成小数，总还有下一个 3。写成三分之一，一下就写完了。",save:v=>[...v.visited]
+  }];
+const cardTitle="我分的饼";
+function cardArt(s){const v=s[1];return tabletop({...v,dealt:v.pies,cut:true},false).replace(/^/,'<g transform="translate(10,5) scale(.57)">')+"</g>"+
+  pastry(365,99,32,4,4)+pastry(453,99,32,1,4)+oneMark(326,59,80,80,32)+TC(405,172,"一张还多一块","lb")+axis(305,12,3)+[4,8,11].map(n=>pin(left+width*n/12,305)+fracS(left+width*n/12,240,n,4,"fs",15)).join("");}
+const cardCaption=s=>`你把 ${s[1].pies} 张饼平均分给 ${s[1].people} 人，每盘 `+F(s[1].pies,s[1].people)+" 张。"+F(5,4)+" 张能拼出一整张，"+F(11,4)+" 在 2 和 3 之间。";
+
+Host.ready();
+fitView();
+enter1();
+</script>
+</body>
+</html>

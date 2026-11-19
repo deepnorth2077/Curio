@@ -1,0 +1,59 @@
+id: math.percent.meaning
+schema: knode/1
+title: 百分数：都换成 100 份
+subjects:
+- math
+theme: stat
+grade: G6
+unit: 六上 · 百分数（一）（人教版旧版册次，新版以实体书为准）
+curriculum:
+- std: 义务教育数学课程标准（2022 年版）
+  ref: 第三学段「统计与概率」：结合具体情境探索百分数的意义，能解决与百分数有关的简单实际问题
+- textbook: 人教版小学数学六年级上册（旧版）
+  unit: 第六单元 百分数（一）
+prerequisites:
+- math.fraction.equivalent
+- math.fraction.the-whole
+related:
+- math.ratio.meaning
+driving_question: 投 20 个进 17 个，投 25 个进 21 个，谁更准？
+objectives:
+- 知道整体不一样大时，把它们都换成 100 份再比：17/20 是 85/100，21/25 是 84/100。
+- 知道分母是 100 的分数可以写成百分数，会读、会写。
+- 记住几个常用的：1/2 是 50%，1/4 是 25%，3/4 是 75%，1/5 是 20%，1/10 是 10%。
+- 知道百分数说的是两个量的关系，不带单位；一个量比另一个量多时，可以超过 100%。
+misconceptions:
+- id: compare-counts-only
+  text: 只比个数，不看一共多少，例如认为投 25 进 21 的人一定比投 20 进 17 的人准。
+- id: cant-compare-different-wholes
+  text: 觉得整体不一样大就没法比。
+- id: denominator-as-percent
+  text: 把分母直接当成百分数，例如认为 1/4 是 4%。
+- id: glue-digits
+  text: 把分子分母的数字连起来当百分数，例如认为 1/4 是 14%，3/4 是 34%。
+- id: percent-capped
+  text: 觉得百分数最多是 100%，「是去年的 150%」一定写错了。
+- id: percent-as-amount
+  text: 把百分数当成一个带单位的量，例如把「是去年的 150%」理解成高了 150 厘米。
+sources:
+- type: textbook
+  ref: 人教版小学数学六年级上册（旧版）第六单元「百分数（一）」
+- type: reference
+  ref: 'USGS Water Science School: The Water in You: Water and the Human Body（成人体内水的质量占比约六成，随人而异）'
+  url: https://www.usgs.gov/special-topics/water-science-school/science/water-you-water-and-human-body
+- type: reference
+  ref: 'American Academy of Pediatrics, Pediatric Nutrition: Water and Hydration（儿童体重中约 50% 至 60% 为水）'
+  url: https://publications.aap.org/aapbooks/monograph/734/chapter/11477553/Water-and-Hydration
+lenses:
+- band: G3-4
+  approach: 只认识电量和进度条：满格是 100%，一半是 50%，不算。
+- band: G5-6
+  approach: 两根格数不同的条，各自再切，切到都是 100 格才比得出谁更准；拖电量条，同时读出分数和百分数；把今年的树拉到去年的一个半。
+- band: G7-9
+  approach: 频率和概率；增长率；用百分数描述和比较数据。
+activities:
+- act.simulation.hundred-grid-01
+- act.quiz.percent-meaning-01
+status: draft
+version: 1
+# END OF FILE

@@ -1,0 +1,47 @@
+id: math.decimal.compare-add
+schema: knode/1
+title: 小数比大小和加减
+subjects:
+  - math
+theme: num
+grade: G4
+unit: 四下 · 小数的意义和性质；小数的加法和减法（人教版旧版册次，新版以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第二学段「数与运算」：能比较简单的小数的大小，会进行一位小数的加减；第三学段：能进行小数的四则运算
+  - textbook: 人教版小学数学四年级下册（旧版）
+    unit: 第四单元 小数的意义和性质；第六单元 小数的加法和减法
+prerequisites:
+  - math.decimal.tenths
+related: []
+driving_question: 0.125 有三位数字，0.5 只有一位，谁大？
+objectives:
+  - 知道比小数的大小要从十分位比起，位数多的不一定大。
+  - 知道小数部分末尾添上 0 或去掉 0，大小不变：0.3 和 0.30 一样大。
+  - 知道小数相加减要对齐小数点，相同的格才能相加减。
+  - 知道十分位满 10 就向个位进 1，和整数是同一套规矩。
+misconceptions:
+  - id: longer-is-larger
+    text: 觉得位数多的小数大，例如认为 0.125 比 0.5 大，因为 125 比 5 大。
+  - id: trailing-zero-changes
+    text: 觉得末尾添 0 会改变大小，例如认为 0.30 比 0.3 大，或者比 0.3 小。
+  - id: align-right
+    text: 小数加减时把末位对齐，例如把 0.5 + 0.25 算成 0.30。
+sources:
+  - type: textbook
+    ref: 人教版小学数学四年级下册（旧版）第四单元、第六单元
+  - type: reference
+    ref: World Athletics，柏林世锦赛男子 100 米决赛，2009 年 8 月 16 日
+    url: https://worldathletics.org/athletes/jamaica/usain-bolt-14201847
+lenses:
+  - band: G3-4
+    approach: 把数字卡放进位值格，量筒里的水跟着涨：十分位的一块顶百分位的十片。末尾添 0 水面不动；末位对齐去加，格子对不上。
+  - band: G5-6
+    approach: 用计数单位解释小数的性质和竖式：都换成相同的计数单位再比、再加减。
+  - band: G7-9
+    approach: 有效数字和近似数；数轴上的大小比较推广到负数。
+activities:
+  - act.simulation.place-slots-01
+  - act.quiz.compare-add-01
+status: draft
+version: 1

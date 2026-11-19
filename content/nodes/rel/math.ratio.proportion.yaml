@@ -1,0 +1,55 @@
+id: math.ratio.proportion
+schema: knode/1
+title: 比例和比例尺
+subjects:
+- math
+theme: rel
+grade: G6
+unit: 六下 · 比例（人教版旧版册次，新版以实体书为准）
+curriculum:
+- std: 义务教育数学课程标准（2022 年版）
+  ref: 第三学段「数量关系」：在实际情境中理解比和比例；通过具体情境认识成正比的量；了解比例尺
+- textbook: 人教版小学数学六年级下册（旧版）
+  unit: 第四单元 比例
+prerequisites:
+- math.ratio.meaning
+related:
+- math.decimal.point-shift
+driving_question: 照片只拉宽不拉高，里面的星球为什么变扁了？
+objectives:
+- 知道宽和高的比不变，照片才不走样；两个比相等的式子叫比例。
+- 知道宽和高各加上一样多，照片会走样；都乘同一个数才不走样。
+- 知道成正比例的两个量画在格子纸上，是一条经过 0 的直线。
+- 会用比例尺把图上的长度换成实际的长度，注意单位。
+misconceptions:
+- id: add-same-keeps-ratio
+  text: 觉得宽和高各加上一样多，形状不变，例如认为 8 × 6 的照片变成 10 × 8 不走样。
+- id: bigger-is-similar
+  text: 觉得只要是放大，形状就一样，不管宽和高各变了多少。
+- id: curve-growth
+  text: 觉得两个量一起变大，画出来是越来越陡的弯线。
+- id: no-pattern
+  text: 觉得不走样的各种大小之间没有规律，画出来是散乱的点。
+- id: scale-as-distance
+  text: '把比例尺里的数直接当成实际的长度，例如 1 : 100000 的图上量得 4 厘米，说实际是 100000 厘米。'
+- id: unit-slip
+  text: 算对了厘米数，换成千米时差了 10 倍或 100 倍，例如把 400000 厘米说成 40 千米。
+sources:
+- type: textbook
+  ref: 人教版小学数学六年级下册（旧版）第四单元「比例的意义和基本性质」「正比例」「比例尺」
+- type: reference
+  ref: NASA JPL：按比例制作地球和月球的模型
+  url: https://www.jpl.nasa.gov/edu/resources/lesson-plan/modeling-the-earth-moon-system/
+lenses:
+- band: G3-4
+  approach: 只玩拉照片：拉宽变扁，拉高变瘦，两样一起拉才不走样。
+- band: G5-6
+  approach: 拉相框找出不走样的大小；把它们点到格子纸上，发现排成一条经过 0 的直线；在一张小岛地图上量距离、换比例尺。
+- band: G7-9
+  approach: 正比例函数 y = kx 和它的图象；相似图形；反比例函数。
+activities:
+- act.simulation.stretch-frame-01
+- act.quiz.proportion-01
+status: draft
+version: 1
+# END OF FILE

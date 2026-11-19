@@ -1,0 +1,26 @@
+id: act.simulation.slide-rule-01
+contract: activity/1.1
+type: simulation
+version: 1
+title: 滑尺
+targets:
+  - math.decimal.point-shift
+age_band: G3-4
+entry: index.html
+duration_min: 8
+pedagogy: explain
+capabilities:
+  - pointer
+  - keyboard
+misconceptions:
+  - append-zero
+  - multiply-whole-part-only
+  - bigger-number-longer
+  - bigger-unit-longer
+emits:
+  - predicted
+  - observed
+author:
+  model: Codex
+  prompt_ref: docs/constellations/zero-to-one/stars/06-point-shift.md
+review: pending

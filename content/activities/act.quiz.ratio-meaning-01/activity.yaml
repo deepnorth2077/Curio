@@ -1,0 +1,116 @@
+id: act.quiz.ratio-meaning-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 调饮料台大挑战
+targets:
+- math.ratio.meaning
+age_band: G5-6
+duration_min: 5
+review: pending
+engine: 1
+sources:
+- type: textbook
+  ref: 人教版小学数学六年级上册（旧版）第四单元「比的意义」「比的基本性质」
+- type: reference
+  ref: NOAA Ocean Service：海水的平均盐度，按质量约千分之三十五
+  url: https://oceanservice.noaa.gov/education/dyw-pass-salt.html
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 第一壶用 3 勺粉兑 5 杯水，第二壶用 6 勺粉兑 10 杯水。哪一壶浓？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 第二壶
+        misconception: one-quantity-only
+        feedback: 第二壶粉多了，水也多了。试着把它平分成两小壶。
+      - id: b
+        text: 一样浓
+        correct: true
+      - id: c
+        text: 第一壶
+        misconception: one-quantity-only
+        feedback: 第一壶水少了，它的粉也少了。把粉和水一起比一比。
+    feedback:
+      correct: 第二壶的粉和水都是第一壶的 2 倍。分成两壶，每壶刚好是 3 勺兑 5 杯。
+      wrong: 把大壶平均分成两小壶。
+    hints:
+    - 把大壶平均分成两小壶。
+    - 看看每小壶分到几勺粉、几杯水。
+  - id: q2
+    stem: '第一壶粉和水是 1 : 2，第二壶是 2 : 3。哪一壶浓？'
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 第一壶
+        misconception: one-quantity-only
+        feedback: 再给两壶配上同样多的水，看看谁用的粉多。
+      - id: b
+        text: 一样，都差 1
+        misconception: additive-comparison
+        feedback: 差都是 1。试着比较每 6 杯水里有几勺粉。
+      - id: c
+        text: 第二壶
+        correct: true
+    feedback:
+      correct: 都兑 6 杯水，第一壶要 3 勺粉，第二壶要 4 勺粉。第二壶浓。
+      wrong: 把两壶的水都换成 6 杯。
+    hints:
+    - 把两壶的水都换成 6 杯。
+    - 水变成几倍，粉也变成同样的倍数。
+  - id: q3
+    stem: 想调出一样的味道。2 勺粉要 3 杯水，8 勺粉要几杯水？
+    answer:
+      type: number
+      value: 12
+      tolerance: 0
+      unit: 杯
+      common_wrong:
+      - value: 9
+        feedback: 你给粉和水各加了 6。要保留味道，得让它们变成相同的倍数。
+        misconception: add-same-keeps-ratio
+    feedback:
+      correct: 8 勺是 2 勺的 4 倍，水也要 4 倍。3 × 4 = 12。
+      wrong: 先看粉变成几倍。
+    hints:
+    - 先看粉变成几倍。
+    - 让水也变成这个倍数。
+  - id: q4
+    stem: '把 15 : 20 化简成 3 : □。方框里填几？'
+    answer:
+      type: number
+      value: 4
+      tolerance: 0
+      common_wrong:
+      - value: 8
+        feedback: 你把两边都减了 12。化简比的时候，两边要同时除以同一个数。
+        misconception: add-same-keeps-ratio
+    feedback:
+      correct: '15 和 20 同时除以 5，最简单的整数比是 3 : 4。'
+      wrong: 想想大桶怎么均分成小壶。
+    hints:
+    - 想想大桶怎么均分成小壶。
+    - 15 平均分几份，每份才是 3？
+  - id: q5
+    stem: 平均每 1000 克海水约有 35 克盐。200 千克这样的海水，约有几千克盐？
+    answer:
+      type: number
+      value: 7
+      tolerance: 0
+      unit: 千克
+      common_wrong:
+      - value: 35
+        feedback: 35 克只是 1 千克海水里的盐。
+      - value: 70
+        feedback: 先算盐有多少克，换算时注意 1000 克才是 1 千克。
+    feedback:
+      correct: 200 千克是 200 个 1000 克。35 × 200 = 7000 克，就是 7 千克。
+      wrong: 先把每份的海水换成千克。
+    hints:
+    - 先把每份的海水换成千克。
+    - 算出盐的总克数，再换成千克。
+# END OF FILE

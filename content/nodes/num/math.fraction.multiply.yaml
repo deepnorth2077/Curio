@@ -1,0 +1,58 @@
+id: math.fraction.multiply
+schema: knode/1
+title: 分数乘分数
+subjects:
+  - math
+theme: num
+grade: G6
+unit: 六上 · 分数乘法（人教版旧版册次，新版以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第三学段「数与运算」：能进行简单的分数四则运算
+  - textbook: 人教版小学数学六年级上册（旧版）
+    unit: 第一单元 分数乘法
+prerequisites:
+  - math.fraction.equivalent
+  - math.fraction.the-whole
+  - math.operation.multiply-shrinks
+related:
+  - math.operation.distributive-law
+driving_question: 1/2 乘 1/3 等于 1/6，比两个数都小。「1/2 的 1/3」到底是什么意思？
+objectives:
+  - 知道求一个数的几分之几是多少，用乘法：「的」就是乘。
+  - 知道分数乘分数，分子乘分子作分子，分母乘分母作分母，并能在一块板上指出为什么。
+  - 知道整数乘分数是几个这样的分数相加：3 × 2/5 是 6 个 1/5。
+  - 知道两个比 1 小的分数相乘，结果比它们俩都小。
+misconceptions:
+  - id: add-instead-of-of
+    text: 把「几分之几的几分之几」算成加法，例如把 1/2 的 1/3 说成 2/5，把 2/3 × 3/4 算成 5/7。
+  - id: add-denominators
+    text: 只把分母加起来，例如把 1/2 的 1/3 说成 1/5。
+  - id: multiply-both
+    text: 整数乘分数时分子分母都乘，例如把 3 × 2/5 算成 6/15。
+  - id: multiply-bottom-only
+    text: 整数乘分数时只乘了分母，例如把 3 × 2/5 算成 2/15。
+  - id: multiply-always-bigger
+    text: 觉得乘完一定变大，例如认为 2/3 的 3/4 比 2/3 还多。
+sources:
+  - type: textbook
+    ref: 人教版小学数学六年级上册（旧版）第一单元「分数乘法」
+  - type: reference
+    ref: NOAA National Ocean Service：海洋覆盖地球表面约 71%
+    url: https://oceanservice.noaa.gov/facts/oceanwater.html
+  - type: reference
+    ref: 世界银行 FAO 指标 AG.LND.ARBL.ZS：耕地占陆地面积百分比，世界合计约一成
+    url: https://data.worldbank.org/indicator/AG.LND.ARBL.ZS
+lenses:
+  - band: G3-4
+    approach: 只做「一半的一半」：一块巧克力掰一半，再掰一半，是整块的 1/4。
+  - band: G5-6
+    approach: 在巧克力板上先竖着取几分之几，再横着取其中的几分之几，数一数取到的小块占整块的多少；把 3 个 2/5 拼到一根条上；用不同的切法圈出正好半块。
+  - band: G7-9
+    approach: 分式的乘法；概率里「两件事都发生」用乘法。
+activities:
+  - act.simulation.cross-cut-01
+  - act.quiz.fraction-multiply-01
+status: draft
+version: 1
+# END OF FILE
