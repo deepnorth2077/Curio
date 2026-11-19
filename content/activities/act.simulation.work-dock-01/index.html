@@ -396,7 +396,8 @@ function tape(x,y,force,meters,cell){
 }
 function drawWork(){
   const {length,force}=MODEL.trial(S.station),along=distance/length;
-  const incline=S.station===2, dx=incline?225:0, dy=incline?58:150;
+  const incline=S.station===2, scale=64, dy=MODEL.height*scale;
+  const dx=incline?Math.sqrt(length*length-MODEL.height*MODEL.height)*scale:0;
   const ox=180, oy=252, cx=ox+along*dx, cy=oy-along*dy;
   let art=P(Sk.line(138,oy+2,445,oy+2,12,.4),"k1");
   if(incline){
@@ -408,6 +409,7 @@ function drawWork(){
   }
   art+=`<g transform="translate(${cx},${cy}) rotate(${incline?-Math.atan2(dy,dx)*180/Math.PI:0})">`
     +crate(-22,-42,44,42)+P(Sk.line(incline?22:0,incline?-19:-42,incline?57:0,incline?-19:-80,22,.4),"kacc")+"</g>";
+  art+=P(Sk.line(140,oy-dy,445,oy-dy,56,.4),"faint");
   art+=T(147,315,force+" N · "+(incline?"沿坡推":"向上托"),"lb")+tape(492,280,force,distance,14)
     +T(463,63,"做功纸带","ttl")+T(463,316,"一整格 1 J","lb");
   gDyn.innerHTML=art;
@@ -419,24 +421,28 @@ function moveBox(station){
   bench(station,station===1?"把箱子直直提起":"沿长坡送箱子"); distance=0;
   const {length,force}=MODEL.trial(station);
   say(station===1?"拉把手，把箱子向上提。看看纸带什么时候开始有格子。":"这次只用 "+force+" N。沿光滑的长坡把箱子推到同一高度。");
-  hint("拉动把手，键盘可用方向键");
+  hint("N 是牛，J 是焦耳 · 拉动把手");
   const label=document.createElement("label"), slider=document.createElement("input");
   label.append("拉货把手",slider); slider.type="range"; slider.min=0; slider.max=length;
-  slider.step=length/4; slider.value=0; $("gear").append(label); actions([]);
+  slider.step=length/4; slider.value=0; $("gear").append(label);
+  const buttons=actions([
+    {label:"盖一枚中途印",cls:"ghost",go:()=>{
+      stamp={station,work:MODEL.work(force,distance),distance};
+      say("印好了。继续把箱子送到顶。");
+    }},
+    {label:replay?"回星卡":station===1?"换长坡":"收好工作票",
+      go:replay||station===2?enterEnd:enter2}
+  ]).children;
+  buttons[0].disabled=true; buttons[1].disabled=true;
   slider.oninput=()=>{
     distance=Number(slider.value); drawWork();
-    if(distance>0 && distance<length){
-      next("盖一枚中途印",()=>{
-        stamp={station,work:MODEL.work(force,distance),distance};
-        say("印好了。继续把箱子送到顶。");
-      },"ghost");
-    }else actions([]);
+    buttons[0].disabled=distance===0 || distance===length;
+    buttons[1].disabled=distance!==length;
     if(distance===length){
       tickets[station-1]={force,distance,work:MODEL.work(force,distance)};
       observedOnce(station);
       say(station===1?"到顶了，纸上印出一条高高的格子。":"这张票矮了，也长了。数数里面的格子。","good");
-      nextOr(station===1?"换长坡":"收好工作票",station===1?enter2:enterEnd);
-    }
+    }else say("看着箱子和纸带。你可以在半路盖印，也可以把箱子送到顶。");
   };
   drawWork();
 }
@@ -444,7 +450,7 @@ function holdBox(){
   bench(1,"托住，箱子走了吗"); distance=0; drawWork();
   say("箱子原先就放在你手上。先托稳，观察货箱和纸带。");
   next("托稳箱子",()=>{
-    say("手用着力，箱子还在原地。托力对箱做了 0 J 功。手臂还是会累。纸带今天有了带薪休息。");
+    say("手用着力，箱子还在原地。托力对箱做了 0 J 功。手臂还是会累。纸带今天有了休息。");
     next("试试直提",()=>moveBox(1));
   });
 }
@@ -463,7 +469,7 @@ function enterEnd(){
   let art=frame(130,15,540,345,"paper",47)+T(158,58,"我的两张工作票","ttl");
   tickets.forEach((t,i)=>{
     const x=190+250*i;
-    art+=tape(x,249,t.force,t.distance,12)+T(x-15,99,i?"沿长坡":"直直提","lb")
+    art+=tape(x,249,t.force,t.distance,12)+T(x-15,82,i?"沿长坡":"直直提","lb")
       +T(x-15,290,`${t.force} N × ${t.distance} m = ${t.work} J`,"lbm");
   });
   if(stamp) art+=T(158,335,`我的中途印：${stamp.distance} m 时，${stamp.work} J`,"lb");
