@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curio 设计稿 · 星图首屏</title>
+<script>
+const scheme = matchMedia("(prefers-color-scheme: dark)");
+const setTheme = () => { document.documentElement.className = scheme.matches ? "dark" : "light"; };
+setTheme();
+scheme.addEventListener("change",setTheme);
+</script>
+<style>
+/* Curio 设计稿共用：颜色取自 prototype/index.html，字体只用系统字体 */
+:root,.light{
+  --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --gold:#E7B84A; --c-math-2:#D59E7A; --c-math:#ECCDB6; --c-math-bg:#F2E1D3; --c-sci:#CCD6C0; --c-sci-bg:#DCE3D2; --c-sky:#CFDCE6; --wash:#EFE4D6;
+  --f-serif:"Songti SC","Source Han Serif SC","Noto Serif CJK SC",Georgia,serif;
+  --f-sans:"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+.dark{
+  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --gold:#D9AE4E; --c-math-2:#9A7558; --c-math:#5A4536; --c-math-bg:#33291F; --c-sci:#3C4836; --c-sci-bg:#28301F; --c-sky:#2D3B47; --wash:#2A2738;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-serif);color:var(--ink);font-weight:600;margin:0}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.note{color:var(--muted);font-size:14px}
+a{color:inherit}
+
+.wrap{max-width:940px;margin:0 auto;padding:14px 16px 40px}
+.top{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.top h1{font-size:30px}
+.top .sub{color:var(--muted);margin:0}
+.legend{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted)}
+.legend{flex-wrap:wrap}
+.legend-total{display:inline-block;width:8.5em;min-height:1.65em}
+.mode-toggle{font-size:14px;min-width:4em;min-height:44px;align-content:center;white-space:nowrap}
+@media (max-width:700px){.mode-toggle{margin-left:auto}}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.legend-key{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.legend svg{width:23px;height:23px;flex:none}
+.star-fill{fill:var(--gold)}
+.star-half{fill:var(--c-math-2)}
+.fp{fill:var(--pane)}
+.star-ink,.ray,.kq{fill:none;stroke:var(--ink);stroke-width:1.15;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.ray{stroke-width:.85}
+.kq{stroke:var(--muted);stroke-width:1;stroke-dasharray:1.3 1.45}
+svg#map{display:block;width:100%;height:auto;margin-top:6px;user-select:none;-webkit-user-select:none}
+.ln{fill:none;stroke:var(--muted);stroke-width:1.3;stroke-linecap:round}
+.edge{fill:none;stroke:var(--muted);stroke-width:1.4;stroke-linecap:round}
+.nm{font-family:var(--f-sans);font-weight:600;font-size:16.5px;fill:var(--ink);text-anchor:middle}
+.ct{font-family:var(--f-sans);font-size:14.1px;fill:var(--muted);text-anchor:middle}
+.here{font-family:var(--f-sans);font-size:15px;fill:var(--accent);text-anchor:middle}
+.subj{font-family:var(--f-serif);font-size:17px;font-weight:600;fill:var(--ink)}
+.con{cursor:pointer;outline:none}
+.con .wash{opacity:.5;transition:opacity .15s}
+.con:hover .wash,.con:focus-visible .wash{opacity:.85}
+.con .sel{display:none}
+.con.on .sel{display:block}
+.con.on .wash{opacity:.85}
+.con:focus-visible .sel{display:block}
+.card{position:fixed;z-index:2;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:min(600px,calc(100% - 24px));display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--ink);border-radius:16px;background:var(--pane);color:var(--ink)}
+.card .msg{flex:1;min-width:0;line-height:1.4}
+.card .msg b,.card .msg small{display:block}
+.card .msg small{font-size:14px;color:var(--muted);margin-top:2px}
+.btn,.close{font:inherit;cursor:pointer}
+.btn{font-weight:600;border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:8px 18px;min-height:48px}
+.close{background:transparent;color:var(--text);border:0;border-radius:10px;width:44px;height:44px;font-size:24px}
+button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.inside{color:var(--text);background:var(--pane);border:1px solid var(--ink);border-radius:18px;padding:20px;width:min(420px,calc(100% - 32px));max-height:calc(100dvh - 32px);text-align:center}
+.inside::backdrop{background:#15131b80}
+.inside h2{font-size:24px}
+.inside svg{display:block;width:100%;height:clamp(140px,37vh,274px);margin:12px 0}
+.inside p{font-size:16px;margin:0 0 16px}
+details{margin-top:16px}
+summary{cursor:pointer;color:var(--muted)}
+.wrap:has(.card:not([hidden])){padding-bottom:110px}
+@media (max-width:700px){
+  .wrap{padding:10px 10px 18px}
+  .top{gap:2px 12px}.top h1{font-size:25px}.top .sub{font-size:15px}.legend{margin-left:0;width:100%}
+}
+@media (max-width:520px){
+  .wrap{padding:8px 6px 22px}
+  .top,details{margin-inline:8px}
+  .legend{font-size:13px}.card{gap:6px;padding:10px}.card .msg small{font-size:13px}
+}
+@media (prefers-reduced-motion:reduce){ .con .wash{transition:none} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>星图</h1><p class="sub">点一个星座，飞进去看看。</p>
+    <a id="mode-toggle" class="mode-toggle"></a>
+    <div class="legend" id="legend"></div>
+  </div>
+  <svg id="map" role="group" aria-label="星图"></svg>
+  <section class="card" id="card" aria-label="选中的星座" hidden>
+    <div class="msg" aria-live="polite"><b id="selected-name"></b><small id="selected-count"></small></div>
+    <button class="btn" type="button" id="fly" aria-haspopup="dialog">飞进去</button>
+    <button class="close" type="button" id="dismiss" aria-label="收起星座卡片">×</button>
+  </section>
+  <dialog class="inside" id="inside" aria-labelledby="inside-title">
+    <h2 id="inside-title"></h2><svg id="inside-map" aria-hidden="true"></svg>
+    <p id="inside-count"></p><button class="btn" id="back" type="button">回到星图</button>
+  </dialog>
+  <details>
+    <summary>设计说明（给大人看）</summary>
+    <ul id="notes"></ul>
+    <p class="note" id="check"></p>
+    <p class="note">这是一张设计稿：数字是示例，不保存任何东西。<a href="./index.html">回到设计稿目录</a></p>
+  </details>
+</div>
+<script>
+"use strict";
+/* 手绘线条：和 references/starter.html 里的 sketchLib 逐字相同 */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function blob(cx,cy,rx,ry,seed){ const r=R(seed), N=9, p=[]; for(let i=0;i<N;i++){ const t=i/N*Math.PI*2, k=1+(r()-.5)*.1; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); } return cr(p,true)+"Z"; }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,blob,curve,cr,R};
+}
+const Sk = sketchLib();
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+const dot = (x, y, r, fill) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill || "var(--ink)"}"/>`;
+// 椭圆上的一段弧（角度用度，rot 是整体旋转），画成手绘曲线
+function arc(cx, cy, rx, ry, a0, a1, rot, seed, j){
+  const n = 10, pts = [], c = Math.cos(rot * Math.PI / 180), s = Math.sin(rot * Math.PI / 180);
+  for (let i = 0; i <= n; i++){ const t = (a0 + (a1 - a0) * i / n) * Math.PI / 180, x = Math.cos(t) * rx, y = Math.sin(t) * ry; pts.push([cx + x * c - y * s, cy + x * s + y * c]); }
+  return Sk.curve(pts, seed, j == null ? .3 : j);
+}
+// 火箭的标准画法：viewBox 0 0 48 64。small 为 true 时去掉细节（24 px 以下用）
+function rocket(small){
+  const body = Sk.cr([[24,4],[29.5,10],[33,20],[33.5,32],[31.5,43.5],[16.5,43.5],[14.5,32],[15,20],[18.5,10]], true) + "Z";
+  let s = `<path d="M15.2 31L7.5 45.5L16 42.5Z" fill="var(--wash)"/><path d="M32.8 31L40.5 45.5L32 42.5Z" fill="var(--wash)"/>` +
+    P(Sk.curve([[15.2,31],[7.5,45.5],[16,42.5]],31,.25)) + P(Sk.curve([[32.8,31],[40.5,45.5],[32,42.5]],32,.25)) +
+    `<path d="${body}" fill="var(--c-sky)"/>` + P(body) +
+    `<path d="M19.5 46.5C19.5 53 23 57 24 61.5C25 57 28.5 53 28.5 46.5Z" fill="var(--accent)"/>`;
+  s += `<circle cx="24" cy="22.5" r="${small ? 4.6 : 5}" fill="var(--pane)"/>` + P(Sk.ellipse(24, 22.5, small ? 4.6 : 5, small ? 4.6 : 5, 33), small ? "k" : "k1");
+  if (!small) s += P(Sk.curve([[19.3,12.4],[24,13.8],[28.7,12.4]],34,.2),"k1") + P(Sk.curve([[17.2,38.5],[24,39.8],[30.8,38.5]],35,.2),"k1");
+  return s;
+}
+
+
+/* ============ 示例数据：取自原型的示例星图（舰长所在的这一圈） ============ */
+const DATA = [
+  { id:"num",    name:"数与运算",   lit:3, explored:2, total:13, side:"math", shape:"stairs",   like:"一段台阶：数一级一级往上走" },
+  { id:"rel",    name:"数量关系",   lit:1, explored:1, total:4,  side:"math", shape:"scale",    like:"一架天平：两边一样多才平" },
+  { id:"geo",    name:"图形与测量", lit:6, explored:2, total:13, side:"math", shape:"kite",     like:"一只风筝：四条边，两条对角线，拖着尾巴" },
+  { id:"stat",   name:"统计与概率", lit:0, explored:1, total:3,  side:"math", shape:"bars",     like:"三根柱子：数一数，比一比，谁多谁少" },
+  { id:"matter", name:"物质",       lit:1, explored:1, total:5,  side:"sci",  shape:"icecream", like:"一支冰淇淋：会化，化了还是它" },
+  { id:"energy", name:"能量与运动", lit:0, explored:1, total:2,  side:"sci",  shape:"plane",    like:"一架纸飞机：轻轻一推就飞出去" },
+  { id:"life",   name:"生命",       lit:0, explored:1, total:3,  side:"sci",  shape:"fish",     like:"一条小鱼，有眼睛，有尾巴" },
+  { id:"earth",  name:"地球与宇宙", lit:0, explored:1, total:2,  side:"sci",  shape:"moon",     like:"一弯月牙" }
+];
+// stars 里的每个位置对应一颗星，顺序即示例点亮顺序。
+// strokes 用星的下标连线；中间坐标只负责笔画转弯，不生成星或其他记号。
+const SHAPES = {
+  stairs: {
+    stars:[[-54,42],[-54,22],[-30,22],[-30,2],[-6,2],[-6,-18],[18,-18],[18,-38],[50,-38],[50,-11],[50,15],[50,42],[-2,42]],
+    strokes:[[0,1,2,3,4,5,6,7,8,9,10,11,12,0]]
+  },
+  scale: {
+    stars:[[0,40],[0,-25],[-40,10],[40,10]],
+    strokes:[[[-22,40],0,[22,40]],[0,1],[[-40,-25],1,[40,-25]],
+      [[-40,-25],[-55,6],2,[-25,6],[-40,-25]],[[40,-25],[25,6],3,[55,6],[40,-25]]]
+  },
+  kite: {
+    stars:[[0,-48],[-19,-34],[-38,-20],[-19,-3],[0,14],[19,-3],[38,-20],[19,-34],[0,-20],[12,29],[30,38],[44,27],[54,42]],
+    strokes:[[0,1,2,3,4,5,6,7,0],[0,8,4],[2,8,6],[4,9,10,11,12]]
+  },
+  bars: {
+    stars:[[-35,10],[-5,-32],[25,-10]],
+    strokes:[[[-60,37],[54,37]],[[-45,37],[-45,10],0,[-25,10],[-25,37]],
+      [[-15,37],[-15,-32],1,[5,-32],[5,37]],[[15,37],[15,-10],2,[35,-10],[35,37]]]
+  },
+  icecream: {
+    stars:[[0,44],[-21,0],[-23,-24],[0,-41],[24,-23]],
+    strokes:[[0,1,[23,0],0],[1,[-27,-10],2,[-13,-35],3,[14,-35],4,[28,-10],[23,0]]]
+  },
+  plane: {
+    stars:[[-47,-9],[45,-36]],
+    strokes:[[0,1,[-13,9],0],[[-13,9],[-18,38],[1,15],1],[[-13,9],[1,15]]]
+  },
+  fish: {
+    stars:[[-30,-6],[-13,-22],[24,0]],
+    strokes:[[[-47,0],1,[7,-18],2,[7,18],[-13,22],[-47,0]],[2,[48,-20],[48,20],2]]
+  },
+  moon: {
+    stars:[[24,-41],[24,41]],
+    strokes:[[0,[3,-42],[-16,-29],[-26,-9],[-26,9],[-16,29],[3,42],1],
+      [1,[7,27],[0,10],[0,-10],[7,-27],0]]
+  }
+};
+
+const BLIND = new URLSearchParams(location.search).get("blind") === "1";
+const map = document.getElementById("map");
+// 宽排法要容得下左、右各两组和中央火箭。按画布实宽判断，包含分屏和页面留白。
+const phone = () => map.clientWidth < 660;
+
+
+// 手绘的圆角大圈（超椭圆）
+function loop(cx, cy, rx, ry, n, seed, j){
+  const r = Sk.R(seed), N = 30, pts = [];
+  for (let i = 0; i < N; i++){ const t = i / N * Math.PI * 2, c = Math.cos(t), s = Math.sin(t);
+    pts.push([cx + Math.sign(c) * Math.pow(Math.abs(c), 2 / n) * rx + (r() - .5) * 2 * j, cy + Math.sign(s) * Math.pow(Math.abs(s), 2 / n) * ry + (r() - .5) * 2 * j]); }
+  return Sk.cr(pts, true) + "Z";
+}
+// 与正式外壳 starSvg 共用五角星的顶点、半填区域、错位金色和八道光芒。
+function starPoints(cx,cy){
+  return Array.from({length:10}, (_,i)=>{
+    const angle=-Math.PI/2+i*Math.PI/5, radius=i%2?16:38;
+    return [cx+radius*Math.cos(angle),cy+radius*Math.sin(angle)];
+  });
+}
+const starVertices=starPoints(50,52);
+function area(points){ return "M"+points.map(([x,y])=>x.toFixed(2)+" "+y.toFixed(2)).join("L")+"Z"; }
+function starSvg(state,seed){
+  const outline=starVertices.map(([x,y],i)=>{
+    const [ex,ey]=starVertices[(i+1)%10];
+    return Sk.line(x,y,ex,ey,seed+i*3,.8);
+  }).join("");
+  if(state==="untouched")return P(area(starVertices),"fp")+P(outline,"kq");
+  if(state==="explored"){
+    return P(area([0,9,8,7,6,5].map(i=>starVertices[i])),"star-half",'opacity=".7"')+P(outline,"star-ink");
+  }
+  let svg=P(area(starPoints(52,55)),"star-fill")+P(outline,"star-ink");
+  for(let i=0;i<8;i++){
+    const angle=i*Math.PI/4+.2, x=Math.cos(angle), y=Math.sin(angle);
+    svg+=P(Sk.line(50+x*44,52+y*44,50+x*49,52+y*49,seed+20+i,.4),"ray");
+  }
+  return svg;
+}
+// 笔画只在实际星记号旁留白。凹进去的星边比星尖短，点亮后还多一圈光芒。
+function edgeGap(state,dx,dy,size){
+  if(state==="lit")return .49*size;
+  let rim=38;
+  for(let i=0;i<10;i++){
+    const [x,y]=starVertices[i], [ex,ey]=starVertices[(i+1)%10];
+    const vx=ex-x, vy=ey-y, cross=dx*vy-dy*vx;
+    if(Math.abs(cross)<1e-6)continue;
+    const t=((x-50)*vy-(y-52)*vx)/cross, u=((x-50)*dy-(y-52)*dx)/cross;
+    if(t>=0 && u>=0 && u<=1){rim=t;break;}
+  }
+  return rim*size/100+.65;
+}
+function closedOval(cx,cy,rx,ry,seed){
+  const rand=Sk.R(seed), points=[];
+  for(let i=0;i<24;i++){
+    const angle=i*Math.PI/12, radius=1+(rand()-.5)*.032;
+    points.push([cx+rx*radius*Math.cos(angle),cy+ry*radius*Math.sin(angle)]);
+  }
+  return Sk.cr(points,true)+"Z";
+}
+function constellation(c,i,cx,cy,s){
+  const sh=SHAPES[c.shape], size=17*s;
+  const position=([x,y])=>[cx+x*s,cy+y*s];
+  const state=n=>n<c.lit?"lit":n<c.lit+c.explored?"explored":"untouched";
+  const point=v=>position(Array.isArray(v)?v:sh.stars[v]);
+  let g=`<path class="wash" d="${Sk.blob(cx,cy,63*s,58*s,300+i)}" fill="var(${c.side==="math"?"--c-math":"--c-sci"})"/>`;
+  g+=`<path class="sel" d="${loop(cx,cy-s,74*s,59*s,7.5,320+i,.28*s)}" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`;
+  let seed=340+i*80;
+  for(const stroke of sh.strokes){
+    for(let j=1;j<stroke.length;j++){
+      const a=stroke[j-1], b=stroke[j], [x,y]=point(a), [ex,ey]=point(b);
+      const length=Math.hypot(ex-x,ey-y), dx=(ex-x)/length, dy=(ey-y)/length;
+      const padA=Array.isArray(a)?0:edgeGap(state(a),dx,dy,size);
+      const padB=Array.isArray(b)?0:edgeGap(state(b),-dx,-dy,size);
+      const start=[x+dx*padA,y+dy*padA], end=[ex-dx*padB,ey-dy*padB];
+      g+=P(Sk.line(...start,...end,seed++,.24),"edge");
+    }
+  }
+  sh.stars.forEach((p,n)=>{
+    const [x,y]=position(p), st=state(n);
+    g+=`<g class="map-star" data-order="${n+1}" data-state="${st}" transform="translate(${x} ${y}) scale(${size/100}) translate(-50 -52)" aria-hidden="true">${starSvg(st,500+i*20+n)}</g>`;
+  });
+  const ly=cy+56*s+24;
+  g+=`<text class="nm" x="${cx}" y="${ly}">${BLIND?i+1:c.name}</text>`;
+  if(!BLIND)g+=`<text class="ct" x="${cx}" y="${ly+22}">${c.lit?"亮了 "+c.lit+" 颗":"还没亮"}</text>`;
+  g+=`<rect x="${cx-66*s}" y="${cy-56*s}" width="${132*s}" height="${112*s+52}" fill="transparent"/>`;
+  const accessibleName=BLIND?"第 "+(i+1)+" 个星座":c.name+"，已点亮 "+c.lit+" 颗，探索过 "+c.explored+" 颗";
+  return `<g class="con" data-i="${i}" tabindex="0" role="button" aria-label="${accessibleName}">${g}</g>`;
+}
+
+function draw(){
+  const W = map.clientWidth;
+  if (!W) return;
+  const ph = phone(), H = ph ? 638 : Math.max(533, Math.min(555, W * .68));
+  const cx = W / 2, cy = H / 2;
+  const s = ph ? Math.min(.78, W / 485) : Math.min(.96, W / 900);
+  map.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  const pos = ph
+    ? [[.268,.109],[.235,.337],[.235,.565],[.235,.793],[.732,.109],[.765,.337],[.765,.565],[.765,.793]]
+    : [[.35,.19],[.16,.34],[.18,.646],[.35,.72],[.65,.19],[.84,.34],[.82,.646],[.65,.72]];
+  let g = "";
+  // 别的圈：外面一道淡淡的虚线，里面一个小圆，不画星，不写字
+  g += `<path class="kf" d="${loop(cx, cy, W * .49, H * .49, ph ? 5.5 : 2.6, 201, 1)}"/>`;
+  // 舰长所在的这一圈
+  const band = loop(cx, cy, W * .474, H * .471, ph ? 5.5 : 2.6, 202, 1.4);
+  g += `<path d="${band}" fill="var(--wash)" opacity=".45"/><path class="ln" d="${band}"/>`;
+  const rin = ph ? 32 : 45;
+  const innerRing=closedOval(cx,cy,rin,rin,203);
+  g += `<path d="${innerRing}" fill="var(--bg)"/><path class="ln" d="${innerRing}"/>`;
+  const rh = ph ? 50 : 68;
+  g += `<svg x="${cx - rh * .375}" y="${cy - rh / 2 + 2}" width="${rh * .75}" height="${rh}" viewBox="0 0 48 64">${rocket(false)}</svg>`;
+  DATA.forEach((c, i) => { g += constellation(c, i, pos[i][0] * W, pos[i][1] * H, s); });
+  g += `<text class="here" x="${cx}" y="${cy + rin + 23}">你在这一圈</text>`;
+  g += `<text class="subj" x="${ph?2:12}" y="20">数学</text><text class="subj" x="${W-(ph?2:12)}" y="20" text-anchor="end">科学</text>`;
+  const focusGroup = document.activeElement?.closest("#map .con")?.dataset.i;
+  map.innerHTML = g;
+  select(selected);
+  if (focusGroup !== undefined) map.querySelector(`[data-i="${focusGroup}"]`)?.focus({preventScroll:true});
+  if (inside.open) updateInside();
+
+}
+
+/* ============ 点一个星座 ============ */
+const card = document.getElementById("card"), inside = document.getElementById("inside");
+const fly = document.getElementById("fly");
+let selected = -1;
+const displayName = (c,i) => BLIND ? `星座 ${i+1}` : c.name;
+const counts = c => BLIND ? `共 ${c.total} 颗星` : `共 ${c.total} 颗星，已点亮 ${c.lit} 颗`;
+function select(i){
+  selected = i;
+  map.querySelectorAll(".con").forEach(el => {
+    const current = +el.dataset.i === i;
+    el.classList.toggle("on", current);
+    el.setAttribute("aria-pressed", String(current));
+    el.setAttribute("aria-controls", "card");
+  });
+  card.hidden = i < 0;
+  if (i >= 0) {
+    document.getElementById("selected-name").textContent = displayName(DATA[i],i);
+    document.getElementById("selected-count").textContent = counts(DATA[i]);
+  }
+}
+function dismiss(){
+  const previous = selected;
+  select(-1);
+  map.querySelector(`[data-i="${previous}"]`)?.focus({preventScroll:true});
+  report();
+}
+function updateInside(){
+  const group = map.querySelector(`.con[data-i="${selected}"]`);
+  const view = document.getElementById("inside-map");
+  const box = group.querySelector(".wash").getBBox();
+  view.setAttribute("viewBox", `${box.x-6} ${box.y-6} ${box.width+12} ${box.height+12}`);
+  const drawing = [...group.children].filter(el => !el.matches(".sel,text,rect[fill='transparent']"));
+  view.replaceChildren(...drawing.map(el => el.cloneNode(true)));
+  document.getElementById("inside-title").textContent = displayName(DATA[selected],selected);
+  document.getElementById("inside-count").textContent = counts(DATA[selected]);
+}
+map.addEventListener("click", e => {const el = e.target.closest(".con"); select(el ? +el.dataset.i : -1); report();});
+map.addEventListener("keydown", e => {
+  const el = e.target.closest(".con");
+  if (el && (e.key === "Enter" || e.key === " ")) {
+    e.preventDefault(); select(+el.dataset.i); fly.focus({preventScroll:true}); report();
+  }
+});
+document.getElementById("dismiss").addEventListener("click", dismiss);
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && !inside.open && selected >= 0) {e.preventDefault(); dismiss();}
+});
+fly.addEventListener("click", () => {updateInside(); inside.showModal();});
+document.getElementById("back").addEventListener("click", () => inside.close());
+inside.addEventListener("close", () => {document.getElementById("inside-map").replaceChildren(); fly.focus({preventScroll:true});});
+
+/* ============ 规则 6 的检查：没有任何字压在线、点或别的字上 ============ */
+function overlaps(){
+  const texts = [...map.querySelectorAll("text")].map(el => {
+    const matrix = el.getScreenCTM();
+    return {name:el.textContent, rect:el.getBoundingClientRect(),
+      px:parseFloat(getComputedStyle(el).fontSize)*Math.hypot(matrix.c,matrix.d)};
+  });
+  const intersects = (a,b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  const stars = [...map.querySelectorAll(".map-star")].map(el=>el.getBoundingClientRect());
+  const hits = [];
+  texts.forEach(({name,rect},i) => {
+    for(const other of texts.slice(i+1)) if(intersects(rect,other.rect)) hits.push(`「${name}」压着「${other.name}」`);
+    if(stars.some(star=>intersects(rect,star))) hits.push(`「${name}」压着星`);
+  });
+  // 以两倍 CSS 像素栅格化实际 SVG 路径和变换，读取文字框内的描边覆盖。
+  const bounds=map.getBoundingClientRect(), resolution=2;
+  const canvas=document.createElement("canvas");
+  canvas.width=Math.ceil(bounds.width*resolution);
+  canvas.height=Math.ceil(bounds.height*resolution);
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});
+  for (const path of map.querySelectorAll("path")){
+    if(path.closest(".map-star")) continue;
+    const style=getComputedStyle(path);
+    if(style.stroke==="none" || style.display==="none") continue;
+    const m=path.getScreenCTM();
+    ctx.setTransform(m.a*resolution,m.b*resolution,m.c*resolution,m.d*resolution,
+      (m.e-bounds.left)*resolution,(m.f-bounds.top)*resolution);
+    ctx.lineWidth=parseFloat(style.strokeWidth);
+    ctx.lineCap=style.strokeLinecap;
+    ctx.lineJoin=style.strokeLinejoin;
+    ctx.setLineDash(style.strokeDasharray==="none"?[]:style.strokeDasharray.split(/[ ,]+/).map(parseFloat));
+    ctx.stroke(new Path2D(path.getAttribute("d")));
+  }
+  for(const {name,rect} of texts){
+    const x=Math.floor((rect.left-bounds.left)*resolution), y=Math.floor((rect.top-bounds.top)*resolution);
+    const w=Math.ceil((rect.right-bounds.left)*resolution)-x, h=Math.ceil((rect.bottom-bounds.top)*resolution)-y;
+    const pixels=ctx.getImageData(x,y,w,h).data;
+    for(let i=3;i<pixels.length;i+=4) if(pixels[i]){hits.push(`「${name}」压着线`);break;}
+  }
+  return {hits,minPx:Math.min(...texts.map(text=>text.px))};
+}
+function report(){
+  const r = overlaps();
+  console.log("[星图检查] 重叠：" + r.hits.length + " 处", r.hits, "最小的字：" + r.minPx + " px");
+  document.getElementById("check").textContent = `自动检查：字和线、星、别的字重叠 ${r.hits.length} 处；画面里最小的字 ${r.minPx.toFixed(1)} px。` + (r.hits.length ? " " + r.hits.join("；") : "");
+  window.__check = r;
+}
+
+const legendKeys=[["untouched","没碰过"],["explored","探索过"],["lit","已点亮"]];
+document.getElementById("legend").innerHTML=legendKeys.map(([state,label])=>
+  `<span class="legend-key"><svg viewBox="0 0 100 100" aria-hidden="true">${starSvg(state,9)}</svg>${label}</span>`
+).join("")+`<span class="legend-total">${BLIND?"":"这一圈亮了 "+DATA.reduce((a,c)=>a+c.lit,0)+" 颗"}</span>`;
+const modeToggle=document.getElementById("mode-toggle");
+modeToggle.href=BLIND?"starmap.html":"?blind=1";
+modeToggle.textContent=BLIND?"揭晓名字":"打开盲猜";
+document.getElementById("notes").innerHTML=
+  (BLIND?"":DATA.map(c=>`<li><b>${c.name}</b>像${c.like.replace("：","，")}。</li>`).join(""))+
+  '<li>一个星形记号对应一颗星。各轮廓里星点的排列顺序，就是这张设计稿中逐颗点亮的顺序。</li>';
+let lastWidth = map.clientWidth;
+draw(); report();
+new ResizeObserver(() => {
+  if (map.clientWidth === lastWidth) return;
+  lastWidth = map.clientWidth;
+  draw(); report();
+}).observe(map);
+document.fonts.ready.then(report);
+</script>
+</body>
+</html>
