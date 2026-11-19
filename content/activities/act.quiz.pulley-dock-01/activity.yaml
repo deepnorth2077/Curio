@@ -1,0 +1,121 @@
+# author: Codex
+# prompt_ref: prompts/act.simulation.pulley-dock-01.md
+id: act.quiz.pulley-dock-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 给吊箱选绳路
+targets:
+- physics.machine.pulley
+age_band: G3-4
+duration_min: 7
+review: pending
+engine: 1
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 9.5
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42174/index.cnxml
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 绳和轮都很轻，没有摩擦。绳绕过天花板上的定滑轮，一端挂 8 牛的箱子。向下匀速拉另一端，要用多大力？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 8 牛
+        correct: true
+      - id: b
+        text: 4 牛
+        misconception: wheel-count
+        feedback: 轮子两旁都有绳，可直接提箱子的只有一段。
+      - id: c
+        text: 16 牛
+        misconception: wheel-count
+        feedback: 轮子改了拉绳方向，箱子并没有变重。
+    feedback:
+      correct: 跟着箱子的挂钩找，一段绳向上托它。这一段的拉力等于箱重。
+      wrong: 从箱子的挂钩往上看。
+    hints:
+    - 从箱子的挂钩往上看。
+    - 数真正向上提箱子的绳段。
+  - id: q2
+    stem: 轻动滑轮和箱子一起匀速上升。两段竖直的轻绳托着重 10 牛的箱子，不计摩擦。手拉绳头要用几牛？
+    answer:
+      type: number
+      value: 5
+      tolerance: 0
+      unit: 牛
+      common_wrong:
+      - value: 10
+        misconception: wheel-count
+        feedback: 若每段绳都拉 10 牛，两段合起来就超过箱重了。
+    feedback:
+      correct: 两段绳拉力一样，托住的总重是 10 牛。每段分到 5 牛。
+      wrong: 只数直接托着动滑轮的绳段。
+    hints:
+    - 只数直接托着动滑轮的绳段。
+    - 让各段绳的拉力加在一起，刚好等于箱重。
+  - id: q3
+    stem: 一根绷紧的绳不会伸长。两段竖直绳托着动滑轮和篮子。篮子匀速升高 3 米，手要收进几米绳？
+    answer:
+      type: number
+      value: 6
+      tolerance: 0
+      unit: 米
+      common_wrong:
+      - value: 3
+        misconception: wheel-count
+        feedback: 你只数了篮子向上走的路。轮子两边的绳都会变短。
+    feedback:
+      correct: 两段各缩短 3 米，手端总共收进 3 + 3 = 6 米。
+      wrong: 观察会变短的绳段。
+    hints:
+    - 观察会变短的绳段。
+    - 把每段缩短的长度加在一起。
+  - id: q4
+    stem: 一台理想吊机有两段竖直绳托箱。再在天花板加一个定滑轮，只把绳头转向下。匀速升起同一箱子，手感怎样？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 手需要的力减半
+        misconception: wheel-count
+        feedback: 新增的轮子固定在天花板上，没有给箱子增加承重绳段。
+      - id: b
+        text: 手需要的力加倍
+        misconception: wheel-count
+        feedback: 绕行让手能朝下拉，原有两段绳仍在一起托箱子。
+      - id: c
+        text: 手需要的力和原来一样
+        correct: true
+    feedback:
+      correct: 看哪几段绳随箱子缩短，就能找到分担重量的绳段。新增的轮子只改拉绳方向。
+      wrong: 跟踪新轮子挂在哪里。
+    hints:
+    - 跟踪新轮子挂在哪里。
+    - 比较改绳路前后，直接向上拉动滑轮的绳段数。
+  - id: q5
+    stem: 两段竖直绳托着理想动滑轮。箱重 12 牛，要匀速升高 2 米。手能拉 7 牛，绳头只剩 3 米可拉。能到吗？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 力和能拉的绳都够
+        misconception: wheel-count
+        feedback: 货升高时，两段承重绳都会缩短。
+      - id: b
+        text: 力够，能拉的绳不够
+        correct: true
+      - id: c
+        text: 绳够，手的力不够
+        misconception: wheel-count
+        feedback: 比较手的力时，要先把箱重分到两段绳上。
+    feedback:
+      correct: 每段是 6 牛，手能拉动。升高 2 米要收 4 米绳，现有行程还差 1 米。
+      wrong: 给手力和可拉绳长各画一个勾选框。
+    hints:
+    - 给手力和可拉绳长各画一个勾选框。
+    - 先用箱重除以段数，再用升高量乘段数，分别核对。
+# END OF FILE
