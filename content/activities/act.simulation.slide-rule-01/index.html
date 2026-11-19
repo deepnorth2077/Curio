@@ -132,6 +132,10 @@ body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .s
 @keyframes digitcue{0%,75%,100%{transform:scale(1)}35%{transform:scale(1.32)}}
 @media(prefers-reduced-motion:reduce){.fresh .next-digit svg{animation:none}}
 
+@keyframes fold-layers{0%,35%{opacity:1}100%{opacity:0}}
+.fold-layers{animation:fold-layers 1.2s both}
+@media(prefers-reduced-motion:reduce){.fold-layers{animation:none;opacity:0}}
+
 </style>
 </head>
 <body>
@@ -589,8 +593,17 @@ function revelation(){
   return "从一张纸出发，连乘七次 10。要是每张纸都厚 0.1 毫米，这座纸塔就能高过上海中心大厦。";
 }
 function card(){
-  let s=TC(400,48,"我的滑尺","ttl")+numberAt("1.5",119)+TC(400,162,"0.15　←　1.5　→　15","lbm")+rope().replace('id="cord"','transform="translate(0 90)"')+
-    TC(400,271,"1.35 米 = 13.5 分米 = 135 厘米 = 1350 毫米","lb");
+  const shifts=["0.15","1.5","15"];
+  let s=TC(400,35,"我的滑尺","ttl");
+  for(const [row,val] of shifts.entries()){
+    const y=63+row*31;
+    s+=TC(181,y+9,["除以 10","原来","乘 10"][row],"lb");
+    s+='<g transform="translate(96 '+(y-17)+') scale(.8)">'+numberAt(val,27)+
+      '<circle cx="375" cy="27" r="4" fill="var(--ink)"/></g>';
+  }
+  for(const x of [303,375,455,524])s+=P(`M${x} 47v94`,"faint");
+  s+=rope().replace('id="cord"','transform="translate(0 75)"')+
+    TC(400,263,"1.35 米 = 13.5 分米 = 135 厘米 = 1350 毫米","lb");
   for(let i=0;i<8;i++)s+=`<rect x="${153+i*61}" y="${356-i*7}" width="43" height="${10+i*7}" rx="2" class="${i===7?"lead":"wash"}"/>`;
   return s+TC(400,407,"从 0.1 毫米到 1000 米，连乘七次 10","lb");
 }

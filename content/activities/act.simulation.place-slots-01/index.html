@@ -132,6 +132,10 @@ body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .s
 @keyframes digitcue{0%,75%,100%{transform:scale(1)}35%{transform:scale(1.32)}}
 @media(prefers-reduced-motion:reduce){.fresh .next-digit svg{animation:none}}
 
+@keyframes fold-layers{0%,35%{opacity:1}100%{opacity:0}}
+.fold-layers{animation:fold-layers 1.2s both}
+@media(prefers-reduced-motion:reduce){.fold-layers{animation:none;opacity:0}}
+
 </style>
 </head>
 <body>
@@ -494,7 +498,7 @@ function water(x,y,w,h,level,slices=0){
   return s;
 }
 function backdrop(n){
-  if(n===1)return oneMark(174,38,125,207,19)+vessel(237,51,100,180)+vessel(563,51,100,180)+TC(237,282,"左筒　目标 0.125","lb")+TC(563,282,"右筒　目标 0.5","lb");
+  if(n===1)return oneMark(174,38,125,207,19)+vessel(237,51,100,180)+vessel(563,51,100,180)+TC(237,282,"左筒　目标 0.125","lb",'id="cupLeft"')+TC(563,282,"右筒　目标 0.5","lb",'id="cupRight"');
   if(n===2)return oneMark(187,38,126,230,19)+vessel(250,48,100,205)+TC(250,300,"一整筒","lb")+centers.slice(3).map((x,i)=>TC(x,122,places[i+3],"unit-label")+P(box(x-35,133,70,51,21+i,.4),"k1")).join("");
   return placeGrid(58,113).replace(/<circle[^>]+\/>$/,'')+'<circle cx="375" cy="103" r="4" fill="var(--ink)"/>';
 }
@@ -540,7 +544,15 @@ function artwork(){
     `<rect x="135" y="112" width="544" height="73" class="hit"/>`;
   if(poured){
     const total=+sums();
-    for(let i=0;i<2;i++)s+=water(300+i*140,202,81,80,clamp(total-i),10)+vessel(300+i*140,202,81,80);
+    for(let i=0;i<2;i++){
+      const x=300+i*140,level=clamp(total-i);
+      s+=water(x,202,81,80,level,problem===2?0:10)+vessel(x,202,81,80);
+      if(problem===2 && level>0){
+        let layers="";
+        for(let j=1;j<10;j++)layers+=P(`M${x-37} ${282-j*8}h74`,"paperline");
+        s+='<g class="fold-layers">'+layers+'</g>';
+      }
+    }
     s+=TC(370,311,sums()+" 筒","lbm");
     if(problem===2)s+=TC(582,248,"10 块","lb")+TC(582,277,"合成 1 筒","lb");
   }else{
@@ -575,7 +587,7 @@ function put(d){
   else{
     stepIndex++;
     if(stepIndex<fixture.length)[side,slot]=fixture[stepIndex];
-    else{free=true;side=0;slot=0;say("十分位先比 1 和 5，右边水多。现在左右各换一张卡，自己摆一对，再点「比一比」。");}
+    else{free=true;side=0;slot=0;$("cupLeft").textContent="左筒";$("cupRight").textContent="右筒";say("十分位先比 1 和 5，右边水多。现在左右各换一张卡，自己摆一对，再点「比一比」。");}
   }
   syncSlots();update();
 }
@@ -630,7 +642,7 @@ function mount(){
   if(S.station===3){control("向左挪",()=>shift(-1));control("向右挪",()=>shift(1));control("倒进去",pour);}
 }
 function compare(){
-  if(!free||changed.size<2){say("先摆好例子，再把两个量筒里的数字各换一张。");return;}
+  if(!free||changed.size<2||MODEL.targets.every((v,i)=>+v===+decimal(i))){say("先摆好例子，再把两个量筒里的数字各换一张。");return;}
   personal=[decimal(0),decimal(1)];say("把你摆的两个数留在星卡上了。");canReveal();update();
 }
 function addZero(where){
@@ -673,7 +685,8 @@ function card(){
   for(const [x,val] of [[247,a],[553,b]])s+=water(x,68,65,109,+val)+vessel(x,68,65,109)+TC(x,206,val,"sign");
   s+=P("M170 254h460M170 247v14m460 -14v14","k")+TC(170,284,"0","lb")+TC(630,284,"1","lb");
   for(const [i,val] of personal.entries()){const x=170+Number(val)*460;s+=P(`M${x} 254v-${i?15:28}`,"kacc");}
-  return s+TC(400,323,"比过 2 对小数　·　0.3 = 0.30","lb")+TC(400,360,"对齐小数点，倒成 3 次","lb")+TC(400,399,"0.75 筒　·　1.55 筒　·　1.0 筒","lbm");
+  for(const x of [222,321])s+=water(x,301,46,44,.3)+vessel(x,301,46,44);
+  return s+TC(271,330,"＝","lb")+TC(467,329,"0.3 = 0.30","lbm")+TC(400,373,"比过 2 对小数，倒成 3 次","lb")+TC(400,399,"0.75 筒　·　1.55 筒　·　1.0 筒","lbm");
 }
 let dragging=null;
 svg.addEventListener("pointerdown",e=>{

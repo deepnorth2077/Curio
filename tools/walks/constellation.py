@@ -29,7 +29,6 @@ class Station:
         """真实触摸坐标以模块绘图单位给出，支持按比例缩放的屏幕。"""
         self.stage.scroll_into_view_if_needed()
         start, end = self.w.pt(*start), self.w.pt(*end)
-        # getScreenCTM() 使用 iframe 视口；harness 的 iframe 正好铺满页面。
         x, y = start
         dx, dy = end[0] - x, end[1] - y
         points = [(x + dx * i / 8, y + dy * i / 8) for i in range(9)]
@@ -84,7 +83,8 @@ def run(stations, correct_positions):
             # 触摸坐标以独立活动的视口为准。由本地路由提供同一文件，
             # 兼容禁止 file:// 的浏览器；模块仍然完全离线。
             url = walklib.HOST + "standalone/index.html"
-            w.page.route(url, lambda route: route.fulfill(path=str(w.path)))
+            w.page.route("**/*", lambda route: route.fulfill(path=str(w.path))
+                         if route.request.url == url else route.abort())
             w.page.goto(url)
             w.wait(400)
         else:
