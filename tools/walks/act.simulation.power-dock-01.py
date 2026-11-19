@@ -16,7 +16,11 @@ def play(w):
             dict(station=1, workA=12, timeA=3, powerA=4, workB=12, timeB=6, powerB=2))
     w.shot("1-hoists")
     w.btn("给乙机换货")
-    w.doc.get_by_label("乙机货单").select_option("30")
+    cargo = w.doc.get_by_label("乙机货单")
+    if w.touch:
+        cargo.select_option("30")
+    else:
+        cargo.press("End")
     w.btn("同时开动")
     w.doc.get_by_role("button", name="收好工票").wait_for(timeout=9000)
     state = w.sent("state")[-1]["payload"]
