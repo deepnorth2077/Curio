@@ -708,7 +708,12 @@ const ACTIVITIES={
 Object.values(CONTENT.activities).forEach(a=>{ ACTIVITIES[a.id]=Object.assign({},a,{type:a.kind,content:true}); });
 const PLAYED=new Set();   // 这次打开页面以后玩完的内容活动，只在内存里，刷新就没了（这一版先不记进度）
 const ACT_KIND={experiment:"实验",quiz:"挑战",simulation:"动手探索",explain:"讲解",reflection:"反思"};
-const actKind=(a,n)=>a.type==="explain"&&n.acts.some(x=>ACTIVITIES[x]&&ACTIVITIES[x].type==="simulation")?"旧版讲解":(ACT_KIND[a.type]||"任务");
+function actKind(a,n){
+  const original=retired.get(a.targets?.[0]);
+  if(a.type==="quiz"&&original?.to===n.id) return `原星挑战 · 成绩记在「${original.title}」`;
+  if(a.type==="explain"&&n.acts.some(id=>ACTIVITIES[id]?.type==="simulation")) return "旧版讲解";
+  return ACT_KIND[a.type]||"任务";
+}
 const TASK_LIB_DEFAULT=["数学","科学","阅读","运动","下棋","弹琴"];
 
 /* ============================================================
