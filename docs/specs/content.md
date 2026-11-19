@@ -229,7 +229,7 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 | 路径 | 第 1 节的路径规则，含大小写冲突 |
 | 引擎 | `engine` 不低于这个活动用到的能力所需的等级（按 3.8 的表） |
 | 误区覆盖 | **从数据计算**：结构化活动里，被错误选项或 `common_wrong` 引用过的误区，算作已覆盖；自定义实验以 manifest 声明为准 |
-| 发布门禁 | 只看**会被收录**的活动，也就是 `approved` 的那些；`pending`、`claude-reviewed` 的活动不收录，也不阻断发布。知识点 `published` 时，它被收录的活动里：至少一个 `explain` 和一个 `quiz`；每个 `quiz` 至少 5 道题；每个误区都被覆盖。另外**引用闭包**（6.1）要成立 |
+| 发布门禁 | 只看**会被收录**的活动，也就是 `approved` 的那些；`pending`、`claude-reviewed` 的活动不收录，也不阻断发布。知识点 `published` 时，它被收录的活动里：必须有讲解和至少一个 `quiz`，每个 `quiz` 至少 5 道题，每个误区都要被覆盖。结构化 `explain` 提供讲解。「生命的说明书」的细胞、DNA、染色体三颗星也可分别由[正式外壳已接入的动手探索](slice-5a.md)承担讲解，清单须指向本星，使用 `activity/1.1`、`type: simulation`、`pedagogy: explain`、`entry: index.html`，并声明 `observed`。另外**引用闭包**（6.1）要成立 |
 
 ## 6. 不可变发布（release/1）
 

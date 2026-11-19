@@ -6,18 +6,18 @@
 
 - **舰长**：小学三年级的孩子，8 岁左右。最近对「染色体」特别好奇，家长希望从零开始，像私人导师一样带他弄明白。
 - **三颗星，按顺序**：细胞 → DNA → 染色体。前一颗星讲到的东西，后一颗星可以直接用；后一颗星的东西，前一颗星不提前讲。
-- **每颗星的活动**：一份讲解（领航员对话，约 5 分钟）、一份挑战（约 5 分钟）；染色体另有一份反思。
+- **每颗星的活动**：先动手探索，再做挑战。染色体另有一份反思。
 - **讲解和挑战由不同的人分头写**，彼此看不到对方的稿子。所以挑战里只能用下面「词表」里本颗星和前几颗星的词，讲解必须把本颗星的新词都讲到。
 
-| 星 | 知识点 id | 讲解 | 挑战 | 反思 |
+| 星 | 知识点 id | 动手探索 | 挑战 | 反思 |
 | --- | --- | --- | --- | --- |
-| 细胞 | `biology.cell.cell-intro` | `act.explain.cell-intro-01` | `act.quiz.cell-intro-01` | — |
-| DNA | `biology.genetics.dna-intro` | `act.explain.dna-intro-01` | `act.quiz.dna-intro-01` | — |
-| 染色体 | `biology.genetics.chromosome-intro` | `act.explain.chromosome-intro-01` | `act.quiz.chromosome-intro-01` | `act.reflection.chromosome-intro-01` |
+| 细胞 | `biology.cell.cell-intro` | `act.simulation.cell-zoom-01` | `act.quiz.cell-intro-01` | — |
+| DNA | `biology.genetics.dna-intro` | `act.simulation.dna-book-01` | `act.quiz.dna-intro-01` | — |
+| 染色体 | `biology.genetics.chromosome-intro` | `act.simulation.chromosome-pack-01` | `act.quiz.chromosome-intro-01` | `act.reflection.chromosome-intro-01` |
 
 ## 领航员怎么说话
 
-讲解用领航员对话（`style: tutor`）。领航员是飞船上陪舰长探索的向导。
+领航员是飞船上陪舰长探索的向导。以下是原领航员对话稿的写作约定，供查阅。
 
 - **称呼**：叫孩子「舰长」，自称「我」。不说「同学们」「小朋友」「老师」，不出现「学习」二字。
 - **一步一两句**：每个 `text` 步骤只说一两句话，一般不超过 40 个字，最长不超过 60 个字。一次只讲一件事。

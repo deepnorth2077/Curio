@@ -899,6 +899,30 @@ class TestPublishGate(Base):
         self.published_set(); self.r.commit()
         self.ok(self.r.check())
 
+    def test_life_exploration_can_supply_the_explanation_for_its_star(self):
+        nid = "biology.cell.cell-intro"
+        aid = "act.simulation.cell-zoom-01"
+        quiz = yaml.safe_load(structured("act.quiz.cell", [nid]))
+        manifest = {"id": aid, "type": "simulation", "contract": "activity/1.1",
+                    "entry": "index.html", "pedagogy": "explain", "targets": [nid],
+                    "emits": ["observed"], "review": "approved", "misconceptions": ["visible"]}
+
+        def check(module):
+            node = {"status": "published", "activities": [module["id"], quiz["id"]],
+                    "misconceptions": [{"id": "visible"}]}
+            activities = {module["id"]: ("manifest.yaml", module), quiz["id"]: ("activity.yaml", quiz)}
+            return [message for _, message in ci_checks.check_publish_gate({nid: ("node.yaml", node)}, activities)]
+
+        self.assertEqual(check(manifest), [])
+        for field, value in (("id", "act.simulation.unknown"), ("id", "act.simulation.dna-book-01"),
+                             ("type", "experiment"), ("pedagogy", "POE"), ("review", "pending"),
+                             ("review", "claude-reviewed"), ("contract", "activity/1.0"),
+                             ("entry", "other.html"), ("targets", ["biology.genetics.dna-intro"]),
+                             ("emits", ["predicted"])):
+            with self.subTest(field=field, value=value):
+                self.assertTrue(any("讲解" in message for message in check({**manifest, field: value})))
+        self.assertTrue(any("visible" in message for message in check({**manifest, "misconceptions": []})))
+
     def test_pending_extra_activity_is_not_included_and_does_not_block(self):
         acts = self.published_set()
         pending = "act.reflection.pending"

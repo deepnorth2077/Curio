@@ -28,11 +28,10 @@ import yaml
 # 动手探索的模块（manifest.yaml + index.html）排在最前面；找不到的活动会跳过。
 CONSTELLATIONS = {
     "life-manual": ("生命的说明书", [
-        ("biology.cell.cell-intro", ["act.simulation.cell-zoom-01", "act.explain.cell-intro-01", "act.quiz.cell-intro-01"]),
-        ("biology.genetics.dna-intro", ["act.simulation.dna-book-01", "act.explain.dna-intro-01", "act.quiz.dna-intro-01"]),
+        ("biology.cell.cell-intro", ["act.simulation.cell-zoom-01", "act.quiz.cell-intro-01"]),
+        ("biology.genetics.dna-intro", ["act.simulation.dna-book-01", "act.quiz.dna-intro-01"]),
         ("biology.genetics.chromosome-intro", [
             "act.simulation.chromosome-pack-01",
-            "act.explain.chromosome-intro-01",
             "act.quiz.chromosome-intro-01",
             "act.reflection.chromosome-intro-01",
         ]),
