@@ -317,9 +317,9 @@ function draw(){
     : [[.35,.19],[.16,.34],[.18,.646],[.35,.72],[.65,.19],[.84,.34],[.82,.646],[.65,.72]];
   let g = "";
   // 别的圈：外面一道淡淡的虚线，里面一个小圆，不画星，不写字
-  g += `<path class="kf" d="${loop(cx, cy, W * .49, H * .49, ph ? 4.5 : 2.6, 201, 1)}"/>`;
+  g += `<path class="kf" d="${loop(cx, cy, W * .49, H * .49, ph ? 5.5 : 2.6, 201, 1)}"/>`;
   // 舰长所在的这一圈
-  const band = loop(cx, cy, W * .474, H * .471, ph ? 4.5 : 2.6, 202, 1.4);
+  const band = loop(cx, cy, W * .474, H * .471, ph ? 5.5 : 2.6, 202, 1.4);
   g += `<path d="${band}" fill="var(--wash)" opacity=".45"/><path class="ln" d="${band}"/>`;
   const rin = ph ? 32 : 45;
   const innerRing=closedOval(cx,cy,rin,rin,203);
@@ -328,7 +328,7 @@ function draw(){
   g += `<svg x="${cx - rh * .375}" y="${cy - rh / 2 + 2}" width="${rh * .75}" height="${rh}" viewBox="0 0 48 64">${rocket(false)}</svg>`;
   DATA.forEach((c, i) => { g += constellation(c, i, pos[i][0] * W, pos[i][1] * H, s); });
   g += `<text class="here" x="${cx}" y="${cy + rin + 23}">你在这一圈</text>`;
-  g += `<text class="subj" x="12" y="20">数学</text><text class="subj" x="${W - 12}" y="20" text-anchor="end">科学</text>`;
+  g += `<text class="subj" x="${ph?2:12}" y="20">数学</text><text class="subj" x="${W-(ph?2:12)}" y="20" text-anchor="end">科学</text>`;
   const focusGroup = document.activeElement?.closest("#map .con")?.dataset.i;
   map.innerHTML = g;
   select(selected);
