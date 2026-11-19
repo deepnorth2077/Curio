@@ -103,12 +103,14 @@ body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{
 .tk{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round} .tkd{fill:none;stroke:var(--accent);stroke-width:1.1}
 body.narrow .lb{font-size:21px} body.narrow .lbg{font-size:20px} body.narrow .lbm{font-size:20px}
 body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .sign{font-size:28px}
+/* ============ 台架样式 ============ */
 #stage{max-height:58vh}
 .rope{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
 .steel{fill:var(--sky);stroke:var(--ink);stroke-width:2}
 .wood{fill:var(--apricot);stroke:var(--ink);stroke-width:2}
+.activePart{fill:var(--accent);stroke:var(--ink);stroke-width:2}
 body.narrow .lb,body.narrow .lbm,body.narrow .lbg{font-size:21px}
-@media (max-width:520px){.card footer{display:block}.hint{white-space:normal}.readout{text-align:left}}
+@media (max-width:520px){.card footer{display:flex;flex-direction:column;align-items:flex-start;gap:3px}.hint{white-space:normal}.readout{text-align:left}}
 </style>
 </head>
 <body>
@@ -344,7 +346,7 @@ function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站�
 
 // 第一屏的提醒（G6）：进入动手 1.5 秒还没碰，第一个圆钮外面扩出一圈细环；一碰就再也不出现
 let cuePos = null, cueTimer = 0;
-function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; S.dirty = true; } }, 1500); }
+function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; placeCue(); } }, 1500); }
 function disarmCue(){ clearTimeout(cueTimer); cuePos = null; cueEl.style.display = "none"; }
 function touched(){ if (cuePos || cueTimer) disarmCue(); cueTimer = 0; }
 function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }   // 第三个数是被提醒的东西的半径（托里的一个）
@@ -359,8 +361,8 @@ addEventListener("resize",()=>{fitView();paint();});
 const fmt=value=>String(Math.round(value*100)/100);
 const line=(x1,y1,x2,y2,cls="k",seed=19)=>P(Sk.line(x1,y1,x2,y2,seed,.45),cls);
 const label=(x,y,text,cls="lb")=>TC(x,y,text,cls);
-function crate(x,y,w,h){
-  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" class="wood"/>`+
+function crate(x,y,w,h,cls="wood"){
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" class="${cls}"/>`+
     line(x+5,y+5,x+w-5,y+h-5,"k1")+line(x+5,y+h-5,x+w-5,y+5,"k1");
 }
 function station(number,title,mode){
@@ -427,7 +429,7 @@ function ticket(y,title,text){
 function bench(){
   const targetY=321-MODEL.scale*MODEL.height;
   return line(180,43,471,43)+line(180,50,471,50)+line(191,51,191,350,"k1")+
-    line(167,351,487,351)+line(210,targetY,320,targetY,"kf")+T(205,targetY-9,"升高 "+MODEL.height+" m","lbg");
+    line(167,351,487,351)+line(210,targetY,320,targetY,"kf")+T(150,targetY-9,"升高 "+MODEL.height+" m","lbg");
 }
 function hand(){
   const fixed=S.station===1;
@@ -439,7 +441,7 @@ function move(value){
   if(S.station===2&&!compareSeen&&rope>=MODEL.height){
     // 第一次在与定滑轮相同的绳长停住，让孩子看一眼半高处的箱底。
     rope=MODEL.height;compareSeen=true;S.mode="compare";disarmCue();
-    say(`绳头同样走了 ${MODEL.height} m，箱子只升了 ${fmt(rig().height)} m。轮子这次也搭上了顺风箱。`);
+    say(`绳头同样走了 ${MODEL.height} m，箱子只升了 ${fmt(rig().height)} m。这次滑轮也跟着箱子往上走了。`);
     next("补收一段绳",beginPull);
   }
   paint();
@@ -447,30 +449,40 @@ function move(value){
 function wheel(x,y,r,turn){
   let spokes="";
   for(let i=0;i<4;i++){
-    const a=turn+i*Math.PI/2;spokes+=line(x+8*Math.cos(a),y+8*Math.sin(a),x+(r-5)*Math.cos(a),y+(r-5)*Math.sin(a),"k1",42+i);
+    const a=i*Math.PI/2;spokes+=line(x+8*Math.cos(a),y+8*Math.sin(a),x+(r-5)*Math.cos(a),y+(r-5)*Math.sin(a),"k1",42+i);
   }
-  return `<circle cx="${x}" cy="${y}" r="${r}" class="steel"/>`+spokes+
+  return `<circle cx="${x}" cy="${y}" r="${r}" class="steel"/><g id="wheelSpokes" transform="rotate(${turn*180/Math.PI} ${x} ${y})">${spokes}</g>`+
     `<circle cx="${x}" cy="${y}" r="5" fill="var(--ink)"/>`;
 }
 function drawing(){
   if(S.mode==="end")return label(400,68,"同高吊运单","ttl")+
     lifts.map((q,i)=>ticket(90+i*96,i===0?"轮子挂在架上":"轮子跟着箱子走",
       `${q.strands} 段托重　${q.force} N × ${fmt(q.length)} m = ${fmt(q.work)} J`)).join("")+
-    label(400,325,`我的绳印：收 ${fmt(mark)} m，箱升 ${fmt(mark/2)} m`,"lb");
+    label(400,325,`我的绳印：收 ${fmt(mark)} m，箱升 ${fmt(mark/lifts[1].strands)} m`,"lb");
   const fixed=S.station===1,{height,force,strands}=rig();
   const pull=hand(),cx=332,r=31,cy=fixed?100:233-height*MODEL.scale;
   const bx=fixed?cx-r:cx,base=321-height*MODEL.scale,top=base-45;
-  const turn=(fixed?-1:1)*height*MODEL.scale/r;
+  // SVG 的正角为顺时针：定轮右缘随绳向下，动轮左缘相对轮心向下。
+  const turn=(fixed?1:-1)*height*MODEL.scale/r;
   const rigging=fixed?
     line(cx,52,cx,cy)+P(`M${cx-r} ${top-16}V${cy}a${r} ${r} 0 0 1 ${2*r} 0V${pull.y}`,"rope"):
     P(`M${cx-r} 51V${cy}a${r} ${r} 0 0 0 ${2*r} 0V${pull.y}`,"rope")+
       line(cx,cy,cx,top-16);
   let out=wheel(cx,cy,r,turn)+rigging+line(bx,top-16,bx-23,top)+line(bx,top-16,bx+23,top)+crate(bx-37,top,74,45);
   out+=label(bx,base+24,MODEL.weight+" N","lbm");
+  out+=`<circle cx="${pull.x}" cy="${pull.y}" r="8" class="${handle()?"activePart":"wood"}"/>`;
   if(!fixed)out+=`<circle cx="${cx-r}" cy="51" r="5" fill="var(--ink)"/>`;
   if(S.mode!=="guess"){
     // 指针与承重绳的张力取自同一模型，刻线表示牛。
-    const zx=468,zy=131,span=140;
+    const rulerX=407,startY=fixed?129:222,direction=fixed?1:-1;
+    out+=line(rulerX,startY,rulerX,startY+direction*limits()*MODEL.scale,"k1");
+    for(let m=0;m<=limits();m+=MODEL.step){
+      const y=startY+direction*m*MODEL.scale,whole=Number.isInteger(m);
+      out+=line(rulerX,y,rulerX+(whole?12:6),y,"k1");
+      if(whole)out+=T(rulerX+16,y+5,m,"lbm");
+    }
+    out+=T(rulerX-8,Math.max(startY,startY+direction*limits()*MODEL.scale)+34,"绳尺 m","lbg");
+    const zx=478,zy=131,span=140;
     out+=T(zx,zy-37,"绳头测力计","lb")+P(box(zx,zy-19,span,42,41,.45),"k1");
     for(let n=0;n<=MODEL.weight;n+=2){
       const x=zx+8+(span-16)*n/MODEL.weight;
@@ -485,7 +497,7 @@ function drawing(){
 function updateReading(){
   if(S.mode==="guess"){readout("箱重 "+MODEL.weight+" N");return;}
   const q=rig();
-  readout(`绳头走 <b>${fmt(rope)} m</b>　箱升 <b>${fmt(q.height)} m</b><br>手拉 ${q.force} N　手做功 ${fmt(q.work)} J`);
+  readout(`轮绳很轻，忽略摩擦，按匀速提升来读数<br>绳头走 <b>${fmt(rope)} m</b>　箱升 <b>${fmt(q.height)} m</b><br>手拉 ${q.force} N　手做功 ${fmt(q.work)} J`);
   sendState({station:S.station,rope, height:q.height, force:q.force, work:q.work,strands:q.strands});
 }
 function enter1(){
@@ -502,14 +514,14 @@ function beginPull(){
   if(S.station===2&&compareSeen)list.unshift({label:"在绳上留印",cls:"ghost",go:()=>{
     mark=rope;say(`绳印留在 ${fmt(mark)} m，这时箱子升了 ${fmt(rig().height)} m。`);
   }});
-  controls(list,S.station===1?"轮轴挂着不动。向下拖绳头，把箱底吊到虚线处。":
+  controls(list,S.station===1?"这架轮和绳都很轻，转起来没有摩擦。向下匀速拖绳头，吊到虚线处。m 是米，做功用焦（J）记。":
     compareSeen?"向上再收一段绳。你也可以在绳上选个位置，留一道自己的印。":"这次轮轴跟着箱子走。向上收绳，先走和上次一样远。","上下拖绳头，或按上下键");
 }
 function finishLift(){
   const q=rig();
   if(q.height!==MODEL.height){say("看箱子的底边。它还要往上走一点，才能和虚线对齐。","hmm");return;}
   lifts[S.station-1]={...q,length:rope};S.mode="talk";disarmCue();observedOnce(S.station);paint();hint("");
-  if(S.station===1){say(`绳头走 ${fmt(rope)} m，箱子也走 ${fmt(q.height)} m。一段绳独自托着整箱。`,"good");nextOr("把轮子挂到箱上",enter2);}
+  if(S.station===1){say(`绳头走 ${fmt(rope)} m，箱子也走 ${fmt(q.height)} m。一段绳独自托着整箱，轮子倒是一步没走。`,"good");nextOr("把轮子挂到箱上",enter2);}
   else{
     if(mark===null)mark=MODEL.height;
     say(`两段绳每段托 ${q.force} N。箱子一样高，手只用一半的力，却多走了一段路。J 读作焦，记录力沿途做的功。`,"good");
