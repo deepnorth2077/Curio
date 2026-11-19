@@ -439,7 +439,7 @@ function startRun(done){
   for(const input of $("bench").querySelectorAll("input")) input.disabled=true;
   const start = performance.now();
   function step(now){
-    elapsed = reduced ? MODEL.seconds : Math.min(MODEL.seconds, (now-start)/1000);
+    elapsed = reduced ? MODEL.seconds : Math.max(0, Math.min(MODEL.seconds, (now-start)/1000));
     paint();
     if(elapsed < MODEL.seconds) frame=requestAnimationFrame(step);
     else {
@@ -459,7 +459,8 @@ const massMax=MODEL.emptyMass+MODEL.cargoMass;
 function cars(t){
   const mass=$("mass") ? +$("mass").value : MODEL.emptyMass;
   const force=$("force") ? +$("force").value : MODEL.push;
-  return [MODEL.motion(MODEL.emptyMass,MODEL.push,t), MODEL.motion(mass,force,t)];
+  const referencePush=$("referenceForce") ? +$("referenceForce").value : MODEL.push;
+  return [MODEL.motion(MODEL.emptyMass,referencePush,t), MODEL.motion(mass,force,t)];
 }
 function paint(){
   const pair=cars(elapsed);
@@ -500,9 +501,10 @@ function experiment(station){
   if(station===1){contrastedMass=false; contrastedPush=false;}
   showBench(slider("mass","乙车总质量",MODEL.emptyMass,massMax,MODEL.cargoMass,
                    station===1?MODEL.emptyMass:massMax,"kg")+
-            slider("force","向右推乙车",MODEL.minPush,MODEL.maxPush,MODEL.step,MODEL.push,"N"));
+            slider("force","向右推乙车",MODEL.minPush,MODEL.maxPush,MODEL.step,MODEL.push,"N")+
+            (station===2 ? slider("referenceForce","向右推甲车",MODEL.minPush,MODEL.push,MODEL.step,MODEL.push,"N") : ""));
   hint("两车从静止出发，同推 1 秒。每车受到向左 2 N 的阻力。N 读作牛顿，kg 读作千克。");
-  say(station===1?"把乙车加到 4 千克，保持推力一样，看看哪张纸带更长。":"让乙车载着货，调它的推力，使两张纸带一样长。");
+  say(station===1?"把乙车加到 4 千克，保持推力一样，看看哪张纸带更长。":"让乙车载着货，选定甲车的推力，再调乙车，使两张纸带一样长。");
   paint(); launchButton();
 }
 function launchButton(){
