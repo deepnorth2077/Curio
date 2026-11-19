@@ -19,7 +19,7 @@ sys.path.insert(0, str(REPO / "preview"))
 import build  # noqa: E402
 
 NODE = "biology.cell.cell-intro"
-EXPLAIN = "act.explain.cell-intro-01"      # 数据活动，带自己独有的配图
+TEST_FIGURE = "content/assets/biology.cell.cell-intro/preview-test.svg"
 SIMULATION = "act.simulation.cell-zoom-01"  # 动手探索模块（manifest.yaml）
 QUIZ = "act.quiz.cell-intro-01"
 
@@ -44,39 +44,37 @@ def node_acts(data, node_id):
     return next(n["activities"] for n in data["nodes"] if n["id"] == node_id)
 
 
-def own_figures(root, aid):
-    act = yaml.safe_load((root / "content/activities" / aid / "activity.yaml").read_text(encoding="utf-8"))
-    srcs = []
-    build.collect_srcs(act.get("body"), srcs)
-    return srcs
-
-
 class PreviewBundleReviewGate(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp())
         shutil.copytree(REPO / "content", self.tmp / "content")
+        # 临时给第一道挑战题加图，单独核对未批准活动的配图是否随题目排除。
+        figure = self.tmp / TEST_FIGURE
+        figure.parent.mkdir(parents=True, exist_ok=True)
+        figure.write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"/>', encoding="utf-8")
+        path = self.tmp / "content/activities" / QUIZ / "activity.yaml"
+        quiz = yaml.safe_load(path.read_text(encoding="utf-8"))
+        quiz["body"]["items"][0]["figure"] = {"type": "svg", "src": TEST_FIGURE}
+        path.write_text(yaml.safe_dump(quiz, allow_unicode=True), encoding="utf-8")
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
 
     def test_approved_activities_are_included(self):
         data, _ = bundle(self.tmp)
-        for aid in (EXPLAIN, SIMULATION, QUIZ):
+        for aid in (SIMULATION, QUIZ):
             self.assertIn(aid, data["activities"])
             self.assertIn(aid, node_acts(data, NODE))
-        for src in own_figures(self.tmp, EXPLAIN):
-            self.assertIn(src, data["figures"])
+        self.assertIn(TEST_FIGURE, data["figures"])
 
     def test_pending_data_activity_is_skipped_with_its_figures(self):
-        set_review(self.tmp, EXPLAIN, "pending")
+        set_review(self.tmp, QUIZ, "pending")
         data, log = bundle(self.tmp)
-        self.assertNotIn(EXPLAIN, data["activities"])
-        self.assertNotIn(EXPLAIN, node_acts(data, NODE))
-        for src in own_figures(self.tmp, EXPLAIN):
-            self.assertNotIn(src, data["figures"])
-        self.assertIn(EXPLAIN, log)
+        self.assertNotIn(QUIZ, data["activities"])
+        self.assertNotIn(QUIZ, node_acts(data, NODE))
+        self.assertNotIn(TEST_FIGURE, data["figures"])
+        self.assertIn(QUIZ, log)
         # 同一知识点下已批准的活动不受影响
-        self.assertIn(QUIZ, node_acts(data, NODE))
         self.assertIn(SIMULATION, node_acts(data, NODE))
 
     def test_claude_reviewed_module_is_skipped(self):
@@ -96,11 +94,24 @@ class PreviewBundleReviewGate(unittest.TestCase):
 
     def test_trial_page_build_is_not_filtered(self):
         # 试玩页（--out，build()）由维护者生成、按 STARS 显式列活动，这次不改它的行为
-        set_review(self.tmp, EXPLAIN, "pending")
+        set_review(self.tmp, QUIZ, "pending")
         with contextlib.redirect_stdout(io.StringIO()):
             data = build.build([self.tmp])
         star = next(s for s in data["stars"] if s["id"] == NODE)
-        self.assertIn(EXPLAIN, [a["id"] for a in star["activities"]])
+        self.assertIn(QUIZ, [a["id"] for a in star["activities"]])
+
+
+class LifeConstellationPreview(unittest.TestCase):
+    def test_life_cards_and_preview_offer_exploration_and_challenge(self):
+        preview = build.build([REPO], "life-manual")
+        formal = build.build_bundle([REPO])
+        for star in preview["stars"]:
+            with self.subTest(star=star["id"]):
+                expected = ["simulation", "quiz"]
+                if star["id"] == "biology.genetics.chromosome-intro":
+                    expected.append("reflection")
+                self.assertEqual([act["kind"] for act in star["activities"]], expected)
+                self.assertEqual([act["id"] for act in star["activities"]], node_acts(formal, star["id"]))
 
 
 class MathConstellationPreview(unittest.TestCase):

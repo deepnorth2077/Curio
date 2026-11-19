@@ -46,7 +46,12 @@ OVERRIDE_LABEL = "越界-已批准"
 KID_FACING_NODE = ["title", "driving_question", "lenses"]
 KID_FACING_ACT = ["title", "predict", "explain"]
 FORBIDDEN_WORD = "学习"
-PUBLISH_REQUIRED_TYPES = ["explain", "quiz"]
+# slice-5a 已验收、在正式外壳中承担本星讲解的动手探索。
+EXPLANATION_MODULES = {
+    "biology.cell.cell-intro": "act.simulation.cell-zoom-01",
+    "biology.genetics.dna-intro": "act.simulation.dna-book-01",
+    "biology.genetics.chromosome-intro": "act.simulation.chromosome-pack-01",
+}
 PATH_SEGMENT = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
 CATALOG_PATH = "content/catalog/points.yaml"
 # 孩子会碰到的外壳页面：样式里要有「长按不选字、不弹菜单」那两条（#156，module_lint.NOSELECT_CSS）。文件不在就不查
@@ -197,6 +202,15 @@ def activity_misconception_refs(doc):
                 yield wrong["misconception"]
 
 
+def explains_node(nid, activity):
+    """仅计入外壳能够按站打开、且为本知识点验收过的讲解模块。"""
+    return (nid in EXPLANATION_MODULES and activity.get("id") == EXPLANATION_MODULES[nid]
+            and activity.get("type") == "simulation" and activity.get("pedagogy") == "explain"
+            and activity.get("contract") == "activity/1.1" and activity.get("entry") == "index.html"
+            and nid in activity.get("targets", []) and isinstance(activity.get("emits"), list)
+            and "observed" in activity["emits"])
+
+
 def check_publish_gate(nodes, acts):
     """返回发布门禁错误；nodes/acts 的值均为 (文件路径, 已解析文档)。
 
@@ -214,10 +228,11 @@ def check_publish_gate(nodes, acts):
         for aid in node.get("activities", []):
             if aid in acts and isinstance(acts[aid][1], dict) and acts[aid][1].get("review") == "approved":
                 own.append((aid, acts[aid][1]))
-        kinds = {a.get("kind") if "kind" in a else a.get("type") for _, a in own}
-        for kind in PUBLISH_REQUIRED_TYPES:
-            if kind not in kinds:
-                errors.append((node_path, f"发布前收录的活动中必须至少有一个 {kind} 类活动"))
+        kinds = {activity.get("kind") for _, activity in own}
+        if "explain" not in kinds and not any(explains_node(nid, activity) for _, activity in own):
+            errors.append((node_path, "发布前必须有已批准的 explain 讲解或承担本星讲解的正式动手探索"))
+        if "quiz" not in kinds:
+            errors.append((node_path, "发布前收录的活动中必须至少有一个 quiz 类活动"))
         for aid, activity in own:
             activity_kind = activity.get("kind") if "kind" in activity else activity.get("type")
             activity_path = acts[aid][0]

@@ -172,8 +172,6 @@ textarea{width:100%;font:inherit;font-size:17px;padding:10px 12px;border:1.5px s
 const DATA = JSON.parse(document.getElementById("data").textContent);
 document.title = "Curio · 试玩版 · " + DATA.constellation;
 const KIND = {simulation:"动手探索", explain:"讲解", quiz:"挑战", reflection:"反思"};
-const hasSim = st => st.activities.some(a => a.kind === "simulation");
-const kindLabel = (a, st) => a.kind === "explain" && hasSim(st) ? "旧版讲解" : KIND[a.kind];
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $app = document.getElementById("app"), $dock = document.getElementById("dock"), $dockIn = document.getElementById("dockIn");
 
@@ -421,7 +419,7 @@ function nextAfter(a){ const i = ACTS.indexOf(a); return ACTS[i+1] || null; }
 function endButtons(a){
   const n = nextAfter(a);
   return el("div", {class:"row-btns"},
-    n ? el("button", {class:"btn", type:"button", onclick:()=>go("act:" + n.id)}, `${n.star !== a.star ? "下一颗星：" : "接着做"}${kindLabel(n, n.star)}`) : null,
+    n ? el("button", {class:"btn", type:"button", onclick:()=>go("act:" + n.id)}, `${n.star !== a.star ? "下一颗星：" : "接着做"}${KIND[n.kind]}`) : null,
     el("button", {class:"btn ghost", type:"button", onclick:()=>go("home")}, "回星图"));
 }
 
@@ -446,7 +444,7 @@ function viewHome(){
     for (const a of st.activities){
       const done = S.done[a.id];
       acts.append(el("button", {class:"act" + (done ? " done" : "") + (a.kind === "simulation" ? " sim" : ""), type:"button", onclick:()=>go("act:" + a.id)},
-        done ? el("span", {class:"tick"}, "✓") : null, kindLabel(a, st), a.kind === "simulation" ? el("small", {class:"new"}, "新") : null, a.duration_min ? el("small", {}, `${a.duration_min} 分钟`) : null));
+        done ? el("span", {class:"tick"}, "✓") : null, KIND[a.kind], a.kind === "simulation" ? el("small", {class:"new"}, "新") : null, a.duration_min ? el("small", {}, `${a.duration_min} 分钟`) : null));
     }
     line.append(el("section", {class:"star", id:st.id}, el("div", {class:"dot"}, i+1), el(groups ? "h3" : "h2", {}, st.title), el("div", {class:"dq"}, st.dq), acts));
   });
@@ -579,18 +577,25 @@ function viewReflection(a){
 // 动手探索：沙箱 iframe + activity/1.1 契约
 let simListener = null;
 function viewSim(a){
-  const log = S.log[a.id] = {kind:"simulation", events:[], questions:[]};
+  const log = S.log[a.id] ??= {kind:"simulation", events:[], questions:[]};
   dock();
   const frame = el("iframe", {class:"simframe", sandbox:"allow-scripts", title:a.title});
   frame.srcdoc = a.html;
   const end = el("div", {});
-  if (simListener) removeEventListener("message", simListener);
   simListener = e => {
     if (e.source !== frame.contentWindow) return;
     const m = e.data; if (!m || m.contract !== "activity/1.1") return;
     const p = m.payload || {};
     const post = (type, payload) => frame.contentWindow.postMessage({contract:"activity/1.1", type, payload}, "*");
-    if (m.type === "ready") post("init", {age_band:a.age_band || "G3-4", lang:"zh-CN", phase:"observe", palette:{}, mastery:null});
+    if (m.type === "ready"){
+      // 有些站里会观察好几样东西。只认整站做完的那条标记。
+      const stations = log.events
+        .filter(ev => ev.verb === "observed" && ev.result?.item === "station-complete")
+        .map(ev => ev.result.station)
+        .filter(n => Number.isInteger(n) && n >= 1 && n <= 4);
+      post("init", {age_band:a.age_band || "G3-4", lang:"zh-CN", phase:"observe", palette:{}, mastery:null,
+        completed_stations:[...new Set(stations)].sort((x, y) => x - y), activity_completed:S.done[a.id] === true});
+    }
     else if (m.type === "resize" && p.h) frame.style.height = Math.max(600, Math.ceil(p.h) + 8) + "px";
     else if (m.type === "event") log.events.push(p);
     else if (m.type === "note_question" && p.text) log.questions.push(p.text);
@@ -606,7 +611,7 @@ function recordText(){
     out.push("", `【${st.title}】`);
     for (const a of st.activities){
       const L = S.log[a.id];
-      out.push(`${kindLabel(a, st)}：${S.done[a.id] ? "做完了" : (L ? "做到一半" : "没做")}`);
+      out.push(`${KIND[a.kind]}：${S.done[a.id] ? "做完了" : (L ? "做到一半" : "没做")}`);
       if (!L) continue;
       (L.items||[]).forEach(r => {
         const res = r.result === "first" ? "一次答对" : r.result === "revealed" ? "看了答案" : `答错 ${r.tries.filter(t => !t.ok).length} 次后答对`;
@@ -653,13 +658,13 @@ function go(v){
   }
 }
 function route(){
+  if (simListener){ removeEventListener("message", simListener); simListener = null; }
   window.scrollTo(0,0);
   const m = VIEW.match(/^act:(.+)$/);
   if (m){
     const a = actById(m[1]);
     if (a){
-      setTop(`${kindLabel(a, a.star)} · ${a.title}`, true);
-      if (simListener && a.kind !== "simulation"){ removeEventListener("message", simListener); simListener = null; }
+      setTop(`${KIND[a.kind]} · ${a.title}`, true);
       ({simulation:viewSim, explain:viewExplain, quiz:viewQuiz, reflection:viewReflection})[a.kind](a);
       return;
     }

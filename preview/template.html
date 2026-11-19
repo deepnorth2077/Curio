@@ -172,8 +172,6 @@ textarea{width:100%;font:inherit;font-size:17px;padding:10px 12px;border:1.5px s
 const DATA = JSON.parse(document.getElementById("data").textContent);
 document.title = "Curio · 试玩版 · " + DATA.constellation;
 const KIND = {simulation:"动手探索", explain:"讲解", quiz:"挑战", reflection:"反思"};
-const hasSim = st => st.activities.some(a => a.kind === "simulation");
-const kindLabel = (a, st) => a.kind === "explain" && hasSim(st) ? "旧版讲解" : KIND[a.kind];
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const $app = document.getElementById("app"), $dock = document.getElementById("dock"), $dockIn = document.getElementById("dockIn");
 
@@ -421,7 +419,7 @@ function nextAfter(a){ const i = ACTS.indexOf(a); return ACTS[i+1] || null; }
 function endButtons(a){
   const n = nextAfter(a);
   return el("div", {class:"row-btns"},
-    n ? el("button", {class:"btn", type:"button", onclick:()=>go("act:" + n.id)}, `${n.star !== a.star ? "下一颗星：" : "接着做"}${kindLabel(n, n.star)}`) : null,
+    n ? el("button", {class:"btn", type:"button", onclick:()=>go("act:" + n.id)}, `${n.star !== a.star ? "下一颗星：" : "接着做"}${KIND[n.kind]}`) : null,
     el("button", {class:"btn ghost", type:"button", onclick:()=>go("home")}, "回星图"));
 }
 
@@ -446,7 +444,7 @@ function viewHome(){
     for (const a of st.activities){
       const done = S.done[a.id];
       acts.append(el("button", {class:"act" + (done ? " done" : "") + (a.kind === "simulation" ? " sim" : ""), type:"button", onclick:()=>go("act:" + a.id)},
-        done ? el("span", {class:"tick"}, "✓") : null, kindLabel(a, st), a.kind === "simulation" ? el("small", {class:"new"}, "新") : null, a.duration_min ? el("small", {}, `${a.duration_min} 分钟`) : null));
+        done ? el("span", {class:"tick"}, "✓") : null, KIND[a.kind], a.kind === "simulation" ? el("small", {class:"new"}, "新") : null, a.duration_min ? el("small", {}, `${a.duration_min} 分钟`) : null));
     }
     line.append(el("section", {class:"star", id:st.id}, el("div", {class:"dot"}, i+1), el(groups ? "h3" : "h2", {}, st.title), el("div", {class:"dq"}, st.dq), acts));
   });
@@ -613,7 +611,7 @@ function recordText(){
     out.push("", `【${st.title}】`);
     for (const a of st.activities){
       const L = S.log[a.id];
-      out.push(`${kindLabel(a, st)}：${S.done[a.id] ? "做完了" : (L ? "做到一半" : "没做")}`);
+      out.push(`${KIND[a.kind]}：${S.done[a.id] ? "做完了" : (L ? "做到一半" : "没做")}`);
       if (!L) continue;
       (L.items||[]).forEach(r => {
         const res = r.result === "first" ? "一次答对" : r.result === "revealed" ? "看了答案" : `答错 ${r.tries.filter(t => !t.ok).length} 次后答对`;
@@ -666,7 +664,7 @@ function route(){
   if (m){
     const a = actById(m[1]);
     if (a){
-      setTop(`${kindLabel(a, a.star)} · ${a.title}`, true);
+      setTop(`${KIND[a.kind]} · ${a.title}`, true);
       ({simulation:viewSim, explain:viewExplain, quiz:viewQuiz, reflection:viewReflection})[a.kind](a);
       return;
     }
