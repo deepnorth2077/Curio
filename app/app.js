@@ -408,6 +408,8 @@ function renderChart() {
   if (app.mode === "readonly" && !app.hasIdentity) { main.innerHTML = ""; return; }
   const nodes = app.pack ? app.pack.nodes : [];
   const lit = nodes.filter((n) => nodeState(n.id) === "lit").length;
+  const tip = nodes.some((node) => nodeActivities(node).some((a) => a.module))
+    ? "点一颗星，选动手探索或挑战。" : "点一颗星，开始挑战。";
   const stars = nodes.map((n, i) => {
     const st = nodeState(n.id);
     const going = app.quiz && app.quiz.node.id === n.id && pendingQuiz(app.quiz);
@@ -421,7 +423,7 @@ function renderChart() {
     ${skySvg()}
     <div class="chart-head"><h1 id="chartTitle">星图</h1><p class="sub">点亮了 ${lit} 颗，一共 ${nodes.length} 颗</p></div>
     <ul class="stars">${stars}</ul>
-    <p class="chart-tip muted">${app.mode === "writable" ? "点一颗星，选动手探索或挑战。" : app.mode === "recovering" ? "正在准备……" : ""}</p>
+    <p class="chart-tip muted">${app.mode === "writable" ? tip : app.mode === "recovering" ? "正在准备……" : ""}</p>
     ${showCleanHint() ? `<p class="clean-hint"><a href="#parent">${esc(PTEXT.cleanHint)}</a></p>` : ""}
     <div class="chart-foot">
       ${app.store && app.hasIdentity ? `<a class="parent-link" href="#parent">家长${needsDot({ clean: app.clean, lastBackup: app.lastBackup, firstEventAt: app.firstEventAt }, Date.now()) ? `<span class="dot" role="img" aria-label="很久没备份了"></span>` : ""}</a>` : ""}
@@ -530,20 +532,22 @@ function renderMenu(node) {
 /** 合格尝试里已保存的站包括中途退出前完成的站。通关只认单独的结束事件。 */
 export function explorationProgress(events, learnerId, activityId, version) {
   const stations = new Set();
-  let activityCompleted = false;
   for (const attempt of groupAttempts(events).values()) {
     const first = attempt[0];
     const content = first.content;
     if (first.learner_id !== learnerId || content?.activity_id !== activityId ||
         content.activity_kind !== "simulation" || content.activity_version !== version || attemptRule(attempt)) continue;
-    if (attempt.at(-1).verb === "attempt.completed") activityCompleted = true;
+    if (attempt[attempt.length - 1].verb === "attempt.completed") {
+      // 较早的记录只有整次完成。四站当时必须依次走完，重进时应能任选一站。
+      return { doneStations: Array.from({ length: STATION_COUNT }, (_, i) => i + 1), activityCompleted: true };
+    }
     for (const e of attempt) {
       const value = e.payload.value;
       if (e.verb === "sim.observed" && e.payload.observable === "station.completed" &&
           Number.isInteger(value) && value >= 1 && value <= STATION_COUNT) stations.add(value);
     }
   }
-  return { doneStations: [...stations].sort((a,b) => a-b), activityCompleted };
+  return { doneStations: [...stations].sort((a,b) => a-b), activityCompleted: false };
 }
 
 function openExploration(node, module) {

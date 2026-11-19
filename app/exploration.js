@@ -88,7 +88,7 @@ export function mountExploration({
     queue = queue.then(() => { if (!aborted) return job(); }).catch((error) => {
       // The storage transaction may already have committed. Recovery replays the journal.
       if (aborted) return; // lock-loss teardown has already replaced this screen
-      failure = error;
+      failure = error instanceof Error ? error : new Error("探索中断了");
       aborted = true;
       detach();
       onStatus("failed");
@@ -173,7 +173,10 @@ export function mountExploration({
         await write("attempt.completed", { duration_ms });
         ended = true;
         phase = "completed";
-        if (accepting) onStatus("completed");
+        if (accepting) {
+          if (pendingHeight !== undefined) resize(pendingHeight);
+          onStatus("completed");
+        }
       });
     }
   }
