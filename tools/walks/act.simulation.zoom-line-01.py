@@ -1,6 +1,7 @@
 """数线放大镜走查，验收值见 docs/constellations/zero-to-one/stars/04-tenths.md。"""
 import sys
 from pathlib import Path
+from time import monotonic
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import walklib  # noqa: E402
@@ -64,13 +65,22 @@ def play(w):
         w.wait(160)
         w.check("拖动时模块页面不滚", w.ev("scrollY") == before, [before, w.ev("scrollY")])
 
-    def hold(duration, by_key=False):
+    def hold(duration, by_key=False, inspect=None):
         w.step("按住放大")
+
+        def wait_while_held():
+            start = monotonic()
+            if inspect:
+                inspect()
+            remaining = duration - (monotonic() - start) * 1000
+            if remaining > 0:
+                w.wait(remaining)
+
         if by_key:
             stage.focus()
             keyboard.down("Space")
             try:
-                w.wait(duration)
+                wait_while_held()
             finally:
                 keyboard.up("Space")
         else:
@@ -83,8 +93,10 @@ def play(w):
                     cdp.send("Input.dispatchTouchEvent", {
                         "type": "touchStart", "touchPoints": [{"x": x, "y": y}],
                     })
-                    w.wait(duration)
-                    cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+                    try:
+                        wait_while_held()
+                    finally:
+                        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
                 finally:
                     cdp.detach()
             else:
@@ -92,7 +104,7 @@ def play(w):
                 mouse.move(x, y)
                 mouse.down()
                 try:
-                    w.wait(duration)
+                    wait_while_held()
                 finally:
                     mouse.up()
         w.wait(160)
@@ -100,12 +112,29 @@ def play(w):
     def options():
         return w.doc.locator("#actions .choice").all_text_contents()
 
+    def check_prediction_ruler():
+        prediction = w.doc.locator("#zoom-prediction-ruler")
+        w.check("猜测图上有完整的 0 到 1 米尺", prediction.is_visible(), prediction.count())
+        labels = prediction.locator("text").all_text_contents()
+        w.check("猜测图标出整把尺以及被框住的一小段", {"0 米", "1 米", "这一小段"}.issubset(labels), labels)
+        segments = prediction.locator("[data-ruler-segment]")
+        edges = segments.evaluate_all("els => els.map(el => {const b = el.getBBox(); return [b.x, b.width]})")
+        w.check("整段尺有十个连续等宽的大格",
+                len(edges) == 10 and edges[0][1] > 0
+                and all(abs(width - edges[0][1]) < .2 for _, width in edges)
+                and all(abs(x + width - next_x) < .2 for (x, width), (next_x, _) in zip(edges, edges[1:])),
+                edges)
+        w.check("猜测图只指出一大格，没先画出答案",
+                prediction.locator(".pick").count() == 1 and not w.doc.locator("#zoom-new-ticks").count())
+
     def intro(station, correct, pick):
         w.shot(f"{station}a-intro")
         w.btn("然后呢")
         choices = options()
         w.check(f"第 {station} 站提问时没有圆钮", w.grips() == 0, w.grips())
         w.check(f"第 {station} 站有三个选项", len(choices) == 3, choices)
+        if station == 2:
+            check_prediction_ruler()
         w.shot(f"{station}b-ask")
         w.step(f"预测第 {station} 站，选第 {pick + 1} 项")
         w.wait(430)
@@ -125,15 +154,8 @@ def play(w):
     def height_ticks():
         return w.doc.locator("#height-tenths path").count()
 
-    # 桌面验证沙箱消息；CDP 触摸注入在独立页面上走完整个流程。
-    if w.touch:
-        w.step("打开触摸走查页面")
-        url = walklib.HOST + "module/index.html"
-        w.page.route(url, lambda route: route.fulfill(path=str(w.path), content_type="text/html; charset=utf-8"))
-        w.page.goto(url)
-        w.wait(400)
-    else:
-        w.open(hosted=True)
+    # 桌面验证沙箱消息；触摸走查直接打开活动，避开缩放后的 iframe 坐标差。
+    w.open(hosted=not w.touch)
     messages = w.sent()
     w.check("先发 ready", bool(messages) and messages[0]["type"] == "ready", messages)
     stage = w.doc.locator("#stage")
@@ -175,17 +197,57 @@ def play(w):
     def overview_width():
         return w.doc.locator("#minimap .zoom-window").evaluate("el => el.getBBox().width")
 
-    def zoom_to(depth, den, decimal, by_key=False):
+    def zoom_geometry():
+        return w.ev("""(() => {
+            const box = el => {
+                if (!el) return null;
+                const { x, width, height } = el.getBoundingClientRect();
+                return [x, width, height];
+            };
+            return {
+                map: box(document.querySelector('#minimap .zoom-window')),
+                band: box(document.querySelector('#zoom-band')),
+                source: box(document.querySelector('#zoom-source-guides rect')),
+                old: [...document.querySelectorAll('#zoom-old-ticks path')].map(box),
+                ticks: [...document.querySelectorAll('#zoom-new-ticks path')].map(box),
+            };
+        })()""")
+
+    def endpoints(prefix, left, right):
+        texts = [w.doc.locator(f"#zoom-{prefix}-{end}").all_text_contents() for end in ("start", "end")]
+        row = "选中段" if prefix == "selected" else "放大窗"
+        w.check(f"{row}两端看得出是 {left} 米到 {right} 米", texts == [[f"{left} 米"], [f"{right} 米"]], texts)
+
+    def inspect_zoom():
+        w.wait(260)
+        moving.append(zoom_geometry())
+        w.wait(270)
+        moving.append(zoom_geometry())
+        if w.name != "desk":
+            w.shot("2d-depth-2-mid-hold")
+
+    def zoom_to(depth, den, decimal, by_key=False, inspect=None):
         old_width = overview_width()
-        hold(1250, by_key=by_key)
+        hold(1250, by_key=by_key, inspect=inspect)
         w.check(f"放大到第 {depth} 层", state().get("depth") == depth, state())
         w.check(f"一格是 1 的 1/{den}，写作 {decimal}", fraction(den) and decimal in w.readout(), w.readout())
+        unit = w.doc.locator("#zoom-unit").all_text_contents()
+        expected = ["分米", "厘米", "毫米"][depth - 1]
+        w.check(f"放大窗标明每格 1 {expected}", unit == [f"每小格 1 {expected}"], unit)
         w.check("小地图一直是同一张", minimap.evaluate("el => el === document.querySelector('#minimap')"))
         width = overview_width()
         if depth > 1:
-            w.check("小地图上的框缩小", 0 < width < old_width, [width, old_width])
+            w.check("整把尺的框缩到原来的十分之一", abs(width * 10 - old_width) < .01, [width, old_width])
         w.shot(f"2d-depth-{depth}")
 
+    # 核对初始画面。短按松手后，回弹的每一帧都会替换放大窗的 SVG 标签。
+    map_label = w.doc.locator("#minimap text", has_text="整把米尺")
+    lens_label = w.doc.locator("#zoom-lens text", has_text="放大窗")
+    guides = w.doc.locator("#zoom-guides [data-end]")
+    w.check("整把米尺在上、放大窗在下，两条线对应起来",
+            map_label.is_visible() and lens_label.is_visible() and guides.count() == 2
+            and map_label.evaluate("el => el.getBBox().y") < lens_label.evaluate("el => el.getBBox().y"))
+    endpoints("range", "0", "1")
     hold(80)
     w.check("点一下立即松开不会完成放大", state().get("depth") == 0, state())
     zoom_to(1, 10, "0.1", by_key=w.name == "desk")
@@ -194,9 +256,46 @@ def play(w):
         press("ArrowLeft")
     else:
         tap("[data-cell='3']")
-    zoom_to(2, 100, "0.01")
+    endpoints("selected", "0.3", "0.4")
+    w.shot("2c-selected-03-to-04")
+    initial = zoom_geometry()
+    hold(330)
+    w.wait(650)
+    w.check("松手取消后，刻度回到刚刚选的格，没跳下一层", state().get("depth") == 1
+            and zoom_geometry() == initial, zoom_geometry())
+    moving = []
+    zoom_to(2, 100, "0.01", inspect=inspect_zoom)
+    settled = zoom_geometry()
+    if w.name == "desk":
+        w.check("减少动效时，按住中途尺与窗保持原状，完成时直接到位",
+                moving[0] == moving[1] == initial and settled["map"] != initial["map"],
+                [initial, *moving, settled])
+    else:
+        first, second = moving
+        w.check("选中段在两帧间逐渐向左展开",
+                all(frame["band"] for frame in (initial, first, second)) and first["ticks"] and second["ticks"]
+                and initial["band"][0] > first["band"][0] > second["band"][0]
+                and initial["band"][1] < first["band"][1] < second["band"][1], [initial, *moving])
+        boundaries = [frame["old"][4][0] - frame["old"][3][0]
+                      for frame in (initial, first, second) if len(frame["old"]) == 11]
+        w.check("原尺选中段的两条刻线向两旁分开，新的九条刻线逐步显出",
+                len(boundaries) == 3 and boundaries[0] < boundaries[1] < boundaries[2]
+                and len(first["ticks"]) == len(second["ticks"]) == 9
+                and 0 < first["ticks"][0][2] < second["ticks"][0][2], [boundaries, first, second])
+        w.check("整段尺的视窗在两帧间缩到选中段",
+                initial["map"][0] < first["map"][0] < second["map"][0] <= settled["map"][0]
+                and initial["map"][1] > first["map"][1] > second["map"][1] >= settled["map"][1],
+                [initial, *moving, settled])
+        w.check("两帧中，额外的小框始终标在原尺的 0.3 到 0.4 米",
+                first["source"] and first["source"] == second["source"]
+                and all(abs(first["source"][i] - settled["map"][i]) < .2 for i in (0, 1)),
+                [first["source"], second["source"], settled["map"]])
+    endpoints("range", "0.3", "0.4")
     tap("[data-cell='7']")
+    endpoints("selected", "0.37", "0.38")
+    w.shot("2c-selected-037-to-038")
     zoom_to(3, 1000, "0.001")
+    endpoints("range", "0.37", "0.38")
     w.check("放大三次还需要钉下一个点", not action_exists("看钉下的点"), w.buttons())
     if w.name == "desk":
         press("ArrowRight", 4)
@@ -265,11 +364,103 @@ def play(w):
     place(1, 0, 1, "1.01")
     w.btn("留下我的长度")
     w.check("揭晓时无圆钮", w.grips() == 0, w.grips())
-    w.wait(2600)
-    lenses = w.doc.locator("[data-lens]").count()
-    w.check("头发丝在六层放大圈里", lenses == 6 and w.doc.locator("#hair").is_visible(), lenses)
-    check_parts("放大六次，一格 1 微米，头发占 70 格", "1 微米", "70 格")
-    w.shot("3f-hair")
+
+    def hair_ruler(which):
+        return w.ev(f"""(() => {{
+            const ruler = document.querySelector('[data-hair-ruler="{which}"]');
+            if (!ruler) return null;
+            const extent = el => {{
+                if (!el) return null;
+                const {{ x, y, width }} = el.getBBox();
+                return [x, y, x + width];
+            }};
+            return {{
+                depth: Number(ruler.dataset.depth),
+                span: Number(ruler.dataset.spanMicrons),
+                line: extent(ruler.querySelector('[data-hair-baseline]')),
+                marks: [...ruler.querySelectorAll('[data-hair-tick]')].map(el => extent(el)[0]),
+                selected: extent(ruler.querySelector('.hair-selection')),
+                pick: Number(ruler.dataset.hairSelected),
+                diameter: extent(document.querySelector('#hair [data-hair-diameter]')),
+                landmark: extent(document.querySelector('[data-hair-landmark] [data-hair-diameter]')),
+            }};
+        }})()""")
+
+    def inspect_hair_scale(depth, pick=None):
+        ruler = hair_ruler("current")
+        intervals = 1 if depth == 6 else 10
+        span = 10 ** (6 - depth)
+        w.check(f"头发尺第 {depth} 步的实际范围是 {span} 微米",
+                ruler is not None and ruler["depth"] == depth and ruler["span"] == span, ruler)
+        if ruler:
+            check_ruler_marks(ruler, intervals, f"第 {depth} 步的尺画出 {intervals} 个等宽间隔")
+        if depth:
+            parent = hair_ruler("parent")
+            clip = parent and parent["selected"]
+            line = parent and parent["line"]
+            w.check("选框标着上一把尺中的一格",
+                    clip and line and line[2] > line[0] and (pick is None or parent["pick"] == pick)
+                    and parent["span"] == span * 10
+                    and abs((clip[2] - clip[0]) / (line[2] - line[0]) - .1) < .002,
+                    parent)
+
+    def check_ruler_marks(ruler, intervals, label):
+        line, marks = ruler["line"], ruler["marks"]
+        width = line[2] - line[0] if line else 0
+        w.check(label, width > 0 and len(marks) == intervals + 1
+                and all(abs(x - (line[0] + i * width / intervals)) < .2 for i, x in enumerate(marks)), ruler)
+
+    w.wait(1400)
+    check_parts("从 1 米尺出发，先让孩子把格子放大", "1 米")
+    inspect_hair_scale(0)
+    w.check("一开始就能跳到星卡，头发结论尚未出现",
+            action_exists("看我的星卡") and "70 格" not in f"{w.readout()} {w.said()}"
+            and not w.doc.locator("#hair [data-hair-diameter]").count(), w.buttons())
+    w.shot("3f-hair-start")
+
+    if action_exists("放大一格"):
+        if w.touch:
+            tap('[data-hair-ruler="current"] [data-hair-piece="7"]')
+        else:
+            press("ArrowRight")
+            press("Enter")
+        inspect_hair_scale(1, pick=7 if w.touch else 5)
+        for depth in range(2, 7):
+            w.btn("放大一格")
+            inspect_hair_scale(depth)
+            if depth == 3:
+                millimeter = hair_ruler("current")
+                line, hair = millimeter["line"], millimeter["landmark"]
+                w.check("一毫米尺上的头发直径约占尺宽的 7%",
+                        line and hair and abs((hair[2] - hair[0]) / (line[2] - line[0]) - .07) < .001,
+                        [line, hair])
+                w.shot("3f-hair-one-mm")
+            if depth == 4:
+                w.btn("退一格")
+                inspect_hair_scale(3)
+                w.btn("放大一格")
+                inspect_hair_scale(4)
+
+        check_parts("放大六次，一格 1 微米，头发占约 70 格", "1 微米", "70 格")
+        measuring = hair_ruler("measure")
+        w.check("头发对照尺的总宽为 70 微米", measuring and measuring["span"] == 70, measuring)
+        if measuring:
+            check_ruler_marks(measuring, 70, "头发对照尺画出 71 条线，恰好围成 70 小格")
+            diameter = measuring["diameter"]
+            w.check("头发丝的直径两端对齐上尺的 0 和 70",
+                    diameter and measuring["line"] and diameter[1] < measuring["line"][1]
+                    and all(abs(diameter[i] - measuring["line"][i]) < .2 for i in (0, 2)), measuring)
+        w.shot("3f-hair")
+        w.btn("退一格")
+        inspect_hair_scale(5)
+        w.check("退回时撤掉 70 格对照，仍能再放大", hair_ruler("measure") is None and action_exists("放大一格"))
+        w.btn("放大一格")
+        w.btn("再量一次")
+        inspect_hair_scale(0)
+        w.check("重看回到 1 米尺，跳过不会自动完成活动", hair_ruler("measure") is None and not w.sent("complete"))
+    else:
+        w.check("头发尺等孩子自己放大", False, w.buttons())
+
     w.btn("看我的星卡")
 
     def card_text():

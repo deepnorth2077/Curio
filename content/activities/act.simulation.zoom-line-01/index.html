@@ -108,8 +108,25 @@ body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .s
 .seam{stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke;opacity:.55}
 .amount{white-space:nowrap} .pick{fill:var(--accent-soft)} .place-slot{fill:var(--paper)}
 .zoom-frame{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke}
+.zoom-title{fill:var(--ink);font:600 23px var(--f-sans)}
+.zoom-caption{fill:var(--accent);font:600 19px var(--f-sans)}
+.zoom-value{fill:var(--ink);font:600 20px var(--f-mono)}
+.zoom-lens{fill:var(--bg);stroke:var(--rule);stroke-width:1.5}
+.zoom-guide{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 5;stroke-linecap:round}
+body.narrow .zoom-title{font-size:26px}
+body.narrow .zoom-caption,body.narrow .zoom-value{font-size:23px}
+.card:has(#zoom-prediction-ruler) footer{display:none}
 .scene-name{fill:var(--muted);font:18px var(--f-sans);letter-spacing:.12em}
 body.narrow .scene-name{font-size:21px}
+.hair-guide{fill:var(--accent-soft);fill-opacity:.65;stroke:var(--accent);stroke-width:1.4;stroke-linejoin:round}
+.hair-selection{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.hair-tick{stroke:var(--ink);stroke-width:1;vector-effect:non-scaling-stroke}
+.hair-tick.major{stroke-width:1.6}
+.hair-strand{fill:var(--text)}
+.hair-section{fill:var(--paper);stroke:var(--text);stroke-width:1.8}
+.hair-fiber{fill:none;stroke:var(--muted);stroke-width:1.3;stroke-linecap:round;opacity:.45}
+.hair-piece{fill:transparent;cursor:zoom-in}
+body.hair-active #touch{pointer-events:none}
 </style>
 </head>
 <body>
@@ -151,6 +168,7 @@ const MODEL = {
   ],
   top: 22,                   // 横杆从 2.2 米开始，让孩子从上往下量
   zoomDepth: 3,              // 本站用十分位、百分位和千分位
+  zoomUnits: ["分米", "厘米", "毫米"], // 1 米的十分之一、百分之一、千分之一
   lensDepth: 6,              // 十的六次方：1 米 = 100 万微米
   hairMicrons: 70,           // 沿用 act.simulation.cell-zoom-01 的约 0.07 毫米
   units: ["米", "分米", "厘米"],
@@ -162,7 +180,7 @@ const power = depth => B ** depth;
 const cm = counts => counts.reduce((sum, digit, i) => sum + digit * power(2 - i), 0);
 const lengthValue = counts => String(cm(counts) / power(2));
 const tenths = MODEL.objects[0].dm % B;
-const held = { label: "放大", cls: "hold", hold: true };
+const held = { label: "按住放大", cls: "hold", hold: true };
 const seen = [[], null, null];
 
 /* ============ 2. 平台契约 activity/1.1（单独打开时也能玩）  kit:host ============ */
@@ -289,7 +307,7 @@ for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fi
 let keysDown = 0;
 addEventListener("keydown", e => { if (!e.repeat) keysDown++; }, true);
 addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true);
-addEventListener("blur", () => { keysDown = 0; S.hold = false; });
+addEventListener("blur", () => { keysDown = 0; releaseZoomHold(); });
 function actions(list){
   const boxEl = $("actions"); boxEl.replaceChildren();
   S.dirty = true;   // 换按钮就是换了状态：一律重画一次，免得圆钮留在锁住的画面上
@@ -300,9 +318,16 @@ function actions(list){
     const b = document.createElement("button");
     b.type = "button"; b.className = "btn " + (a.cls || ""); b.innerHTML = (a.hold ? RIDGES : "") + `<span>${a.label}</span>`;
     if (a.hold){
-      const on = v => { S.hold = v; b.classList.toggle("on", v); if (v) touched(); };
-      b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); on(true); });
-      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => on(false));
+      const on = v => {
+        if (v){ S.hold = true; touched(); }
+        else releaseZoomHold();
+        b.classList.toggle("on", v);
+      };
+      b.addEventListener("pointerdown", e => {
+        if (e.button !== 0 || !e.isPrimary) return;
+        e.preventDefault(); b.setPointerCapture(e.pointerId); on(true);
+      });
+      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, e => { if (e.isPrimary) on(false); });
       b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(true); } });
       b.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(false); } });
       b.addEventListener("blur", () => on(false));
@@ -375,10 +400,11 @@ function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setA
 
 // 窄屏：viewBox 缩到中间 600 宽的操作区，字号类放大（教训 13、28）。每个场景写明自己用到的高度
 // 排版规矩：要紧的东西都画在 x = 110～690 之间；每个场景在这里写 [起始 y, 高度]
-const VIEW = { s1q: [72, 330], s2q: [72, 330], s3q: [72, 330], s1: [0, 518],
-  s2: [16, 428], s3: [0, 563], wow: [8, 440], end: [0, 638] };
+const VIEW = { s1q: [72, 330], s2q: [90, 224], s3q: [72, 330], s1: [0, 518],
+  s2: [16, 378], s3: [0, 563], end: [0, 638] };
 function fitView(){
-  const nar = (svg.clientWidth || 800) < 600, [y, h] = VIEW[S.scene] || [0, 610];
+  const nar = (svg.clientWidth || 800) < 600;
+  const [y, h] = S.scene === "wow" ? hairView() : VIEW[S.scene] || [0, 610];
   document.body.classList.toggle("narrow", nar);
   const v = (nar ? [100, y, 600, h] : [0, y, 800, h]).join(" ");
   if (svg.getAttribute("viewBox") !== v){ svg.setAttribute("viewBox", v); S.dirty = true; }
@@ -509,23 +535,46 @@ function done1(){
   nextOr("去第 2 站", enter2);
 }
 
-/* 第 2 站：小地图始终是同一个整体，镜下的窗口依次取它的十分之一。 */
-const ZOOM = { x: 163, w: 474, mapY: 103, y: 303 };
+/* 第 2 站：上方米尺不动，下方把框里的刻度拉开。 */
+const ZOOM = { x: 163, w: 474, mapY: 79, mapH: 50, lensTop: 197, y: 280 };
 const cells = depth => depth ? B : 1;
 const interval = path => path.reduce((n, digit) => n * B + digit, 0) / power(path.length);
 const decimal = (n, depth) => n.toFixed(depth);
+const meter = (n, depth) => `${decimal(n, depth)} 米`;
 const pinnedText = () => decimal(S.pin, MODEL.zoomDepth);
 const zoomPath = () => S.pin === null ? S.path.slice() : S.path.concat(S.pinTick);
-const zoomStart = () => interval(S.path);
 const stringDigits = (digits, format) => digits.map((digit, i) => format(digit, power(i + 1))).join("、");
-const draw2q = () => plaque(159, 482, "数线放大镜", "0 到 1", "平均分，再平均分");
-const zoomGrips = () => [ZOOM.x + ZOOM.w / (2 * cells(S.depth)), ZOOM.y - 35, 15];
+function zoomTape(y, h, highlighted = -1){
+  const { x, w } = ZOOM, cell = w / B, inset = highlighted >= 0 ? 0 : 10;
+  let s = rect(x - inset, y, w + 2 * inset, h, "papr", 8);
+  for (let i = 0; i < B; i++){
+    s += rect(x + i * cell, y + 2, cell, h - 4, i === highlighted ? "pick" : "papr", 0, `data-ruler-segment="${i}"`);
+  }
+  s += P(box(x - inset, y, w + 2 * inset, h, 81, .5), "k1");
+  for (let i = 0; i <= B; i++){
+    const tx = r1(x + i * cell), mark = highlighted >= 0 ? h - 4 : (i === 0 || i === B ? 22 : 14);
+    s += P(`M${tx} ${y + h - 2}v-${mark}`, "k1");
+  }
+  return s;
+}
+function draw2q(){
+  const { x, w } = ZOOM, y = 152, h = 66, cell = w / B;
+  return `<g id="zoom-prediction-ruler">` + TC(x + w / 2, 132, `整把米尺 · 平分成 ${B} 份`, "zoom-title") +
+    zoomTape(y, h, 0) +
+    rect(x, y, cell, h, "zoom-frame", 3) +
+    T(x, 253, meter(0, 0), "zoom-value") + T(x + w, 253, meter(1, 0), "zoom-value", 'text-anchor="end"') +
+    P(`M${r1(x + cell)} ${y + h}L${x + 86} 277h17`, "zoom-guide") +
+    T(x + 113, 283, "这一小段", "zoom-caption") + "</g>";
+}
+const zoomGrips = () => [ZOOM.x + ZOOM.w / 2, ZOOM.y, 15];
 function miniMap(){
-  const { x, w, mapY: y } = ZOOM;
-  return `<g id="minimap">` + oneMark(x - 13, y - 25, w + 26, 69, 81) +
-    line(x, y, x + w, y, 82) + P(`M${x} ${y - 8}v16M${x + w} ${y - 8}v16`, "k1") +
-    T(x, y + 29, 0, "lbm") + T(x + w, y + 29, 1, "lbm", 'text-anchor="end"') +
-    `<rect class="zoom-window zoom-frame" y="${y - 13}" height="25"/></g>`;
+  const { x, w, mapY, mapH, y } = ZOOM;
+  return `<defs><clipPath id="zoom-clip">` + rect(x - 2, y - 19, w + 4, 43, "") + "</clipPath></defs>" +
+    `<g id="minimap">` + TC(x + w / 2, 58, "整把米尺 · 框出你在看的地方", "zoom-title") +
+    zoomTape(mapY, mapH) +
+    T(x + 5, mapY + 24, meter(0, 0), "zoom-value", 'id="zoom-whole-start"') +
+    T(x + w - 5, mapY + 24, meter(1, 0), "zoom-value", 'id="zoom-whole-end" text-anchor="end"') +
+    `<rect class="zoom-window zoom-frame" y="${mapY + 29}" height="${mapH - 26}"/></g>`;
 }
 function updateMap(start, span){
   const win = $("minimap")?.querySelector(".zoom-window");
@@ -537,79 +586,111 @@ function zoomRidges(x, y){
   return point(x, y, 14, "gfill") + P(Sk.ellipse(x, y, 14, 14, 90, .3), "gring") +
     P(`M${x - 5} ${y - 5}v10m5-10v10m5-10v10`, "gridge");
 }
+function releaseZoomHold(){
+  S.hold = false; S.holdGate = false; S.tZoom = 0;
+}
 function draw2(){
-  const { x, w, y, mapY } = ZOOM, { depth, selected, pZoom } = S;
-  const start = zoomStart(), span = depth ? 1 / power(depth - 1) : 1;
-  const n = cells(depth), cell = w / n, z = reduced ? 0 : pZoom;
-  const ix = selected * cell;
-  const active = act(2);
-  updateMap(start + (span / n) * selected * z, lerp(span, span / n, z));
-  const left = x + start * w, right = x + (start + span) * w;
-  let s = P(`M${left} ${mapY + 15}L${x} ${y - 65}M${right} ${mapY + 15}L${x + w} ${y - 65}`, "kf");
-  s += rect(x - 10, y - 65, w + 20, 108, "pane", 13);
-  if (active) s += rect(x - 4, y - 58, w + 8, 53, "gsoft", 10);
-  if (depth < MODEL.zoomDepth && active){
-    s += rect(x + lerp(ix, 0, z), y - 11, lerp(cell, w, z), 30, "pick", 4);
-    s += P(`M${x + lerp(ix, 0, z)} ${y + 16}h${lerp(cell, w, z)}`, "kacc");
-    for (let i = 0; i < n; i++){
-      const cx = x + (i + .5) * cell;
-      s += rect(x + i * cell, y - 62, cell, 60, "", 0, `fill="transparent" data-cell="${i}"`);
-      s += i === selected ? zoomRidges(cx, y - 35) : point(cx, y - 35, 4, "pane");
-      if (i === selected && S.kbd) s += point(cx, y - 35, 19, "gkbd");
-    }
+  const { x, w, mapY, mapH, lensTop, y } = ZOOM, { depth, selected, pZoom } = S;
+  const n = cells(depth), cell = w / n, final = depth === MODEL.zoomDepth;
+  const start = interval(S.path), span = depth ? 1 / power(depth - 1) : 1;
+  const sourceSpan = span / n, sourceStart = start + selected * sourceSpan;
+  const z = reduced ? 0 : pZoom;
+  const bandLeft = lerp(selected * cell, 0, z), bandWidth = lerp(cell, w, z);
+  // 舒展开的那一段始终对应米尺上同样长的一段；用同一比例反推整窗两端。
+  const viewSpan = z ? sourceSpan * w / bandWidth : span;
+  const viewStart = z ? clamp(sourceStart - bandLeft * sourceSpan / bandWidth, 0, 1 - viewSpan) : start;
+  updateMap(viewStart, viewSpan);
+  const left = r1(x + viewStart * w), right = r1(x + (viewStart + viewSpan) * w), guideY = mapY + mapH + 3;
+  const link = depth ? clamp(z * 3) : 0;
+  let s = `<g id="zoom-guides" opacity="${lerp(1, .25, link)}">` +
+    P(`M${left} ${guideY}H${right}L${x + w} ${lensTop}H${x}Z`, "pick", 'opacity=".4"') +
+    P(`M${left} ${guideY}L${x} ${lensTop}`, "zoom-guide", 'data-end="left"') +
+    P(`M${right} ${guideY}L${x + w} ${lensTop}`, "zoom-guide", 'data-end="right"') + "</g>";
+  s += `<g id="zoom-lens">` + rect(x - 20, lensTop, w + 40, 173, "zoom-lens", 13) +
+    TC(x + w / 2, lensTop + 32, "放大窗 · 框里的这一段", "zoom-title");
+  if (link){
+    const sourceLeft = r1(x + sourceStart * w), sourceRight = r1(x + (sourceStart + sourceSpan) * w);
+    const bandX1 = r1(x + bandLeft), bandX2 = r1(x + bandLeft + bandWidth);
+    s += `<g id="zoom-source-guides" opacity="${link}">` +
+      rect(sourceLeft, mapY + 29, sourceRight - sourceLeft, mapH - 26, "zoom-frame", 1) +
+      P(`M${sourceLeft} ${guideY}L${bandX1} ${lensTop}M${bandX1} ${y - 41}V${y - 14}`, "zoom-guide", 'data-source-end="left"') +
+      P(`M${sourceRight} ${guideY}L${bandX2} ${lensTop}M${bandX2} ${y - 41}V${y - 14}`, "zoom-guide", 'data-source-end="right"') + "</g>";
   }
-  s += line(x - 12, y, x + w + 12, y, 85);
+  s += `<g clip-path="url(#zoom-clip)">`;
+  if (!final) s += rect(x + bandLeft, y - 14, bandWidth, 34, "pick", 3, 'id="zoom-band"') +
+    P(`M${r1(x + bandLeft)} ${y + 16}h${r1(bandWidth)}`, "kacc");
+  s += line(x, y, x + w, y, 85);
+  s += `<g id="zoom-old-ticks">`;
   for (let i = 0; i <= n; i++){
-    const tx = x + i * cell, h = i === 0 || i === n ? 13 : 8;
-    s += P(`M${tx} ${y - h}v${2 * h}`, "k1");
-    if (depth === MODEL.zoomDepth && i < B && active){
-      s += rect(tx - cell / 2, y - 59, cell, 108, "", 0, `fill="transparent" data-tick="${i}"`);
-      s += i === selected ? zoomRidges(tx, y - 35) : point(tx, y - 35, 4, "pane");
-      if (i === selected && S.kbd) s += point(tx, y - 35, 19, "gkbd");
-    }
+    const center = r1(x + bandLeft + (i - selected) * bandWidth), edge = i === 0 || i === n;
+    const bounds = i === selected || i === selected + 1;
+    const h = edge ? 12 : lerp(8, 12, bounds ? z : 0);
+    s += P(`M${center} ${y - h}v${2 * h}`, "k1");
   }
+  s += "</g>";
   if (z > 0){
-    const l = lerp(ix, 0, z), width = lerp(cell, w, z);
+    s += `<g id="zoom-new-ticks">`;
+    const h = r1(8 * z);
     for (let i = 1; i < B; i++){
-      const inner = x + l + i * width / B;
-      s += P(`M${inner} ${y - 8 * z}v${16 * z}`, "k1");
+      const inner = r1(x + bandLeft + i * bandWidth / B);
+      s += P(`M${inner} ${y - h}v${2 * h}`, "k1");
+    }
+    s += "</g>";
+  }
+  s += "</g>";
+  if (act(2) && depth && !z){
+    for (let i = 0; i < n; i++){
+      const cx = x + (i + (final ? 0 : .5)) * cell;
+      s += rect(cx - cell / 2, y - 43, cell, 73, "", 0, `fill="transparent" data-${final ? "tick" : "cell"}="${i}"`);
+      if (i === selected){
+        const pinned = final && S.pin !== null && i === S.pinTick;
+        if (!pinned) s += zoomRidges(cx, y - 30);
+        if (S.kbd) s += point(cx, y - (pinned ? 23 : 30), 19, "gkbd");
+      }
     }
   }
-  s += T(x, y + 57, decimal(start, Math.max(0, depth - 1)), "lbm") +
-    T(x + w, y + 57, decimal(start + span, Math.max(0, depth - 1)), "lbm", 'text-anchor="end"');
+  const settledPlaces = depth ? Math.max(1, depth - 1) : 0;
+  const places = z && depth ? depth + 1 : settledPlaces;
+  s += T(x, y + 43, meter(viewStart, places), "zoom-value", 'id="zoom-range-start"') +
+    T(x + w, y + 43, meter(viewStart + viewSpan, places), "zoom-value", 'id="zoom-range-end" text-anchor="end"');
+  const unit = z > 0 ? `正分成 ${B} 格` : depth ? `每小格 1 ${MODEL.zoomUnits[depth - 1]}` : "这一段长 1 米";
+  s += TC(x + w / 2, y + 43, unit, "zoom-title", 'id="zoom-unit"');
+  if (depth && !final){
+    s += TC(x + w / 2, y + 75, `选中 <tspan id="zoom-selected-start">${meter(sourceStart, depth)}</tspan> 到 <tspan id="zoom-selected-end">${meter(sourceStart + sourceSpan, depth)}</tspan>`, "zoom-caption");
+  }
   if (S.pin !== null){
     const px = x + S.pinTick * cell;
     s += P(`M${px} ${y - 24}v24`, "kacc") + point(px, y - 23, 7, "lead");
   }
-  return s;
+  return s + "</g>";
 }
 function enter2(){
-  startQuestion(2, "s2q", "放大 · 一格变十格", "把 0 到 1 平均分成 10 格。再把其中一格平均分成 10 小格。",
-    "现在最小的一格，是 1 的几分之几？", [
+  startQuestion(2, "s2q", "放大 · 一格变十格", `这把 1 米长的尺平分成了 ${B} 份。看看框出的一小段。`,
+    `把这一小段再平分成 ${B} 份。一小格是整条米尺的多少？`, [
       { label: `${F(1, B * 2)}，${B} 加 ${B}`, mis: "ten-plus-ten", feedback: "两次都数到十，容易想到加法。试试看多少个大格里都能铺进十个小格。" },
-      { label: `还是 ${F(1, B)}`, mis: "still-tenths", feedback: "每回都分成十格，看着确实一样。别忘了再瞧瞧上面的小地图。" },
+      { label: `还是 ${F(1, B)}`, mis: "still-tenths", feedback: "每回都分成十格，看着确实一样。等会儿对照一下整把米尺。" },
       { label: F(1, power(2)), correct: true, feedback: "你把最开始那一整段记住了。放大看看。" }
     ], act2);
 }
 function act2(){
   Object.assign(S, { depth: 0, path: [], pin: null, pinTick: 0, selected: 0, tZoom: 0, pZoom: 0, hold: false, holdGate: false });
-  startAct(2, "放大 · 一格变十格", "s2", "先放大整个 0 到 1，再挑一小格接着放大。上面的小地图会跟着标出你在看哪一段。", zoomGrips);
+  startAct(2, "放大 · 一格变十格", "s2", "框里是整把米尺。按住下面的按钮，看看放大窗里会出现什么。", zoomGrips);
   actions([held]); updateZoom();
 }
 REPLAY[2] = act2;
 function updateZoom(){
   const { depth, pin } = S, unit = F(1, power(depth));
-  hint(depth < MODEL.zoomDepth ? `点选圆钮托 · 还要放大 ${MODEL.zoomDepth - depth} 次` : "点选圆钮托 · 钉一条刻度");
-  readout(pin !== null ? `你钉的点是 <b>${pinnedText()}</b> · ${stringDigits(zoomPath(), (digit, denom) => `<span class="amount">${digit} 个 ${F(1, denom)}</span>`)}` :
-    depth ? `放大了 ${depth} 次 · 最小的一格是 1 的 ${unit} · 写作 <b>${decimal(1 / power(depth), depth)}</b>` : "把 0 到 1 放大");
+  hint(depth === MODEL.zoomDepth ? "点一条刻度，钉下你的点" : depth ? "点一格，再按住放大" : "按住放大，看十格出现");
+  readout(pin !== null ? `你钉的点是 <b>${pinnedText()} 米</b> · ${stringDigits(zoomPath(), (digit, denom) => `<span class="amount">${digit} 个 ${F(1, denom)}</span>`)}` :
+    depth ? `每小格是 ${unit} 米 · 写作 <b>${meter(1 / power(depth), depth)}</b>` : "");
   sendState({ station: 2, depth, path: zoomPath(), pin });
   S.dirty = true;
 }
 function advanceZoom(){
   if (S.depth > 0) S.path.push(S.selected);
   S.depth++; S.selected = 0; S.tZoom = S.pZoom = 0; S.holdGate = true;
-  if (S.depth === 1) say(`一整段分成了 ${B} 格。每格是 ${F(1, B)}，写作 0.1，读作零点一。挑一格再放大。`);
-  if (S.depth === 2) say("小地图上那一段变窄了。再挑一格，看看里面还有什么。");
+  if (S.depth === 1) say(`放大窗里出现了 ${B} 格。点一格，再按住放大。`);
+  if (S.depth === 2) say("看，上面的框只圈住了刚才选的那一格。再点一格，接着放大。");
   if (S.depth === MODEL.zoomDepth){
     say("现在挑一条刻度，把你的点钉在那里。"); actions([]); svg.focus({ preventScroll: true });
   }
@@ -625,7 +706,7 @@ function pinAt(index){
   S.pinTick = S.selected;
   S.pin = interval(zoomPathWithTick());
   seen[1] = { digits: zoomPath(), value: pinnedText() };
-  updateZoom(); hint("可以换一条刻度");
+  updateZoom(); hint("点另一条刻度可换位置");
   if (!$("actions").firstChild) next("看钉下的点", done2);
 }
 const zoomPathWithTick = () => S.path.concat(S.pinTick);
@@ -767,44 +848,169 @@ function adjustStick(index, delta){
 }
 function done3(){
   finishAct(3);
+  S.mode = "hair";
+  S.hairPath = [];
+  S.hairPick = HAIR_START;
+  head(3, "量 · 头发丝有多粗");
   scene("wow");
-  hint(""); readout(`放大 ${MODEL.lensDepth} 次 · 最小的一格是 <b>1 微米</b>`);
-  say(`把 1 米连着放大 ${MODEL.lensDepth} 次，最小的一格是 1 微米。一根约 ${MODEL.hairMicrons} 微米粗的头发丝，大约占 ${MODEL.hairMicrons} 格。`, "good");
-  nextOr("看我的星卡", enterEnd);
+  document.body.classList.add("hair-active");
+  svg.setAttribute("aria-label", "尺子。方向键选格，空格放大，退格键返回。");
+  svg.setAttribute("aria-keyshortcuts", "ArrowLeft ArrowRight Space Enter Backspace");
+  const controls = actions([
+    { label: "退一格", go: backHair, cls: "ghost tight" },
+    { label: "放大一格", go: forwardHair, cls: "tight" },
+    { label: replay ? "回星卡" : "看我的星卡", go: leaveHair, cls: "ghost tight" }
+  ]);
+  updateHair();
+  controls.children[1].focus({ preventScroll: true });
 }
 
-/* 六个十倍放大圈，最后把同一个微米刻度排成可数的七组。 */
+/* 每次把选中的一格展开到原来整把尺的画面宽度。 */
+const HAIR_RULER = { x: 145, w: 510, upperY: 52, lowerY: 176, h: 58 };
+const HAIR_START = Math.floor((B - 1) / 2);
+const HAIR_UNITS = [...MODEL.units, "毫米"];
+const HAIR_MM = HAIR_UNITS.length - 1;
+const hairDepth = () => S.hairPath.length;
+const hairScale = depth => power(MODEL.lensDepth - depth);
+const hairUnit = depth => depth <= HAIR_MM ? `1 ${HAIR_UNITS[depth]}` : `${1 / power(depth - HAIR_MM)} 毫米`;
+function hairView(){
+  const depth = hairDepth();
+  if (depth === MODEL.lensDepth) return [8, 568];
+  if (depth === HAIR_MM) return [8, 452];
+  return depth ? [12, 256] : [100, 166];
+}
+function updateHair(){
+  const depth = hairDepth(), final = depth === MODEL.lensDepth;
+  const [back, forward, exit] = $("actions").children;
+  back.disabled = depth === 0;
+  forward.firstElementChild.textContent = final ? "再量一次" : "放大一格";
+  forward.classList.toggle("ghost", final);
+  exit.classList.toggle("ghost", !final);
+  hint(final ? "沿着刻度量头发的粗细" : "点尺上的一格放大");
+  readout(final ? `${hairUnit(depth)} = <b>${hairScale(depth)} 微米</b>` :
+    depth ? `画面放大 ${B} 倍 · 这段长 <b>${hairUnit(depth)}</b>` : `整把尺长 <b>${hairUnit(depth)}</b>`);
+  if (!depth) say("从一把 1 米长的尺开始。点任意一格，把这一小段展开到整把尺那么宽。");
+  else if (depth === 1) say("十格里挑了一格，这一格长 1 分米。拿普通尺找找，就是 10 厘米。");
+  else if (depth === 2) say("又挑了一格，长 1 厘米。看看你的小指指甲，差不多就这么宽。");
+  else if (depth === HAIR_MM) say(`普通尺上相邻的两道小刻线隔着 1 毫米。这根头发丝约 ${MODEL.hairMicrons / hairScale(depth)} 毫米粗。`);
+  else if (final) say(`展开的那一格长 1 微米。量头发时换一把尺，每小格也是 1 微米。这根头发丝大约有 ${MODEL.hairMicrons} 格粗。`, "good");
+  else say("又把一格展开了。这一段的实际长度是上一段的十分之一。头发还是原来那么粗。");
+  fitView();
+  S.dirty = true;
+}
+function forwardHair(){
+  if (hairDepth() === MODEL.lensDepth) S.hairPath = [];
+  else S.hairPath.push(S.hairPick);
+  S.hairPick = HAIR_START;
+  updateHair();
+}
+function backHair(){
+  if (!hairDepth()) return;
+  S.hairPick = S.hairPath.pop();
+  updateHair();
+  if (!hairDepth() && document.activeElement !== svg) $("actions").children[1].focus({ preventScroll: true });
+}
+function leaveHair(){
+  document.body.classList.remove("hair-active");
+  svg.classList.remove("kbd");
+  svg.setAttribute("aria-label", "动手区");
+  svg.removeAttribute("aria-keyshortcuts");
+  enterEnd();
+}
+svg.addEventListener("click", e => {
+  const piece = e.target.closest("[data-hair-piece]");
+  if (S.mode !== "hair" || !piece || hairDepth() >= MODEL.lensDepth) return;
+  S.hairPick = Number(piece.dataset.hairPiece);
+  forwardHair();
+});
+svg.addEventListener("keydown", e => {
+  if (S.mode !== "hair" || !["ArrowLeft", "ArrowRight", "Enter", " ", "Backspace"].includes(e.key)) return;
+  e.preventDefault();
+  svg.classList.add("kbd");
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight"){
+    if (hairDepth() === MODEL.lensDepth) return;
+    S.hairPick = clamp(S.hairPick + (e.key === "ArrowRight" ? 1 : -1), 0, B - 1);
+    S.dirty = true;
+  } else if (!e.repeat && e.key === "Backspace") backHair();
+  else if (!e.repeat) forwardHair();
+});
+function hairTicks(x, y, w, count, group){
+  return Array.from({ length: count + 1 }, (_, i) => {
+    const at = r1(x + w * i / count), major = i % group === 0;
+    return `<line x1="${at}" y1="${y}" x2="${at}" y2="${y + (major ? 22 : 11)}" class="hair-tick${major ? " major" : ""}" data-hair-tick="${i}"/>`;
+  }).join("");
+}
+const hairBaseline = (x, y, w) => `<line x1="${x}" y1="${y}" x2="${x + w}" y2="${y}" class="hair-tick major" data-hair-baseline/>`;
+function hairRuler(role, depth, y, selected){
+  const { x, w, h } = HAIR_RULER;
+  const final = depth === MODEL.lensDepth, count = final ? 1 : B, cellWidth = w / count;
+  const current = role === "current", control = current && !final;
+  const label = final ? `这一格展开后 · ${hairScale(depth)} 微米` : current ? hairUnit(depth) : `上一段 · ${hairUnit(depth)}`;
+  let s = `<g data-hair-ruler="${role}" data-depth="${depth}" data-intervals="${count}" data-span-microns="${hairScale(depth)}" data-screen-width="${w}"${selected === undefined ? "" : ` data-hair-selected="${selected}"`}>` +
+    rect(x - 10, y - 8, w + 20, h, "wall", 6) + P(box(x - 10, y - 8, w + 20, h, 260 + depth, .4), "k1");
+  if (selected !== undefined) s += rect(x + selected * cellWidth, y, cellWidth, current ? 26 : h - 8, "hair-selection", 1);
+  s += hairBaseline(x, y, w) + hairTicks(x, y, w, count, final ? 1 : B / 2) + TC(x + w / 2, y + (current ? 42 : -18), label, "lb");
+  if (control) s += Array.from({ length: count }, (_, i) => rect(x + cellWidth * i, y - 8, cellWidth, Math.max(h, 48 * pxScale()), "hair-piece", 0, `data-hair-piece="${i}"`)).join("");
+  return s + "</g>";
+}
+function hairStrand(x, y, w, h){
+  const sway = Math.min(w * .28, 28);
+  const top = y - h / 2, bottom = y + h / 2, right = x + w;
+  // 两条发丝边平行移动，量宽的那一端与尺的零点、末端对齐。
+  const low = r1(bottom - h * .16), high = r1(top + h * .22);
+  const leftEdge = `C${r1(x - sway * 1.2)} ${high} ${r1(x + sway * .48)} ${r1(y - h * .14)} ${r1(x - sway * .22)} ${y}` +
+    `C${r1(x - sway * .72)} ${r1(y + h * .14)} ${r1(x + sway * .53)} ${low} ${r1(x)} ${bottom}`;
+  const rightEdge = `C${r1(right + sway * .53)} ${low} ${r1(right - sway * .72)} ${r1(y + h * .14)} ${r1(right - sway * .22)} ${y}` +
+    `C${r1(right + sway * .48)} ${r1(y - h * .14)} ${r1(right - sway * 1.2)} ${high} ${r1(right - sway * .65)} ${top}`;
+  return P(`M${r1(x - sway * .65)} ${top}${leftEdge}H${r1(right)}${rightEdge}Z`, "hair-strand");
+}
+function hairDiameter(x, y, w, scaleY){
+  const right = r1(x + w), left = r1(x);
+  return `<line x1="${left}" y1="${y}" x2="${right}" y2="${y}" class="kacc" data-hair-diameter/>` +
+    P(chevron(left + 3, y, -1, 0, 6) + chevron(right - 3, y, 1, 0, 6), "kacc") +
+    P(`M${left} ${y - 10}V${scaleY}M${right} ${y - 10}V${scaleY}`, "k1");
+}
+function hairLandmark(){
+  const { x, w } = HAIR_RULER;
+  const width = w * MODEL.hairMicrons / hairScale(HAIR_MM), start = x + (w - width) / 2;
+  return `<g data-hair-landmark data-span-microns="${MODEL.hairMicrons}">` +
+    hairStrand(start, 310, width, 80) + hairDiameter(start, 368, width, 374) +
+    TC(x + w / 2, 411, `头发丝 · 约 ${MODEL.hairMicrons / hairScale(HAIR_MM)} 毫米粗`, "lb") + "</g>";
+}
+function hairComparison(){
+  const center = 400, y = 355, w = 232, x = center - w / 2, scaleY = 495, count = MODEL.hairMicrons;
+  const labels = Array.from({ length: Math.floor(count / B) + 1 }, (_, i) => TC(x + w * i * B / count, scaleY + 43, i * B, "lbm")).join("");
+  return '<g id="hair">' +
+    `<ellipse cx="${center}" cy="${y}" rx="${w / 2}" ry="104" class="hair-section"/>` +
+    P("M306 329Q314 292 359 275M478 390Q466 424 432 432M350 399q17 14 39 17M429 299q17 4 29 16", "hair-fiber") +
+    TC(center, y - 22, "头发横切面", "lb") +
+    hairDiameter(x, y, w, scaleY) + "</g>" +
+    `<g data-hair-ruler="measure" data-depth="${MODEL.lensDepth}" data-intervals="${count}" data-span-microns="${count}" data-screen-width="${w}">` +
+    rect(x - 9, scaleY - 5, w + 18, 58, "wall", 5) + rect(x, scaleY, w / count, 22, "pick") +
+    hairBaseline(x, scaleY, w) + hairTicks(x, scaleY, w, count, B) + labels + "</g>" +
+    TC(center, 566, `量头发粗细 · 每小格 ${hairScale(MODEL.lensDepth)} 微米`, "lb");
+}
+function drawWow(){
+  const { x, w, upperY, lowerY, h } = HAIR_RULER;
+  const depth = hairDepth(), final = depth === MODEL.lensDepth;
+  let s = "";
+  if (depth){
+    const previous = S.hairPath[depth - 1], left = x + w * previous / B, right = left + w / B;
+    s += P(`M${left} ${upperY + h - 8}H${right}L${x + w} ${lowerY}H${x}Z`, "hair-guide");
+    s += hairRuler("parent", depth - 1, upperY, previous);
+  }
+  s += hairRuler("current", depth, lowerY, final ? undefined : S.hairPick);
+  if (depth === HAIR_MM) s += hairLandmark();
+  if (final) s += hairComparison();
+  return s;
+}
+
+/* 星卡上保留第二站的记号。 */
 function paintLenses(cx, cy, radii){
   return radii.map((r, i) => `<g data-lens="${i + 1}">` +
     point(cx + i * 9, cy, r, i % 2 ? "pane" : "wall") +
     P(Sk.ellipse(cx + i * 9, cy, r, r, 181 + i, .55), i === radii.length - 1 ? "kacc" : "k1") +
     "</g>").join("");
-}
-function drawWow(){
-  const x = 177, y = 356, w = 446, groups = MODEL.hairMicrons / B;
-  let scale = rect(x - 10, y - 14, w + 20, 62, "wall", 8) + P(`M${x} ${y}h${w}`, "k1");
-  for (let i = 0; i <= MODEL.hairMicrons; i++){
-    const left = r1(x + w * i / MODEL.hairMicrons), h = i % B ? 6 : 13;
-    scale += P(`M${left} ${y}v${h}`, "k1");
-  }
-  for (let i = 0; i <= groups; i++){
-    scale += TC(x + w * i / groups, y + 39, i * B, "lbm");
-  }
-  const radii = Array.from({ length: MODEL.lensDepth }, (_, i) => 125 - 18 * i);
-  const lensX = 306, lensY = 161, hairX = 551, hairY = 164, hairR = 59;
-  const left = hairX - hairR, right = hairX + hairR, diameterY = hairY + 81;
-  return paintLenses(lensX, lensY, radii) +
-    P(`M${lensX + 69} ${lensY - 11}L${left} ${hairY - 46}M${lensX + 69} ${lensY + 11}L${left} ${hairY + 47}`, "kf") +
-    `<g id="hair">` +
-    point(lensX + 45, lensY, 8, "stick") + P(Sk.ellipse(lensX + 45, lensY, 8, 8, 194, .5), "k1") +
-    point(hairX, hairY, hairR, "stick") + P(Sk.ellipse(hairX, hairY, hairR, hairR, 195, .35), "kacc") +
-    P(Sk.ellipse(hairX + 2, hairY - 1, hairR - 8, hairR - 9, 196, .5), "faint") +
-    TC(hairX, hairY + 7, "头发丝横截面", "lb") +
-    P(`M${left} ${hairY}v81M${right} ${hairY}v81M${left} ${diameterY}H${right}`, "k1") +
-    P(chevron(left + 4, diameterY, -1, 0, 7) + chevron(right - 4, diameterY, 1, 0, 7), "k1") +
-    TC(hairX, diameterY + 32, `约 ${MODEL.hairMicrons} 微米`, "lb") + "</g>" +
-    P(`M${left} ${diameterY}L${x} ${y - 19}M${right} ${diameterY}L${x + w} ${y - 19}`, "kf") +
-    scale + TC(400, 431, "头发丝有这么粗 · 每小格 1 微米", "lb");
 }
 function drawEnd(){
   const { digits, value } = seen[1];
@@ -863,7 +1069,7 @@ function hit(q){
   if (act(2)){
     const { x, w, y } = ZOOM, final = S.depth === MODEL.zoomDepth, n = cells(S.depth);
     const margin = final ? w / (n * 2) : 0;
-    if (q.x >= x - margin && q.x <= x + w - margin && q.y >= y - 62 && q.y <= y + 48){
+    if (S.depth && q.x >= x - margin && q.x <= x + w - margin && q.y >= y - 43 && q.y <= y + 30){
       const i = (q.x - x) / w * n, index = clamp(final ? Math.round(i) : Math.floor(i), 0, n - 1);
       return { kind: final ? "pin" : "cell", index };
     }
@@ -943,21 +1149,20 @@ svg.addEventListener("keydown", e => {
     if (e.key === "Backspace" && !e.repeat) adjustStick(S.stick, -1);
   }
 });
-svg.addEventListener("keyup", e => { if (e.key === " ") S.hold = false; });
-svg.addEventListener("blur", () => { S.hold = false; S.kbd = false; S.dirty = true; });
+svg.addEventListener("keyup", e => { if (e.key === " ") releaseZoomHold(); });
+svg.addEventListener("blur", () => { releaseZoomHold(); S.kbd = false; S.dirty = true; });
 let last = performance.now();
 function tick(now){
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   if (act(2) && S.depth < MODEL.zoomDepth){
-    if (!S.hold) S.holdGate = false;
     const active = S.hold && !S.holdGate;
     S.tZoom = active ? clamp(S.tZoom + dt / .83) : 0;
-    if (S.tZoom !== S.pZoom){
-      const k = reduced ? 1 : 1 - Math.exp(-dt / .085);
+    if (!reduced && S.tZoom !== S.pZoom){
+      const k = 1 - Math.exp(-dt / .085);
       S.pZoom = Math.abs(S.tZoom - S.pZoom) < .001 ? S.tZoom : lerp(S.pZoom, S.tZoom, k);
       S.dirty = true;
     }
-    if (S.tZoom >= .985 && S.pZoom > .975) advanceZoom();
+    if (S.tZoom >= .985 && (reduced || S.pZoom > .975)) advanceZoom();
   }
   if (S.dirty){ S.dirty = false; render(); }
   requestAnimationFrame(tick);
