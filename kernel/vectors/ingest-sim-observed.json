@@ -1,0 +1,31 @@
+{
+  "name": "ingest-sim-observed",
+  "about": "event/2 原有 sim.observed（事件规格 3.1）。保留原始读数，站点完成不作答、不单独点亮知识点。",
+  "order_free": false,
+  "base": {"schema": "event/2", "learner_id": "lrn_01JC00000000000000000000K1", "device_id": "dev_01JC00000000000000000000D1", "actor": {"type": "learner", "id": "lrn_01JC00000000000000000000K1"}, "content": {"node_id": "biology.genetics.dna-intro", "activity_id": "act.simulation.dna-book-01", "activity_kind": "simulation", "activity_version": 2, "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"}, "occurred_at": "2026-11-19T02:00:00.000Z", "attempt_id": "att_01JC00000000000000000000A1", "verb": "sim.observed"},
+  "inputs": [
+    {"event": {"event_id": "evt_00000000000000000000000001", "device_seq": 1, "payload": {"mode": "first"}, "verb": "attempt.started"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_00000000000000000000000002", "device_seq": 2, "payload": {"observable": "station.completed", "value": 1}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_00000000000000000000000003", "device_seq": 3, "payload": {"observable": "matched", "value": false}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_00000000000000000000000004", "device_seq": 4, "payload": {"observable": "scale", "value": 0.125}}, "expect": "accepted"},
+    {"event": {"event_id": "evt_00000000000000000000000005", "device_seq": 5, "payload": {"observable": "symbol", "value": "𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀"}}, "expect": "accepted", "mastery_after": {"algorithm_version": "mastery/1", "nodes": {"biology.genetics.dna-intro": {"state": "untouched", "best": null}}, "conflicts": []}},
+    {"event": {"event_id": "evt_00000000000000000000000002", "device_seq": 2, "payload": {"value": 1, "observable": "station.completed"}}, "expect": "duplicate", "why": "相同事件 ID、键顺序不同，只留原文一次。"},
+    {"event": {"event_id": "evt_00000000000000000000000002", "device_seq": 2, "payload": {"observable": "station.completed", "value": 2}}, "expect": "quarantined:conflict", "why": "原来的第 1 站记录不能被同 ID 的另一个读数覆盖。"},
+    {"event": {"event_id": "evt_00000000000000000000000006", "device_seq": 6, "payload": {"duration_ms": 1000}, "verb": "attempt.completed"}, "expect": "accepted"},
+    {"event": {"event_id": "evt_00000000000000000000000007", "device_seq": 7, "payload": {"observable": "scale"}}, "expect": "quarantined:invalid", "why": "缺少 value"},
+    {"event": {"event_id": "evt_00000000000000000000000008", "device_seq": 8, "payload": {"value": 1}}, "expect": "quarantined:invalid", "why": "缺少 observable"},
+    {"event": {"event_id": "evt_00000000000000000000000009", "device_seq": 9, "payload": {"observable": 1, "value": 1}}, "expect": "quarantined:invalid", "why": "observable 要是字符串"},
+    {"event": {"event_id": "evt_00000000000000000000000010", "device_seq": 10, "payload": {"observable": "x", "value": null}}, "expect": "quarantined:invalid", "why": "null 不是 simValue"},
+    {"event": {"event_id": "evt_00000000000000000000000011", "device_seq": 11, "payload": {"observable": "x", "value": {}}}, "expect": "quarantined:invalid", "why": "对象不是 simValue"},
+    {"event": {"event_id": "evt_00000000000000000000000012", "device_seq": 12, "payload": {"observable": "x", "value": []}}, "expect": "quarantined:invalid", "why": "数组不是 simValue"},
+    {"event": {"event_id": "evt_00000000000000000000000013", "device_seq": 13, "payload": {"observable": "x", "value": "𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀𠀀"}}, "expect": "quarantined:invalid", "why": "33 个码点超过 32"},
+    {"event": {"event_id": "evt_00000000000000000000000014", "device_seq": 14, "payload": {"observable": "x", "value": 1, "station": 1}}, "expect": "quarantined:invalid", "why": "payload 不收额外字段"},
+    {"event": {"event_id": "evt_00000000000000000000000015", "device_seq": 15, "payload": {"observable": "x", "value": 1e-07}}, "expect": "quarantined:invalid", "why": "全局数值限制仍然适用"},
+    {"raw": "{\"schema\": \"event/2\", \"learner_id\": \"lrn_01JC00000000000000000000K1\", \"device_id\": \"dev_01JC00000000000000000000D1\", \"actor\": {\"type\": \"learner\", \"id\": \"lrn_01JC00000000000000000000K1\"}, \"content\": {\"node_id\": \"biology.genetics.dna-intro\", \"activity_id\": \"act.simulation.dna-book-01\", \"activity_kind\": \"simulation\", \"activity_version\": 2, \"content_release\": \"rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe\"}, \"occurred_at\": \"2026-11-19T02:00:00.000Z\", \"verb\": \"sim.observed\", \"event_id\": \"evt_00000000000000000000000016\", \"device_seq\": 16, \"payload\": {\"observable\": \"station.completed\", \"value\": 1}}", "expect": "quarantined:invalid", "why": "尝试事件必须带 attempt_id"},
+    {"raw": "{\"schema\": \"event/2\", \"learner_id\": \"lrn_01JC00000000000000000000K1\", \"device_id\": \"dev_01JC00000000000000000000D1\", \"actor\": {\"type\": \"learner\", \"id\": \"lrn_01JC00000000000000000000K1\"}, \"occurred_at\": \"2026-11-19T02:00:00.000Z\", \"attempt_id\": \"att_01JC00000000000000000000A1\", \"verb\": \"sim.observed\", \"event_id\": \"evt_00000000000000000000000017\", \"device_seq\": 17, \"payload\": {\"observable\": \"station.completed\", \"value\": 1}}", "expect": "quarantined:invalid", "why": "尝试事件必须带 content"},
+    {"event": {"event_id": "evt_00000000000000000000000018", "device_seq": 18, "payload": {"observable": "station.completed", "value": 1}, "actor": {"type": "system", "id": "sys:shell"}}, "expect": "quarantined:invalid", "why": "只有 learner 可以记录观察。"},
+    {"event": {"event_id": "evt_00000000000000000000000019", "device_seq": 19, "payload": {"control": "zoom", "value": 1}, "verb": "sim.adjusted"}, "expect": "quarantined:invalid", "why": "相邻的 sim.adjusted 仍留给后续切片。"}
+  ],
+  "mastery": {"algorithm_version": "mastery/1", "nodes": {"biology.genetics.dna-intro": {"state": "explored", "best": null}}, "conflicts": []},
+  "worked": "开始、四次观察、结束，共接收六条。观察期间掌握度仍为 untouched。最后是已完成的动手探索，explored，无挑战成绩。"
+}

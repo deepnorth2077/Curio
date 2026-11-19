@@ -87,22 +87,28 @@ function intOf(n) {
   return BigInt(n);
 }
 
-const wrong = (misconception = null) => ({ correct: false, misconception });
+function wrong(entry) {
+  return {
+    correct: false,
+    misconception: typeof entry?.misconception === "string" ? entry.misconception : null,
+    feedback: typeof entry?.feedback === "string" ? entry.feedback : null,
+  };
+}
 
 /**
- * 判分。
+ * 判分，同时保留命中的错答自己的反馈（误区可省，也可以在多个错答间共用）。
  * @param {any} answer 活动文件里的 answer 对象
  * @param {string} response 孩子的作答
- * @returns {Grade}
+ * @returns {Grade & {feedback: string|null}}
  */
-export function grade(answer, response) {
+export function gradeWithFeedback(answer, response) {
   const r = normalize(typeof response === "string" ? response : "");
   if (!answer || typeof answer !== "object") throw new TypeError("answer 不是对象");
   if (answer.type === "choice") {
     const c = (answer.choices || []).find((x) => x.id === r);
     if (!c) return wrong();
-    if (c.correct === true) return { correct: true, misconception: null };
-    return wrong(typeof c.misconception === "string" ? c.misconception : null);
+    if (c.correct === true) return { correct: true, misconception: null, feedback: null };
+    return wrong(c);
   }
   if (answer.type === "number") {
     const V = microOf(answer.value);
@@ -110,8 +116,8 @@ export function grade(answer, response) {
     const cws = (answer.common_wrong || []).map((w) => [microOf(w.value), w]);
     const X = microOfResponse(r);
     if (X === null) return wrong();
-    if (abs(X - V) <= T) return { correct: true, misconception: null };
-    for (const [W, w] of cws) if (abs(X - W) <= T) return wrong(typeof w.misconception === "string" ? w.misconception : null);
+    if (abs(X - V) <= T) return { correct: true, misconception: null, feedback: null };
+    for (const [W, w] of cws) if (abs(X - W) <= T) return wrong(w);
     return wrong();
   }
   if (answer.type === "fraction") {
@@ -123,11 +129,17 @@ export function grade(answer, response) {
     const [a, b] = f;
     if (b === 0n) return wrong();
     const same = (n, d) => (eq ? a * d === n * b : a === n && b === d);
-    if (same(N, D)) return { correct: true, misconception: null };
-    for (const [n, d, w] of cws) if (same(n, d)) return wrong(typeof w.misconception === "string" ? w.misconception : null);
+    if (same(N, D)) return { correct: true, misconception: null, feedback: null };
+    for (const [n, d, w] of cws) if (same(n, d)) return wrong(w);
     return wrong();
   }
   throw new TypeError(`不认识的答案类型：${String(answer.type)}`);
+}
+
+/** 原有判分接口只返回正误和误区（也用于复算旧记录）。 */
+export function grade(answer, response) {
+  const { correct, misconception } = gradeWithFeedback(answer, response);
+  return { correct, misconception };
 }
 
 /**

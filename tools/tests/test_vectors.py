@@ -22,7 +22,7 @@ KERNEL_VECTORS = REPO / "kernel/vectors"
 GRADING = REPO / "engine/vectors/grading.json"
 EVENT_SCHEMA = json.loads((REPO / "schemas/event.schema.json").read_text(encoding="utf-8"))
 VALIDATOR = Draft202012Validator(EVENT_SCHEMA)
-SLICE_VERBS = {"attempt.started", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned"}
+SLICE_VERBS = {"sim.observed", "attempt.started", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned"}
 # attempt.started 的 grader（CURIO-013）：整串匹配，最多 32 个字符。schema 也查，这里再用 fullmatch 查一遍，
 # 因为 jsonschema 的 pattern 用 re.search，「$」会放过末尾的换行。
 GRADER = re.compile(r"[a-z][a-z0-9-]*/[1-9][0-9]*")
