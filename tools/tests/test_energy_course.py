@@ -68,6 +68,15 @@ class TestPhysicsCourses(unittest.TestCase):
                     self.assertTrue(activities[f"act.simulation.{short}-01"]["html"].strip())
                     self.assertEqual(len(activities[f"act.quiz.{short}-01"]["body"]["items"]), 5)
 
+    def test_family_review_of_one_star_contains_only_its_activities(self):
+        lever = build.build([REPO], "energy-dock", "physics.machine.lever")
+        self.assertEqual([s["id"] for s in lever["stars"]], ["physics.machine.lever"])
+        self.assertEqual([a["id"] for a in lever["stars"][0]["activities"]],
+                         ["act.simulation.lever-dock-01", "act.quiz.lever-dock-01"])
+        self.assertNotIn("groups", lever)
+        with self.assertRaises(ValueError):
+            build.build([REPO], "newton-track", "physics.machine.lever")
+
     def test_newton_overview_keeps_its_original_id(self):
         catalog = yaml.safe_load((REPO / "content/catalog/points.yaml").read_bytes())
         current = [p for p in catalog["points"] if p["id"] == "p.g10.newton"]

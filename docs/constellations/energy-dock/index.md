@@ -2,11 +2,11 @@
 
 在站台上接一箱货。从调平杠杆开始，最后追到滑块停下时整笔能量去了哪里。
 
-[当前试玩页](https://deepnorth2077.github.io/Curio/preview/energy-dock/) · [主任务 #193](https://github.com/deepnorth2077/Curio/issues/193)
+[本轮杠杆试玩](https://deepnorth2077.github.io/Curio/preview/lever/) · [主任务 #193](https://github.com/deepnorth2077/Curio/issues/193)
 
 ## 手里的力
 
-- 杠杆：把支点挪一格。箱子比砝码重，为什么横杆还能摆平？ [制作任务](../../../prompts/act.simulation.lever-dock-01.md) · [知识点 #195](https://github.com/deepnorth2077/Curio/issues/195)
+- 杠杆：把支点挪一格。只挂一枚铁环，能把六牛箱子抬起来吗？ [制作任务](../../../prompts/act.simulation.lever-dock-01.md) · [知识点 #195](https://github.com/deepnorth2077/Curio/issues/195)
 - 滑轮：谁在托箱子。都是一个轮子，为什么有的能把手上的力减半？ [制作任务](../../../prompts/act.simulation.pulley-dock-01.md) · [知识点 #196](https://github.com/deepnorth2077/Curio/issues/196)
 
 ## 送到同样高
@@ -21,16 +21,16 @@
 
 ## 怎么验收
 
-本轮只验杠杆。用两种挂法各做一张星卡，对照图中的砝码、支点与孔位，再做末题。新版的试玩入口和具体操作以[杠杆任务 #195](https://github.com/deepnorth2077/Curio/issues/195) 为准。
+把一枚铁环拖到第六格，停一下，再挪到第七格。看看哪一次才露出箱底的粉笔印。用两种挂法各做一张星卡，对照图中的砝码、支点与孔位，再做末题。新版的试玩入口和具体操作以[杠杆任务 #195](https://github.com/deepnorth2077/Curio/issues/195) 为准。
 
 <!-- status:begin energy-dock -->
 _这一段由 `tools/status_gen.py` 按 `docs/constellations/energy-dock/status.yaml` 生成，不要手改。_
 
-**状态（2026-11-20）**：6 颗星：完成 0、等验收 0、在做 1、草案 5。主 issue #193。试玩页 https://deepnorth2077.github.io/Curio/preview/energy-dock/
+**状态（2026-11-20）**：6 颗星：完成 0、等验收 1、在做 0、草案 5。主 issue #193。试玩页 https://deepnorth2077.github.io/Curio/preview/lever/
 
 | 星 | 状态 | 主要 PR | 在等什么 |
 | --- | --- | --- | --- |
-| 第 1 颗「杠杆：把支点挪一格」 | 在做 | #206 | 先审杠杆新设计，再做单星试玩 |
+| 第 1 颗「杠杆：把支点挪一格」 | 等验收 | #218 | Luka 和舰长试玩单星新版，比较第六和第七孔、两种支点与两张拓印 |
 
-**现在**：Luka 已打回上一版。只重做杠杆一颗，其余五颗等杠杆通过家庭验收后再重新设计。
+**现在**：只交杠杆新版给 Luka 和舰长试玩。其余五颗保留为退回的草稿，待这颗通过家庭验收再重新设计。
 <!-- status:end energy-dock -->

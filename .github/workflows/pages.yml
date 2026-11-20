@@ -48,6 +48,7 @@ jobs:
           for course in energy-dock newton-track; do
             python preview/build.py --root . --constellation "$course" --out "_site/preview/$course/index.html"
           done
+          python preview/build.py --root . --constellation energy-dock --star physics.machine.lever --out _site/preview/lever/index.html
       - name: 竖切片 1 演示页（https://deepnorth2077.github.io/Curio/app/）
         run: |
           if [ -f app/index.html ]; then

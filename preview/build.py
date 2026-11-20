@@ -262,8 +262,12 @@ def build_trial_bundle(roots, output_dir, copy_modules=False):
             "diagram_series": ["life-manual", *COURSE_DATA["courses"]], "overviews": COURSE_DATA["overviews"]}
 
 
-def build(roots, constellation="life-manual"):
+def build(roots, constellation="life-manual", star_id=None):
     name, star_list = CONSTELLATIONS[constellation]
+    if star_id:
+        star_list = [(nid, aids) for nid, aids in star_list if nid == star_id]
+        if not star_list:
+            raise ValueError(f"{star_id} 不属于星座「{name}」")
     stars, figures = [], {}
     for node_id, act_ids in star_list:
         node = yaml.safe_load(find_node(roots, node_id).read_text(encoding="utf-8"))
@@ -275,8 +279,10 @@ def build(roots, constellation="life-manual"):
             "misconceptions": {m["id"]: m.get("text", "") for m in node.get("misconceptions", [])},
             "activities": acts,
         })
-    data = {"constellation": name, "stars": stars, "figures": figures}
-    if constellation in GROUPS:
+    data = {"constellation": stars[0]["title"] if star_id else name, "stars": stars, "figures": figures}
+    if star_id:
+        data["single"] = True
+    elif constellation in GROUPS:
         data["groups"] = GROUPS[constellation]
     return data
 
@@ -289,13 +295,19 @@ def main():
     ap.add_argument("--trial-bundle", type=Path, help="首页额外加载的试玩包（JS 文件）")
     ap.add_argument("--copy-trial-modules", action="store_true", help="把试玩模块复制到可独立部署的同级目录")
     ap.add_argument("--constellation", default="life-manual", choices=sorted(CONSTELLATIONS), help="试玩页做哪个星座")
+    ap.add_argument("--star", help="只为本星座中的一个知识点生成独立验收页")
     a = ap.parse_args()
     if not (a.out or a.bundle or a.trial_bundle):
         ap.error("--out、--bundle 和 --trial-bundle 至少要给一个")
     if a.copy_trial_modules and not a.trial_bundle:
         ap.error("--copy-trial-modules 需要 --trial-bundle")
+    if a.star and not a.out:
+        ap.error("--star 需要 --out")
     if a.out:
-        data = build(a.root, a.constellation)
+        try:
+            data = build(a.root, a.constellation, a.star)
+        except ValueError as exc:
+            ap.error(str(exc))
         blob = json.dumps(data, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
         html = TEMPLATE.read_text(encoding="utf-8").replace("/*__DATA__*/null", blob)
         a.out.write_text(html, encoding="utf-8")

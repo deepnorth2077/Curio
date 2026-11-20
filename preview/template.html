@@ -426,11 +426,11 @@ function endButtons(a){
 function viewHome(){
   setTop("Curio", false); dock();
   const groups = DATA.groups && el("nav", {class:"groups", "aria-label":"跳到一组星"});
-  const intro = groups ? `${DATA.stars.length} 颗星。每颗星都可以先动手，再挑战。` :
+  const intro = DATA.single ? DATA.stars[0].dq : groups ? `${DATA.stars.length} 颗星。每颗星都可以先动手，再挑战。` :
     (["", "一", "两", "三", "四", "五", "六", "七", "八", "九", "十"][DATA.stars.length] || DATA.stars.length) +
       "颗星，按顺序飞：" + DATA.stars.map(s => s.title.split("：")[0]).join(" → ") + "。";
   const hero = el("div", {class:"hero"},
-    el("div", {}, el("div", {class:"eyebrow"}, "Curio · 星座"), el("h1", {}, DATA.constellation),
+    el("div", {}, el("div", {class:"eyebrow"}, DATA.single ? "Curio · 单星试玩" : "Curio · 星座"), el("h1", {}, DATA.constellation),
       el("p", {}, intro)),
     svgEl(SHIP));
   const line = el("div", {class:"line"});
@@ -446,7 +446,8 @@ function viewHome(){
       acts.append(el("button", {class:"act" + (done ? " done" : "") + (a.kind === "simulation" ? " sim" : ""), type:"button", onclick:()=>go("act:" + a.id)},
         done ? el("span", {class:"tick"}, "✓") : null, KIND[a.kind], a.kind === "simulation" ? el("small", {class:"new"}, "新") : null, a.duration_min ? el("small", {}, `${a.duration_min} 分钟`) : null));
     }
-    line.append(el("section", {class:"star", id:st.id}, el("div", {class:"dot"}, i+1), el(groups ? "h3" : "h2", {}, st.title), el("div", {class:"dq"}, st.dq), acts));
+    if (DATA.single) line.append(el("section", {id:st.id}, acts));
+    else line.append(el("section", {class:"star", id:st.id}, el("div", {class:"dot"}, i+1), el(groups ? "h3" : "h2", {}, st.title), el("div", {class:"dq"}, st.dq), acts));
   });
   $app.replaceChildren(hero, el("p", {class:"note"}, "这是试玩版：做过的不会保存，刷新页面就从头开始。"), ...(groups ? [groups] : []), line,
     el("button", {class:"parent", type:"button", onclick:()=>go("record")}, "试玩记录（给家长看）"));

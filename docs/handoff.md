@@ -80,13 +80,13 @@ _这一段由 `tools/status_gen.py` 按 `docs/constellations/zero-to-one/status.
 <!-- status:begin energy-dock -->
 _这一段由 `tools/status_gen.py` 按 `docs/constellations/energy-dock/status.yaml` 生成，不要手改。_
 
-**标杆星座「省力的机器和能量账本」**（2026-11-20；主 issue #193；完整任务说明从 `docs/constellations/energy-dock/index.md` 看起）：6 颗星：完成 0、等验收 0、在做 1、草案 5。试玩页 https://deepnorth2077.github.io/Curio/preview/energy-dock/
+**标杆星座「省力的机器和能量账本」**（2026-11-20；主 issue #193；完整任务说明从 `docs/constellations/energy-dock/index.md` 看起）：6 颗星：完成 0、等验收 1、在做 0、草案 5。试玩页 https://deepnorth2077.github.io/Curio/preview/lever/
 
 | 星 | 状态 | 主要 PR | 在等什么 |
 | --- | --- | --- | --- |
-| 第 1 颗「杠杆：把支点挪一格」 | 在做 | #206 | 先审杠杆新设计，再做单星试玩 |
+| 第 1 颗「杠杆：把支点挪一格」 | 等验收 | #218 | Luka 和舰长试玩单星新版，比较第六和第七孔、两种支点与两张拓印 |
 
-**现在**：Luka 已打回上一版。只重做杠杆一颗，其余五颗等杠杆通过家庭验收后再重新设计。
+**现在**：只交杠杆新版给 Luka 和舰长试玩。其余五颗保留为退回的草稿，待这颗通过家庭验收再重新设计。
 <!-- status:end energy-dock -->
 
 <!-- status:begin newton-track -->
