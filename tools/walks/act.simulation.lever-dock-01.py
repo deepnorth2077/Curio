@@ -127,6 +127,57 @@ def masked_shot(w, name, mask):
         style.evaluate("(el) => el.remove()")
 
 
+def request_clue(w, expected):
+    w.check("没求助时只问哪头先低了", w.said() == "哪头先低了？", w.said())
+    clue = w.doc.get_by_role("button", name="给我一点线索", exact=True)
+    w.check("杆歪了可以自己要线索", clue.is_visible())
+    if not clue.is_visible():
+        return
+
+    def snapshot():
+        return (w.readout(), pins(w, LIVE), w.doc.locator("[data-proof]").count(),
+                w.sent("state"), w.sent("event"), w.sent("complete"))
+
+    before = snapshot()
+    w.btn("给我一点线索")
+    w.check("线索跟着压低的那头变", w.said() == expected, w.said())
+    w.check("只看线索不挪杆、不盖印、不给宿主记进度", snapshot() == before)
+
+
+def watch_small_labels(w):
+    # 在真实触摸前开始逐帧量字框，包括拖动尚未松手的画面。
+    return w.doc.locator("#stage").evaluate_handle("""stage => {
+        let minSealMargin = Infinity, minWeightGap = Infinity, raf;
+        const tiltsWithBothPrints = new Set();
+        function sample() {
+            const box = stage.getBoundingClientRect();
+            const seal = [...stage.querySelectorAll('text')].find(t => t.textContent === '钩上的封条');
+            const s = seal.getBoundingClientRect();
+            minSealMargin = Math.min(minSealMargin, s.top-box.top, box.bottom-s.bottom,
+                                     s.left-box.left, box.right-s.right);
+            const live = stage.querySelector('[data-lever="live"]');
+            const hookY = side => live.querySelector('[data-part="' + side + '-hook"]').getBoundingClientRect().y;
+            const tilt = hookY('left') - hookY('right');
+            const proofLabels = stage.querySelectorAll('[data-proof] text');
+            if (proofLabels.length === 2 && Math.abs(tilt) > 1) tiltsWithBothPrints.add(Math.sign(tilt));
+            for (const weight of live.querySelectorAll('text')) {
+                const a = weight.getBoundingClientRect();
+                for (const proof of proofLabels) {
+                    const b = proof.getBoundingClientRect();
+                    const gap = Math.max(b.left-a.right, a.left-b.right, b.top-a.bottom, a.top-b.bottom);
+                    minWeightGap = Math.min(minWeightGap, gap);
+                }
+            }
+            raf = requestAnimationFrame(sample);
+        }
+        sample();
+        return () => {
+            cancelAnimationFrame(raf);
+            return {minSealMargin, minWeightGap, tiltsWithBothPrints: [...tiltsWithBothPrints]};
+        };
+    }""")
+
+
 def play_one(w, route):
     w.open(hosted=True)
     hidden_formula(w)
@@ -190,16 +241,33 @@ def play_one(w, route):
     collect = w.doc.get_by_role("button", name="收进星卡", exact=True)
     w.check("刚看到中档不自动盖印", proofs.count() == 0, proofs.count())
     w.check("两个台架端点尚未比较不能收卡", not collect.count() or collect.is_disabled())
+    if route == "A":
+        clue = w.doc.get_by_role("button", name="给我一点线索", exact=True)
+        w.check("开场杆平，还没有倾斜线索", not clue.is_visible())
     w.btn("取下 1 牛")
+    if route == "A":
+        request_clue(w, "试着给左盘添一牛，再看。")
     w.btn("加上 1 牛")
+    if route == "A":
+        w.check("添回一牛后不再显示上一条线索", "试着给左盘添一牛" not in w.said())
+        w.check("孩子把杆配平后线索按钮收起", not clue.is_visible())
     position(w, PIVOTS[(3, 6)])
     w.check("亲手调回中档才有一印", proofs.count() == 1, proofs.count())
     w.check("只找到中档仍不能收卡", not collect.count() or collect.is_disabled())
     if route == "A":
         w.shot("04-sealed", first=True)
+    small_phone = w.name == "phone" and route == "A"
+    if small_phone:
+        w.page.set_viewport_size({**w.vp, "width": 360})
+        watcher = watch_small_labels(w)
     drag_holes(w, "pivot", 1, 6)
     position(w, PIVOTS[(4, 6)])
-    for _ in range(3):
+    if route == "A":
+        request_clue(w, "试着从左盘取下一牛，再看哪头动。")
+    w.btn("取下 1 牛")
+    if route == "A":
+        w.check("卸一牛后把线索收起，重新让孩子观察", w.said() == "哪头先低了？", w.said())
+    for _ in range(2):
         w.btn("取下 1 牛")
     position(w, PIVOTS[(4, 3)])
     w.check("两次平衡分别留下两印", proofs.count() == 2, proofs.count())
@@ -210,6 +278,17 @@ def play_one(w, route):
     else:
         for _ in range(3):
             w.btn("加上 1 牛")
+    if small_phone:
+        w.btn("加上 1 牛")
+        w.shot("04-tilted-360")
+        w.btn("取下 1 牛")
+        metrics = watcher.evaluate("stop => stop()")
+        watcher.dispose()
+        w.check("360 宽深色，两印收好后杆向两头都歪过", set(metrics["tiltsWithBothPrints"]) == {-1, 1}, metrics)
+        w.check("360 宽封条标签四边都在画面内", metrics["minSealMargin"] >= 0, metrics)
+        gap = metrics["minWeightGap"]
+        w.check("360 宽倾斜过程中两边配重与收好的印始终有间隙", math.isfinite(gap) and gap >= 1, metrics)
+        w.page.set_viewport_size(w.vp)
     w.btn("收进星卡")
     chosen = VECTORS["prints"][route]
     first, second = '[data-lever="print-1"]', '[data-lever="print-2"]'

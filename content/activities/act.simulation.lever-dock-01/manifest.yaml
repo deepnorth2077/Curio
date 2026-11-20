@@ -1,7 +1,7 @@
 id: act.simulation.lever-dock-01
 contract: activity/1.1
 type: simulation
-version: 2
+version: 3
 title: 让粉笔印见光
 targets:
 - physics.machine.lever

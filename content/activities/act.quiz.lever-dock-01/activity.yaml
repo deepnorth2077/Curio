@@ -3,7 +3,7 @@
 id: act.quiz.lever-dock-01
 schema: activity-def/1
 kind: quiz
-version: 2
+version: 3
 title: 杠杆配平挑战
 targets:
 - physics.machine.lever
@@ -20,6 +20,9 @@ body:
   items:
   - id: q1
     stem: 牛是力的单位。木杆两头各挂 2 牛。左钩离三角木 1 格，右钩 3 格。把杆放平再松手，会怎样？
+    figure:
+      type: svg
+      src: content/assets/physics.machine.lever/before-release.svg
     answer:
       type: choice
       choices:
@@ -36,20 +39,20 @@ body:
     hints:
     - 用手指从三角木分别走到两个钩。
   - id: q2
-    stem: 这回左边挂 5 牛，离木尖 1 格。右边只挂 2 牛，却离木尖 3 格。杆放平再松手，哪头先低？
+    stem: 这回左钩挂 5 牛，离木尖 1 格。右钩挂 2 牛，离木尖 3 格。杆放平再松手，哪头先低？
     answer:
       type: choice
       choices:
       - id: a
         text: 左边先低
         misconception: heavy-wins
-        feedback: 左箱有五牛。右边虽只有两牛，却各能盖三枚印。
+        feedback: 左钩挂着五牛。右钩虽只有两牛，每牛却能盖三枚印。
       - id: b
         text: 右边先低
         correct: true
     feedback:
-      correct: 左边有五枚印，右边足足六枚。小铁环把重箱抬起来了。
-      wrong: 重箱只占了一格。右边两牛各盖三枚印，得把它们合在一块儿数。
+      correct: 左钩盖了五枚印，右钩盖了六枚。右头先低。
+      wrong: 左钩离木尖只有一格。右钩的两牛各盖三枚印，得把它们合在一块儿数。
     hints:
     - 给左边的每牛盖一枚印，再给右边的每牛盖三枚。
   - id: q3
@@ -89,20 +92,19 @@ body:
     hints:
     - 手指按住左钩，把另一根手指放在新的木尖上。
   - id: q5
-    stem: 修船棚的两钩相隔 5 格。右箱 4 牛，左钩只能挂 1 牛或 2 牛。从左钩往右数，木尖只能撑在第 3 格或第 4 格。哪一对能把杆停平？
+    stem: 修船棚的两钩相隔 5 格。右箱 4 牛，左钩只能挂 1 牛或 2 牛。从左钩到木尖，可以留 3 格或 4 格。左边留几格、挂几牛，能让杆停平？
     answer:
       type: choice
       choices:
       - id: a
-        text: 第 3 孔配 2 牛
-        misconception: far-wins
-        feedback: 左钩虽然更远，你这边有六枚印，右箱有八枚。箱子先沉。
+        text: 左边留 3 格，挂 2 牛
+        feedback: 左边留三格，挂两牛，有六枚印。右边还剩两格，四牛盖出八枚，右箱先沉。
       - id: b
-        text: 第 4 孔配 2 牛
+        text: 左边留 4 格，挂 2 牛
         misconception: overbalances
-        feedback: 这个搭法能抬箱子。左边八枚、右边四枚，杆还会转。
+        feedback: 左边留四格，挂两牛，盖出八枚印。右边只有四枚。箱子抬起来了，木杆还在转。
       - id: c
-        text: 第 4 孔配 1 牛
+        text: 左边留 4 格，挂 1 牛
         correct: true
     feedback:
       correct: 你给小砝码留了四格，也给箱子留了一格。两边各四枚，木杆正好停住。

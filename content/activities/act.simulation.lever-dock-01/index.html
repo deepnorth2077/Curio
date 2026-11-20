@@ -341,9 +341,9 @@ function seesaw() {
   return group(art,'data-lever="seesaw" transform="translate(263 260) scale(1.18)"');
 }
 function markPrint(p) {
-  const g=geometry(p), shift=(p.pivot-MODEL.middle)*14;
+  const shift=(p.pivot-MODEL.middle)*14;
   return group(path(`M4 9h44M${23+shift} 9l-4 9h8z`,"edge")
-    +text(55,16,p.weight+" 牛","inscription","start"),'data-proof="" transform="translate('+ (p.pivot===MODEL.middle?32:171)+' 281)"');
+    +text(55,16,p.weight+" 牛","inscription","start"),'data-proof="" transform="translate('+ (p.pivot===MODEL.middle?32:171)+' 327)"');
 }
 function visualGrip(s) {
   const first=s.station===1,g=geometry(s);
@@ -378,7 +378,7 @@ function paint() {
   artGrip=null;
   const end=phase==="card", first=state.station===1, locked=phase==="guess"||phase==="unlatch";
   svg.setAttribute("aria-label",end?"我的两张杠杆拓印":first?"杠杆台，左右方向键移动铁环":"杠杆台，左右方向键移动支点");
-  svg.setAttribute("viewBox",end?"0 0 560 392":"0 0 560 338");
+  svg.setAttribute("viewBox",end?"0 0 560 392":first?"0 0 560 338":"0 0 560 358");
   if(end){$("dyn").innerHTML=printCard();setTarget();return;}
   const r=MODEL.read(state);
   let art=first?floorPaper():"";
@@ -388,8 +388,9 @@ function paint() {
     art+=blowup(state,locked);
     if(!locked&&r.direction<0&&state.hole===MODEL.last&&state.rings===1) art+=seesaw();
   } else {
-    art+=text(325,19,"钩上的封条","fine","start");
-    art+=path("M418 23q41 6 49 48l3 65","mesh");
+    art+=text(325,44,"钩上的封条","fine","start");
+    art+=path("M418 48q41 6 49 48l3 40","mesh");
+    art+=path("M20 316H540","mesh");
     proofs.forEach(p=>{art+=markPrint(p);});
   }
   if(!locked) art+=visualGrip(state);
@@ -459,7 +460,8 @@ function draw() {
     if(sawLevel&&sawLift)controls.push(state.rings===1?"加一枚环":"取下一枚环","拓下这根杆");
   } else {
     controls.push("取下 1 牛","加上 1 牛");
-    if(proofs.size===2&&MODEL.read(state).direction===0)controls.push("收进星卡");
+    if(MODEL.read(state).direction)controls.push("给我一点线索");
+    else if(proofs.size===2)controls.push("收进星卡");
   }
   showButtons(controls);
   if(state.station===2){
@@ -487,9 +489,8 @@ function noticePose() {
   } else {
     if(!r.direction){
       proofs.set(state.pivot,{...state});
-      say(proofs.size===2?"箱子还在老钉子上。三角木走了一步，你就能卸下三牛。挑一档拓下来。":"这一档留下了平衡印。另一档也能让木杆停平吗？");
-    } else if(r.direction<0) say("压得太低的是哪头？试试从那头卸货。");
-    else say("箱子那头低了。你想改左盘，还是挪三角木？");
+      say(proofs.size===2?"三角木靠近箱子，三牛就能托平。两枚钉子全程站岗，一步没挪。挑一档拓下来。":"这一档留下了平衡印。另一档也能让木杆停平吗？");
+    } else say("哪头先低了？");
   }
   draw();
 }
@@ -548,6 +549,10 @@ function command(name){
       }
     }
   }else if(phase==="play"&&state.station===2){
+    if(name==="给我一点线索"){
+      const direction=MODEL.read(state).direction;
+      if(direction)say(direction<0?"试着从左盘取下一牛，再看哪头动。":"试着给左盘添一牛，再看。");
+    }
     if(name==="取下 1 牛")change("weight",Math.max(1,state.weight-1));
     if(name==="加上 1 牛")change("weight",Math.min(MODEL.box,state.weight+1));
     if(name==="收进星卡"&&proofs.size===2&&MODEL.read(state).direction===0){
