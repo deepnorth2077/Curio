@@ -90,22 +90,21 @@ Luka 希望舰长在平常玩一组星的路上，能好几次遇到领航员的
 
 | 文件 | 什么时候用 |
 | --- | --- |
-| `lessons.md` | **每次都先读。**踩过的坑和定下的做法。写提示词时把「实现」一节原样贴进去；审查时对照「设计」「实现」两节；文末那些已由检查和骨架保证，不用对照。发现新坑，能让程序查或放进骨架的就做成检查或骨架，不能的才补进正文。 |
+| `lessons.md` | **每次都先读。**踩过的坑和定下的做法。设计稿的「实现」一节只列与本星相关的现有实现条目编号，每行写成 `- 35` 的形式。审查时循编号核对对应的零件和动作。发现新坑，能让程序查或放进骨架的就做成检查或骨架，不能的才补进正文。 |
 | `starter.html` | 新模块从它起步，不要从零写。卡片、领航员气泡、「我有个问题」、activity/1.1 契约、手绘线、按住按钮（含松手防误点）、缓动和完成判定 `fin()` 都写好了，只要换掉 `{{…}}` 和两个示例站。 |
-| `brief-template.md` | 给实现者的设计说明（提示词）模板，以及派给子 agent 时附上的话。实现用 Opus。 |
-| `review-template.md` | 给审查者的提示词模板，以及收到审查后怎么处理。审查用 Sonnet，和实现者不是同一个模型。 |
+| `brief-template.md` | 给实现者的设计说明（提示词）模板，以及派给子 agent 时附上的话。Claude 工作流用 Opus 实现。 |
+| `review-template.md` | 设计与实现的独立审查步骤和记录要求。Claude 工作流用 Sonnet 审查。 |
 | `tools/walks/` | 走查脚本（不在本目录）。新一代模块要有专属走查 `tools/walks/<活动 id>.py`，照 `act.simulation.fair-cut-01.py` 写，公共部分在 `tools/walklib.py`；旧模块用 `smoke.py` 冒烟。CI 的「走查」会跑。 |
 
 三个标杆模块（风格和质量以它们为准）：`content/activities/act.simulation.chromosome-pack-01/`（Claude 自己做的第一个）、`act.simulation.cell-zoom-01/`、`act.simulation.dna-book-01/`。它们的设计说明在 `prompts/` 下同名文件，审查记录在 `docs/reviews/`。
 
 ### 一个模块的完整流程
 
-1. 用本技能拆解知识点，按 `brief-template.md` 写设计说明，存为 `prompts/act.simulation.<名字>-01.md`。
-2. 派 Opus 子 agent 实现（附上模板里那段话），它从 `starter.html` 起步，自己走查、迭代、跑 `tools/ci_checks.py`，不提交。
-3. 维护者在知识点卡的 `activities` 里登记新活动（实现者不改别的文件），跑 CI。
-4. 派 Sonnet 子 agent 审查（`review-template.md`）。阻断和重要逐条改，改完重新走查；审查和答复存进 `docs/reviews/`。
-5. 新坑先想能不能让 `tools/module_lint.py` 查、或放进 `starter.html` 带 `kit:` 记号的段落；能就做，在 `lessons.md` 文末记一行，不能才补进正文。
-6. 用 `preview/build.py` 生成试玩页给家长试，孩子试玩后再合入。
+1. 维护者按 `brief-template.md` 为一颗星写完整任务，存入 `prompts/act.simulation.<名字>-01.md`。附知识点卡、可演出的逐站台词、五题的误区表和输入到画面的验收用例。
+2. 未参与设计的审查者按 `review-template.md` 先审原稿。修完退回项并记录通过版本，独立验收者再冻结科学向量和专属走查的预期，之后派实现者。
+3. 实现者从 `starter.html` 起步，按审过的设计实现这颗星，跑走查，亲自看三端截图。记录设计者、实际实现者与可区分的代理身份。
+4. 未参与制作的审查者从试玩入口操作，逐项回答下面七问，附截图、复算结果、问题和复核结论，归档到 `docs/reviews/`。维护者在本星 PR 里给出审查记录和试玩步骤。
+5. 每颗星独立合入并从 `main` 发布家庭试玩。先交一至两颗，经 Luka 与舰长验收后再铺开下一批。共用规则、骨架和 CI 的修订可独立开 PR。
 
 ## 检查
 
