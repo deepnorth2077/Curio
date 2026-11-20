@@ -32,6 +32,10 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: python tools/ci_checks.py
+      - name: 核对本次设计说明、知识点卡与配套挑战
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: python tools/brief_lint.py --base "origin/$BASE_REF"
       - uses: actions/setup-node@v4
         with:
           node-version: "22"

@@ -80,33 +80,24 @@ _这一段由 `tools/status_gen.py` 按 `docs/constellations/zero-to-one/status.
 <!-- status:begin energy-dock -->
 _这一段由 `tools/status_gen.py` 按 `docs/constellations/energy-dock/status.yaml` 生成，不要手改。_
 
-**标杆星座「省力的机器和能量账本」**（2026-11-19；主 issue #193；完整任务说明从 `docs/constellations/energy-dock/index.md` 看起）：6 颗星：完成 0、等验收 6、在做 0、草案 0。试玩页 https://deepnorth2077.github.io/Curio/preview/energy-dock/
+**标杆星座「省力的机器和能量账本」**（2026-11-20；主 issue #193；完整任务说明从 `docs/constellations/energy-dock/index.md` 看起）：6 颗星：完成 0、等验收 0、在做 1、草案 5。试玩页 https://deepnorth2077.github.io/Curio/preview/energy-dock/
 
 | 星 | 状态 | 主要 PR | 在等什么 |
 | --- | --- | --- | --- |
-| 第 1 颗「杠杆：把支点挪一格」 | 等验收 | #206 | Luka 和舰长试玩 |
-| 第 2 颗「滑轮：谁在托箱子」 | 等验收 | #207 | Luka 和舰长试玩 |
-| 第 3 颗「斜面：长路怎样省力」 | 等验收 | #208 | Luka 和舰长试玩 |
-| 第 4 颗「功：力和路程合起来」 | 等验收 | #209 | Luka 和舰长试玩 |
-| 第 5 颗「功率：一秒能搬多少」 | 等验收 | #210 | Luka 和舰长试玩 |
-| 第 6 颗「能量：滑停以后去了哪」 | 等验收 | #211 | Luka 和舰长试玩 |
+| 第 1 颗「杠杆：把支点挪一格」 | 在做 | #206 | 先审杠杆新设计，再做单星试玩 |
 
-**现在**：已制作动手探索与五题挑战，等 Luka 和舰长统一试玩。
+**现在**：Luka 已打回上一版。只重做杠杆一颗，其余五颗等杠杆通过家庭验收后再重新设计。
 <!-- status:end energy-dock -->
 
 <!-- status:begin newton-track -->
 _这一段由 `tools/status_gen.py` 按 `docs/constellations/newton-track/status.yaml` 生成，不要手改。_
 
-**标杆星座「力怎样改变运动」**（2026-11-19；主 issue #194；完整任务说明从 `docs/constellations/newton-track/index.md` 看起）：4 颗星：完成 0、等验收 4、在做 0、草案 0。试玩页 https://deepnorth2077.github.io/Curio/preview/newton-track/
+**标杆星座「力怎样改变运动」**（2026-11-20；主 issue #194；完整任务说明从 `docs/constellations/newton-track/index.md` 看起）：4 颗星：完成 0、等验收 0、在做 0、草案 4。试玩页 https://deepnorth2077.github.io/Curio/preview/newton-track/
 
 | 星 | 状态 | 主要 PR | 在等什么 |
 | --- | --- | --- | --- |
-| 第 1 颗「力」 | 等验收 | #212 | Luka 和舰长试玩 |
-| 第 2 颗「牛顿第一定律：松手后还会走吗」 | 等验收 | #213 | Luka 和舰长试玩 |
-| 第 3 颗「牛顿第二定律：同一推力推两辆车」 | 等验收 | #214 | Luka 和舰长试玩 |
-| 第 4 颗「牛顿第三定律：两辆车互推」 | 等验收 | #215 | Luka 和舰长试玩 |
 
-**现在**：已制作动手探索与五题挑战，等 Luka 和舰长统一试玩。
+**现在**：Luka 已打回上一版。四颗星退回设计，等杠杆通过家庭验收后再逐颗开工。
 <!-- status:end newton-track -->
 
 ### 本轮交付和验收（2026-11-19）
