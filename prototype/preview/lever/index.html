@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Curio · 试玩版</title>
+<style>
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6; --on-accent:#FFFFFF;
+  --c-math:#ECCDB6; --c-sci:#CCD6C0; --c-sci-2:#93A982; --c-sci-bg:#DCE3D2;
+  --c-sky:#CFDCE6; --wash:#EFE4D6; --dad:#4F7FA8; --mom:#C2603F;
+  --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --shadow:0 1px 2px rgba(31,30,28,.06),0 8px 28px rgba(31,30,28,.08);
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-hand:"ZCOOL KuaiLe","Kaiti SC","STKaiti","KaiTi","Noto Sans SC",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943; --on-accent:#15121F;
+  --c-math:#5A4536; --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
+  --c-sky:#2D3B47; --wash:#2A2738; --dad:#7FA9CF; --mom:#E0876A;
+  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased;
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+button{font:inherit;color:inherit;cursor:pointer}
+[hidden]{display:none!important}
+.wrap{max-width:760px;margin:0 auto;padding:0 18px 120px}
+.topbar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--rule)}
+.topbar .in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 18px;min-height:56px}
+.topbar .title{flex:1;font-family:var(--f-serif);font-weight:600;color:var(--ink);font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.back{border:1px solid var(--rule);background:var(--pane);border-radius:10px;padding:6px 12px;font-size:15px}
+.tag{font-size:12px;color:var(--muted);border:1px dashed var(--rule);border-radius:999px;padding:1px 9px;white-space:nowrap}
+h1,h2,h3{font-family:var(--f-serif);color:var(--ink);line-height:1.35;margin:0}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+
+/* 首页 */
+.hero{margin:22px 0 8px;padding:22px;border-radius:18px;background:var(--c-sci-bg);display:flex;gap:16px;align-items:center}
+.hero .eyebrow{font-size:13px;color:var(--muted);letter-spacing:.05em}
+.hero h1{font-size:28px;margin:4px 0 6px}
+.hero p{margin:0}
+.hero svg{flex:none;width:96px;height:96px}
+.note{font-size:14px;color:var(--muted);margin:10px 2px 18px}
+.line{position:relative;padding-left:34px}
+.groups{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}
+.groups a{display:flex;align-items:center;min-height:44px;border:1px solid var(--rule);border-radius:10px;padding:4px 12px;color:var(--ink);background:var(--pane);text-decoration:none}
+.groups a:hover,.groups a:focus-visible{background:var(--hover)}
+.group-title,.star{scroll-margin-top:72px}
+.group-title{position:relative;background:var(--bg);padding:12px 0;font-size:18px}
+.line:before{content:"";position:absolute;left:13px;top:18px;bottom:18px;border-left:2px dashed var(--c-sci-2)}
+.star{position:relative;background:var(--pane);border:1px solid var(--rule);border-radius:16px;padding:16px 18px;margin:0 0 16px;box-shadow:var(--shadow)}
+.star .dot{position:absolute;left:-34px;top:16px;width:28px;height:28px;border-radius:50%;background:var(--c-sci);border:2px solid var(--ink);display:grid;place-items:center;font-size:14px;font-weight:700;color:var(--ink)}
+.star h2,.star h3{font-size:20px}
+.star .dq{font-family:var(--f-hand);color:var(--ink);font-size:18px;margin:6px 0 12px}
+.acts{display:flex;flex-wrap:wrap;gap:10px}
+.act{display:flex;align-items:center;gap:8px;border:1.5px solid var(--ink);background:var(--bg);border-radius:12px;padding:9px 14px;min-height:48px;font-size:16px}
+.act:hover{background:var(--hover)}
+.act small{color:var(--muted);font-size:13px}
+.act.done{background:var(--good-soft);border-color:var(--good)}
+.act .tick{color:var(--good);font-weight:700}
+.act small.new{color:var(--accent);font-weight:700}
+.act.sim{border-color:var(--accent);border-width:2px}
+.simframe{display:block;width:100%;border:0;min-height:600px;background:transparent;margin-top:8px}
+.parent{display:block;margin:26px auto 0;border:1px dashed var(--rule);background:transparent;border-radius:12px;padding:10px 16px;color:var(--muted);font-size:15px}
+
+/* 领航员对话 */
+.chat{padding:18px 0 8px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;align-items:flex-end}
+.row.me{justify-content:flex-end}
+.ava{flex:none;width:40px;height:40px}
+.bub{max-width:min(560px,82%);background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);box-shadow:var(--shadow)}
+.row.me .bub{background:var(--accent-soft);border-color:transparent;border-radius:16px 16px 4px 16px}
+.bub.hint{background:var(--c-sky);border-color:transparent}
+.bub.good{background:var(--good-soft);border-color:transparent}
+.bub.bad{background:var(--bad-soft);border-color:transparent}
+.bub .lbl{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+.bub.fig{max-width:min(620px,88%);padding:10px}
+.fig-box{background:var(--bg);border-radius:12px;padding:6px}
+.fig-box svg{display:block;width:100%;height:auto;max-height:52vh}
+.fig-box [fill="#CCD6C0" i]{fill:var(--c-sci)} .fig-box [fill="#CFDCE6" i]{fill:var(--c-sky)}
+.fig-box [fill="#ECCDB6" i]{fill:var(--c-math)} .fig-box [fill="#EFE4D6" i]{fill:var(--wash)}
+.fig-box [fill="#4F7FA8" i]{fill:var(--dad)} .fig-box [fill="#C2603F" i]{fill:var(--mom)}
+.fig-box [stroke="#4F7FA8" i]{stroke:var(--dad)} .fig-box [stroke="#C2603F" i]{stroke:var(--mom)}
+.fig-box [stroke="#1F1E1C" i]{stroke:var(--ink)} .fig-box text{fill:var(--ink)}
+/* 挑战配图（pie / rect / rect-unequal / number-line），和正式外壳 app/index.html 的 .figbox .fig 一样 */
+.fig-box.q-fig{display:flex;justify-content:center;padding:8px}
+.fig-box svg.fig{width:100%;max-width:340px}
+svg.fig .k,svg.fig .k1{vector-effect:non-scaling-stroke}
+.fig-shade{fill:var(--c-math)}
+.fig-txt{fill:var(--ink);font-size:12px}
+.cap{font-size:15px;color:var(--text);margin:8px 4px 2px}
+.ask{margin-top:4px}
+.ask .stem{font-weight:600}
+.choices{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.choice{text-align:left;border:1.5px solid var(--ink);background:var(--bg);border-radius:12px;padding:10px 14px;min-height:48px;font-size:17px}
+.choice:hover:not(:disabled){background:var(--hover)}
+.choice:disabled{cursor:default}
+.choice.wrong{border-color:var(--bad);color:var(--muted);text-decoration:line-through;text-decoration-color:var(--bad)}
+.choice.right{border-color:var(--good);background:var(--good-soft);font-weight:600}
+.numrow{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.numrow input{width:130px;font:inherit;font-size:20px;padding:8px 12px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink)}
+.numrow .unit{font-size:18px}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600}
+.btn.ghost{background:var(--pane);color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+.dock{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 26%);padding:26px 0 calc(14px + env(safe-area-inset-bottom,0))}
+.dock .in{max-width:760px;margin:0 auto;padding:0 18px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.composer{background:var(--pane);border:1px solid var(--rule);border-radius:16px;padding:12px;box-shadow:var(--shadow);margin:6px 0}
+textarea{width:100%;font:inherit;font-size:17px;padding:10px 12px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);resize:vertical;min-height:96px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{border:1px dashed var(--ink);background:var(--bg);border-radius:999px;padding:6px 14px;font-size:16px;min-height:40px}
+.row-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+.endcard{background:var(--c-sci-bg);border-radius:16px;padding:18px;margin:16px 0}
+.endcard h3{font-size:19px;margin-bottom:6px}
+.endcard .row-btns{justify-content:flex-start}
+
+/* 挑战 */
+.qcard{background:var(--pane);border:1px solid var(--rule);border-radius:18px;padding:18px;margin-top:18px;box-shadow:var(--shadow)}
+.progress{display:flex;gap:6px;margin:18px 0 0;align-items:center;color:var(--muted);font-size:14px}
+.progress i{display:inline-block;width:20px;height:8px;border-radius:4px;background:var(--rule)}
+.progress i.on{background:var(--ink)} .progress i.ok{background:var(--good)}
+.qcard .stem{font-size:19px;font-weight:600;color:var(--ink)}
+.fb{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.fb .bub{max-width:100%}
+.counter{font-size:13px;color:var(--muted);text-align:right}
+
+/* 记录 */
+.rec h2{font-size:20px;margin:22px 0 8px}
+.rec h3{font-size:17px;margin:14px 0 6px}
+.rec ul{margin:4px 0;padding-left:20px}
+.rec .muted{color:var(--muted)}
+.rec pre{white-space:pre-wrap;font:inherit;font-size:14px;background:var(--pane);border:1px solid var(--rule);border-radius:12px;padding:12px}
+
+@media (prefers-reduced-motion:no-preference){
+  .pop{animation:pop .28s ease-out both}
+  @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .draw .k,.draw .k1{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.2s ease-out forwards}
+  @keyframes draw{to{stroke-dashoffset:0}}
+}
+@media (max-width:520px){
+  body{font-size:16px}
+  .hero{padding:16px} .hero h1{font-size:24px} .hero svg{width:72px;height:72px}
+  .bub{max-width:86%}
+}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="in">
+  <button class="back" id="back" hidden>← 星图</button>
+  <div class="title" id="title">Curio</div>
+  <span class="tag">试玩版 · 不保存</span>
+</div></div>
+<main class="wrap" id="app"></main>
+<div class="dock" id="dock" hidden><div class="in" id="dockIn"></div></div>
+
+<script id="data" type="application/json">{"constellation": "杠杆：把支点挪一格", "figures": {}, "single": true, "stars": [{"activities": [{"age_band": "G3-4", "duration_min": 7, "html": "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>杠杆 · 让粉笔印见光<\/title>\n<style>\n/* kit:base —— 颜色、卡片、气泡、按钮。色值不要改；模块自己的样式写在最后一段 */\n/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */\nhtml{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}\ninput,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}\n:root{\n  --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;\n  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;\n  --accent:#C2603F; --accent-soft:#F3E0D6;\n  --grip:#2A7F7C; --grip-soft:#D3E8E5;\n  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;\n  --dad:#4F7FA8; --mom:#C2603F; --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;\n  --f-serif:\"Noto Serif SC\",\"Source Han Serif SC\",\"Songti SC\",Georgia,serif;\n  --f-sans:\"Noto Sans SC\",\"PingFang SC\",\"Microsoft YaHei\",system-ui,sans-serif;\n  --f-mono:ui-monospace,\"SF Mono\",Menlo,Consolas,monospace;\n  color-scheme:light;\n}\n@media (prefers-color-scheme:dark){:root{\n  --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;\n  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;\n  --accent:#E0876A; --accent-soft:#3A2A24;\n  --grip:#5FC4BE; --grip-soft:#1F3634;\n  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;\n  --dad:#7FA9CF; --mom:#E0876A; --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;\n  color-scheme:dark;\n}}\n*{box-sizing:border-box}\nhtml,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}\nbutton{font:inherit;color:inherit;cursor:pointer}\n.wrap{max-width:820px;margin:0 auto;padding:12px 14px 28px}\n.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;overflow:hidden}\n.card header,.card footer{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px}\n.card header{border-bottom:1px solid var(--rule)}\n.card footer{border-top:1px solid var(--rule);min-height:52px;align-items:center}\n.station{font-size:13px;color:var(--muted);letter-spacing:.04em;white-space:nowrap}\nh1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);margin:0;text-align:right}\n.hint{font-size:14px;color:var(--muted)}\n.readout{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15px;text-align:right}\n.readout b{color:var(--accent);font-weight:600}\nsvg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}\nsvg#stage:focus,svg#stage:focus-visible{outline:none}\nsvg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}\n.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}\n.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}\n.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}\n.t{fill:var(--ink);font-family:var(--f-sans);font-size:15px}\n.tm{fill:var(--muted);font-family:var(--f-sans);font-size:15px}\n.talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}\n.ava{flex:none;width:42px;height:42px}\n.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}\n.bubble.good{background:var(--good-soft);border-color:transparent}\n.bubble.bad{background:var(--bad-soft);border-color:transparent}\n.bubble.hmm{background:var(--paper);border-color:transparent}\n.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:10px 0 0}\n.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:manipulation}\n.btn.ghost{background:var(--pane);color:var(--ink)}\n.btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}\n.btn.choice:hover{background:var(--hover)}\n.btn:disabled{opacity:.4;cursor:default}\n.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500} .btn.tight{padding:9px 12px}\n.qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}\n.qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}\n.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}\n@media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px} .card footer{flex-wrap:wrap;row-gap:2px} .hint{white-space:nowrap} .readout{font-size:14px;flex:1 1 auto} }\n/* kit:grip 2026-11-14 —— 圆钮（「可抓」记号，g1.md A.4 G1～G8）。--grip 只给圆钮、托、按住按钮、焦点框用；--accent 不给任何控件用 */\n.btn.hold{touch-action:none;background:var(--grip);border-color:var(--grip);color:var(--bg);display:inline-flex;align-items:center;gap:10px;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}\n.btn.hold.on{filter:brightness(.82)}\n.btn.hold svg{width:18px;height:18px;flex:none}\n.btn.hold svg path{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}\n.gfill{fill:var(--grip)} .gsoft{fill:var(--grip-soft)}\n.gring{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}\n.gring.on{stroke-width:3.2}\n.gridge{fill:none;stroke:var(--bg);stroke-width:2.2;stroke-linecap:round}\n.garrow{fill:none;stroke:var(--grip);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}\n.gkbd{fill:none;stroke:var(--ink);stroke-width:1.6}\n#cue{fill:none;stroke:var(--grip);stroke-width:2.4;transform-box:fill-box;transform-origin:center;animation:cue 2.4s ease-out infinite}\n@keyframes cue{0%{transform:scale(1);opacity:.95}50%{transform:scale(1.8);opacity:0}100%{transform:scale(1.8);opacity:0}}\n@media (prefers-reduced-motion:reduce){#cue{animation:none;transform:scale(1.3);opacity:.9}}\n\n/* 木工台外观 */\n/* ============ 木杆、墨印与拓印纸 ============ */\n:root{--beam:#E7CAA4;--grain:#96774E;--frame:#858473;--chalk:#E8E4C4;--board:#525C55;--cargo:#81958F;--cargo-edge:#536E67;--seal:#D4B665;--iron:#AA583C}\n@media(prefers-color-scheme:dark){:root{--beam:#68533E;--grain:#AA8B6B;--frame:#A8AC98;--chalk:#D6D6B6;--board:#3A443C;--cargo:#586D67;--cargo-edge:#93ABA1;--seal:#9F915B;--iron:#DF9876}}\n.wrap{max-width:810px}.card{box-shadow:0 1px 4px #0001}\n.wood,.cargo,.board,.skirt,.iron,.metal,.seal,.inkdot,.edge,.chalk,.thread,.pin,.mesh,.sealLine,.printBorder{stroke-linecap:round;stroke-linejoin:round}\n.wood{fill:var(--beam);stroke:var(--ink);stroke-width:2}\n.grain{fill:none;stroke:var(--grain);stroke-width:1.4;stroke-linecap:round}\n.board{fill:var(--board);stroke:var(--ink);stroke-width:1.6}\n.chalk{fill:var(--chalk);stroke:none}\n.cargo{fill:var(--cargo);stroke:var(--ink);stroke-width:2}\n.seal{fill:var(--seal);stroke:var(--ink);stroke-width:1}\n.sealLine{fill:none;stroke:var(--grain);stroke-width:1}\n.inkdot{fill:var(--ink);stroke:none}\n.iron{fill:none;stroke:var(--iron);stroke-width:6}\n.metal{fill:var(--sky);stroke:var(--ink);stroke-width:1.5}\n.pin{fill:var(--ink);stroke:var(--pane);stroke-width:1.1}\n.skirt{fill:var(--paper);stroke:var(--frame);stroke-width:1}\n.mesh{fill:none;stroke:var(--frame);stroke-width:1.25}\n.thread{fill:none;stroke:var(--ink);stroke-width:2}\n.edge{fill:none;stroke:var(--ink);stroke-width:2}\n.smallLetter,.inscription,.fine{fill:var(--text);font-family:var(--f-sans);font-size:15px}\n.inscription{font-weight:650}.fine{fill:var(--muted);font-size:14px}\n.imprint{stroke:var(--frame);stroke-width:.8}.imprint.left{fill:var(--apricot)}.imprint.right{fill:var(--sage)}\n.printBorder{fill:var(--paper);stroke:var(--rule);stroke-width:1.5}\n#printFormula{margin:0 16px 10px;padding:8px 12px;border-left:3px solid var(--frame);font:600 16px var(--f-mono);color:var(--ink)}\n#touch{touch-action:none;cursor:grab}#touch:active{cursor:grabbing}\n.actions{justify-content:flex-start}.actions .btn[hidden]{display:none}\n.card footer{flex-wrap:wrap;align-items:center}.hint{white-space:normal}\n.readout{font-family:var(--f-sans)}.readout b{color:var(--ink)}\n@media(max-width:520px){.wrap{padding:6px 6px 18px}.smallLetter,.inscription,.fine{font-size:18px}\n.card footer{display:grid;gap:0}.readout{text-align:left}.actions{gap:6px}.actions .btn{font-size:15px;padding:8px 11px}.actions .choice{flex:1 1 auto}}\n<\/style><\/head>\n<body>\n<div class=\"wrap\">\n  <div class=\"card\">\n    <header><span class=\"station\" id=\"station\"><\/span><h1 id=\"title\"><\/h1><\/header>\n    <svg id=\"stage\" viewBox=\"0 0 560 338\" tabindex=\"0\" role=\"application\" aria-label=\"动手区\">\n      <defs><clipPath id=\"cut-window\"><rect x=\"8\" y=\"29\" width=\"109\" height=\"69\"/><\/clipPath><\/defs>\n      <g id=\"bench\"><\/g>\n      <g id=\"dyn\"><\/g>\n      <g id=\"fx\"><circle id=\"cue\" cx=\"0\" cy=\"0\" r=\"10\" style=\"display:none\"/><\/g><!-- 提醒环用 CSS 动画，不跟着每帧重画（教训 23） -->\n      <rect id=\"touch\" x=\"0\" y=\"0\" width=\"0\" height=\"0\" fill=\"transparent\"/><!-- 永不重画的触摸层（教训 25） -->\n    <\/svg>\n    <div id=\"printFormula\" hidden><\/div>\n    <footer><span class=\"hint\" id=\"hint\"><\/span><span class=\"readout\" id=\"readout\"><\/span><\/footer>\n  <\/div>\n  <div class=\"talk\">\n    <svg class=\"ava\" viewBox=\"0 0 48 48\" aria-hidden=\"true\">\n      <circle cx=\"24\" cy=\"27\" r=\"16\" fill=\"var(--sky)\"/>\n      <path class=\"k\" d=\"M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z\"/>\n      <path class=\"k1\" d=\"M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5\"/>\n      <circle cx=\"18.5\" cy=\"25\" r=\"2.2\" fill=\"var(--ink)\"/><circle cx=\"29.5\" cy=\"25\" r=\"2.2\" fill=\"var(--ink)\"/>\n      <path class=\"k1\" d=\"M18 32 C21 35 27 35 30 32\"/>\n    <\/svg>\n    <div class=\"bubble\" id=\"say\" aria-live=\"polite\"><\/div>\n  <\/div>\n  <div class=\"actions\" id=\"actions\"><\/div>\n  <div id=\"qarea\"><\/div>\n<\/div>\n\n<script>\n\"use strict\";\n/* ============ 2. 平台契约 activity/1.1（单独打开时也能玩）  kit:host ============ */\nconst Host = (() => {\n  const h = {}, inFrame = window.parent !== window;\n  addEventListener(\"message\", e => { const m = e.data; if (m && m.contract === \"activity/1.1\" && h[m.type]) h[m.type](m.payload || {}); });\n  const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: \"activity/1.1\", type, payload: payload || {} }, \"*\"); else (window.__sent = window.__sent || []).push({ type, payload: payload || {} }); };\n  if (window.ResizeObserver) new ResizeObserver(() => send(\"resize\", { h: document.documentElement.scrollHeight })).observe(document.body);\n  return { on: (k, f) => { h[k] = f; }, ready: () => send(\"ready\"), event: (verb, result) => send(\"event\", { verb, result }),\n    state: o => send(\"state\", o), noteQuestion: text => send(\"note_question\", { text }), complete: r => send(\"complete\", r || {}) };\n})();\nHost.on(\"init\", p => {\n  if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty(\"--\" + k, v);\n});\n// 每站的猜测和观察只记一次，complete 只发一次（C.0 第 3 条；教训 15、19）\nconst sentPred = new Set(), sentObs = new Set();\nlet completed = false;\nfunction observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event(\"observed\", { station }); }\nlet lastState = \"\";\nfunction sendState(o){ const s = JSON.stringify(o); if (s === lastState) return; lastState = s; Host.state(o); }\n\n/* ============ 木工台 ============ */\n// 忽略轻杆自重和支点摩擦，竖直载荷、等距孔。从水平松手后先向哪边转见 OpenStax 9.5。\n// 画出的倾角只表示初始转向，不把微小位移标成实测高度。\nconst MODEL = {\n  box: 6, last: 7, sealedSpan: 6, middle: 3, near: 4, tilt: 7,\n  read(s) {\n    const first = s.station === 1;\n    const leftArm = first ? s.hole : s.pivot;\n    const rightArm = first ? 1 : this.sealedSpan - s.pivot;\n    const leftWeight = first ? s.rings : s.weight;\n    const leftMoment = leftArm * leftWeight, rightMoment = rightArm * this.box;\n    return {station:s.station, leftArm,rightArm,leftWeight,rightWeight:this.box,leftMoment,rightMoment,\n      direction:Math.sign(rightMoment-leftMoment)};\n  }\n};\nconst $ = id => document.getElementById(id);\nconst svg = $(\"stage\");\nconst initial = () => ({station:1,hole:1,rings:1,pivot:MODEL.middle,weight:MODEL.box});\nlet state = initial(), phase = \"guess\", sawLevel = false, sawLift = false, formula = false;\nlet proofs = new Map(), prints = [], replay = false, drag = null, artGrip = null;\nlet delayedLine = 0, dwellTimer = 0;\nconst motionReduced = window.matchMedia(\"(prefers-reduced-motion:reduce)\");\nconst clamp = (v,min,max) => Math.min(max,Math.max(min,v));\nconst path = (d,cls,attr=\"\") => `<path d=\"${d}\" class=\"${cls}\" ${attr}/>`;\nconst rect = (x,y,w,h,cls,extra=\"\") => `<rect x=\"${x}\" y=\"${y}\" width=\"${w}\" height=\"${h}\" rx=\"1.2\" class=\"${cls}\" ${extra}/>`;\nconst circle = (x,y,r,cls,extra=\"\") => `<circle cx=\"${x}\" cy=\"${y}\" r=\"${r}\" class=\"${cls}\" ${extra}/>`;\nconst text = (x,y,words,cls=\"smallLetter\",anchor=\"middle\") => `<text x=\"${x}\" y=\"${y}\" class=\"${cls}\" text-anchor=\"${anchor}\">${words}<\/text>`;\nconst group = (art,attr=\"\") => `<g ${attr}>${art}<\/g>`;\nconst move = (x,y) => `transform=\"translate(${x} ${y})\"`;\nfunction geometry(s,locked=false) {\n  const first = s.station === 1, read = MODEL.read(s);\n  const pitch = first ? 54 : 65;\n  const start = first ? 36 : 82;\n  const pin = first ? MODEL.last : s.pivot;\n  const x = start + pin*pitch, y=163;\n  const degrees = locked ? 0 : read.direction*MODEL.tilt;\n  const a = degrees*Math.PI/180;\n  const point = i => [x+(i-pin)*pitch*Math.cos(a),y+(i-pin)*pitch*Math.sin(a)];\n  return {pitch,start,pin,x,y,degrees,point, last:first?MODEL.last+1:MODEL.sealedSpan,\n    left: first?MODEL.last-s.hole:0, right:first?MODEL.last+1:MODEL.sealedSpan};\n}\nfunction crate(x,y,weight) {\n  const width=49,h=44;\n  let art=rect(-width/2,0,width,h,\"cargo\",'data-part=\"crate\"');\n  art+=path(\"M-24 6L24 5.8M-24 36.7L24 36.5M-17 6.5V36M17 6V36M-17 35L15 7M-12 36L17 11\",\"edge\");\n  for(let i=0;i<weight;i++) art+=circle(-17+(i%3)*17,3+Math.floor(i/3)*37,1.35,\"inkdot\");\n  return group(art,move(x,y));\n}\nfunction cargo(read,point) {\n  const [x,y]=point;\n  return path(`M${x} ${y}v19l-23 20M${x} ${y+19}l23 20`,\"thread\")+crate(x,y+39,read.rightWeight);\n}\nfunction hangingLeft(s, point) {\n  const [x,y]=point;\n  let art=path(\"M0 0q3 14 0 23\",\"thread\");\n  if(s.station===1) {\n    for(let i=0;i<s.rings;i++){\n      const dx=s.rings===1?0:(i===0?-7:7);\n      art+=circle(dx,35,11,\"iron\",'data-part=\"ring\"')+circle(dx-5,26,1.5,\"inkdot\");\n    }\n  } else {\n    art+=path(\"M0 10L-30 63Q0 72 30 63L0 10\",\"thread\");\n    for(let i=0;i<s.weight;i++) {\n      const xx=-21+(i%3)*14, yy=57-Math.floor(i/3)*10;\n      art+=rect(xx,yy,13,9,\"metal\",'data-part=\"weight\"')+circle(xx+6,yy+3,1,\"inkdot\");\n    }\n  }\n  return group(art,move(x,y));\n}\nfunction fixedSeals(geo) {\n  let seals=\"\";\n  for(const i of [geo.left,geo.right]) {\n    const xx=geo.start+i*geo.pitch;\n    seals+=rect(xx-10,geo.y-11,20,19,\"seal\")+path(`M${xx-8} ${geo.y+6}l9 -16m-1 16l9 -16`,\"sealLine\");\n  }\n  return seals;\n}\nfunction apparatus(s, kind, locked=false) {\n  const first=s.station===1, g=geometry(s,locked), read=MODEL.read(s);\n  const [lx,ly]=g.point(g.left),[rx,ry]=g.point(g.right);\n  const firstX=g.start-18, lastX=g.start+g.last*g.pitch+19;\n  let beam=path(`M${firstX} ${g.y-10} Q${g.x} ${g.y-13} ${lastX} ${g.y-10}l2 15Q${g.x} ${g.y+8} ${firstX-1} ${g.y+6}Z`,\"wood\");\n  beam+=path(`M${firstX+8} ${g.y-5}q34 -2 66 -1m32 0q18 -2 37 -1M${lastX-78} ${g.y-5}q28 -2 62 -1`,\"grain\");\n  for(let i=0;i<=g.last;i++){\n    const hx=g.start+i*g.pitch;\n    beam+=circle(hx,g.y,2.8,\"inkdot\");\n    if(first&&i<MODEL.last&&kind===\"live\"&&!locked){\n      beam+=rect(hx-g.pitch/2,g.y-13,g.pitch,27,\"\",'fill=\"transparent\" data-hole=\"'+(MODEL.last-i)+'\"');\n    }\n  }\n  if(!first) beam+=fixedSeals(g);\n  const base=g.y+79;\n  let frame=path(`M${g.x} ${g.y+2}L${g.x+13} ${base-4}l-26 1Z`,\"wood\")\n    +path(`M${g.x-9} ${base-10}l9 -41m2 36l5 -15`,\"grain\")\n    +rect(g.x-17,base-4,34,9,\"wood\");\n  frame+=group(beam,`transform=\"rotate(${g.degrees} ${g.x} ${g.y})\"`);\n  frame+=circle(g.x,g.y,4.8,\"pin\",'data-part=\"pivot\"');\n  frame+=cargo(read,[rx,ry])+hangingLeft(s,[lx,ly]);\n  frame+=circle(lx,ly,4.5,\"pin\",'data-part=\"left-hook\"')+circle(rx,ry,4.5,\"pin\",'data-part=\"right-hook\"');\n  if(kind===\"live\"){\n    frame+=text(lx-(first&&s.hole===1?13:0),ly+(first?65:94),read.leftWeight+\" 牛\",\"inscription\");\n    frame+=text(rx+37,ry+66,read.rightWeight+\" 牛\",\"inscription\",\"start\");\n    if(locked) frame+=path(`M${g.x-18} ${g.y+16}v-26h7v25z`,\"metal\");\n  }\n  return group(frame,`data-lever=\"${kind}\"`);\n}\nfunction stamps(read) {\n  const count=Math.max(read.leftMoment,read.rightMoment);\n  const step=Math.min(19,240/count), size=Math.min(step-1.5,15);\n  function row(y,side,n,perHole) {\n    let art=text(20,y+size*.8,side===\"left\"?\"左\":\"右\",\"inscription\",\"start\");\n    for(let i=0;i<n;i++){\n      const x=49+i*step;\n      art+=rect(x,y,size,size,\"imprint \"+side,`data-stamp=\"${side}\"`);\n      if(i%perHole===0) {\n        const last=x+(perHole-1)*step+size;\n        art+=path(`M${x} ${y+size+2}v2H${last}v-2`,\"mesh\");\n      }\n    }\n    return art;\n  }\n  return text(20,22,\"两边的方印\",\"fine\",\"start\")\n    +row(32,\"left\",read.leftMoment,read.leftWeight)+row(63,\"right\",read.rightMoment,read.rightWeight);\n}\nfunction chalkMark(x,y,w,h,attr){\n  // A nick followed by a chalk crumb: the same mark on the sheet and in the lens.\n  const start=x-w/2;\n  return group(path(`M0 0l${w*.55} .2l${w*.07} ${h*.45}l${w*.06} ${-h*.45}l${w*.22} .1l${-w*.015} ${h*.7}l${-w*.86} ${h*.2}Z`,\"chalk\")\n    +circle(w*.97,h*.48,h*.42,\"chalk\"),attr+\" \"+move(start,y));\n}\nfunction floorPaper() {\n  const g=geometry(initial(),true), [x,y]=g.point(g.right);\n  const bottom=y+83;\n  return rect(x-29,bottom-45,58,61,\"board\")\n    +chalkMark(x,bottom-3.2,36,2.8,'data-part=\"footprint\"');\n}\nfunction blowup(s,locked) {\n  const g=geometry(s,locked), [rx,ry]=g.point(g.right);\n  const gap=(g.y-ry)*5, baseline=84, boxY=baseline-gap;\n  // The window stays fixed while the crate edge moves relative to its chalk stripe.\n  const art=rect(0,0,125,111,\"skirt\")+text(62,20,\"箱底放大\",\"inscription\")\n    +rect(8,29,109,69,\"board\")+chalkMark(62,baseline-5,88,4.5,'data-detail=\"footprint\"')\n    +group(rect(18,boxY-66,90,66,\"cargo\",'data-detail=\"crate\"')+\n      path(`M22 ${boxY-8}h82M31 ${boxY-8}l28 -18M48 ${boxY-8}l28 -18`,\"edge\"),\n      'clip-path=\"url(#cut-window)\"');\n  return path(`M${rx+30} ${ry+72}L532 170V110`,\"mesh\")+group(art,move(409,9));\n}\nfunction seesaw() {\n  const points=[[24,43],[131,26]], [left,right]=points;\n  let art=path(\"M97 32L106 54H89Z\",\"wood\")+path(\"M12 45L143 24l1 5L13 50Z\",\"wood\");\n  art+=circle(...left,3,\"pin\",'data-part=\"left-hook\"')+circle(...right,3,\"pin\",'data-part=\"right-hook\"');\n  // Model seats and weighted riders mirror the long and short arms of the real plank.\n  art+=path(\"M12 44q10 -5 22 -2l1 3q-12 0 -22 3zM119 27q10 -5 21 -3l1 3l-22 4z\",\"metal\");\n  art+=path(\"M35 41l-3 -10q-1 -5 6 -6q4 0 4 4M117 27l-3 -10q-1 -5 -6 -4q-4 0 -3 4\",\"edge\");\n  art+=circle(21,21,4.8,\"wood\")+path(\"M21 27l3 11l8 1l3 11M24 30l11 -3\",\"edge\");\n  art+=circle(132,0,6.4,\"wood\")+path(\"M131 8l-5 13l-10 1l-1 12M129 11l-18 4\",\"edge\");\n  return group(art,'data-lever=\"seesaw\" transform=\"translate(374 253)\"');\n}\nfunction markPrint(p) {\n  const g=geometry(p), shift=(p.pivot-MODEL.middle)*14;\n  return group(path(`M4 9h44M${23+shift} 9l-4 9h8z`,\"edge\")\n    +text(55,16,p.weight+\" 牛\",\"inscription\",\"start\"),'data-proof=\"\" transform=\"translate('+ (p.pivot===MODEL.middle?32:171)+' 281)\"');\n}\nfunction visualGrip(s) {\n  const first=s.station===1,g=geometry(s);\n  const [lx,ly]=g.point(g.left);\n  const x=first?lx:g.x,y=first?ly+90:g.y+111;\n  const r=Math.max(13,15*560/svg.clientWidth);\n  const nub=group(circle(0,0,r,\"gfill\")+circle(0,0,r,\"gring\")\n     +path(`M-4 ${-r*.38}v${r*.76}m4 ${-r*.76}v${r*.76}m4 ${-r*.76}v${r*.76}`,\"gridge\"),\n     `data-grip=\"${first?\"ring\":\"pivot\"}\" ${move(x,y)}`);\n  artGrip={x,y,pitch:g.pitch};\n  return path(first?`M${x} ${ly+48}q8 7 13 19t-9 17`:`M${x} ${g.y+83}v23`,\"mesh\")+nub;\n}\nfunction setTarget() {\n  const touch=$(\"touch\");\n  const r=24*560/Math.max(svg.clientWidth,1);\n  if(!artGrip){touch.setAttribute(\"width\",0);return;}\n  for(const [key,val] of Object.entries({x:artGrip.x-r,y:artGrip.y-r,width:2*r,height:2*r})) touch.setAttribute(key,val);\n}\nfunction printCard() {\n  let paper=\"\";\n  prints.forEach((s,i)=>{\n    const top=i*193;\n    const title=i===0?\"我的挂法\":\"我的支点\";\n    const r=MODEL.read(s);\n    paper+=group(rect(11,6,538,183,\"printBorder\")+text(29,34,title,\"inscription\",\"start\")\n      +text(531,34,`左 ${r.leftWeight} 牛　右 ${r.rightWeight} 牛`,\"fine\",\"end\")\n      +group(apparatus(s,\"print-\"+(i+1)), 'transform=\"translate(6 -64) scale(.97 .92)\"'),move(0,top));\n  });\n  return paper;\n}\nfunction paint() {\n  artGrip=null;\n  const end=phase===\"card\", first=state.station===1, locked=phase===\"guess\"||phase===\"unlatch\";\n  svg.setAttribute(\"viewBox\",end?\"0 0 560 392\":\"0 0 560 338\");\n  if(end){$(\"dyn\").innerHTML=printCard();setTarget();return;}\n  const r=MODEL.read(state);\n  let art=first?floorPaper():\"\";\n  if(!locked) art+=stamps(r);\n  art+=apparatus(state,\"live\",locked);\n  if(first) {\n    art+=blowup(state,locked);\n    if(!locked&&r.direction<0&&state.hole===MODEL.last&&state.rings===1) art+=seesaw();\n  } else {\n    art+=text(325,19,\"钩上的封条\",\"fine\",\"start\");\n    art+=path(\"M418 23q41 6 49 48l3 65\",\"mesh\");\n    proofs.forEach(p=>{art+=markPrint(p);});\n  }\n  if(!locked) art+=visualGrip(state);\n  $(\"dyn\").innerHTML=art;\n  setTarget();\n  sendState(r);\n}\n\nfunction say(words,tone=\"\"){\n  clearTimeout(delayedLine);\n  $(\"say\").textContent=words;\n  $(\"say\").className=\"bubble\"+(tone?\" \"+tone:\"\");\n}\nfunction header() {\n  const titles=[\"让粉笔印见光\",\"这次，挪下面\"];\n  $(\"station\").textContent=phase===\"card\"?\"星卡\":`第 ${state.station} 站 · 共 2 站`;\n  $(\"title\").textContent=phase===\"card\"?\"我的两根杠杆\":titles[state.station-1];\n}\nfunction footer() {\n  const locked=phase===\"guess\"||phase===\"unlatch\", first=state.station===1;\n  $(\"printFormula\").hidden=!(formula&&phase===\"play\"&&first);\n  if(!$(\"printFormula\").hidden){\n    const r=MODEL.read(state);\n    const relation=r.leftMoment===r.rightMoment?\"=\":(r.leftMoment>r.rightMoment?\"＞\":\"＜\");\n    $(\"printFormula\").textContent=`左 ${r.leftWeight} × ${r.leftArm} ${relation} ${r.rightWeight} × ${r.rightArm} 右（牛·格）`;\n  }\n  if(phase===\"card\"){\n    $(\"hint\").textContent=\"两张都是你亲手拓的\";\n    $(\"readout\").textContent=\"\";\n  } else if(locked){\n    $(\"hint\").textContent=\"牛是力的单位\";\n    $(\"readout\").textContent=\"木杆扣住了\";\n  } else if(first) {\n    $(\"hint\").textContent=\"拖铁环的尾带，也可以点孔\";\n    $(\"readout\").textContent=`左第 ${state.hole} 格 · ${state.rings} 牛　右第 1 格 · ${MODEL.box} 牛`;\n  } else {\n    $(\"hint\").textContent=\"拨三角木，再给左钩配重\";\n    $(\"readout\").textContent=`左 ${state.pivot} 格 · ${state.weight} 牛　右 ${MODEL.sealedSpan-state.pivot} 格 · ${MODEL.box} 牛`;\n  }\n}\nconst buttons=new Map();\nfunction showButtons(names) {\n  const box=$(\"actions\");\n  for(const [name,el] of buttons){ if(!names.includes(name)) el.hidden=true; }\n  for(const name of names){\n    let el=buttons.get(name);\n    if(!el){\n      el=document.createElement(\"button\");el.type=\"button\";el.className=\"btn\";\n      el.textContent=name;\n      el.addEventListener(\"click\",()=>command(name));\n      box.append(el);buttons.set(name,el);\n    }\n    el.hidden=false;\n    el.classList.toggle(\"choice\",phase===\"guess\");\n    el.classList.toggle(\"ghost\",![\"松开木杆\",\"拓下这根杆\",\"收进星卡\"].includes(name));\n  }\n}\nconst guesses=[{label:\"能，得挑个孔\",correct:true},{label:\"不能，箱子重\",mis:\"heavy-wins\"},{label:\"最多让杆停平\",mis:\"balance-ceiling\"}];\nfunction draw() {\n  header();paint();footer();\n  if(phase===\"guess\")return showButtons(guesses.map(g=>g.label));\n  if(phase===\"unlatch\")return showButtons([\"松开木杆\"]);\n  if(phase===\"card\")return showButtons([\"再玩第一站\",\"再玩第二站\",\"再玩一次\"]);\n  let controls=[];\n  if(state.station===1){\n    if(sawLevel)controls.push(formula?\"合上算式\":\"翻看算式\");\n    if(sawLevel&&sawLift)controls.push(state.rings===1?\"加一枚环\":\"取下一枚环\",\"拓下这根杆\");\n  } else {\n    controls.push(\"取下 1 牛\",\"加上 1 牛\");\n    if(proofs.size===2&&MODEL.read(state).direction===0)controls.push(\"收进星卡\");\n  }\n  showButtons(controls);\n  if(state.station===2){\n    buttons.get(\"取下 1 牛\").disabled=state.weight<=1;\n    buttons.get(\"加上 1 牛\").disabled=state.weight>=MODEL.box;\n  }\n}\nfunction ringInstructions(){\n  if(sawLevel&&sawLift) return \"桌边还有一枚环。挑一种挂法，拓在纸上带走。\";\n  return \"拖铁环换个孔，看箱底。\";\n}\nfunction noticePose() {\n  const r=MODEL.read(state);\n  if(state.station===1){\n    if(state.rings===1&&!r.direction)sawLevel=true;\n    const lifted=state.rings===1&&state.hole===MODEL.last;\n    if(lifted)sawLift=true;\n    if(lifted){\n      say(\"看箱底和那张粉笔纸。\");\n      delayedLine=setTimeout(()=>{\n        say(sawLevel?\"箱子没瘦。它把脚印留下了。喜欢这一摆，就把它拓下来。\":\"箱子没瘦。它把脚印留下了。回头找找杆停平的是哪一孔。\");\n      },motionReduced.matches?80:360);\n    } else if(!r.direction) say(sawLift?\"两排方印对齐。现在你可以换另一枚环，挑自己的拓印。\":\"两排方印对齐了。箱底碰着哪道记号？\");\n    else say(ringInstructions());\n  } else {\n    if(!r.direction){\n      proofs.set(state.pivot,{...state});\n      say(proofs.size===2?\"箱子还在老钉子上。三角木走了一步，你就能卸下三牛。挑一档拓下来。\":\"这一档留下了平衡印。另一档也能让木杆停平吗？\");\n    } else if(r.direction<0) say(\"压得太低的是哪头？试试从那头卸货。\");\n    else say(\"箱子那头低了。你想改左盘，还是挪三角木？\");\n  }\n  draw();\n}\nfunction change(key,value) {\n  if(phase!==\"play\"||state[key]===value)return;\n  state[key]=value;\n  clearTimeout(dwellTimer);\n  if(drag){\n    // Display every hole immediately. Passing one in a drag is not evidence the child saw it.\n    drag.moved=true;\n    say(state.station===1?\"看看杆两头。\":\"两枚封钉还在。\");\n    draw();\n    dwellTimer=setTimeout(()=>{if(drag&&drag.moved)noticePose();},500);\n  }else noticePose();\n}\nfunction enter1() {\n  state=initial();phase=\"guess\";sawLevel=false;sawLift=false;formula=false;\n  proofs.clear();prints=[];replay=false;drag=null;\n  say(\"只有这枚小铁环。换个孔，能把箱子抬起来吗？\");draw();\n}\nfunction openFirst() {\n  phase=\"play\";state=initial();formula=false;sawLevel=false;sawLift=false;\n  say(ringInstructions());draw();\n}\nfunction openSecond() {\n  state={...initial(),station:2};phase=\"play\";formula=false;proofs.clear();\n  say(\"我把两头封上了。还剩哪块木头能搬？\");draw();\n}\nfunction showCard(){\n  phase=\"card\";replay=false;\n  if(!completed){completed=true;Host.complete({});}\n  say(\"封钉还在杆上。你搬过的铁环和三角木，都留在这两张拓印里了。\");\n  draw();\n}\nfunction command(name){\n  if(phase===\"guess\"){\n    const guess=guesses.find(g=>g.label===name);\n    if(!guess)return;\n    if(!sentPred.has(1)){\n      sentPred.add(1);Host.event(\"predicted\",{station:1,choice:guesses.indexOf(guess),correct:!!guess.correct,misconception:guess.mis||null});\n    }\n    phase=\"unlatch\";say(\"我在箱底描了个印。待会儿盯着那儿。\",\"hmm\");draw();\n  }else if(phase===\"unlatch\"&&name===\"松开木杆\"){openFirst();}\n  else if(phase===\"card\"){\n    if(name===\"再玩一次\"){sentPred.clear();sentObs.clear();lastState=\"\";enter1();}\n    if(name===\"再玩第一站\"){replay=true;openFirst();}\n    if(name===\"再玩第二站\"){replay=true;openSecond();}\n  }else if(phase===\"play\"&&state.station===1){\n    if((name===\"翻看算式\"||name===\"合上算式\")&&sawLevel){formula=!formula;draw();}\n    if(sawLevel&&sawLift){\n      if(name===\"加一枚环\")change(\"rings\",2);\n      if(name===\"取下一枚环\")change(\"rings\",1);\n      if(name===\"拓下这根杆\"){\n        prints[0]={...state};observedOnce(1);\n        if(replay)showCard();else openSecond();\n      }\n    }\n  }else if(phase===\"play\"&&state.station===2){\n    if(name===\"取下 1 牛\")change(\"weight\",Math.max(1,state.weight-1));\n    if(name===\"加上 1 牛\")change(\"weight\",Math.min(MODEL.box,state.weight+1));\n    if(name===\"收进星卡\"&&proofs.size===2&&MODEL.read(state).direction===0){\n      prints[1]={...state};observedOnce(2);showCard();\n    }\n  }\n}\nfunction step(dx){\n  if(phase!==\"play\")return;\n  if(state.station===1) change(\"hole\",clamp(state.hole-dx,1,MODEL.last));\n  else change(\"pivot\",clamp(state.pivot+dx,MODEL.middle,MODEL.near));\n}\nsvg.addEventListener(\"keydown\",e=>{\n  if(phase!==\"play\"||![\"ArrowLeft\",\"ArrowRight\"].includes(e.key))return;\n  e.preventDefault();svg.classList.add(\"kbd\");step(e.key===\"ArrowLeft\"?-1:1);\n});\nconst touch=$(\"touch\");\ntouch.addEventListener(\"pointerdown\",e=>{\n  if(phase!==\"play\"||drag)return;\n  svg.classList.remove(\"kbd\");svg.focus({preventScroll:true});\n  const ctm=svg.getScreenCTM();\n  drag={id:e.pointerId,x:e.clientX,scale:Math.hypot(ctm.a,ctm.b),pitch:artGrip.pitch,\n    value:state.station===1?state.hole:state.pivot};\n  touch.setPointerCapture(e.pointerId);e.preventDefault();\n});\ntouch.addEventListener(\"pointermove\",e=>{\n  if(!drag||drag.id!==e.pointerId)return;\n  const steps=Math.round((e.clientX-drag.x)/(drag.pitch*drag.scale));\n  if(state.station===1)change(\"hole\",clamp(drag.value-steps,1,MODEL.last));\n  else change(\"pivot\",clamp(drag.value+steps,MODEL.middle,MODEL.near));\n});\nfunction release(e){\n  if(!drag||e.pointerId!==drag.id)return;\n  const selected=drag.moved&&e.type===\"pointerup\";\n  drag=null;\n  clearTimeout(dwellTimer);\n  if(selected)noticePose();\n}\nfor(const event of [\"pointerup\",\"pointercancel\",\"lostpointercapture\"])touch.addEventListener(event,release);\nsvg.addEventListener(\"click\",e=>{\n  if(phase!==\"play\"||drag)return;\n  const hole=e.target.closest(\"[data-hole]\");\n  if(hole&&state.station===1)change(\"hole\",Number(hole.dataset.hole));\n});\nnew ResizeObserver(()=>{if(phase===\"play\")paint();}).observe(svg);\n\n// Keep the question in the child's own words. The host handles the notebook.\nconst questionArea=$(\"qarea\");\nconst question=document.createElement(\"button\");\nquestion.type=\"button\";question.className=\"btn ghost small\";question.textContent=\"我有个问题\";\nquestion.style.marginTop=\"12px\";questionArea.append(question);\nquestion.onclick=()=>{\n  if(questionArea.querySelector(\"textarea\"))return;\n  const field=document.createElement(\"textarea\");field.maxLength=120;field.placeholder=\"想问领航员什么？\";\n  const send=document.createElement(\"button\");send.type=\"button\";send.className=\"btn small\";send.textContent=\"发给领航员\";\n  const row=document.createElement(\"div\");row.className=\"qbox\";row.append(field,send);questionArea.append(row);field.focus();\n  send.onclick=()=>{if(field.value.trim()){Host.noteQuestion(field.value.trim());row.remove();say(\"好问题，我记下来了。\");}};\n};\nHost.ready();\nenter1();\n<\/script><\/body><\/html>\n", "id": "act.simulation.lever-dock-01", "kind": "simulation", "targets": ["physics.machine.lever"], "title": "让粉笔印见光"}, {"age_band": "G3-4", "body": {"items": [{"answer": {"choices": [{"correct": true, "id": "a", "text": "右头先低"}, {"feedback": "两边确实各两牛。右边的两牛，挂在了第三孔。", "id": "b", "misconception": "equal-loads", "text": "两头一样高"}], "type": "choice"}, "feedback": {"correct": "两边挂得一样重，你还看了孔。右钩离木尖更远，右头先低。", "wrong": "要让一样重的两端停平，两钩还得离木尖一样远。"}, "hints": ["用手指从三角木分别走到两个钩。"], "id": "q1", "stem": "牛是力的单位。木杆两头各挂 2 牛。左钩离三角木 1 格，右钩 3 格。把杆放平再松手，会怎样？"}, {"answer": {"choices": [{"feedback": "左箱有五牛。右边虽只有两牛，却各能盖三枚印。", "id": "a", "misconception": "heavy-wins", "text": "左边先低"}, {"correct": true, "id": "b", "text": "右边先低"}], "type": "choice"}, "feedback": {"correct": "左边有五枚印，右边足足六枚。小铁环把重箱抬起来了。", "wrong": "重箱只占了一格。右边两牛各盖三枚印，得把它们合在一块儿数。"}, "hints": ["给左边的每牛盖一枚印，再给右边的每牛盖三枚。"], "id": "q2", "stem": "这回左边挂 5 牛，离木尖 1 格。右边只挂 2 牛，却离木尖 3 格。杆放平再松手，哪头先低？"}, {"answer": {"choices": [{"feedback": "右钩确实远。它的两排只有六枚印，左边的五排一共有十枚。", "id": "a", "misconception": "far-wins", "text": "更远的右头"}, {"correct": true, "id": "b", "text": "更近的左头"}], "type": "choice"}, "feedback": {"correct": "左钩离木尖近一格，可五排两枚凑成十枚，压过了右边的六枚。", "wrong": "右边的钩走得远，却只有两个环在那儿挂着。"}, "hints": ["给每一牛画一排，把经过的格数点进去。"], "id": "q3", "stem": "左钩在第 2 格，挂 5 牛。右钩在第 3 格，挂 2 牛。小伙伴说离木尖远的那头总会低。松开水平的杆，你押哪头？"}, {"answer": {"common_wrong": [{"feedback": "左钩的封条还在原孔，木尖已经走开一步。", "misconception": "pivot-carries-hooks", "value": 3}, {"feedback": "两格是木尖到右箱的路，你找到了另一头。", "misconception": "wrong-side", "value": 2}], "tolerance": 0, "type": "number", "unit": "格", "value": 4}, "feedback": {"correct": "原先左边留了三格。木尖朝右箱挪一步，左边那段路就多了一格。", "wrong": "从左钩起，一格一格往右数。走到新的木尖就停。"}, "hints": ["手指按住左钩，把另一根手指放在新的木尖上。"], "id": "q4", "stem": "两个挂钩钉死在杆上，相隔 6 格。两头各挂 6 牛，三角木撑在正中间。把三角木朝右箱挪 1 格。左钩现在离木尖几格？"}, {"answer": {"choices": [{"feedback": "左钩虽然更远，你这边有六枚印，右箱有八枚。箱子先沉。", "id": "a", "misconception": "far-wins", "text": "第 3 孔配 2 牛"}, {"feedback": "这个搭法能抬箱子。左边八枚、右边四枚，杆还会转。", "id": "b", "misconception": "overbalances", "text": "第 4 孔配 2 牛"}, {"correct": true, "id": "c", "text": "第 4 孔配 1 牛"}], "type": "choice"}, "feedback": {"correct": "你给小砝码留了四格，也给箱子留了一格。两边各四枚，木杆正好停住。", "wrong": "刚好停平的时候，两排印要一样长。"}, "hints": ["先在五格木条上点出三角木，再往左右各数一遍。", "两钩之间总共只有五格。木尖给左钩留了几格，右边还剩几格？"], "id": "q5", "stem": "修船棚的两钩相隔 5 格。右箱 4 牛，左钩只能挂 1 牛或 2 牛。从左钩往右数，木尖只能撑在第 3 格或第 4 格。哪一对能把杆停平？"}], "shuffle": false}, "duration_min": 7, "id": "act.quiz.lever-dock-01", "kind": "quiz", "targets": ["physics.machine.lever"], "title": "杠杆配平挑战"}], "dq": "六枚小铁环才和箱子一样重，只挂一枚，能把箱子抬起来吗？", "id": "physics.machine.lever", "misconceptions": {"balance-ceiling": "轻环挪到杆尾最多只能让杆平，抬不起重箱。", "equal-loads": "两边挂得一样重就一定平，挂在哪孔都一样。", "far-wins": "挂得远的那头一定先低，不用看挂了多少。", "heavy-wins": "箱子比铁环重，不管挂在哪一孔都该是箱子先下沉。", "overbalances": "能把箱子抬起来的一组，也就能让它停平。", "pivot-carries-hooks": "移动三角木时，两端的挂钩也跟着走，所以到支点仍一样远。", "wrong-side": "用木尖到箱子的格数代替木尖到左钩的格数。"}, "title": "杠杆：把支点挪一格"}]}</script>
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById("data").textContent);
+document.title = "Curio · 试玩版 · " + DATA.constellation;
+const KIND = {simulation:"动手探索", explain:"讲解", quiz:"挑战", reflection:"反思"};
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $app = document.getElementById("app"), $dock = document.getElementById("dock"), $dockIn = document.getElementById("dockIn");
+
+// 这一页里的试玩记录，只放在内存里，刷新就没了
+const S = {done:{}, log:{}};
+
+const ACTS = [];   // 按顺序排好的全部活动
+for (const st of DATA.stars) for (const a of st.activities) ACTS.push({...a, star:st});
+const actById = id => ACTS.find(a => a.id === id);
+
+function el(tag, attrs, ...kids){
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs||{})){
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  return e;
+}
+function svgEl(markup){
+  const t = document.createElement("template"); t.innerHTML = markup.trim(); return t.content.firstElementChild;
+}
+
+const AVA = `<svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+  <circle cx="24" cy="27" r="16" fill="var(--c-sky)"/>
+  <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+  <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+  <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+  <path class="k1" d="M18 32 C21 35 27 35 30 32"/></svg>`;
+const SHIP = `<svg viewBox="0 0 100 100" aria-hidden="true">
+  <path d="M50 10 C64 24 68 44 64 66 L36 66 C32 44 36 24 50 10 Z" fill="var(--c-sky)"/>
+  <path class="k" d="M50 10 C64 24 68 44 64 66 L36 66 C32 44 36 24 50 10 Z"/>
+  <path class="k1" d="M44 40 C44 35 56 35 56 40 C56 45 44 45 44 40 Z"/>
+  <path class="k" d="M36 52 L24 72 L37 66 M64 52 L76 72 L63 66"/>
+  <path d="M43 70 C45 80 47 86 50 92 C53 86 55 80 57 70 Z" fill="var(--c-math)"/>
+  <path class="k1" d="M43 70 C45 80 47 86 50 92 C53 86 55 80 57 70"/></svg>`;
+
+function scrollEnd(node){ node.scrollIntoView({block:"end", behavior: reduced ? "auto" : "smooth"}); }
+
+/* 手绘线稿和挑战配图：从正式外壳 app/app.js 原样搬来（sketchLib、wedge、figureSvg），
+   孩子在试玩页和正式外壳看到同一张图。改的时候两边一起改 */
+function sketchLib() {
+  const R = (seed) => { let s = ((seed | 0) * 2654435761) >>> 0 || 7; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; };
+  const f = (n) => Math.round(n * 10) / 10;
+  function cr(p, closed) {
+    const n = p.length; let d = `M${f(p[0][0])} ${f(p[0][1])}`;
+    for (let i = 0; i < (closed ? n : n - 1); i++) {
+      const p1 = p[i], p2 = p[(i + 1) % n]; const p0 = (!closed && i === 0) ? p1 : p[(i - 1 + n) % n]; const p3 = (!closed && i + 2 >= n) ? p2 : p[(i + 2) % n];
+      d += `C${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(p1[1] + (p2[1] - p0[1]) / 6)} ${f(p2[0] - (p3[0] - p1[0]) / 6)} ${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])} ${f(p2[1])}`;
+    }
+    return d;
+  }
+  function line(x1, y1, x2, y2, seed, j) {
+    const r = R(seed); j = j == null ? 1 : j; const L = Math.hypot(x2 - x1, y2 - y1) || 1; const a = Math.min(1.8, .5 + L * .008) * j; const o = () => (r() - .5) * 2 * a;
+    const nx = -(y2 - y1) / L, ny = (x2 - x1) / L, bow = (r() - .5) * Math.min(L * .035, 6) * j;
+    return `M${f(x1 + o())} ${f(y1 + o())}Q${f((x1 + x2) / 2 + nx * bow)} ${f((y1 + y2) / 2 + ny * bow)} ${f(x2 + o())} ${f(y2 + o())}`;
+  }
+  function ellipse(cx, cy, rx, ry, seed, j) {
+    const r = R(seed); j = j == null ? 1 : j; const N = 12, a0 = r() * Math.PI * 2, turn = 1.05 + r() * .06, p = [];
+    for (let i = 0; i <= N; i++) { const t = a0 + i / N * Math.PI * 2 * turn, k = 1 + (r() - .5) * .07 * j; p.push([cx + Math.cos(t) * rx * k, cy + Math.sin(t) * ry * k]); }
+    return cr(p, false);
+  }
+  function rect(x, y, w, h, seed, j) { return line(x, y, x + w, y, seed, j) + line(x + w, y, x + w, y + h, seed + 1, j) + line(x + w, y + h, x, y + h, seed + 2, j) + line(x, y + h, x, y, seed + 3, j); }
+  function area(pts) { return "M" + pts.map((q) => f(q[0]) + " " + f(q[1])).join("L") + "Z"; }
+  return { line, ellipse, rect, area, R };
+}
+const Sk = sketchLib();
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const wedge = (cx, cy, r, a0, a1) => {
+  const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0), x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
+  return `M${cx} ${cy}L${x0.toFixed(1)} ${y0.toFixed(1)}A${r} ${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}Z`;
+};
+const FIG_TYPES = ["pie", "rect", "rect-unequal", "number-line"];
+/** 题目配图（内容规格 3.6），只画 FIG_TYPES 里的四种。 */
+function figureSvg(fig, seed = 7) {
+  let inner = "", vb = "0 0 200 120", label = "配图";
+  if (fig.type === "pie") {
+    const n = fig.parts, k = fig.shaded, cx = 100, cy = 60, r = 48;
+    for (let i = 0; i < k; i++) inner += `<path class="fig-shade" d="${wedge(cx, cy, r, -Math.PI / 2 + i / n * 2 * Math.PI, -Math.PI / 2 + (i + 1) / n * 2 * Math.PI)}"/>`;
+    inner += `<path class="k" d="${Sk.ellipse(cx, cy, r, r, seed, .5)}"/>`;
+    for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i / n * 2 * Math.PI; inner += `<path class="k1" d="${Sk.line(cx, cy, cx + Math.cos(a) * r, cy + Math.sin(a) * r, seed + 3 + i, .4)}"/>`; }
+    label = `一个圆，分成 ${n} 份，涂色 ${k} 份`; // 只描述形状：「平均」「不一样大」可能就是题目要问的
+  } else if (fig.type === "rect" || fig.type === "rect-unequal") {
+    const widths = fig.type === "rect" ? Array(fig.parts).fill(1) : fig.widths;
+    const shaded = fig.type === "rect" ? [...Array(fig.shaded).keys()] : fig.shaded;
+    const vertical = fig.type === "rect" && fig.direction === "v";
+    const X = 20, Y = 20, W = 160, H = 80, sum = widths.reduce((a, b) => a + b, 0);
+    let at = 0;
+    widths.forEach((w, i) => {
+      const a = at / sum, b = (at + w) / sum; at += w;
+      const box = vertical ? [X, Y + a * H, W, (b - a) * H] : [X + a * W, Y, (b - a) * W, H];
+      if (shaded.includes(i)) inner += `<path class="fig-shade" d="${Sk.area([[box[0], box[1]], [box[0] + box[2], box[1]], [box[0] + box[2], box[1] + box[3]], [box[0], box[1] + box[3]]])}"/>`;
+      if (i > 0) inner += `<path class="k1" d="${vertical ? Sk.line(X, box[1], X + W, box[1], seed + 10 + i, .4) : Sk.line(box[0], Y, box[0], Y + H, seed + 10 + i, .4)}"/>`;
+    });
+    inner += `<path class="k" d="${Sk.rect(X, Y, W, H, seed, .5)}"/>`;
+    label = `一个长方形，分成 ${widths.length} 份，涂色 ${shaded.length} 份`;
+  } else if (fig.type === "number-line") {
+    const from = Number(fig.from), to = Number(fig.to), stp = Number(fig.step) || 1;
+    const x = (v) => 20 + (v - from) / ((to - from) || 1) * 160;
+    vb = "0 0 200 70";
+    inner += `<path class="k" d="${Sk.line(14, 34, 196, 34, seed, .4)}"/><path class="k1" d="${Sk.line(196, 34, 190, 30, seed + 1, .3) + Sk.line(196, 34, 190, 38, seed + 2, .3)}"/>`;   // 箭头在最后一个刻度（x=180）右边，不挨着
+    const n = Math.min(60, Math.round((to - from) / stp));
+    for (let i = 0; i <= n; i++) inner += `<path class="k1" d="${Sk.line(x(from + i * stp), 29, x(from + i * stp), 39, seed + 5 + i, .3)}"/>`;
+    for (const m of fig.marks || []) inner += `<text x="${x(Number(m.at)).toFixed(1)}" y="58" text-anchor="middle" class="fig-txt">${esc(m.label ?? m.at)}</text>`;
+    label = "一条数轴";
+  }
+  return `<svg class="fig" viewBox="${vb}" role="img" aria-label="${esc(label)}">${inner}</svg>`;
+}
+
+function figureNode(fig){
+  const box = el("div", {class:"fig-box"});
+  if (fig && FIG_TYPES.includes(fig.type)){
+    box.classList.add("q-fig");
+    box.append(svgEl(figureSvg(fig, 9)));   // 正式外壳挑战题用种子 9（app.js 里 figureSvg(item.figure, 9)）
+  } else if (fig && fig.type === "svg" && DATA.figures[fig.src]){
+    const s = svgEl(DATA.figures[fig.src]);
+    s.removeAttribute("width"); s.removeAttribute("height");
+    if (!reduced){
+      s.querySelectorAll(".k,.k1").forEach(p => { if (!p.hasAttribute("stroke-dasharray")) p.setAttribute("pathLength","1"); else p.classList.remove("k","k1"); });
+      s.classList.add("draw");
+    }
+    box.append(s);
+  } else box.append(el("p", {class:"cap"}, "（这张图还没准备好）"));
+  return box;
+}
+
+// ---------- 判分 ----------
+function normNum(s){
+  return String(s).replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[．。]/g, ".").replace(/[－—]/g, "-").replace(/[，,\s]/g, "").replace(/[条对个本卷米厘次]+$/, "");
+}
+function parseNumber(s){
+  const t = normNum(s); if (!/^-?\d+(\.\d+)?$/.test(t)) return null; return Number(t);
+}
+function parseFraction(s){
+  const t = String(s).trim().replace(/／/g, "/").replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  let m = t.match(/^(\d+)\s*\/\s*(\d+)$/); if (m) return [Number(m[1]), Number(m[2])];
+  m = t.match(/^(\d+)\s*分之\s*(\d+)$/); if (m) return [Number(m[2]), Number(m[1])];
+  return null;
+}
+function grade(answer, input){
+  // 返回 {ok, misconception, feedback} 或 null（写法认不出来，不算一次作答）
+  if (answer.type === "choice"){
+    const c = answer.choices.find(x => x.id === input);
+    return {ok: !!c.correct, misconception: c.misconception || null, feedback: c.feedback || "", shown: c.text};
+  }
+  if (answer.type === "number"){
+    const x = parseNumber(input); if (x === null) return null;
+    const tol = answer.tolerance || 0, hit = v => Math.abs(x - v) <= tol + 1e-9;
+    if (hit(answer.value)) return {ok:true, feedback:"", shown:String(x)};
+    const w = (answer.common_wrong||[]).find(cw => hit(cw.value));
+    return {ok:false, misconception: w && w.misconception || null, feedback: w && w.feedback || "", shown:String(x)};
+  }
+  if (answer.type === "fraction"){
+    const f = parseFraction(input); if (!f) return null;
+    const [a,b] = f; if (b === 0) return {ok:false, feedback:"", shown:`${a}/${b}`};
+    const ok = answer.accept_equivalent ? a*answer.denominator === b*answer.numerator : (a === answer.numerator && b === answer.denominator);
+    if (ok) return {ok:true, feedback:"", shown:`${a}/${b}`};
+    const w = (answer.common_wrong||[]).find(cw => answer.accept_equivalent ? a*cw.denominator === b*cw.numerator : (a === cw.numerator && b === cw.denominator));
+    return {ok:false, misconception: w && w.misconception || null, feedback: w && w.feedback || "", shown:`${a}/${b}`};
+  }
+  return null;
+}
+function answerText(answer){
+  if (answer.type === "choice") return answer.choices.find(c => c.correct).text;
+  if (answer.type === "number") return `${answer.value}${answer.unit ? " " + answer.unit : ""}`;
+  if (answer.type === "fraction") return `${answer.numerator}/${answer.denominator}`;
+  return "";
+}
+
+// ---------- 一道题（讲解里的小问题和挑战共用） ----------
+// say(role, text)：role 是 nav / me / good / bad / hint
+function askItem(host, item, say, onDone){
+  const ans = item.answer, hints = item.hints || [];
+  const rec = {stem:item.stem, tries:[], hints:0, result:null};
+  let usedHints = 0, finished = false;
+  const ctrl = el("div", {class:"ask"});
+  let choiceBtns = [], numInput = null, okBtn = null;
+
+  function finish(result){
+    finished = true; rec.result = result;
+    choiceBtns.forEach(b => b.disabled = true);
+    if (numInput){ numInput.disabled = true; okBtn.disabled = true; }
+    hintBtn.hidden = true;
+    onDone(rec);
+  }
+  function submit(value, btn){
+    if (finished) return;
+    const g = grade(ans, value);
+    if (!g){ say("nav", "写一个数字试试，比如 12。"); return; }
+    rec.tries.push({shown:g.shown, ok:g.ok, misconception:g.misconception||null});
+    if (ans.type !== "choice") say("me", g.shown + (ans.unit ? " " + ans.unit : ""));
+    else say("me", g.shown);
+    if (g.ok){
+      if (btn) btn.classList.add("right");
+      say("good", g.feedback ? "对了。" + g.feedback : (item.feedback?.correct || "对了。"));
+      finish(rec.tries.length === 1 && usedHints === 0 ? "first" : "later");
+    } else {
+      if (btn){ btn.classList.add("wrong"); btn.disabled = true; }
+      say("bad", g.feedback || item.feedback?.wrong || "这个想法很多人都有。再想想看，也可以要个提示。");
+      if (numInput){ numInput.select(); }
+    }
+  }
+
+  if (ans.type === "choice"){
+    const box = el("div", {class:"choices"});
+    for (const c of ans.choices){
+      const b = el("button", {class:"choice", type:"button", onclick:()=>submit(c.id, b)}, c.text);
+      choiceBtns.push(b); box.append(b);
+    }
+    ctrl.append(box);
+  } else {
+    numInput = el("input", {type:"text", inputmode: ans.type === "number" ? "decimal" : "text", "aria-label":"写答案", autocomplete:"off",
+      placeholder: ans.type === "fraction" ? "比如 1/4" : "写数字",
+      onkeydown: e => { if (e.key === "Enter") submit(numInput.value); }});
+    okBtn = el("button", {class:"btn", type:"button", onclick:()=>submit(numInput.value)}, "确定");
+    ctrl.append(el("div", {class:"numrow"}, numInput, ans.unit ? el("span", {class:"unit"}, ans.unit) : null, okBtn));
+  }
+  const hintBtn = el("button", {class:"btn ghost", type:"button", onclick: () => {
+    if (finished) return;
+    if (usedHints < hints.length){
+      say("hint", hints[usedHints]); usedHints++; rec.hints = usedHints;
+      if (usedHints >= hints.length) hintBtn.textContent = "看答案";
+    } else {
+      say("nav", "答案是：" + answerText(ans) + "。");
+      choiceBtns.forEach((b, i) => { if (ans.choices[i].correct) b.classList.add("right"); });
+      if (numInput) numInput.value = answerText(ans).split(" ")[0];
+      finish("revealed");
+    }
+  }}, hints.length ? "要个提示" : "看答案");
+  ctrl.append(el("div", {class:"row-btns"}, hintBtn));
+  host.append(ctrl);
+  return rec;
+}
+
+// ---------- 页面 ----------
+function setTop(title, showBack){
+  document.getElementById("title").textContent = title;
+  document.getElementById("back").hidden = !showBack;
+}
+function dock(...btns){ $dockIn.replaceChildren(...btns.filter(Boolean)); $dock.hidden = btns.filter(Boolean).length === 0; }
+function nextAfter(a){ const i = ACTS.indexOf(a); return ACTS[i+1] || null; }
+function endButtons(a){
+  const n = nextAfter(a);
+  return el("div", {class:"row-btns"},
+    n ? el("button", {class:"btn", type:"button", onclick:()=>go("act:" + n.id)}, `${n.star !== a.star ? "下一颗星：" : "接着做"}${KIND[n.kind]}`) : null,
+    el("button", {class:"btn ghost", type:"button", onclick:()=>go("home")}, "回星图"));
+}
+
+function viewHome(){
+  setTop("Curio", false); dock();
+  const groups = DATA.groups && el("nav", {class:"groups", "aria-label":"跳到一组星"});
+  const intro = DATA.single ? DATA.stars[0].dq : groups ? `${DATA.stars.length} 颗星。每颗星都可以先动手，再挑战。` :
+    (["", "一", "两", "三", "四", "五", "六", "七", "八", "九", "十"][DATA.stars.length] || DATA.stars.length) +
+      "颗星，按顺序飞：" + DATA.stars.map(s => s.title.split("：")[0]).join(" → ") + "。";
+  const hero = el("div", {class:"hero"},
+    el("div", {}, el("div", {class:"eyebrow"}, DATA.single ? "Curio · 单星试玩" : "Curio · 星座"), el("h1", {}, DATA.constellation),
+      el("p", {}, intro)),
+    svgEl(SHIP));
+  const line = el("div", {class:"line"});
+  DATA.stars.forEach((st, i) => {
+    if (DATA.groups?.[st.id]){
+      const group = groups.childElementCount + 1, id = "group-" + group, title = DATA.groups[st.id];
+      groups.append(el("a", {href:"#" + id}, title));
+      line.append(el("h2", {id, class:"group-title"}, `第 ${group} 组 · ${title}`));
+    }
+    const acts = el("div", {class:"acts"});
+    for (const a of st.activities){
+      const done = S.done[a.id];
+      acts.append(el("button", {class:"act" + (done ? " done" : "") + (a.kind === "simulation" ? " sim" : ""), type:"button", onclick:()=>go("act:" + a.id)},
+        done ? el("span", {class:"tick"}, "✓") : null, KIND[a.kind], a.kind === "simulation" ? el("small", {class:"new"}, "新") : null, a.duration_min ? el("small", {}, `${a.duration_min} 分钟`) : null));
+    }
+    if (DATA.single) line.append(el("section", {id:st.id}, acts));
+    else line.append(el("section", {class:"star", id:st.id}, el("div", {class:"dot"}, i+1), el(groups ? "h3" : "h2", {}, st.title), el("div", {class:"dq"}, st.dq), acts));
+  });
+  $app.replaceChildren(hero, el("p", {class:"note"}, "这是试玩版：做过的不会保存，刷新页面就从头开始。"), ...(groups ? [groups] : []), line,
+    el("button", {class:"parent", type:"button", onclick:()=>go("record")}, "试玩记录（给家长看）"));
+}
+
+function bubbleRow(role, content){
+  const cls = {nav:"", hint:"hint", good:"good", bad:"bad"}[role];
+  if (role === "me") return el("div", {class:"row me pop"}, el("div", {class:"bub"}, content));
+  const bub = el("div", {class:"bub " + (cls||"")}, role === "hint" ? el("span", {class:"lbl"}, "提示") : null, content);
+  return el("div", {class:"row pop"}, svgEl(AVA), bub);
+}
+
+function viewExplain(a){
+  const log = S.log[a.id] = {kind:"explain", items:[], questions:[]};
+  const chat = el("div", {class:"chat"});
+  $app.replaceChildren(chat);
+  const steps = a.body.steps; let i = 0;
+  const say = (role, text) => { const r = bubbleRow(role, text); chat.append(r); scrollEnd(r); };
+  const contBtn = el("button", {class:"btn", type:"button", onclick:()=>step()}, "继续");
+  const qBtn = el("button", {class:"btn ghost", type:"button", onclick:()=>openAsk()}, "我有个问题");
+
+  function openAsk(){
+    if (chat.querySelector(".composer")) return;
+    const ta = el("textarea", {maxlength:"120", placeholder:"想问领航员什么？"});
+    const box = el("div", {class:"composer pop"}, ta, el("div", {class:"row-btns"},
+      el("button", {class:"btn ghost", type:"button", onclick:()=>box.remove()}, "算了"),
+      el("button", {class:"btn", type:"button", onclick:()=>{
+        const q = ta.value.trim(); if (!q) return; box.remove();
+        log.questions.push(q); say("me", q);
+        say("nav", "好问题。我把它记在试玩记录里了，等会儿和家长一起找答案。");
+      }}, "问领航员")));
+    chat.append(box); scrollEnd(box); ta.focus();
+  }
+  function step(){
+    if (i >= steps.length) return;
+    const s = steps[i++];
+    if (s.type === "text") say("nav", s.text);
+    else if (s.type === "figure"){
+      const r = el("div", {class:"row pop"}, svgEl(AVA), el("div", {class:"bub fig"}, figureNode(s.figure), s.caption ? el("div", {class:"cap"}, s.caption) : null));
+      chat.append(r); scrollEnd(r);
+    } else if (s.type === "check"){
+      const bub = el("div", {class:"bub"}, el("div", {class:"stem"}, s.item.stem));
+      const r = el("div", {class:"row pop"}, svgEl(AVA), bub); chat.append(r);
+      dock(qBtn);
+      const rec = askItem(bub, s.item, say, rec => { log.items.push(rec); afterStep(); });
+      scrollEnd(r);
+      return;
+    }
+    afterStep();
+  }
+  function afterStep(){
+    if (i < steps.length){ dock(qBtn, contBtn); return; }
+    S.done[a.id] = true; dock(qBtn);
+    const card = el("div", {class:"endcard pop"}, el("h3", {}, "这一段讲完了"), endButtons(a));
+    chat.append(card); scrollEnd(card);
+  }
+  step();
+}
+
+function shuffled(arr){
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function viewQuiz(a){
+  const items = a.body.shuffle ? shuffled(a.body.items) : a.body.items.slice();
+  const log = S.log[a.id] = {kind:"quiz", items:[]};
+  let k = 0;
+  function show(){
+    dock();
+    if (k >= items.length) return summary();
+    const it = items[k];
+    const prog = el("div", {class:"progress"}, ...items.map((_, j) => el("i", {class: j < k ? (log.items[j].result === "first" ? "ok" : "on") : (j === k ? "on" : "")})), el("span", {}, ` 第 ${k+1} 题，共 ${items.length} 题`));
+    const fb = el("div", {class:"fb"});
+    const card = el("div", {class:"qcard pop"}, el("div", {class:"stem"}, it.stem));
+    if (it.figure) card.append(figureNode(it.figure));
+    const say = (role, text) => {
+      if (role === "me") return;
+      const cls = {nav:"", hint:"hint", good:"good", bad:"bad"}[role];
+      if (role !== "hint") fb.querySelectorAll(".bub:not(.hint)").forEach(n => n.remove());
+      const b = el("div", {class:"bub pop " + cls}, role === "hint" ? el("span", {class:"lbl"}, "提示") : null, text);
+      fb.append(b); scrollEnd(b);
+    };
+    $app.replaceChildren(prog, card);
+    askItem(card, it, say, rec => {
+      log.items.push(rec);
+      dock(el("button", {class:"btn", type:"button", onclick:()=>{ k++; show(); window.scrollTo(0,0); }}, k + 1 < items.length ? "下一题" : "看看结果"));
+    });
+    card.append(fb);
+  }
+  function summary(){
+    S.done[a.id] = true;
+    const first = log.items.filter(r => r.result === "first").length;
+    const card = el("div", {class:"endcard pop"},
+      el("h3", {}, "挑战完成"),
+      el("p", {}, `${items.length} 道题里，一次就答对 ${first} 道。` + (first < items.length ? "想岔的地方，正好看清楚了。" : "全部一次答对。")),
+      endButtons(a));
+    $app.replaceChildren(card);
+  }
+  show();
+}
+
+function viewReflection(a){
+  const b = a.body, max = b.max_chars || 120;
+  const log = S.log[a.id] = {kind:"reflection", text:""};
+  const ta = el("textarea", {maxlength:String(max), placeholder:"想到什么就写什么。"});
+  const counter = el("div", {class:"counter"}, `0 / ${max}`);
+  const doneBtn = el("button", {class:"btn", type:"button", disabled:true}, "写好了");
+  const upd = () => { counter.textContent = `${ta.value.length} / ${max}`; doneBtn.disabled = !ta.value.trim(); };
+  ta.addEventListener("input", upd);
+  const chips = el("div", {class:"chips"}, ...(b.starters||[]).map(s => el("button", {class:"chip", type:"button", onclick:()=>{
+    const t = s.replace(/[…\.。]+$/, "");
+    ta.value = (ta.value ? ta.value.replace(/\s*$/, "") + "\n" : "") + t; ta.focus(); upd();
+  }}, s)));
+  const chat = el("div", {class:"chat"});
+  chat.append(bubbleRow("nav", b.prompt));
+  const box = el("div", {class:"composer"}, b.starters && b.starters.length ? el("div", {class:"lbl muted", style:"font-size:13px;color:var(--muted)"}, "不知道怎么开头？点一个：") : null, chips, ta, counter, el("div", {class:"row-btns"}, doneBtn));
+  doneBtn.addEventListener("click", () => {
+    log.text = ta.value.trim(); S.done[a.id] = true;
+    box.replaceWith(bubbleRow("me", log.text));
+    const end = el("div", {class:"endcard pop"}, el("h3", {}, "记下来了"), el("p", {}, "家长可以在「试玩记录」里看到你写的话。"), endButtons(a));
+    chat.append(bubbleRow("nav", "谢谢舰长。"), end); scrollEnd(end);
+  });
+  chat.append(box);
+  $app.replaceChildren(chat);
+}
+
+// 动手探索：沙箱 iframe + activity/1.1 契约
+let simListener = null;
+function viewSim(a){
+  const log = S.log[a.id] ??= {kind:"simulation", events:[], questions:[]};
+  dock();
+  const frame = el("iframe", {class:"simframe", sandbox:"allow-scripts", title:a.title});
+  frame.srcdoc = a.html;
+  const end = el("div", {});
+  simListener = e => {
+    if (e.source !== frame.contentWindow) return;
+    const m = e.data; if (!m || m.contract !== "activity/1.1") return;
+    const p = m.payload || {};
+    const post = (type, payload) => frame.contentWindow.postMessage({contract:"activity/1.1", type, payload}, "*");
+    if (m.type === "ready"){
+      // 有些站里会观察好几样东西。只认整站做完的那条标记。
+      const stations = log.events
+        .filter(ev => ev.verb === "observed" && ev.result?.item === "station-complete")
+        .map(ev => ev.result.station)
+        .filter(n => Number.isInteger(n) && n >= 1 && n <= 4);
+      post("init", {age_band:a.age_band || "G3-4", lang:"zh-CN", phase:"observe", palette:{}, mastery:null,
+        completed_stations:[...new Set(stations)].sort((x, y) => x - y), activity_completed:S.done[a.id] === true});
+    }
+    else if (m.type === "resize" && p.h) frame.style.height = Math.max(600, Math.ceil(p.h) + 8) + "px";
+    else if (m.type === "event") log.events.push(p);
+    else if (m.type === "note_question" && p.text) log.questions.push(p.text);
+    else if (m.type === "complete"){ S.done[a.id] = true; end.replaceChildren(el("div", {class:"endcard pop"}, el("h3", {}, "这一段做完了"), endButtons(a))); }
+  };
+  addEventListener("message", simListener);
+  $app.replaceChildren(frame, end);
+}
+
+function recordText(){
+  const out = [`Curio 试玩记录 · ${DATA.constellation}`];
+  for (const st of DATA.stars){
+    out.push("", `【${st.title}】`);
+    for (const a of st.activities){
+      const L = S.log[a.id];
+      out.push(`${KIND[a.kind]}：${S.done[a.id] ? "做完了" : (L ? "做到一半" : "没做")}`);
+      if (!L) continue;
+      (L.items||[]).forEach(r => {
+        const res = r.result === "first" ? "一次答对" : r.result === "revealed" ? "看了答案" : `答错 ${r.tries.filter(t => !t.ok).length} 次后答对`;
+        out.push(`  · ${r.stem}　${res}${r.hints ? `，用了 ${r.hints} 条提示` : ""}`);
+        r.tries.filter(t => !t.ok).forEach(t => out.push(`      选了/写了「${t.shown}」${t.misconception ? `（误区：${st.misconceptions[t.misconception] || t.misconception}）` : ""}`));
+      });
+      (L.events||[]).filter(ev => ev.verb === "predicted" || ev.verb === "answered").forEach(ev => {
+        const r = ev.result || {};
+        if (r.item === "pair-try" || (r.item || "").startsWith("pair-")) return;
+        out.push(`  · 第 ${r.station || "?"} 站${ev.verb === "predicted" ? "猜测" : "回答"}：${r.correct ? "对" : "错"}${r.misconception ? `（误区：${st.misconceptions[r.misconception] || r.misconception}）` : ""}`);
+      });
+      const tries = (L.events||[]).filter(ev => ev.verb === "answered" && (ev.result || {}).item === "pair-try").length;
+      if (tries) out.push(`  · 配对时配错 ${tries} 次`);
+      (L.questions||[]).forEach(q => out.push(`  · 问了领航员：${q}`));
+      if (L.text) out.push(`  · 写下：${L.text}`);
+    }
+  }
+  return out.join("\n");
+}
+function viewRecord(){
+  setTop("试玩记录", true); dock();
+  const txt = recordText();
+  const pre = el("pre", {}, txt);
+  const msg = el("span", {class:"muted", style:"font-size:14px;color:var(--muted)"});
+  const copy = el("button", {class:"btn", type:"button", onclick: async () => {
+    try { await navigator.clipboard.writeText(txt); msg.textContent = "复制好了，可以粘贴发出去。"; }
+    catch(e){ const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); msg.textContent = "已经选中，长按或按 Ctrl+C 复制。"; }
+  }}, "复制成文字");
+  $app.replaceChildren(el("div", {class:"rec"},
+    el("h2", {}, "这次试玩做了什么"),
+    el("p", {class:"muted"}, "只记在这一页里，刷新就没了。试玩完可以复制下来，发给 Claude 当作试玩反馈。"),
+    el("div", {class:"row-btns", style:"justify-content:flex-start"}, copy, msg), pre));
+}
+
+// 页面内切换，不用地址栏（托管网页里地址栏的 # 不一定传得进来）
+let VIEW = "home";
+function go(v){
+  const previous = VIEW;
+  VIEW = v;
+  route();
+  if (v === "home" && DATA.groups && previous.startsWith("act:")){
+    const star = actById(previous.slice(4))?.star;
+    if (star) document.getElementById(star.id)?.scrollIntoView();
+  }
+}
+function route(){
+  if (simListener){ removeEventListener("message", simListener); simListener = null; }
+  window.scrollTo(0,0);
+  const m = VIEW.match(/^act:(.+)$/);
+  if (m){
+    const a = actById(m[1]);
+    if (a){
+      setTop(`${KIND[a.kind]} · ${a.title}`, true);
+      ({simulation:viewSim, explain:viewExplain, quiz:viewQuiz, reflection:viewReflection})[a.kind](a);
+      return;
+    }
+  }
+  if (VIEW === "record") return viewRecord();
+  viewHome();
+}
+document.getElementById("back").addEventListener("click", () => go("home"));
+route();
+</script>
+</body>
+</html>

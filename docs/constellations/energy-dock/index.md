@@ -6,7 +6,7 @@
 
 ## 手里的力
 
-- 杠杆：把支点挪一格。箱子比砝码重，为什么横杆还能摆平？ [制作任务](../../../prompts/act.simulation.lever-dock-01.md) · [知识点 #195](https://github.com/deepnorth2077/Curio/issues/195)
+- 杠杆：把支点挪一格。只挂一枚铁环，能把六牛箱子抬起来吗？ [制作任务](../../../prompts/act.simulation.lever-dock-01.md) · [知识点 #195](https://github.com/deepnorth2077/Curio/issues/195)
 - 滑轮：谁在托箱子。都是一个轮子，为什么有的能把手上的力减半？ [制作任务](../../../prompts/act.simulation.pulley-dock-01.md) · [知识点 #196](https://github.com/deepnorth2077/Curio/issues/196)
 
 ## 送到同样高
@@ -21,7 +21,7 @@
 
 ## 怎么验收
 
-本轮只验杠杆。用两种挂法各做一张星卡，对照图中的砝码、支点与孔位，再做末题。新版的试玩入口和具体操作以[杠杆任务 #195](https://github.com/deepnorth2077/Curio/issues/195) 为准。
+本轮从[杠杆单星试玩](https://deepnorth2077.github.io/Curio/preview/lever/)进入。用两种挂法各做一张星卡，对照图中的砝码、支点与孔位，再做末题。新版的试玩入口和具体操作以[杠杆任务 #195](https://github.com/deepnorth2077/Curio/issues/195) 为准。
 
 <!-- status:begin energy-dock -->
 _这一段由 `tools/status_gen.py` 按 `docs/constellations/energy-dock/status.yaml` 生成，不要手改。_

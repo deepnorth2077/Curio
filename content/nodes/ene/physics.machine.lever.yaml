@@ -8,27 +8,42 @@ theme: ene
 grade: G6
 unit: 手里的力
 prerequisites: []
-driving_question: 箱子比砝码重，为什么横杆还能摆平？
+driving_question: 六枚小铁环才和箱子一样重，只挂一枚，能把箱子抬起来吗？
 objectives:
-- 水平轻杆，两边竖直向下，比较力乘到支点的距离。6 N 在一格与 2 N 在三格平衡。格子等长。
-- 把杆上刻线和两边的力配成一张平衡记录。
+- 拖动一枚铁环，找出箱底刚好盖住粉笔印和刚刚露出粉笔印的两个相邻挂孔。
+- 封住两端挂钩，只挪三角木和盘里的砝码，为同一只箱子配出两根平杆。
+- 在五格木条上指给同伴看支点放在哪、该挂哪枚砝码，并说明换另一对会是哪头低。
 misconceptions:
 - id: heavy-wins
-  text: 只看重不看远近
+  text: 箱子比铁环重，不管挂在哪一孔都该是箱子先下沉。
+- id: balance-ceiling
+  text: 轻环挪到杆尾最多只能让杆平，抬不起重箱。
+- id: equal-loads
+  text: 两边挂得一样重就一定平，挂在哪孔都一样。
+- id: far-wins
+  text: 挂得远的那头一定先低，不用看挂了多少。
+- id: pivot-carries-hooks
+  text: 移动三角木时，两端的挂钩也跟着走，所以到支点仍一样远。
+- id: wrong-side
+  text: 用木尖到箱子的格数代替木尖到左钩的格数。
+- id: overbalances
+  text: 能把箱子抬起来的一组，也就能让它停平。
 sources:
 - type: reference
   ref: OpenStax · College Physics 2e · 9.5
   url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42174/index.cnxml
 lenses:
 - band: G3-4
-  approach: 先在等臂处挂轻重两盘，看哪头沉。再把轻盘推远，刚好停在平衡线。换一个支点重新配平。
+  approach: 用方印和箱后的粉笔线找出轻环在哪里能抬箱。把两次亲手摆的木杆拓到纸上。
+- band: G5-6
+  approach: 保持两端挂钩固定，移动支点；用摆平同一个箱子要挂几牛来比较两种摆法。
 - band: G7-9
-  approach: 水平轻杆，两边竖直向下，比较力乘到支点的距离。6 N 在一格与 2 N 在三格平衡。格子等长。
+  approach: 在水平轻杆上比较两力与各自力臂的乘积，用从水平释放时的转动方向检验推断。
 activities:
 - act.simulation.lever-dock-01
 - act.quiz.lever-dock-01
 status: draft
-version: 2
+version: 3
 curriculum:
 - std: 义务教育科学课程标准（2022年版）
   ref: 简单机械与机械能

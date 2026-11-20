@@ -50,13 +50,13 @@ def position(w, spec):
         left, right = spec["pivot"], 6 - spec["pivot"]
     check_beam(w, LIVE, left, right, spec["low_end"])
     for side in ("left", "right"):
-        n = visible_shapes(drawing, f'[data-stamp="{side}"]')
+        n = visible_shapes(w.doc.locator("#stage"), f'[data-stamp="{side}"]')
         w.check(f'{side} 棚中能数到 {spec[side + "_stamps"]} 枚印', n == spec[side + "_stamps"], n)
 
 
 def chalk_gap(w, detail=False):
     def box(part):
-        tag = f'[data-detail="{part}"]' if detail else f'{LIVE} [data-part="{part}"]'
+        tag = f'#stage [data-detail="{part}"]' if detail else f'#stage [data-part="{part}"]'
         return w.doc.locator(tag).bounding_box(timeout=2000)
     crate, chalk = box("crate"), box("footprint")
     w.check("粉笔印在箱底下方的同一处", min(chalk["x"] + chalk["width"], crate["x"] + crate["width"])
@@ -105,10 +105,19 @@ def play_one(w, route):
     position(w, RINGS[(1, 1)])
     hidden_formula(w)
     w.shot("01-ring", first=True)
-    drag_holes(w, "ring", -4, 2)
-    position(w, RINGS[(1, 5)])
-    hidden_formula(w)
-    arrow(w, "ArrowLeft")
+    if route == "A":
+        drag_holes(w, "ring", -4, 2)
+        position(w, RINGS[(1, 5)])
+        hidden_formula(w)
+        arrow(w, "ArrowLeft")
+    else:
+        # 一气拖到杆尾，掠过六格时没有停、没有松手，不能替孩子认领「看见停平」。
+        drag_holes(w, "ring", -6, 2)
+        position(w, RINGS[(1, 7)])
+        for label in ("加一枚环", "拓下这根杆"):
+            btn = w.doc.get_by_role("button", name=label, exact=True)
+            w.check("只看过抬箱，还不能" + label, not btn.count() or btn.is_disabled())
+        arrow(w, "ArrowRight")
     position(w, RINGS[(1, 6)])
     hidden_formula(w)
     level_gap = chalk_gap(w)
@@ -120,6 +129,8 @@ def play_one(w, route):
         w.check("翻开才读得到两组相等的数", re.search(r"1\s*(?:牛|N)?\s*×\s*6", w.doc.locator("body").inner_text())
                 and re.search(r"6\s*(?:牛|N)?\s*×\s*1", w.doc.locator("body").inner_text()))
         w.check("翻纸不挪杆", pins(w, LIVE) == before)
+        w.btn("合上算式")
+        hidden_formula(w)
     arrow(w, "ArrowLeft")
     position(w, RINGS[(1, 7)])
     up_gap = chalk_gap(w)
