@@ -19,6 +19,6 @@ emits:
 - predicted
 - observed
 author:
-  model: Codex
+  model: Codex  # 实现会话 lever_craft，独立审查由 design_jury 留证
   prompt_ref: prompts/act.simulation.lever-dock-01.md
 review: pending

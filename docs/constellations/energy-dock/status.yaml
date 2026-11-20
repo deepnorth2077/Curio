@@ -3,15 +3,15 @@ title: 省力的机器和能量账本
 updated: '2026-11-20'
 issue: 193
 total: 6
-preview: https://deepnorth2077.github.io/Curio/preview/energy-dock/
-now: Luka 已打回上一版。只重做杠杆一颗，其余五颗等杠杆通过家庭验收后再重新设计。
+preview: https://deepnorth2077.github.io/Curio/preview/lever/
+now: 只交杠杆新版给 Luka 和舰长试玩。其余五颗保留为退回的草稿，待这颗通过家庭验收再重新设计。
 stars:
 - n: 1
   title: 杠杆：把支点挪一格
-  state: 在做
+  state: 等验收
   prs:
-  - 206
-  waiting: 先审杠杆新设计，再做单星试玩
+  - 218
+  waiting: Luka 和舰长试玩单星新版，比较第六和第七孔、两种支点与两张拓印
 - n: 2
   title: 滑轮：谁在托箱子
   state: 草案

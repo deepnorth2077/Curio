@@ -83,8 +83,7 @@ svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
 @keyframes cue{0%{transform:scale(1);opacity:.95}50%{transform:scale(1.8);opacity:0}100%{transform:scale(1.8);opacity:0}}
 @media (prefers-reduced-motion:reduce){#cue{animation:none;transform:scale(1.3);opacity:.9}}
 
-/* 木工台外观 */
-/* ============ 木杆、墨印与拓印纸 ============ */
+/* kit:lever —— 木杆、墨印与拓印纸 */
 :root{--beam:#E7CAA4;--grain:#96774E;--frame:#858473;--chalk:#E8E4C4;--board:#525C55;--cargo:#81958F;--cargo-edge:#536E67;--seal:#D4B665;--iron:#AA583C}
 @media(prefers-color-scheme:dark){:root{--beam:#68533E;--grain:#AA8B6B;--frame:#A8AC98;--chalk:#D6D6B6;--board:#3A443C;--cargo:#586D67;--cargo-edge:#93ABA1;--seal:#9F915B;--iron:#DF9876}}
 .wrap{max-width:810px}.card{box-shadow:0 1px 4px #0001}
@@ -107,6 +106,7 @@ svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
 .smallLetter,.inscription,.fine{fill:var(--text);font-family:var(--f-sans);font-size:15px}
 .inscription{font-weight:650}.fine{fill:var(--muted);font-size:14px}
 .imprint{stroke:var(--frame);stroke-width:.8}.imprint.left{fill:var(--apricot)}.imprint.right{fill:var(--sage)}
+.armBand{fill:var(--pane);opacity:.86}.armMark{stroke:var(--ink);stroke-width:1;fill:var(--apricot)}.armMark.right{fill:var(--sage)}
 .printBorder{fill:var(--paper);stroke:var(--rule);stroke-width:1.5}
 #printFormula{margin:0 16px 10px;padding:8px 12px;border-left:3px solid var(--frame);font:600 16px var(--f-mono);color:var(--ink)}
 #touch{touch-action:none;cursor:grab}#touch:active{cursor:grabbing}
@@ -242,6 +242,22 @@ function fixedSeals(geo) {
   }
   return seals;
 }
+function armPrints(g, s) {
+  // 每跨一格，左环就在那段杆面上留下自己的墨印；右箱独占一格，留下六印。
+  function press(first,last,weight,side) {
+    let art="";
+    for(let i=first;i<last;i++){
+      const center=g.start+(i+.5)*g.pitch;
+      const spacing=6.4, width=weight*spacing;
+      let marks=rect(center-width/2-2,g.y-10.5,width+4,8.8,"armBand");
+      for(let n=0;n<weight;n++)
+        marks+=rect(center-width/2+n*spacing+.5,g.y-10,5.3,6.8,"armMark "+side,'data-beam-stamp=""');
+      art+=group(marks,`data-beam-segment="${side}"`);
+    }
+    return art;
+  }
+  return press(g.left,g.pin,s.rings,"left")+press(g.pin,g.right,MODEL.box,"right");
+}
 function apparatus(s, kind, locked=false) {
   const first=s.station===1, g=geometry(s,locked), read=MODEL.read(s);
   const [lx,ly]=g.point(g.left),[rx,ry]=g.point(g.right);
@@ -255,6 +271,7 @@ function apparatus(s, kind, locked=false) {
       beam+=rect(hx-g.pitch/2,g.y-13,g.pitch,27,"",'fill="transparent" data-hole="'+(MODEL.last-i)+'"');
     }
   }
+  if(first&&!locked)beam+=armPrints(g,s);
   if(!first) beam+=fixedSeals(g);
   const base=g.y+79;
   let frame=path(`M${g.x} ${g.y+2}L${g.x+13} ${base-4}l-26 1Z`,"wood")
@@ -272,8 +289,8 @@ function apparatus(s, kind, locked=false) {
   return group(frame,`data-lever="${kind}"`);
 }
 function stamps(read) {
-  const count=Math.max(read.leftMoment,read.rightMoment);
-  const step=Math.min(19,240/count), size=Math.min(step-1.5,15);
+  // 同一站的墨印共用一把尺，换孔后，六枚仍占原来的宽度。
+  const step=read.station===1?18:10, size=Math.min(step-1.5,15);
   function row(y,side,n,perHole) {
     let art=text(20,y+size*.8,side==="left"?"左":"右","inscription","start");
     for(let i=0;i<n;i++){
@@ -290,7 +307,7 @@ function stamps(read) {
     +row(32,"left",read.leftMoment,read.leftWeight)+row(63,"right",read.rightMoment,read.rightWeight);
 }
 function chalkMark(x,y,w,h,attr){
-  // A nick followed by a chalk crumb: the same mark on the sheet and in the lens.
+  // 纸上的缺口和断开的粉笔屑，在放大窗里也认得出来。
   const start=x-w/2;
   return group(path(`M0 0l${w*.55} .2l${w*.07} ${h*.45}l${w*.06} ${-h*.45}l${w*.22} .1l${-w*.015} ${h*.7}l${-w*.86} ${h*.2}Z`,"chalk")
     +circle(w*.97,h*.48,h*.42,"chalk"),attr+" "+move(start,y));
@@ -304,7 +321,7 @@ function floorPaper() {
 function blowup(s,locked) {
   const g=geometry(s,locked), [rx,ry]=g.point(g.right);
   const gap=(g.y-ry)*5, baseline=84, boxY=baseline-gap;
-  // The window stays fixed while the crate edge moves relative to its chalk stripe.
+  // 纸框固定，木箱边缘相对粉笔印上下移动。
   const art=rect(0,0,125,111,"skirt")+text(62,20,"箱底放大","inscription")
     +rect(8,29,109,69,"board")+chalkMark(62,baseline-5,88,4.5,'data-detail="footprint"')
     +group(rect(18,boxY-66,90,66,"cargo",'data-detail="crate"')+
@@ -316,12 +333,12 @@ function seesaw() {
   const points=[[24,43],[131,26]], [left,right]=points;
   let art=path("M97 32L106 54H89Z","wood")+path("M12 45L143 24l1 5L13 50Z","wood");
   art+=circle(...left,3,"pin",'data-part="left-hook"')+circle(...right,3,"pin",'data-part="right-hook"');
-  // Model seats and weighted riders mirror the long and short arms of the real plank.
+  // 公园座椅的远端和近端，跟此时的挂环和重箱同向。
   art+=path("M12 44q10 -5 22 -2l1 3q-12 0 -22 3zM119 27q10 -5 21 -3l1 3l-22 4z","metal");
   art+=path("M35 41l-3 -10q-1 -5 6 -6q4 0 4 4M117 27l-3 -10q-1 -5 -6 -4q-4 0 -3 4","edge");
   art+=circle(21,21,4.8,"wood")+path("M21 27l3 11l8 1l3 11M24 30l11 -3","edge");
   art+=circle(132,0,6.4,"wood")+path("M131 8l-5 13l-10 1l-1 12M129 11l-18 4","edge");
-  return group(art,'data-lever="seesaw" transform="translate(374 253)"');
+  return group(art,'data-lever="seesaw" transform="translate(263 260) scale(1.18)"');
 }
 function markPrint(p) {
   const g=geometry(p), shift=(p.pivot-MODEL.middle)*14;
@@ -360,6 +377,7 @@ function printCard() {
 function paint() {
   artGrip=null;
   const end=phase==="card", first=state.station===1, locked=phase==="guess"||phase==="unlatch";
+  svg.setAttribute("aria-label",end?"我的两张杠杆拓印":first?"杠杆台，左右方向键移动铁环":"杠杆台，左右方向键移动支点");
   svg.setAttribute("viewBox",end?"0 0 560 392":"0 0 560 338");
   if(end){$("dyn").innerHTML=printCard();setTarget();return;}
   const r=MODEL.read(state);
@@ -480,7 +498,7 @@ function change(key,value) {
   state[key]=value;
   clearTimeout(dwellTimer);
   if(drag){
-    // Display every hole immediately. Passing one in a drag is not evidence the child saw it.
+    // 每一孔都实时显示；只有停看或明确落定才收进发现。
     drag.moved=true;
     say(state.station===1?"看看杆两头。":"两枚封钉还在。");
     draw();
@@ -576,7 +594,7 @@ svg.addEventListener("click",e=>{
 });
 new ResizeObserver(()=>{if(phase==="play")paint();}).observe(svg);
 
-// Keep the question in the child's own words. The host handles the notebook.
+// 直接把舰长的原话交给宿主的信号站。
 const questionArea=$("qarea");
 const question=document.createElement("button");
 question.type="button";question.className="btn ghost small";question.textContent="我有个问题";

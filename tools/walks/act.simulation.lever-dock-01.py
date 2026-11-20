@@ -1,5 +1,6 @@
 """从孩子看见的钉头、墨印、粉笔和拓杆位置检验杠杆。不读取活动的模型。"""
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -41,10 +42,39 @@ def visible_shapes(root, selector):
     return sum(shape.is_visible() for shape in root.locator(selector).all())
 
 
+def beam_imprints(w, drawing, side, hook, pivot, holes, weight):
+    # 在屏幕上沿倾斜的木杆轴投影。光有正确总数，还不能证明印落在对应的两孔之间。
+    groups = drawing.locator(f'[data-beam-segment="{side}"]').evaluate_all("""segments => segments.map(
+        segment => Array.from(segment.querySelectorAll('[data-beam-stamp]'), stamp => {
+            const box = stamp.getBoundingClientRect();
+            const style = getComputedStyle(stamp);
+            if (!box.width || !box.height || style.visibility === 'hidden' || style.opacity === '0') return null;
+            return [box.x + box.width / 2, box.y + box.height / 2];
+        }).filter(Boolean))""")
+    dx, dy = hook[0] - pivot[0], hook[1] - pivot[1]
+    length = math.hypot(dx, dy)
+    pitch = length / holes
+    slots = []
+    for stamps in groups:
+        indices = set()
+        for x, y in stamps:
+            x, y = x - pivot[0], y - pivot[1]
+            along = (x * dx + y * dy) / length
+            offset = abs(x * dy - y * dx) / length
+            indices.add(math.floor(along / pitch) if offset < pitch / 2 else -1)
+        # 同一孔距所有墨印必须都贴在同一段杆上，段数从木尖向钩子递增。
+        slots.append((next(iter(indices)) if len(indices) == 1 else -1, len(stamps)))
+    w.check(f"{side} 杆从木尖到钩子每段都有 {weight} 枚方印",
+            sorted(slots) == [(i, weight) for i in range(holes)], sorted(slots))
+
+
 def position(w, spec):
     drawing = w.doc.locator(LIVE)
     if "hole" in spec:
         left, right = spec["hole"], 1
+        left_hook, pivot, right_hook = pins(w, LIVE)
+        beam_imprints(w, drawing, "left", left_hook, pivot, left, spec["rings"])
+        beam_imprints(w, drawing, "right", right_hook, pivot, right, 6)
         w.check("左钩上的铁环个数", visible_shapes(drawing, '[data-part="ring"]') == spec["rings"])
     else:
         left, right = spec["pivot"], 6 - spec["pivot"]
