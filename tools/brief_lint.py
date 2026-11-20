@@ -139,13 +139,59 @@ def companion_spec(root, doc, path):
     return path.parent.parent / (prefix + aid.split(".", 2)[-1]) / filename
 
 
+def simulation_brief(root, activity_id, briefs):
+    manifest = root / "content/activities" / activity_id / "manifest.yaml"
+    spec = yaml.safe_load(manifest.read_text(encoding="utf-8")) if manifest.is_file() else {}
+    ref = spec.get("author", {}).get("prompt_ref", "").partition("#")[0]
+    # 旧星可能引用整个分组的总说明；它不是单星原稿，不能套用单星章节要求。
+    if ref in briefs:
+        return ref
+    canonical = f"prompts/{activity_id}.md"
+    return canonical if canonical in briefs else None
+
+
+def related_inputs(root, paths, briefs):
+    """从改动的实物、配图或活动定义定位本星的卡和原稿；不把同一组的其他星算进去。"""
+    affected = set(paths)
+    directories = set()
+    for path in paths:
+        parts = Path(path).parts
+        if len(parts) >= 4 and parts[:2] == ("content", "activities"):
+            directories.add(root.joinpath(*parts[:3]))
+    for directory in directories:
+        for filename in ("activity.yaml", "manifest.yaml"):
+            definition = directory / filename
+            if not definition.is_file():
+                continue
+            affected.add(definition.relative_to(root).as_posix())
+            doc = yaml.safe_load(definition.read_text(encoding="utf-8"))
+            for target in doc.get("targets", []):
+                for card in (root / "content/nodes").rglob(f"{target}.yaml"):
+                    affected.add(card.relative_to(root).as_posix())
+            sim = directory
+            if directory.name.startswith("act.quiz."):
+                mate = companion_spec(root, doc, definition)
+                if not mate or not mate.is_file():
+                    continue
+                paired = yaml.safe_load(mate.read_text(encoding="utf-8"))
+                if doc.get("targets") != paired.get("targets"):
+                    continue
+                sim = mate.parent
+            if sim.name.startswith("act.simulation."):
+                brief = simulation_brief(root, sim.name, briefs)
+                if brief:
+                    affected.add(brief)
+    return affected
+
+
 def lint_paths(root, paths):
     sources = [p for p in (root / "prompts").glob("act.simulation.*.md")
                if BRIEF.fullmatch(p.relative_to(root).as_posix())]
     sources.extend((root / "docs/constellations").glob("*/stars/*.md"))
     briefs = {p.relative_to(root).as_posix(): p.read_text(encoding="utf-8") for p in sorted(sources)}
     output = []
-    changed_briefs = set(paths).intersection(briefs)
+    paths = related_inputs(root, paths, briefs)
+    changed_briefs = paths.intersection(briefs)
     if changed_briefs:
         lessons = markdown((root / LESSONS).read_text(encoding="utf-8"))["实现"]
         lesson_ids = set(re.findall(r"^(\d+)\.", "\n".join(lessons), re.M))
@@ -159,7 +205,8 @@ def lint_paths(root, paths):
         elif path.startswith("content/nodes/") and path.endswith(".yaml"):
             doc = yaml.safe_load(file.read_text(encoding="utf-8"))
             truth = [normalized(line) for aid in doc.get("activities", [])
-                     for title, lines in markdown(briefs.get(f"prompts/{aid}.md", "")).items()
+                     if aid.startswith("act.simulation.")
+                     for title, lines in markdown(briefs.get(simulation_brief(root, aid, briefs), "")).items()
                      if title.startswith("真相表") for line in lines if line.strip()]
             errors = lint_card(doc, truth)
         elif path.startswith("content/activities/") and file.name in ("activity.yaml", "manifest.yaml"):

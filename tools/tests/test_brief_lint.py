@@ -144,13 +144,38 @@ class TestFiles(unittest.TestCase):
         self.assertFalse(self.lint(QUIZ))
 
     def test_pairing_uses_node_card_for_different_activity_names(self):
-        self.write(CARD, {"activities": ["act.simulation.light-01", "act.quiz.shadow-01"]})
+        self.write(CARD, {"activities": ["act.simulation.light-01", "act.quiz.shadow-01"],
+                          "misconceptions": [{"id": code, "text": code} for code in ("near", "size", "tilt")]})
         self.write(SIM, {"age_band": "G3-4", "targets": ["physics.light"]})
         quiz = QUIZ.replace("light-01", "shadow-01")
         self.write(quiz, {"age_band": "G5-6", "targets": ["physics.light"]})
         self.assertTrue(self.lint(SIM))
         self.write(quiz, {"age_band": "G3-4", "targets": ["physics.light"]})
         self.assertFalse(self.lint(SIM))
+
+    def test_activity_changes_find_the_authored_brief_and_only_the_target_card(self):
+        html = SIM.replace("manifest.yaml", "index.html")
+        authored = "docs/constellations/space/stars/01-shadow.md"
+        self.write(authored, "这里仍是上次的旧模板。")
+        spec = {"author": {"prompt_ref": authored}, "targets": ["physics.light"]}
+        self.write(SIM, spec)
+        self.write(QUIZ, {"targets": ["physics.light"]})
+        self.write(html, "<body>画面变了</body>")
+        self.write(CARD, {"misconceptions": [{"id": "heavy", "text": "只看重量"}]})
+        self.write(CARD.replace("light", "unrelated"), {"misconceptions": []})
+        for source in (html, QUIZ):
+            errors = self.lint(source)
+            self.assertTrue(any(e.startswith(authored) for e in errors))
+            self.assertTrue(any(e.startswith(CARD) for e in errors))
+            self.assertFalse(any("unrelated" in e or e.startswith(BRIEF_PATH) for e in errors))
+        # 缺省来源按模拟的活动 ID 找；历史分组说明不按单星原稿审。
+        self.write(SIM, dict(spec, author={}))
+        self.write(BRIEF_PATH, "这是另一份还没改的旧稿。")
+        self.assertTrue(any(e.startswith(BRIEF_PATH) for e in self.lint(html)))
+        (self.root / BRIEF_PATH).unlink()
+        self.write(SIM, dict(spec, author={"prompt_ref": "docs/constellations/space/g1.md"}))
+        self.write("docs/constellations/space/g1.md", "旧课程组的整套说明")
+        self.assertTrue(all(e.startswith(CARD) for e in self.lint(html)))
 
     def test_pr_scope_does_not_block_on_archived_work(self):
         def git(*args):
@@ -162,8 +187,13 @@ class TestFiles(unittest.TestCase):
         self.write("docs/note.md", "独立变更")
         git("add", "."); git("commit", "-qm", "改交接")
         self.assertFalse(lint.main(["--base", base], self.root))
-        self.write(BRIEF_PATH, "新改的旧稿仍未过审")
-        git("add", "."); git("commit", "-qm", "修改说明")
+        html = SIM.replace("manifest.yaml", "index.html")
+        self.write(SIM, {"targets": ["physics.light"]})
+        self.write(html, "<p>原实物</p>")
+        git("add", "."); git("commit", "-qm", "原实物与文档")
+        base = git("rev-parse", "HEAD").stdout.decode().strip()
+        self.write(html, "<p>只改实物</p>")
+        git("add", "."); git("commit", "-qm", "只修改 HTML")
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertTrue(lint.main(["--base", base], self.root))
             self.assertTrue(lint.main([BRIEF_PATH], self.root))
