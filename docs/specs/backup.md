@@ -333,7 +333,7 @@ v1 里设备把这 6 个数字存在本机 `meta.recoveryKey`（第 5 节）：`
    - `log.check(raw)` 是 `accepted`：`ingest`；放进 `items`，带收据 `{event_id, recorded_at: now, source: "import", batch_id}`，并标上它的 `device_id`、`device_seq`（给第 6 步和 `restoreBatch` 的 `ownSeqMax` 用）；`accepted` 加一。
    - `duplicate`：什么都不放；`duplicate` 加一。
    - `quarantined`：原文已经在 `seenRaw` 里（逐字节相同）→ 跳过，`quarantined_skipped` 加一。否则 `ingest`、放进 `items`（没有收据）、加进 `seenRaw`，再按下面的规则二选一计数。
-   - **「这一版还不认识的」**（`not_yet_known`）：`planRestore` 自己解析原文判断，不依赖 `log.check` 的 `detail`。原因是「不合格」（`invalid`），原文能解析成 JSON 对象，`schema` 是以 `event/` 开头的字符串，而且满足下面任一条：`schema` 不是 `event/2`；`verb` 是字符串，但不在本版内核接收的动词表里（`kernel/js/validate.js` 导出的那张，现在是竖切片 1 的 6 个）。它们在更新 Curio 以后重放收件表时会自动算上。其他的（包括认识的动词多了一个字段）记 `quarantined_new`。
+   - **「这一版还不认识的」**（`not_yet_known`）：`planRestore` 自己解析原文判断，不依赖 `log.check` 的 `detail`。原因是「不合格」（`invalid`），原文能解析成 JSON 对象，`schema` 是以 `event/` 开头的字符串，而且满足下面任一条：`schema` 不是 `event/2`；`verb` 是字符串，但不在本版内核接收的动词表里（`kernel/js/validate.js` 导出的 `SLICE_VERBS`）。它们在更新 Curio 以后重放收件表时会自动算上。其他的（包括认识的动词多了一个字段）记 `quarantined_new`。
 4. 「带过来的」：备份的 `receipt`（当作 `kind: receipt`）、`import`（当作 `kind: import`）、`archive` 三部分按顺序，每一条算一个**比较键**：`kind` + `\n` + `v` 的规范 JSON（第 3.7 节末尾）。这个键和本机 `receipts`（`kind: receipt`）、`imports`（`kind: import`）、`archive` 里每一条的比较键都放进一个集合；已经在集合里的跳过，不在的放进 `items`、加进集合，`archived` 加一。（和「语义相同」的结果一样，但是线性的，而且 JS 和 Python 算出来一样。用自己的备份恢复自己时，全部跳过。）
 5. 发布包：备份的每个 `release`，本机 `releases` 里没有这个 `release_id` 的，放进 `items`，`releases` 加一。
 6. **`nextSeq`** = max(本机的 `nextSeq`，合并后日志里本机 `device_id` 的**被接收**事件的最大 `device_seq` + 1；隔离区里的不占序号)。正常情况下就是本机原来的值；但如果这台设备的网页存储被回滚过（例如 iPad 整机从旧备份恢复），备份里会有本机以前的、序号更大的事件，不这样做，下一条本机事件就会撞号进隔离区，以后每一条都一样，写入永远卡住。存储里的 `nextSeq` 由 `restoreBatch` 每批推进（5.2），所以中途断了也不会落后。这种情况 `report` 里提一句「备份里有这台设备以前的记录」。

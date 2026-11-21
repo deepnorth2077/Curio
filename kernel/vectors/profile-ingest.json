@@ -1,0 +1,469 @@
+{
+  "name": "profile-ingest",
+  "about": "profile.set 的摄入：合法与不合法的 payload、actor、范围（docs/specs/profile.md 第 1 节，#224）。期望值来自规格第 1 节的表。profile.set 不影响掌握度，所以投影是空的。",
+  "order_free": false,
+  "base": {
+    "schema": "event/2",
+    "learner_id": "lrn_01JC00000000000000000000K1",
+    "device_id": "dev_01JC00000000000000000000D1",
+    "actor": {
+      "type": "caregiver",
+      "id": "cg_01JC00000000000000000000G1"
+    }
+  },
+  "inputs": [
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P01",
+        "device_seq": 1,
+        "occurred_at": "2026-11-21T03:01:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {
+            "math": "renjiao",
+            "science": "jiaoke"
+          }
+        }
+      },
+      "expect": "accepted",
+      "why": "完整的一份：rev 1，入学 2024，两门课的教材都有（规格第 1 节）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P02",
+        "device_seq": 2,
+        "occurred_at": "2026-11-21T03:02:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 2,
+          "entry_year": 2024,
+          "textbooks": {}
+        }
+      },
+      "expect": "accepted",
+      "why": "textbooks 可以是 {}（规格第 1 节：必填对象，可以为空）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P03",
+        "device_seq": 3,
+        "occurred_at": "2026-11-21T03:03:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 3,
+          "entry_year": 2024,
+          "textbooks": {
+            "math": "renjiao"
+          }
+        }
+      },
+      "expect": "accepted",
+      "why": "只设了 math；没出现的键表示没设"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P04",
+        "device_seq": 4,
+        "occurred_at": "2026-11-21T03:04:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 4,
+          "entry_year": 2010,
+          "textbooks": {}
+        }
+      },
+      "expect": "accepted",
+      "why": "entry_year 下界 2010 合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P05",
+        "device_seq": 5,
+        "occurred_at": "2026-11-21T03:05:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 5,
+          "entry_year": 2040,
+          "textbooks": {}
+        }
+      },
+      "expect": "accepted",
+      "why": "entry_year 上界 2040 合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P06",
+        "device_seq": 6,
+        "occurred_at": "2026-11-21T03:06:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 6,
+          "entry_year": 2024,
+          "textbooks": {
+            "science": "jiaoke"
+          }
+        }
+      },
+      "expect": "accepted",
+      "why": "只设了 science"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P01",
+        "device_seq": 1,
+        "occurred_at": "2026-11-21T03:01:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {
+            "math": "renjiao",
+            "science": "jiaoke"
+          }
+        }
+      },
+      "expect": "duplicate",
+      "why": "同一条事件再来一次，语义相同 → 重复"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P11",
+        "device_seq": 11,
+        "occurred_at": "2026-11-21T03:11:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "entry_year": 2024,
+          "textbooks": {}
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "缺 rev"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P12",
+        "device_seq": 12,
+        "occurred_at": "2026-11-21T03:12:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "textbooks": {}
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "缺 entry_year"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P13",
+        "device_seq": 13,
+        "occurred_at": "2026-11-21T03:13:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "缺 textbooks（必填，可以为空对象但不能没有）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P14",
+        "device_seq": 14,
+        "occurred_at": "2026-11-21T03:14:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 0,
+          "entry_year": 2024,
+          "textbooks": {}
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "rev 是正整数，0 不合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P15",
+        "device_seq": 15,
+        "occurred_at": "2026-11-21T03:15:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1.5,
+          "entry_year": 2024,
+          "textbooks": {}
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "rev 1.5 不是整数"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P16",
+        "device_seq": 16,
+        "occurred_at": "2026-11-21T03:16:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": -1,
+          "entry_year": 2024,
+          "textbooks": {}
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "rev 负数不合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P17",
+        "device_seq": 17,
+        "occurred_at": "2026-11-21T03:17:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": "1",
+          "entry_year": 2024,
+          "textbooks": {}
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "rev 是字符串"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P18",
+        "device_seq": 18,
+        "occurred_at": "2026-11-21T03:18:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2009,
+          "textbooks": {}
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "entry_year 2009 低于下界 2010"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P19",
+        "device_seq": 19,
+        "occurred_at": "2026-11-21T03:19:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2041,
+          "textbooks": {}
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "entry_year 2041 高于上界 2040"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P20",
+        "device_seq": 20,
+        "occurred_at": "2026-11-21T03:20:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024.5,
+          "textbooks": {}
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "entry_year 不是整数"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P21",
+        "device_seq": 21,
+        "occurred_at": "2026-11-21T03:21:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": "2024",
+          "textbooks": {}
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "entry_year 是字符串"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P22",
+        "device_seq": 22,
+        "occurred_at": "2026-11-21T03:22:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {
+            "english": "renjiao"
+          }
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "textbooks 有不认识的键 english"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P23",
+        "device_seq": 23,
+        "occurred_at": "2026-11-21T03:23:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {
+            "math": "beishida"
+          }
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "math 的值 beishida 不在枚举里"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P24",
+        "device_seq": 24,
+        "occurred_at": "2026-11-21T03:24:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {
+            "science": "renjiao"
+          }
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "science 只允许 jiaoke，renjiao 是 math 的值"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P25",
+        "device_seq": 25,
+        "occurred_at": "2026-11-21T03:25:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": null
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "textbooks 是 null，不是对象"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P26",
+        "device_seq": 26,
+        "occurred_at": "2026-11-21T03:26:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {},
+          "grade": 3
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "payload 多了 grade（年级不存）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P27",
+        "device_seq": 27,
+        "occurred_at": "2026-11-21T03:27:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {
+            "math": "renjiao",
+            "science": "jiaoke"
+          }
+        },
+        "actor": {
+          "type": "learner",
+          "id": "lrn_01JC00000000000000000000K1"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "actor 是 learner：profile.set 只允许 caregiver"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P28",
+        "device_seq": 28,
+        "occurred_at": "2026-11-21T03:28:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {
+            "math": "renjiao",
+            "science": "jiaoke"
+          }
+        },
+        "actor": {
+          "type": "system",
+          "id": "sys:shell"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "actor 是 system：profile.set 只允许 caregiver"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P29",
+        "device_seq": 29,
+        "occurred_at": "2026-11-21T03:29:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {
+            "math": "renjiao",
+            "science": "jiaoke"
+          }
+        },
+        "attempt_id": "att_01JC00000000000000000000A1"
+      },
+      "expect": "quarantined:invalid",
+      "why": "带了 attempt_id：profile.set 的范围是无"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P30",
+        "device_seq": 30,
+        "occurred_at": "2026-11-21T03:30:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {
+            "math": "renjiao",
+            "science": "jiaoke"
+          }
+        },
+        "content": {
+          "node_id": "math.number.fraction-intro",
+          "activity_id": "act.quiz.fraction-intro-01",
+          "activity_kind": "quiz",
+          "activity_version": 1,
+          "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "带了 content：profile.set 的范围是无"
+    }
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {},
+    "conflicts": []
+  },
+  "worked": "合法的 6 条（完整、textbooks 为 {}、只有 math、只有 science、entry_year 2010、2040）照常接收，再来一次的第 1 条是重复。其余 20 条各错一处：缺字段 3、rev 不合格 4、entry_year 不合格 4、textbooks 的键或值不对 4（含 null）、payload 多字段 1、actor 不是 caregiver 2、带 attempt_id 或 content 2，全部进隔离区。profile.set 不带 content、不属于任何尝试，掌握度投影里没有它：nodes 为空，conflicts 为空。"
+}

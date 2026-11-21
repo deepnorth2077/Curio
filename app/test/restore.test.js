@@ -324,3 +324,43 @@ test("同一个文件恢复两次：第二次 items 空，只多一条导入记�
   assert.equal(second.imports.length, first.imports.length + 1);
   assert.equal(s.log.filter((x) => x.m === "restoreBatch").length, 1, "第二次一批都不写");
 });
+
+// ---------------------------------------------------------------- #224 PR 1：profile.set 的备份往返（docs/specs/profile.md 第 7 节、测试接缝）
+// 期望值：备份里的原文恢复后一字不差地在收件表里；重放后 projectProfile 给出的资料等于下面的字面值。
+const PROFILE_PAYLOAD = { rev: 1, entry_year: 2024, textbooks: { math: "renjiao", science: "jiaoke" } };
+const profileRaw = (learner, device, seq, tag) => JSON.stringify({
+  schema: "event/2", event_id: `evt_${ulid(tag)}`, learner_id: learner, device_id: device, device_seq: seq,
+  occurred_at: "2026-11-12T03:00:00.000Z", actor: { type: "caregiver", id: "cg_" + ulid("G1") }, verb: "profile.set",
+  payload: PROFILE_PAYLOAD,
+});
+
+test("备份往返：一条 profile.set 备份、恢复到干净设备，原文不变，投影出同一份资料", async () => {
+  const raw = profileRaw(L, DEV_B, 1, "PS1");
+  const { header, backup } = backupOf(DEV_B, [...events(DEV_B, "H", 2, 3), raw], [...events(DEV_B, "H", 2, 3), raw].map(localReceipt));
+  const plan = planRestore(cleanDevice(), structuredClone({ header, backup }), OPTS);
+  assert.equal(plan.ok, true, `恢复计划应当通过：${JSON.stringify(plan).slice(0, 200)}`);
+  assert.ok(plan.items.some((it) => it.inbox === raw), "profile.set 的原文在待写的项里（不被当成这一版不认识）");
+  assert.equal(plan.items.filter((it) => it.inbox).length, 3, "3 条事件都接收");
+  const store = createFakeBackupStore(cleanDevice());
+  assert.deepEqual(plain(await runRestore(store, plan, { lockLost: never })), { ok: true });
+  assert.ok(store.state.inbox.includes(raw), "收件表里有这条原文，一字不差");
+  const log = createLog();
+  for (const r of store.state.inbox) log.ingest(r);
+  assert.equal(log.quarantined().length, 0);
+  assert.ok(log.events().some((e) => e.verb === "profile.set"));
+  const { projectProfile } = await import("../../kernel/js/profile.js");
+  const p = projectProfile(log.events());
+  assert.equal(p.algorithm_version, "profile/1");
+  assert.deepEqual(p.profile, { ...PROFILE_PAYLOAD, occurred_at: "2026-11-12T03:00:00.000Z" });
+  assert.deepEqual(p.conflicts, []);
+});
+
+test("只存了一条 profile.set 的设备不算干净：恢复别的孩子的备份被拒 other_learner，什么都不写（规格第 4 节）", async () => {
+  const mine = "lrn_" + ulid("R1");
+  const raw = profileRaw(mine, DEV_R, 1, "PS2");
+  const existing = { ...cleanDevice(), nextSeq: 2, inbox: [raw], receipts: [localReceipt(raw)] };
+  const other = backupOf(DEV_B, events(DEV_B, "J", 1, 2), events(DEV_B, "J", 1, 2).map(localReceipt));
+  assert.notEqual(other.backup.manifest.learner_id, mine);
+  const plan = planRestore(structuredClone(existing), structuredClone(other), OPTS);
+  assert.deepEqual(plain(plan), { ok: false, reason: "other_learner" });
+});

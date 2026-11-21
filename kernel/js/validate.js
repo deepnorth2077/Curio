@@ -10,6 +10,7 @@ export const SLICE_VERBS = Object.freeze([
   "answer.revealed",
   "attempt.completed",
   "attempt.abandoned",
+  "profile.set",
 ]);
 
 /** schemas/event.schema.json 里 verb 的全部取值（信封校验用；可摄入的动词见 SLICE_VERBS）。 */
@@ -22,6 +23,7 @@ const SCHEMA_VERBS = new Set([
   "plan.created", "plan.task_done", "plan.task_undone",
   "reward.goal_set", "reward.redeem_requested", "reward.spent", "reward.adjusted", "reward.revoked",
   "import.voided", "attachment.erased", "text.erased",
+  "profile.set",
 ]);
 
 const ULID = "[0-7][0-9A-HJKMNP-TV-Z]{25}";
@@ -144,17 +146,40 @@ export function checkEnvelope(e) {
 }
 
 /**
+ * 每个可摄入动词的范围和允许的 actor（事件规格第 3 节的表）。
+ * scope 为 "attempt"：必须带 attempt_id 和 content；为 "none"：两样都不能带。
+ * @type {Record<string, {scope: "attempt"|"none", actors: string[]}>}
+ */
+const VERB_RULES = {
+  "attempt.started": { scope: "attempt", actors: ["learner"] },
+  "sim.observed": { scope: "attempt", actors: ["learner"] },
+  "item.answered": { scope: "attempt", actors: ["learner"] },
+  "hint.used": { scope: "attempt", actors: ["learner"] },
+  "answer.revealed": { scope: "attempt", actors: ["learner"] },
+  "attempt.completed": { scope: "attempt", actors: ["learner"] },
+  "attempt.abandoned": { scope: "attempt", actors: ["learner", "system"] },
+  "profile.set": { scope: "none", actors: ["caregiver"] },
+};
+
+/** profile.set 的教材：键是科目，值是允许的教材代号（docs/specs/profile.md 第 1 节）。 */
+const TEXTBOOKS = { math: ["renjiao"], science: ["jiaoke"] };
+
+/**
  * 当前可摄入动词的规则（第 3 节的表）。调用前信封已经合格。
  * @param {Record<string, any>} e
  * @returns {string|null}
  */
 export function checkVerb(e) {
   if (!SLICE_VERBS.includes(e.verb)) return "这一版不认这个动词";
-  if (!has(e, "attempt_id")) return `${e.verb} 必须带 attempt_id`;
-  if (!has(e, "content")) return `${e.verb} 必须带 content`;
-  const t = e.actor.type;
-  if (e.verb === "attempt.abandoned") { if (t !== "learner" && t !== "system") return "attempt.abandoned 的 actor 只能是 learner 或 system"; }
-  else if (t !== "learner") return `${e.verb} 的 actor 只能是 learner`;
+  const rule = VERB_RULES[e.verb];
+  if (rule.scope === "attempt") {
+    if (!has(e, "attempt_id")) return `${e.verb} 必须带 attempt_id`;
+    if (!has(e, "content")) return `${e.verb} 必须带 content`;
+  } else {
+    if (has(e, "attempt_id")) return `${e.verb} 不能带 attempt_id`;
+    if (has(e, "content")) return `${e.verb} 不能带 content`;
+  }
+  if (!rule.actors.includes(e.actor.type)) return `${e.verb} 的 actor 只能是 ${rule.actors.join(" 或 ")}`;
   const p = e.payload;
   switch (e.verb) {
     case "attempt.started": {
@@ -208,6 +233,18 @@ export function checkVerb(e) {
       const k = keys(p, ["item_id"], ["item_id"], "payload ");
       if (k) return k;
       if (!isStr(p.item_id)) return "item_id 不是字符串";
+      return null;
+    }
+    case "profile.set": {
+      const k = keys(p, ["rev", "entry_year", "textbooks"], ["rev", "entry_year", "textbooks"], "payload ");
+      if (k) return k;
+      if (!isInt(p.rev) || p.rev < 1) return "rev 要是正整数";
+      if (!isInt(p.entry_year) || p.entry_year < 2010 || p.entry_year > 2040) return "entry_year 要是 2010～2040 的整数";
+      if (!isObject(p.textbooks)) return "textbooks 不是对象";
+      for (const [subject, book] of Object.entries(p.textbooks)) {
+        if (!has(TEXTBOOKS, subject)) return `textbooks 多了 ${subject}`;
+        if (!TEXTBOOKS[subject].includes(book)) return `textbooks.${subject} 不认识`;
+      }
       return null;
     }
   }

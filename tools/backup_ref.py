@@ -608,7 +608,10 @@ def build_export(accepted_raws, *, exported_at, learner_id):
 
 
 # ---------------------------------------------------------------- 6. 恢复计划
-SLICE_VERBS = ("attempt.started", "sim.observed", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned")
+# 和 kernel/js/validate.js 的 SLICE_VERBS 一致。profile.set（docs/specs/profile.md 第 1 节）的范围、actor 和
+# payload（rev、entry_year 范围、textbooks 的键和值）全由 schemas/event.schema.json 查，这里不用另写。
+SLICE_VERBS = ("attempt.started", "sim.observed", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned",
+               "profile.set")
 _VALIDATOR = None
 
 

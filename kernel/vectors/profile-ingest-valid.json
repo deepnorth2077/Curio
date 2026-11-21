@@ -1,0 +1,119 @@
+{
+  "name": "profile-ingest-valid",
+  "about": "profile.set 的合法样例乱序、重复摄入 20 次，结果不变（和 profile-ingest 的合法部分相同）。",
+  "order_free": true,
+  "base": {
+    "schema": "event/2",
+    "learner_id": "lrn_01JC00000000000000000000K1",
+    "device_id": "dev_01JC00000000000000000000D1",
+    "actor": {
+      "type": "caregiver",
+      "id": "cg_01JC00000000000000000000G1"
+    }
+  },
+  "inputs": [
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P01",
+        "device_seq": 1,
+        "occurred_at": "2026-11-21T03:01:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 1,
+          "entry_year": 2024,
+          "textbooks": {
+            "math": "renjiao",
+            "science": "jiaoke"
+          }
+        }
+      },
+      "expect": "accepted",
+      "why": "完整的一份：rev 1，入学 2024，两门课的教材都有（规格第 1 节）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P02",
+        "device_seq": 2,
+        "occurred_at": "2026-11-21T03:02:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 2,
+          "entry_year": 2024,
+          "textbooks": {}
+        }
+      },
+      "expect": "accepted",
+      "why": "textbooks 可以是 {}（规格第 1 节：必填对象，可以为空）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P03",
+        "device_seq": 3,
+        "occurred_at": "2026-11-21T03:03:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 3,
+          "entry_year": 2024,
+          "textbooks": {
+            "math": "renjiao"
+          }
+        }
+      },
+      "expect": "accepted",
+      "why": "只设了 math；没出现的键表示没设"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P04",
+        "device_seq": 4,
+        "occurred_at": "2026-11-21T03:04:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 4,
+          "entry_year": 2010,
+          "textbooks": {}
+        }
+      },
+      "expect": "accepted",
+      "why": "entry_year 下界 2010 合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P05",
+        "device_seq": 5,
+        "occurred_at": "2026-11-21T03:05:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 5,
+          "entry_year": 2040,
+          "textbooks": {}
+        }
+      },
+      "expect": "accepted",
+      "why": "entry_year 上界 2040 合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000P06",
+        "device_seq": 6,
+        "occurred_at": "2026-11-21T03:06:00.000Z",
+        "verb": "profile.set",
+        "payload": {
+          "rev": 6,
+          "entry_year": 2024,
+          "textbooks": {
+            "science": "jiaoke"
+          }
+        }
+      },
+      "expect": "accepted",
+      "why": "只设了 science"
+    }
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {},
+    "conflicts": []
+  },
+  "worked": "6 条合法的 profile.set，没有任何一条进隔离区；它们不影响掌握度，投影是空的。"
+}
