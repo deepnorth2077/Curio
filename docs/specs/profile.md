@@ -71,9 +71,9 @@ grade(entry_year, nowMs) = schoolYear(nowMs) − entry_year + 1
 
 `projectProfile(events)` 也放在 `kernel/js/profile.js`，并写进事件规格第 6.4 节：
 
-- 输入照第 6.1 节：已接收的事件，去掉被 `import.voided` 作废的批次。
+- 输入照第 6.1 节：已接收的事件，去掉被 `import.voided` 作废的批次。`projectProfile` 收到的集合里可以有 `import.voided`，由它自己去掉作废批次里的 `profile.set`；集合里没有 `import.voided` 时一条也不去掉，所以先过滤过的输入也能用。
 - 在其中的 `profile.set` 里，`rev` 最大的生效；`rev` 相同（两台设备各自从同一份改）时，排序键 `(occurred_at, device_id, device_seq, event_id)` **最大**的生效。这是第 6.2 节「除非规则另有说明」的一种，和第 6.4 节航线打卡「排序键最大的决定」同类：资料是后改的盖过先改的。
-- 被盖过的旧资料是正常的历史，不列进 `conflicts`。`rev` 相同的几条里没生效的列进 `conflicts`，家长端可见。
+- 被盖过的旧资料是正常的历史，不列进 `conflicts`。`rev` 相同的几条里没生效的列进 `conflicts`，家长端可见。条目写成 `{event_id, reason: "same_rev"}`。
 - 输出 `{algorithm_version: "profile/1", profile: <生效那条的 payload 加上它的 occurred_at>，或 null, conflicts: [...]}`。纯函数，不读当前时间；年级由调用方拿 `profile.entry_year` 和当前时间另算。
 
 ### 4. 家长页
