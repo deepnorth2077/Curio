@@ -53,7 +53,8 @@
         "reward.revoked",
         "import.voided",
         "attachment.erased",
-        "text.erased"
+        "text.erased",
+        "profile.set"
       ]
     },
     "attempt_id": { "$ref": "#/$defs/attId" },
@@ -628,6 +629,32 @@
             "properties": {
               "text_id": { "$ref": "#/$defs/txtId" },
               "reason": { "enum": ["requested", "mistake", "other", "orphan", "lost"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "profile.set" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "caregiver" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rev", "entry_year", "textbooks"],
+            "properties": {
+              "rev": { "type": "integer", "minimum": 1 },
+              "entry_year": { "type": "integer", "minimum": 2010, "maximum": 2040 },
+              "textbooks": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "math": { "enum": ["renjiao"] },
+                  "science": { "enum": ["jiaoke"] }
+                }
+              }
             }
           }
         }

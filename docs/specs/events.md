@@ -149,6 +149,7 @@ payload 里以 `_text_id` 结尾或叫 `text_id` 的字段，值是 `txt_<ULID>`
 | `import.voided` | 无 | caregiver | `{batch_id, reason: wrong_learner \| duplicate \| bad_data \| other}`；作废一整批导入 |
 | `attachment.erased` | 无 | caregiver | `{attachment_id, reason: requested \| mistake \| other}`；附件的密钥已销毁 |
 | `text.erased` | 无 | learner、caregiver | `{text_id, reason: requested \| mistake \| other \| orphan \| lost}`；删除一段私人文字（第 4 节）。`orphan`：没有事件引用的文字；`lost`：文字已经永久找不回来（例如设备丢失） |
+| `profile.set` | 无 | caregiver | `{rev, entry_year, textbooks}`；舰长资料的完整一份，不是增量。`rev` 正整数；`entry_year` 整数 2010～2040；`textbooks` 必填对象，可以是 `{}`，键只能是 `math`（值 `renjiao`）、`science`（值 `jiaoke`）。详见 `docs/specs/profile.md` 第 1 节 |
 
 ### 3.6 不进事件流的东西
 
@@ -323,6 +324,13 @@ payload 里以 `_text_id` 结尾或叫 `text_id` 的字段，值是 `txt_<ULID>`
 - 状态：只有 `opened` 时是「待修」；有 `practiced` 后是「复练中」；有 `resolved` 后是「已修好」，之后的事件不再改变状态。
 - 同一张错题有多条 `repair.opened` 时，排序键最小的生效；多条 `repair.resolved` 时，也是排序键最小的生效。
 - 没有 `repair.opened` 的 `ticket_id` 上的事件，不生效，列进 `conflicts`。
+
+**舰长资料（profile/1）**
+
+- 输入照 6.1；集合里有 `import.voided` 时，投影自己去掉被作废批次里的 `profile.set`，没有时一条也不去掉。
+- `rev` 最大的 `profile.set` 生效；`rev` 相同时，排序键**最大**的生效（后改的盖过先改的）。
+- 被更高 `rev` 盖过的是正常的历史，不列进 `conflicts`；同 `rev` 里没生效的列进 `conflicts`，写成 `{event_id, reason: "same_rev"}`。
+- 输出 `{algorithm_version: "profile/1", profile, conflicts}`，`profile` 是生效那条的 payload 加上它的 `occurred_at`，没有时是 `null`。不读当前时间；年级由调用方另算（`docs/specs/profile.md` 第 2、3 节，`kernel/js/profile.js`）。
 
 **问题（questions/1）**
 

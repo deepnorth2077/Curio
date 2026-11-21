@@ -73,7 +73,7 @@ export function groupAttempts(events) {
   /** @type {Map<string, any[]>} */
   const g = new Map();
   for (const e of events) {
-    if (typeof e.attempt_id !== "string") continue;
+    if (typeof e.attempt_id !== "string") continue; // 范围「无」的动词（如 profile.set）不属于任何尝试
     if (!g.has(e.attempt_id)) g.set(e.attempt_id, []);
     /** @type {any[]} */ (g.get(e.attempt_id)).push(e);
   }
