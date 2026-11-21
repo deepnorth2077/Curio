@@ -33,8 +33,14 @@ jobs:
       - uses: actions/configure-pages@v5
       - name: 组装网站，打包中转服务
         run: |
-          mkdir -p _site/relay
-          cp -r prototype/. _site/
+          mkdir -p _site/relay _site/prototype
+          # 首页根地址打开正式外壳（#233，Luka 2026-11-22）；原型挪到 /prototype/ 继续可用，试玩页不动
+          cp -r prototype/. _site/prototype/
+          printf '%s\n' '<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>Curio</title>' \
+            '<meta name="viewport" content="width=device-width,initial-scale=1">' \
+            '<meta http-equiv="refresh" content="0; url=app/">' \
+            '<script>location.replace("app/" + location.hash)</script></head>' \
+            '<body><p><a href="app/">打开 Curio</a></p></body></html>' > _site/index.html
           # 在 Linux 上打包，scf_bootstrap 的可执行位（755）会保存在 zip 里；Windows 上重新压缩会丢掉它
           if [ -f relay/scf_bootstrap ]; then
             test -x relay/scf_bootstrap
@@ -48,7 +54,7 @@ jobs:
       - name: 构建首页的正式内容包和试玩包
         run: |
           pip install --quiet -r tools/requirements.txt
-          python preview/build.py --root . --bundle _site/content.js --trial-bundle _site/trial-content.js --copy-trial-modules
+          python preview/build.py --root . --bundle _site/prototype/content.js --trial-bundle _site/prototype/trial-content.js --copy-trial-modules
           for course in energy-dock newton-track; do
             python preview/build.py --root . --constellation "$course" --out "_site/preview/$course/index.html"
           done
