@@ -10,6 +10,9 @@ import { openStore } from "./store.js";
 import { openSession, localReceipt, assemble, guardDeps, LockLostError } from "./session.js";
 import { FrozenError } from "./commit.js";
 import { mountExploration, supportedExploration, STATION_COUNT } from "./exploration.js";
+import { Sk } from "./sketch.js";
+import { buildChart, overviewSvg, placeChartLabels, animateOverview, nearestCons, constellationLayout, constellationSvg,
+  chartStar, legendHtml, consName, BAND_NAME, GRADE_NAME } from "./starchart.js";
 import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT,
   refreshProfile, currentGradeOf, needsProfileHint, PROFILE_TEXT } from "./parent.js";
 
@@ -175,37 +178,6 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
   return result;
 }
 
-/* ============================================================
-   手绘线稿（从 prototype/index.html 的 sketchLib 拷来，确定性、带种子）
-   ============================================================ */
-function sketchLib() {
-  const R = (seed) => { let s = ((seed | 0) * 2654435761) >>> 0 || 7; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; };
-  const f = (n) => Math.round(n * 10) / 10;
-  function cr(p, closed) {
-    const n = p.length; let d = `M${f(p[0][0])} ${f(p[0][1])}`;
-    for (let i = 0; i < (closed ? n : n - 1); i++) {
-      const p1 = p[i], p2 = p[(i + 1) % n]; const p0 = (!closed && i === 0) ? p1 : p[(i - 1 + n) % n]; const p3 = (!closed && i + 2 >= n) ? p2 : p[(i + 2) % n];
-      d += `C${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(p1[1] + (p2[1] - p0[1]) / 6)} ${f(p2[0] - (p3[0] - p1[0]) / 6)} ${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])} ${f(p2[1])}`;
-    }
-    return d;
-  }
-  function line(x1, y1, x2, y2, seed, j) {
-    const r = R(seed); j = j == null ? 1 : j; const L = Math.hypot(x2 - x1, y2 - y1) || 1; const a = Math.min(1.8, .5 + L * .008) * j; const o = () => (r() - .5) * 2 * a;
-    const nx = -(y2 - y1) / L, ny = (x2 - x1) / L, bow = (r() - .5) * Math.min(L * .035, 6) * j;
-    return `M${f(x1 + o())} ${f(y1 + o())}Q${f((x1 + x2) / 2 + nx * bow)} ${f((y1 + y2) / 2 + ny * bow)} ${f(x2 + o())} ${f(y2 + o())}`;
-  }
-  function ellipse(cx, cy, rx, ry, seed, j) {
-    const r = R(seed); j = j == null ? 1 : j; const N = 12, a0 = r() * Math.PI * 2, turn = 1.05 + r() * .06, p = [];
-    for (let i = 0; i <= N; i++) { const t = a0 + i / N * Math.PI * 2 * turn, k = 1 + (r() - .5) * .07 * j; p.push([cx + Math.cos(t) * rx * k, cy + Math.sin(t) * ry * k]); }
-    return cr(p, false);
-  }
-  function blob(cx, cy, rx, ry, seed) { const r = R(seed), N = 9, p = []; for (let i = 0; i < N; i++) { const t = i / N * Math.PI * 2, k = 1 + (r() - .5) * .1; p.push([cx + Math.cos(t) * rx * k, cy + Math.sin(t) * ry * k]); } return cr(p, true) + "Z"; }
-  function rect(x, y, w, h, seed, j) { return line(x, y, x + w, y, seed, j) + line(x + w, y, x + w, y + h, seed + 1, j) + line(x + w, y + h, x, y + h, seed + 2, j) + line(x, y + h, x, y, seed + 3, j); }
-  function poly(pts, seed, closed, j) { let d = ""; const n = pts.length; for (let i = 0; i < (closed ? n : n - 1); i++) { const a = pts[i], b = pts[(i + 1) % n]; d += line(a[0], a[1], b[0], b[1], seed + i * 3, j); } return d; }
-  function area(pts) { return "M" + pts.map((q) => f(q[0]) + " " + f(q[1])).join("L") + "Z"; }
-  return { line, ellipse, blob, rect, poly, area, R };
-}
-const Sk = sketchLib();
 
 /* ============================================================
    小工具
@@ -311,7 +283,6 @@ function figureSvg(fig, seed = 7) {
 /* ============================================================
    外壳状态
    ============================================================ */
-const STATE_WORD = { untouched: "还没点亮", explored: "探索过", lit: "已点亮" };
 const app = {
   /** @type {"loading"|"readonly"|"recovering"|"writable"|"unfinished"|"stopped"} */ mode: "loading",
   /** @type {null|"busy"|"nolock"|"lost"|"nostore"} */ why: null,
@@ -325,6 +296,7 @@ const app = {
   /** @type {any} */ mastery: null,
   /** 正在做的挑战 */ quiz: /** @type {null|{q: any, def: any, node: any, content: any, attempt_id: string, startedMs: number, cur: null|{id: number, raw: string, receipt: object}, busy: boolean, error: any, solved: string|null, wrongBy: Record<string, string[]>, litBefore: boolean}} */ (null),
   selectedNode: null,
+  /** 星图正在看的星座（详情视图），null 是总览 */ chartZoom: /** @type {string|null} */ (null),
   exploration: /** @type {null|{host: ReturnType<typeof mountExploration>|null, leaving: Promise<boolean>|null, failed:boolean}} */ (null),
   view: /** @type {"chart"|"menu"|"quiz"|"exploration"|"parent"} */ ("chart"),
   notice: /** @type {string|null} */ (null),
@@ -412,54 +384,184 @@ function renderStop(title, text) {
 }
 
 /* ============================================================
-   星图
+   星图（#230）：画法在 starchart.js，这里只接数据和点选
    ============================================================ */
-function skySvg() {
-  const r = Sk.R(42);
-  let dots = "";
-  for (let i = 0; i < 46; i++) {
-    const x = r() * 1000, y = r() * 600, s = .8 + r() * 1.6;
-    dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(1)}" class="sky-dot"/>`;
-  }
-  let lines = "";
-  for (let i = 0; i < 5; i++) {
-    const y = 80 + i * 110 + r() * 20;
-    lines += `<path class="kq sky-line" d="${Sk.line(-20, y, 1020, y + (r() - .5) * 60, 300 + i, 1)}"/>`;
-  }
-  return `<svg class="sky" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${lines}${dots}</svg>`;
+/** 星图的数据：目录 + 已发布卡 + 掌握度投影 + 当前年级。 */
+function chartModel() {
+  return buildChart({ catalog: app.pack ? app.pack.catalog : null, nodes: app.pack ? app.pack.nodes : [], mastery: app.mastery, grade: app.currentGrade(Date.now()) });
 }
+let stopFloat = () => {};
+let chartWidth = 0;
 
 function renderChart() {
   app.view = "chart";
+  stopFloat();
   const main = $("#main");
   if (app.mode === "readonly" && !app.hasIdentity) { main.innerHTML = ""; return; }
-  const nodes = app.pack ? app.pack.nodes : [];
-  const lit = nodes.filter((n) => nodeState(n.id) === "lit").length;
-  const tip = nodes.some((node) => nodeActivities(node).some((a) => a.module))
-    ? "点一颗星，选动手探索或挑战。" : "点一颗星，开始挑战。";
-  const stars = nodes.map((n, i) => {
-    const st = nodeState(n.id);
-    const going = app.quiz && app.quiz.node.id === n.id && pendingQuiz(app.quiz);
-    return `<li><button class="star" type="button" data-node="${esc(n.id)}" data-state="${st}" aria-label="${esc(n.title)}，${STATE_WORD[st]}${going ? "，正在挑战" : ""}">
-      ${starSvg(st, 11 + i * 7, 132)}
-      <span class="star-name">${esc(n.title)}</span>
-      <span class="pill ${st === "lit" ? "lit" : ""}">${going ? (app.quiz.q.phase === "done" ? "看结果" : "接着做") : STATE_WORD[st]}</span>
-    </button></li>`;
-  }).join("");
-  main.innerHTML = `<section class="chart" aria-labelledby="chartTitle">
-    ${skySvg()}
-    <div class="chart-head"><h1 id="chartTitle">星图</h1><p class="sub">点亮了 ${lit} 颗，一共 ${nodes.length} 颗</p></div>
-    <ul class="stars">${stars}</ul>
-    <p class="chart-tip muted">${app.mode === "writable" ? tip : app.mode === "recovering" ? "正在准备……" : ""}</p>
-    ${showCleanHint() ? `<p class="clean-hint"><a href="#parent">${esc(PTEXT.cleanHint)}</a></p>` : ""}
+  const model = chartModel();
+  const c = app.chartZoom ? model.consById.get(app.chartZoom) : null;
+  if (c) renderConstellation(main, model, c);
+  else { app.chartZoom = null; renderOverview(main, model); }
+}
+
+/** 底部：家长入口、干净设备的提示、小字。总览和详情视图共用。 */
+function chartFoot() {
+  return `${showCleanHint() ? `<p class="clean-hint"><a href="#parent">${esc(PTEXT.cleanHint)}</a></p>` : ""}
     <div class="chart-foot">
       ${app.store && app.hasIdentity ? `<a class="parent-link" href="#parent">家长${needsDot({ clean: app.clean, lastBackup: app.lastBackup, firstEventAt: app.firstEventAt }, Date.now()) ? `<span class="dot" role="img" aria-label="很久没备份了"></span>` : ""}${app.profile && needsProfileHint({ clean: showCleanHint(), profile: app.profile.profile }) ? `<span class="p-hint">${esc(PROFILE_TEXT.missing)}</span>` : ""}</a>` : ""}
-      <p class="chart-note muted">试玩记录 · 只在这台设备上</p>
+      <p class="chart-note muted">记录存在这台设备上，记得在「家长」里备份</p>
     </div>
-    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-  </section>`;
-  main.querySelectorAll("[data-node]").forEach((b) => b.addEventListener("click", () => openNode(/** @type {HTMLElement} */ (b).dataset.node || "")));
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>`;
 }
+
+function renderOverview(main, model) {
+  const tip = app.mode === "recovering" ? "正在准备……" : "从里到外是年级。点一个星座，飞进去看看。";
+  main.innerHTML = `<section class="chart" aria-labelledby="chartTitle">
+    <div class="vhead"><div><h1 id="chartTitle">星图</h1><p class="sub">${tip}</p></div>
+      <div class="legend" aria-hidden="true">${legendHtml()}<span class="mono">${model.lit}/${model.points.length}</span></div></div>
+    <p class="sr">点亮了 ${model.lit} 颗，一共 ${model.points.length} 颗。</p>
+    <div class="graph shape-overview" id="graph">
+      <svg id="gsvg" viewBox="0 0 760 760" role="group" aria-label="星图：从里到外是年级圈，一圈分成八个主题"></svg>
+    </div>
+    ${model.currentBand == null ? `<p class="grade-hint">在「家长」里填年级，你那一圈会变大</p>` : ""}
+    ${chartFoot()}
+  </section>`;
+  const g = /** @type {HTMLElement} */ (main.querySelector("#graph"));
+  const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ (main.querySelector("#gsvg")));
+  chartWidth = g.clientWidth;
+  g.classList.toggle("narrow", g.clientWidth < 620);
+  const { svg: inner, geometry } = overviewSvg(model);
+  svg.innerHTML = inner;
+  placeChartLabels(svg, geometry);
+  if (document.fonts && document.fonts.status === "loading") document.fonts.ready.then(() => { if (svg.isConnected) placeChartLabels(svg, geometry); });
+  const cons = [...svg.querySelectorAll(".cons")], clinks = [...svg.querySelectorAll(".clink")];
+  const neighbors = (id) => { const s = new Set([id]); clinks.forEach((l) => { if (l.dataset.a === id) s.add(l.dataset.b); if (l.dataset.b === id) s.add(l.dataset.a); }); return s; };
+  const focus = (id) => {
+    g.classList.toggle("focusing", !!id);
+    if (!id) return;
+    const nb = neighbors(id);
+    cons.forEach((el) => el.classList.toggle("nb", nb.has(el.dataset.id)));
+    clinks.forEach((l) => l.classList.toggle("nb", l.dataset.a === id || l.dataset.b === id));
+  };
+  for (const el of cons) {
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); zoomTo(el.dataset.id, el); } });
+    el.addEventListener("pointerenter", () => focus(el.dataset.id));
+    el.addEventListener("pointerleave", () => focus(null));
+    el.addEventListener("focus", () => focus(el.dataset.id));
+    el.addEventListener("blur", () => focus(null));
+  }
+  // 点在哪个星座上：点击圈有重叠时取最近的
+  svg.addEventListener("click", (e) => {
+    const m = svg.getScreenCTM();
+    if (!m) return;
+    const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+    const id = nearestCons(geometry, pt.x, pt.y);
+    if (id) zoomTo(id, svg.querySelector(`.cons[data-id="${CSS.escape(id)}"]`));
+  });
+  stopFloat = animateOverview(svg, geometry, reducedMotion());
+}
+
+function zoomTo(id, el) {
+  const svg = /** @type {SVGSVGElement|null} */ (/** @type {unknown} */ (document.getElementById("gsvg")));
+  const go = () => { app.chartZoom = id; renderChart(); $("#consTitle")?.focus({ preventScroll: true }); };
+  if (reducedMotion() || !svg || !el || !svg.animate) { go(); return; }
+  stopFloat();
+  const r = el.getBoundingClientRect(), s = svg.getBoundingClientRect();
+  svg.style.transformOrigin = `${r.left + r.width / 2 - s.left}px ${r.top + r.height / 2 - s.top}px`;
+  svg.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(2.4)", opacity: 0 }], { duration: 320, easing: "ease-in" }).onfinish = () => {
+    go();
+    const ns = document.getElementById("gsvg");
+    if (ns && ns.animate) ns.animate([{ transform: "scale(.92)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 260, easing: "ease-out" });
+  };
+}
+
+function zoomOut() {
+  const from = app.chartZoom;
+  const go = () => {
+    app.chartZoom = null;
+    closeStarCard();
+    renderChart();
+    const back = from && document.querySelector(`#gsvg .cons[data-id="${CSS.escape(from)}"]`);
+    if (back) /** @type {HTMLElement} */ (back).focus({ preventScroll: true });
+    const ns = document.getElementById("gsvg");
+    if (ns && ns.animate && !reducedMotion()) ns.animate([{ transform: "scale(1.25)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 300, easing: "ease-out" });
+  };
+  const svg = document.getElementById("gsvg");
+  if (svg && svg.animate && !reducedMotion()) svg.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(.85)" }], { duration: 200 }).onfinish = go;
+  else go();
+}
+
+let measureCtx = null;
+function renderConstellation(main, model, c) {
+  const litN = c.points.filter((p) => p.state === "lit").length, openN = c.points.filter((p) => p.open).length;
+  main.innerHTML = `<section class="chart detail" aria-labelledby="consTitle">
+    <div class="vhead"><div>
+      <div class="crumb"><button type="button" class="back" data-zout>${backIcon()} 星图</button><span>/</span><span>${BAND_NAME[c.band]}</span></div>
+      <h1 id="consTitle" tabindex="-1">${esc(consName(c))}座</h1>
+      <p class="sub">${c.points.length} 颗星 · 开放 ${openN} 颗 · 点亮 ${litN} 颗</p></div>
+      <div class="legend" aria-hidden="true">${legendHtml()}</div></div>
+    <div class="graph scroll" id="graph"><svg id="gsvg" role="group" aria-label="${esc(consName(c))}座的星"></svg></div>
+    ${chartFoot()}
+  </section>`;
+  const wrap = /** @type {HTMLElement} */ (main.querySelector("#graph"));
+  chartWidth = wrap.clientWidth;
+  if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+  const css = getComputedStyle(wrap);
+  const fonts = { hand: css.getPropertyValue("--f-hand") || "sans-serif", sans: css.getPropertyValue("--f-sans") || "sans-serif" };
+  const measure = (text, font) => { measureCtx.font = font; return measureCtx.measureText(text).width; };
+  const L = constellationLayout(c, wrap.clientWidth, measure, fonts);
+  const busy = new Set(app.quiz && pendingQuiz(app.quiz) ? [app.quiz.node.id] : []);
+  const svg = main.querySelector("#gsvg");
+  svg.setAttribute("viewBox", `0 0 ${L.W} ${L.H}`);
+  svg.setAttribute("width", String(L.W));
+  svg.innerHTML = constellationSvg(c, L, busy);
+  main.querySelector("[data-zout]").addEventListener("click", zoomOut);
+  for (const el of svg.querySelectorAll(".node")) {
+    const open = () => openPoint(model, /** @type {HTMLElement} */ (el).dataset.id || "", /** @type {HTMLElement} */ (el));
+    el.addEventListener("click", open);
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+  }
+}
+
+/** 点了详情视图里的一颗星：已开放的进活动入口，没开放的弹小卡。 */
+function openPoint(model, id, el) {
+  const p = model.byId.get(id);
+  if (!p) return;
+  if (p.open) { closeStarCard(); openNode(id); return; }
+  showStarCard(p, el);
+}
+
+function showStarCard(p, from) {
+  closeStarCard();
+  const card = document.createElement("div");
+  card.className = "star-card";
+  card.id = "starCard";
+  card.setAttribute("role", "dialog");
+  card.setAttribute("aria-labelledby", "starCardTitle");
+  card.innerHTML = `<svg aria-hidden="true" width="34" height="34" viewBox="-16 -16 32 32">${chartStar("closed", 12)}</svg>
+    <div><h2 id="starCardTitle">${esc(p.title)}</h2>
+    <p>${esc(GRADE_NAME[p.grade] || p.grade)}${p.unit ? ` · ${esc(p.unit)}` : ""}</p>
+    <p class="star-card-word">还没开放</p></div>
+    <button type="button" class="btn" data-close>知道了</button>`;
+  const close = () => { closeStarCard(); if (from && from.isConnected) from.focus({ preventScroll: true }); };
+  card.querySelector("[data-close]").addEventListener("click", close);
+  card.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
+  $("#main").querySelector(".chart")?.appendChild(card);
+  /** @type {HTMLElement} */ (card.querySelector("[data-close]")).focus({ preventScroll: true });
+}
+function closeStarCard() { document.getElementById("starCard")?.remove(); }
+
+// 宽度变了（转屏、改窗口）：重画星图，排版和标签避让跟着变
+let resizeTimer = 0;
+if (typeof window !== "undefined") window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const g = document.getElementById("graph");
+    if (app.view === "chart" && g && Math.abs(g.clientWidth - chartWidth) > 24 && !document.getElementById("starCard")) {
+      renderChart();
+    }
+  }, 180);
+});
 
 /** 干净的设备（打开时读到的，而且之后没有新记录）：首页提示可以从备份恢复。 */
 const showCleanHint = () => app.clean && !!app.log && app.log.raw().length === 0 && app.log.quarantined().length === 0;
