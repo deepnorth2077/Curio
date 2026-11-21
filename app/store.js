@@ -6,6 +6,8 @@
 //   receipts  收据，主键 event_id。隔离的原文没有收据。
 //   meta      "identity" → {learner_id, device_id}；"nextSeq" → 下一条本机事件的 device_seq；
 //             版本 2 加："recoveryKey" → {digits, confirmed_at}；"lastBackup" → {at, file_name}；"restoring" → 恢复标记。
+//             "caregiver" → {id: "cg_<ULID>"}（docs/specs/profile.md 第 1 节；不升版本，已有的仓库里加一个键）。
+//             它不进备份：snapshot() 不读它，备份只从 snapshot() 的几个部分组装。
 //   imports   版本 2 加。本机的导入记录（import-record/1），主键 batch_id。
 //   archive   版本 2 加。恢复时从备份带过来的收据和导入记录 {kind, v}，自增主键，只追加。
 //   releases  版本 2 加。用过的发布包 {release_id, raw}，主键 release_id。
@@ -287,6 +289,31 @@ export async function openStore(opts = {}) {
           if (record.partial !== true) { abort("放弃时写 partial: true 的导入记录"); return; }
           tx.objectStore(IMPORTS).put(structuredClone(record));
           m.delete("restoring");
+        });
+      });
+    },
+
+    /* ---------------- 舰长资料（docs/specs/profile.md 第 1 节） ---------------- */
+
+    /** 读 caregiver；没有时是 null。 @returns {Promise<{id: string}|null>} */
+    getCaregiver() {
+      return run(db, [META], "readonly", (tx, _abort, set) => {
+        set(null);
+        got(tx.objectStore(META).get("caregiver"), (v) => { set(v && typeof v.id === "string" ? { id: v.id } : null); });
+      });
+    },
+    /**
+     * 一个事务：已经有 caregiver 就保留它，没有才写 {id}。返回存着的那个（只生成一次）。
+     * @param {{id: string}} cg @returns {Promise<{id: string}>}
+     */
+    ensureCaregiver(cg) {
+      return run(db, [META], "readwrite", (tx, abort, set) => {
+        if (typeof cg?.id !== "string" || !/^cg_[0-7][0-9A-HJKMNP-TV-Z]{25}$/.test(cg.id)) { abort("caregiver 的 id 格式不对"); return; }
+        const m = tx.objectStore(META);
+        got(m.get("caregiver"), (v) => {
+          if (v && typeof v.id === "string") { set({ id: v.id }); return; }
+          m.put({ id: cg.id }, "caregiver");
+          set({ id: cg.id });
         });
       });
     },
