@@ -3,6 +3,8 @@
 // 只通过 env 拿外壳的状态（存储、日志、写锁），不在模块顶层碰 DOM，Node 里也能导入。
 import { MESSAGES, generateKey, formatKey, parseKey, buildBackup, readBackup, fingerprint, buildExport } from "./backup.js";
 import { planRestore, runRestore, abandonRestore } from "./restore.js";
+import { projectProfile, schoolYear, grade } from "../kernel/js/profile.js";
+import { submitCaregiver } from "./session.js";
 
 /** 规格原话（2.3、6.1、第 7、10 节）。 */
 export const TEXT = Object.freeze({
@@ -19,6 +21,17 @@ export const TEXT = Object.freeze({
   unfinished: "上次恢复没做完",
   cleanHint: "以前在别的设备上用过？请家长从备份恢复",
 });
+/** 舰长资料（docs/specs/profile.md 第 4 节）的原话。 */
+export const PROFILE_TEXT = Object.freeze({
+  title: "舰长资料",
+  restoreFirst: "要从备份恢复的话，先恢复，资料会跟着回来",
+  noRestoreAfter: "保存以后，这台设备就不能再从备份恢复",
+  missing: "还没填舰长资料",
+});
+/** 教材代号 → 名字（profile.md 第 1 节的表）。 */
+export const BOOKS = Object.freeze({ math: { renjiao: "人教版" }, science: { jiaoke: "教科版" } });
+const SUBJECTS = [["math", "数学"], ["science", "科学"]];
+const HOME_OFFSET_MS = 8 * 3600 * 1000;
 const MISMATCH_FLAG = "curio.keyMismatch";
 const RESTORED_NOTE = "curio.restored";
 const DAY = 864e5;
@@ -48,6 +61,91 @@ export function needsDot(s, nowMs) {
   if (s.clean) return false;
   const from = s.lastBackup ? s.lastBackup.at : s.firstEventAt;
   return !!from && nowMs - Date.parse(from) > 30 * DAY;
+}
+
+/* ============================================================
+   舰长资料（docs/specs/profile.md 第 4、5 节）：纯函数，时间一律传时间戳
+   ============================================================ */
+/** 「这个学年：2026 年 9 月～2027 年 8 月」（学年按 UTC+8）。 @param {number} nowMs */
+export function schoolYearText(nowMs) {
+  const y = schoolYear(nowMs);
+  return `这个学年：${y} 年 9 月～${y + 1} 年 8 月`;
+}
+
+/** 当前年级 1～12；没有资料、还没上小学、已经毕业时是 null。 @param {{entry_year: number}|null|undefined} profile @param {number} nowMs */
+export function currentGradeOf(profile, nowMs) {
+  if (!profile) return null;
+  const g = grade(profile.entry_year, nowMs);
+  return Number.isInteger(g) && g >= 1 && g <= 12 ? g : null;
+}
+
+/** 确认句：「这个学年读 3 年级，数学人教版，科学教科版」；越界时开头照实说「还没上小学」「已经毕业」。 @param {any} profile @param {number} nowMs */
+export function profileSentence(profile, nowMs) {
+  const g = grade(profile.entry_year, nowMs);
+  const parts = [g < 1 ? "还没上小学" : g > 12 ? "已经毕业" : `这个学年读 ${g} 年级`];
+  for (const [k, name] of SUBJECTS) {
+    const code = profile.textbooks && profile.textbooks[k];
+    const book = code && Object.prototype.hasOwnProperty.call(BOOKS[k], code) ? BOOKS[k][code] : null;
+    if (book) parts.push(`${name}${book}`);
+  }
+  return parts.join("，");
+}
+
+/** 「11 月 21 日保存」：生效那条的 occurred_at，按 UTC+8。 @param {string} occurredAt */
+export function savedDateText(occurredAt) {
+  const d = new Date(Date.parse(occurredAt) + HOME_OFFSET_MS);
+  return `${d.getUTCMonth() + 1} 月 ${d.getUTCDate()} 日保存`;
+}
+
+/** 下拉默认选的年级：有资料时是当前年级（越界时取 1 或 12），没有时是 3。 @param {any} profile @param {number} nowMs */
+export function defaultGrade(profile, nowMs) {
+  if (!profile) return 3;
+  return Math.min(12, Math.max(1, grade(profile.entry_year, nowMs)));
+}
+
+/**
+ * 要写的 profile.set 的 payload：rev = 当前生效的 rev + 1（没有时 1），entry_year = schoolYear(现在) − N + 1。
+ * @param {any} current 当前生效的资料（projectProfile(...).profile）或 null
+ * @param {number} gradeN 1～12 @param {number} nowMs @param {Record<string, string>} textbooks
+ */
+export function profilePayload(current, gradeN, nowMs, textbooks) {
+  if (!Number.isInteger(gradeN) || gradeN < 1 || gradeN > 12) throw new Error("年级要是 1～12");
+  return { rev: current ? current.rev + 1 : 1, entry_year: schoolYear(nowMs) - gradeN + 1, textbooks: { ...textbooks } };
+}
+
+/** 家长入口的「还没填舰长资料」：不干净、而且还没有资料时才显示。 @param {{clean: boolean, profile: any}} s */
+export const needsProfileHint = (s) => !s.clean && !s.profile;
+
+/** 重新算 app.profile（profile/1 的投影）。 @param {any} app */
+export function refreshProfile(app) {
+  app.profile = projectProfile(app.log ? app.log.events() : []);
+  return app.profile;
+}
+
+/** 这个窗口现在能不能保存资料：拿着写锁、可以写（不是「上次恢复没做完」）、会话已经开好。 @param {any} env */
+const canSaveProfile = (env) => !!(env.holdsLock() && env.app.mode === "writable" && env.app.session && !env.app.session.committer.frozen);
+
+/**
+ * 保存舰长资料：写一条 profile.set（走 committer 的同一条写入路径），然后更新 app.profile。
+ * @param {any} env 需要 app、holdsLock、ids（含 caregiver、event）、now；nowMs 可选（默认 Date.now）
+ * @param {{grade: number, textbooks: Record<string, string>}} choice
+ * @returns {Promise<{ok: true, raw: string}|{ok: false, error: "readonly"|"failed", cause?: any}>}
+ */
+export async function saveProfile(env, choice) {
+  const app = env.app;
+  if (!canSaveProfile(env)) return { ok: false, error: "readonly" };
+  const nowMs = env.nowMs ? env.nowMs() : Date.now();
+  const current = app.profile ? app.profile.profile : null;
+  const payload = profilePayload(current, choice.grade, nowMs, choice.textbooks);
+  try {
+    const s = app.session;
+    const { raw } = await submitCaregiver({ store: app.store, identity: s.identity, committer: s.committer }, { ids: env.ids, now: env.now }, { verb: "profile.set", payload });
+    refreshProfile(app);
+    app.clean = false;
+    return { ok: true, raw };
+  } catch (e) {
+    return { ok: false, error: "failed", cause: e };
+  }
 }
 
 /** 文件头里的 created_at 用这台设备的时间显示。 @param {string} utc */
@@ -111,6 +209,7 @@ export async function renderParent(env) {
     let restored = null;
     try { restored = JSON.parse(safeStorage("session")?.getItem(RESTORED_NOTE) || "null"); safeStorage("session")?.removeItem(RESTORED_NOTE); } catch { restored = null; }
     pv.snap = snap;
+    const profileCard = profileCardHtml(env, clean);
     const restoreForm = `<form class="p-form" data-p="restoreForm" autocomplete="off">
         <label class="p-label" for="rf">1. 选备份文件（名字像 curio-backup-….curio）</label>
         <input id="rf" name="file" type="file" class="p-file">
@@ -131,8 +230,9 @@ export async function renderParent(env) {
         ${persisted ? "" : `<p class="muted small">${TEXT.mayClear}</p>`}
       </div>
       ${clean ? `<div class="card main-card"><h2>从备份恢复</h2><p>以前在别的设备上用过？选那台设备做的备份文件，输入恢复密钥。</p>${restoreForm}</div>
+        ${profileCard}
         <div class="card"><div class="btns start"><button class="btn" type="button" data-p="export">导出成文字</button></div></div>`
-      : `<div class="card"><h2>备份</h2>
+      : `${profileCard}<div class="card"><h2>备份</h2>
           <div class="btns start"><button class="btn ink big" type="button" data-p="backup">做一份备份</button></div>
           <p class="small">${TEXT.keepSafe}</p>
           <div class="btns start"><button class="btn" type="button" data-p="export">导出成文字</button>${snap.recoveryKey ? `<button class="btn" type="button" data-p="showKey">再看一次恢复密钥</button>` : ""}</div>
@@ -214,9 +314,53 @@ export async function renderParent(env) {
   if (my !== token) return;
   main.innerHTML = `<section class="parent" aria-label="家长页">${html}</section>`;
   bind(env);
-  const focus = /** @type {HTMLElement|null} */ (main.querySelector(pv.screen === "confirm" ? "#ck" : "h1"));
-  if (focus) { if (focus.tagName === "H1") focus.setAttribute("tabindex", "-1"); focus.focus({ preventScroll: true }); }
-  main.scrollTo({ top: 0 });
+  const sel = pv.screen === "confirm" ? "#ck" : pv.screen === "home" && pv.profileConfirm ? '[data-p="profileYes"]' : pv.screen === "home" && pv.profileFocus ? "#profileCard" : "h1";
+  const focus = /** @type {HTMLElement|null} */ (main.querySelector(sel) || main.querySelector("h1"));
+  if (focus) { if (focus.tagName !== "BUTTON" && focus.tagName !== "INPUT") focus.setAttribute("tabindex", "-1"); focus.focus({ preventScroll: true }); }
+  if (focus && focus.tagName !== "H1") focus.scrollIntoView({ block: "center" });
+  else main.scrollTo({ top: 0 });
+  pv.profileFocus = false;
+}
+
+/** 「舰长资料」一块。 @param {Env} env @param {boolean} clean */
+function profileCardHtml(env, clean) {
+  const { app, esc } = env;
+  const nowMs = Date.now();
+  const prof = app.profile ? app.profile.profile : null;
+  const can = canSaveProfile(env);
+  const g = pv.pGrade ?? defaultGrade(prof, nowMs);
+  const opts = Array.from({ length: 12 }, (_, i) => i + 1).map((n) => `<option value="${n}"${n === g ? " selected" : ""}>这个学年读 ${n} 年级</option>`).join("");
+  const book = (k) => Object.entries(BOOKS[k]).map(([code, name]) => `<option value="${code}" selected>${esc(name)}</option>`).join("");
+  const action = pv.profileConfirm && can
+    ? `<div class="p-confirm" role="alertdialog" aria-labelledby="pcq"><p id="pcq"><b>${PROFILE_TEXT.noRestoreAfter}。</b>还要保存吗？</p>
+        <div class="btns start"><button class="btn ink big" type="button" data-p="profileYes">保存</button><button class="btn big" type="button" data-p="profileNo">先不保存</button></div></div>`
+    : `<div class="btns start p-row"><button class="btn ink big" type="submit"${can ? "" : " disabled"}>保存</button>${clean ? `<span class="small p-aside">${PROFILE_TEXT.noRestoreAfter}</span>` : ""}</div>`;
+  return `<div class="card" id="profileCard"><h2>${PROFILE_TEXT.title}</h2>
+    ${clean ? `<p>${PROFILE_TEXT.restoreFirst}</p>` : ""}
+    ${prof ? `<p class="p-stat" data-p="profileSentence">${esc(profileSentence(prof, nowMs))}</p><p class="muted small">${esc(savedDateText(prof.occurred_at))}</p>` : ""}
+    ${pv.profileMsg ? `<p class="p-msg" role="alert">${esc(pv.profileMsg)}</p>` : ""}
+    <form class="p-form" data-p="profileForm" autocomplete="off">
+      <p class="p-label" id="pyl">${esc(schoolYearText(nowMs))}</p>
+      <select id="pg" name="grade" class="p-select" aria-labelledby="pyl">${opts}</select>
+      <label class="p-label" for="pm">数学教材</label>
+      <select id="pm" name="math" class="p-select">${book("math")}</select>
+      <label class="p-label" for="ps">科学教材</label>
+      <select id="ps" name="science" class="p-select">${book("science")}</select>
+      ${action}
+      ${can ? "" : `<p class="muted small">这个窗口现在只能看，不能保存。</p>`}
+    </form></div>`;
+}
+
+/** 点保存（干净设备先确认）以后写资料。 @param {Env} env @param {(patch: any) => void} go */
+async function doSaveProfile(env, go) {
+  const form = /** @type {HTMLFormElement|null} */ (env.main.querySelector('[data-p="profileForm"]'));
+  const val = (n) => form ? /** @type {HTMLSelectElement} */ (form.elements.namedItem(n)).value : "";
+  const choice = { grade: Number(pv.pGrade ?? val("grade")), textbooks: { math: val("math") || "renjiao", science: val("science") || "jiaoke" } };
+  running = true;
+  let r;
+  try { r = await saveProfile(env, choice); } finally { running = false; }
+  if (!r.ok) return go({ profileConfirm: false, profileFocus: true, profileMsg: r.error === "readonly" ? "这个窗口现在只能看，不能保存。" : "没存上，请再试一次" });
+  go({ profileConfirm: false, profileMsg: null, pGrade: null, profileFocus: true });
 }
 
 /* ============================================================
@@ -245,6 +389,20 @@ function bind(env) {
   on("share", () => shareFile(env, go));
   on("doRestore", () => doRestore(env, go));
   on("reloadParent", () => env.reload(true));
+  on("profileYes", () => doSaveProfile(env, go));
+  on("profileNo", () => go({ profileConfirm: false, profileFocus: true }));
+  const pf = /** @type {HTMLFormElement|null} */ (main.querySelector('[data-p="profileForm"]'));
+  if (pf) {
+    const gs = /** @type {HTMLSelectElement} */ (pf.elements.namedItem("grade"));
+    gs.addEventListener("change", () => { pv.pGrade = Number(gs.value); });
+    pf.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (running) return;
+      pv.pGrade = Number(gs.value);
+      if (pv.snap && isClean(pv.snap)) go({ profileConfirm: true, profileMsg: null });
+      else doSaveProfile(env, go);
+    });
+  }
   const cf = /** @type {HTMLFormElement|null} */ (main.querySelector('[data-p="confirmForm"]'));
   if (cf) cf.addEventListener("submit", (e) => { e.preventDefault(); confirmKey(env, go, /** @type {HTMLInputElement} */ (cf.elements.namedItem("key")).value); });
   const rf = /** @type {HTMLFormElement|null} */ (main.querySelector('[data-p="restoreForm"]'));

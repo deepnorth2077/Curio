@@ -10,7 +10,8 @@ import { openStore } from "./store.js";
 import { openSession, localReceipt, assemble, guardDeps, LockLostError } from "./session.js";
 import { FrozenError } from "./commit.js";
 import { mountExploration, supportedExploration, STATION_COUNT } from "./exploration.js";
-import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT } from "./parent.js";
+import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT,
+  refreshProfile, currentGradeOf, needsProfileHint, PROFILE_TEXT } from "./parent.js";
 
 /** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。 */
 export const ENGINE_LEVEL = 1;
@@ -222,6 +223,7 @@ const ids = {
   device: () => "dev_" + ulid(Date.now(), rand10()),
   event: () => "evt_" + ulid(Date.now(), rand10()),
   attempt: () => "att_" + ulid(Date.now(), rand10()),
+  caregiver: () => "cg_" + ulid(Date.now(), rand10()),
 };
 const now = () => new Date().toISOString();
 /** 洗牌（活动的 shuffle 为真时）。 */
@@ -330,7 +332,20 @@ const app = {
   clean: false,
   /** @type {{at: string, file_name: string}|null} */ lastBackup: null,
   /** @type {string|null} */ firstEventAt: null,
+  /** 舰长资料的投影 profile/1（docs/specs/profile.md 第 3、5 节）：启动时和每次摄入以后重算。还没有日志时是 null。 */
+  /** @type {ReturnType<typeof import("../kernel/js/profile.js").projectProfile>|null} */ profile: null,
+  /** 当前年级 1～12，或 null（没填、还没上小学、已经毕业）。第 2 步画星图时用。 @param {number} [nowMs] */
+  currentGrade: (nowMs = Date.now()) => currentGrade(nowMs),
 };
+
+/**
+ * 当前年级（docs/specs/profile.md 第 5 节）：app.profile 里没有资料，或者算出的年级不在 1～12 时是 null。
+ * @param {number} nowMs 时间戳（毫秒）
+ * @returns {number|null}
+ */
+export function currentGrade(nowMs) {
+  return currentGradeOf(app.profile ? app.profile.profile : null, nowMs);
+}
 
 /** 拿着写锁、可以写存储（「上次恢复没做完」时也拿着锁，只是不能开始挑战）。 */
 const holdsLock = () => (app.mode === "writable" || app.mode === "unfinished") && !app.lockLost;
@@ -338,6 +353,7 @@ const holdsLock = () => (app.mode === "writable" || app.mode === "unfinished") &
 /** 给家长页的外壳接口。 */
 const parentEnv = () => ({
   app, main: $("#main"), esc, now, holdsLock,
+  ids: guardDeps({ ids, now }, () => app.lockLost).ids,
   newBatchId: () => "imp_" + ulid(Date.now(), rand10()),
   reload: (toParent) => { if (toParent) location.hash = "#parent"; location.reload(); },
 });
@@ -353,6 +369,7 @@ function renderCurrent() {
 
 function recompute() {
   app.mastery = app.log ? projectMastery(app.log.events()) : null;
+  if (app.log) refreshProfile(app); else app.profile = null;
 }
 const nodeState = (id) => (app.mastery && app.mastery.nodes[id] ? app.mastery.nodes[id].state : "untouched");
 
@@ -436,7 +453,7 @@ function renderChart() {
     <p class="chart-tip muted">${app.mode === "writable" ? tip : app.mode === "recovering" ? "正在准备……" : ""}</p>
     ${showCleanHint() ? `<p class="clean-hint"><a href="#parent">${esc(PTEXT.cleanHint)}</a></p>` : ""}
     <div class="chart-foot">
-      ${app.store && app.hasIdentity ? `<a class="parent-link" href="#parent">家长${needsDot({ clean: app.clean, lastBackup: app.lastBackup, firstEventAt: app.firstEventAt }, Date.now()) ? `<span class="dot" role="img" aria-label="很久没备份了"></span>` : ""}</a>` : ""}
+      ${app.store && app.hasIdentity ? `<a class="parent-link" href="#parent">家长${needsDot({ clean: app.clean, lastBackup: app.lastBackup, firstEventAt: app.firstEventAt }, Date.now()) ? `<span class="dot" role="img" aria-label="很久没备份了"></span>` : ""}${app.profile && needsProfileHint({ clean: showCleanHint(), profile: app.profile.profile }) ? `<span class="p-hint">${esc(PROFILE_TEXT.missing)}</span>` : ""}</a>` : ""}
       <p class="chart-note muted">试玩记录 · 只在这台设备上</p>
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
