@@ -22,7 +22,9 @@ KERNEL_VECTORS = REPO / "kernel/vectors"
 GRADING = REPO / "engine/vectors/grading.json"
 EVENT_SCHEMA = json.loads((REPO / "schemas/event.schema.json").read_text(encoding="utf-8"))
 VALIDATOR = Draft202012Validator(EVENT_SCHEMA)
-SLICE_VERBS = {"sim.observed", "attempt.started", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned"}
+SLICE_VERBS = {"sim.observed", "attempt.started", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned", "profile.set"}
+# profile.set（docs/specs/profile.md 第 1 节）：键和值都是枚举
+PROFILE_TEXTBOOKS = {"math": {"renjiao"}, "science": {"jiaoke"}}
 # attempt.started 的 grader（CURIO-013）：整串匹配，最多 32 个字符。schema 也查，这里再用 fullmatch 查一遍，
 # 因为 jsonschema 的 pattern 用 re.search，「$」会放过末尾的换行。
 GRADER = re.compile(r"[a-z][a-z0-9-]*/[1-9][0-9]*")
@@ -81,9 +83,28 @@ def same(a, b):
     return a == b
 
 
+def _int(x):
+    return isinstance(x, int) and not isinstance(x, bool)
+
+
+def _profile_set_ok(event):
+    """profile.set 的规则（规格第 1 节）：caregiver、范围无、payload 恰好 rev/entry_year/textbooks。"""
+    p = event["payload"]
+    if event["actor"]["type"] != "caregiver" or "attempt_id" in event or "content" in event:
+        return False
+    if set(p) != {"rev", "entry_year", "textbooks"}:
+        return False
+    if not (_int(p["rev"]) and p["rev"] >= 1 and _int(p["entry_year"]) and 2010 <= p["entry_year"] <= 2040):
+        return False
+    tb = p["textbooks"]
+    return isinstance(tb, dict) and all(k in PROFILE_TEXTBOOKS and v in PROFILE_TEXTBOOKS[k] for k, v in tb.items())
+
+
 def _slice_payload_ok(event):
     """schema 之外、本切片还要查的 payload 规则。answer.revealed 的 {item_id} 由 schema 查全。"""
     payload = event["payload"]
+    if event["verb"] == "profile.set":
+        return _profile_set_ok(event)
     if event["verb"] == "attempt.started" and "grader" in payload:
         grader = payload["grader"]
         return isinstance(grader, str) and len(grader) <= 32 and GRADER.fullmatch(grader) is not None
@@ -187,6 +208,8 @@ def _check_rule(events, rule):
 def ref_mastery(events):
     attempts = {}
     for e in events:
+        if e["verb"] == "profile.set":
+            continue  # 不属于任何尝试，不影响掌握度
         attempts.setdefault(e["attempt_id"], []).append(e)
     nodes = {e["content"]["node_id"]: {"explored": False, "best": None} for e in events if "content" in e}
     conflicts = []
