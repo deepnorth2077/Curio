@@ -17,11 +17,13 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
   --c-math:#ECCDB6; --c-math-2:#D59E7A; --c-math-bg:#F2E1D3;
   --c-sci:#CCD6C0; --c-sci-2:#93A982; --c-sci-bg:#DCE3D2;
   --c-sky:#CFDCE6; --wash:#EFE4D6; --gold:#E7B84A;
+  --l1:#C2603F; --l2:#C9962A; --l3:#4F7FA8; --l4:#8E5B8A; --l5:#3E8C86; --l6:#D07A2E; --l7:#6E9A4E; --l8:#5D6B8A;
   --good:#3B7A56; --bad:#B4432E; --good-soft:#DCEBDF; --bad-soft:#F5DFD8;
   --shadow:0 1px 2px rgba(31,30,28,.06),0 8px 28px rgba(31,30,28,.08);
   --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
   --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --f-hand:"ZCOOL KuaiLe","Noto Sans SC","PingFang SC",sans-serif;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -31,6 +33,7 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
   --c-math:#5A4536; --c-math-2:#9A7558; --c-math-bg:#33291F;
   --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
   --c-sky:#2D3B47; --wash:#2A2738; --gold:#D9AE4E;
+  --l1:#E08A6C; --l2:#E0B65A; --l3:#7FA8D0; --l4:#B98AB5; --l5:#6CB8B1; --l6:#E9A05F; --l7:#97C277; --l8:#93A0C2;
   --good:#7CC79A; --bad:#EF8A72; --good-soft:#203528; --bad-soft:#3A2420;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark}}
 :root[data-theme="dark"]{
@@ -40,6 +43,7 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
   --c-math:#5A4536; --c-math-2:#9A7558; --c-math-bg:#33291F;
   --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
   --c-sky:#2D3B47; --wash:#2A2738; --gold:#D9AE4E;
+  --l1:#E08A6C; --l2:#E0B65A; --l3:#7FA8D0; --l4:#B98AB5; --l5:#6CB8B1; --l6:#E9A05F; --l7:#97C277; --l8:#93A0C2;
   --good:#7CC79A; --bad:#EF8A72; --good-soft:#203528; --bad-soft:#3A2420;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark}
 
@@ -87,28 +91,76 @@ main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;paddin
 .pill{display:inline-flex;align-items:center;border-radius:99px;padding:0 10px;font-size:13px;background:var(--hover);color:var(--text);line-height:24px}
 .pill.lit{background:var(--ink);color:var(--pane)}
 
-/* 星图 */
-.chart{position:relative;flex:1;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px 8px;overflow:hidden;background:var(--pane)}
-.sky{position:absolute;inset:0;width:100%;height:100%}
-.sky-dot{fill:var(--muted);opacity:.45}
-.sky-line{opacity:.22}
-.chart-head{position:absolute;top:16px;left:max(18px,env(safe-area-inset-left,0px))}
-.chart-head h1{font-size:24px}
+/* 星图（#230）：照原型首页主题形状试玩版（?shapes=1）的样子 */
+.chart{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;background:var(--pane)}
+.vhead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px 12px;flex-wrap:wrap;padding-block:14px 6px;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.vhead h1{font-size:24px}
+.vhead h1:focus{outline:none}
 .sub{color:var(--muted);font-size:14px}
-.stars{position:relative;list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:24px;justify-content:center}
-.star{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 18px 16px;border-radius:24px;min-width:180px}
-.star:hover{background:color-mix(in srgb,var(--hover) 70%,transparent)}
-.star svg{display:block}
-.star-name{font-family:var(--f-serif);font-weight:600;color:var(--ink);font-size:19px}
-.chart-tip{position:relative;margin-top:18px;font-size:15px}
-/* 底部的「家长」和小字跟在内容后面（不叠在上面）；上下两个弹性空白让星星在高屏幕上照旧居中 */
-.chart::before{content:"";flex:1 1 0}
-.chart-foot{position:relative;flex:1 1 0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;margin-top:18px;padding:0 12px max(0px,env(safe-area-inset-bottom,0px))}
+.crumb{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);flex-wrap:wrap;margin-left:-6px}
+.legend{display:flex;gap:6px 12px;flex-wrap:wrap;font-size:13px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:4px}
+.graph{flex:1;min-height:300px;position:relative}
+.graph>svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.graph.scroll{flex:none;min-height:0;padding:0 max(6px,env(safe-area-inset-right,0px)) 8px max(6px,env(safe-area-inset-left,0px))}
+.graph.scroll>svg{position:static;display:block;width:100%;height:auto;max-width:860px;margin:0 auto}
+/* 手机竖屏：图是方的，不留上下大片空白 */
+@media (max-width:619px){.graph:not(.scroll){flex:none;width:100%;aspect-ratio:1/1;min-height:0}}
+.grade-hint{font-size:13px;color:var(--muted);padding:2px max(14px,env(safe-area-inset-right,0px)) 0 max(14px,env(safe-area-inset-left,0px))}
+.cons,.node{cursor:pointer;transition:opacity .25s}
+.cons .hit,.node .hit{fill:transparent}
+.cons:hover .cname,.cons:focus-visible .cname{fill:var(--accent)}
+.cons:focus-visible{outline:none}
+.cons:focus-visible .hit,.node:focus-visible .hit{stroke:var(--accent);stroke-width:2.5;vector-effect:non-scaling-stroke}
+.node:focus-visible{outline:none}
+.graph.focusing .cons:not(.nb){opacity:.25}
+.graph.focusing .clink:not(.nb){opacity:.1}
+.clink{transition:opacity .25s}
+.lbl{font-family:var(--f-sans);font-size:14px;fill:var(--ink)}
+.lbl.muted-lbl{fill:var(--muted)}
+.cname{font-family:var(--f-sans);font-size:14px;fill:var(--ink);font-weight:500;transition:fill .2s}
+.cname.small{font-size:11.5px;font-weight:400;fill:var(--muted)}
+.ccount{font-family:var(--f-mono);font-size:11px;fill:var(--muted)}
+.ring-lbl{font-family:var(--f-hand);font-size:15px;fill:var(--muted)}
+.sector-lbl{font-family:var(--f-serif);font-size:18px;fill:var(--ink);font-weight:600}
+.anno{font-family:var(--f-hand);font-size:17px;fill:var(--accent)}
+.unit-lbl{font-family:var(--f-hand);font-size:16px;fill:var(--muted)}
+.graph.narrow .lbl,.graph.narrow .cname{font-size:19px}.graph.narrow .cname.small{font-size:15px}.graph.narrow .ring-lbl{font-size:18px}.graph.narrow .anno{font-size:21px}.graph.narrow .ccount{font-size:14px}
+.band-now{fill:none;stroke:var(--wash);opacity:.9}
+.sel-ring{fill:none;stroke:var(--accent);stroke-width:2.2}
+.spark{stroke:var(--accent)}
+/* 四种样子：点亮（金色实心加光芒）、探过（半边填色）、未探（实线空心）、未开放（淡墨虚线，不填色） */
+.shape-stroke{fill:none;stroke:var(--ink);stroke-width:1.1;stroke-opacity:.76;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.shape-face{fill:var(--bg)}
+.shape-mark.lit .shape-face{fill:var(--l2)}
+.shape-half{fill:var(--l2)}
+.shape-outline,.star-rays{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.shape-mark.untouched .shape-outline{stroke:var(--muted)}
+.shape-mark.closed .shape-outline{stroke:var(--muted);stroke-opacity:.7;stroke-width:1.3;stroke-dasharray:3 2.6}
+
+.dot.lit{fill:var(--ink)}
+.dot.explored{fill:var(--pane);stroke:var(--ink);stroke-width:1.2}
+.dot.untouched{fill:var(--pane);stroke:var(--muted);stroke-width:1.2}
+.dot.closed{fill:none;stroke:var(--muted);stroke-width:1;stroke-opacity:.8;stroke-dasharray:1.3 1.3}
+.shape-overview .shape-stroke{stroke-width:1.4;stroke-opacity:.94}
+.shape-overview .shape-point .shape-outline{stroke-width:.9;vector-effect:non-scaling-stroke}
+.shape-overview .shape-point .shape-mark.closed .shape-outline{stroke-width:1.25;stroke-dasharray:2 1.4;stroke-opacity:.85}
+.shape-overview #gsvg>path.kq{stroke-width:.8;stroke-opacity:.48}
+.shape-overview .cname,.shape-overview .ring-lbl,.shape-overview .ccount,.shape-overview .anno{paint-order:stroke;stroke:var(--pane);stroke-width:2px;stroke-linejoin:round}
+/* 没开放的星：小卡 */
+.star-card{position:fixed;z-index:5;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom,0px));width:min(440px,calc(100% - 24px));display:flex;gap:12px;align-items:flex-start;background:var(--pane);border:1.5px solid var(--ink);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow);color:var(--ink)}
+.star-card svg{flex:none;margin-top:2px}
+.star-card>div{flex:1;min-width:0}
+.star-card h2{font-size:19px}
+.star-card p{font-size:14px;color:var(--muted)}
+.star-card .star-card-word{color:var(--ink);font-weight:600;margin-top:2px}
+.star-card .btn{flex:none;align-self:center}
+.chart-foot{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;margin-top:6px;padding:0 12px max(6px,env(safe-area-inset-bottom,0px))}
 .chart-note{text-align:center;font-size:12px}
 .parent-link{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:0 14px;border-radius:10px;color:var(--muted);font-size:14px;text-decoration:none}
 .parent-link:hover{background:var(--hover);color:var(--ink)}
 .parent-link .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent)}
-.clean-hint{position:relative;margin-top:14px;font-size:16px;text-align:center}
+.clean-hint{position:relative;margin-top:8px;font-size:16px;text-align:center;padding:0 12px}
 .clean-hint a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:4px;text-decoration-thickness:2px}
 .banner-btns{display:flex;gap:10px;flex-wrap:wrap}
 
@@ -234,7 +286,7 @@ main:has(>.exploration){overflow:visible}
 .stop h1{font-size:22px;margin-bottom:8px}
 
 @media (prefers-reduced-motion:no-preference){
-  .choice,.btn,.star,.back,.parent-link{transition:background-color .15s ease,border-color .15s ease}
+  .choice,.btn,.back,.parent-link{transition:background-color .15s ease,border-color .15s ease}
   /* 点亮动效：一共 1.2 秒（规格 6.4：不超过 1.5 秒）；reduced-motion 时没有这些规则，直接是亮的样子 */
   .result-star.lighting svg{animation:light-pop 1.2s cubic-bezier(.2,.8,.3,1) both;transform-origin:50% 52%}
   .result-star.lighting .star-fill{animation:light-fill .8s ease-out .15s both}
@@ -243,10 +295,8 @@ main:has(>.exploration){overflow:visible}
 @keyframes light-pop{0%{transform:scale(.72) rotate(-10deg)}55%{transform:scale(1.12) rotate(3deg)}100%{transform:none}}
 @keyframes light-fill{from{fill:var(--pane)}to{fill:var(--gold)}}
 @keyframes light-ray{from{opacity:0}to{opacity:1}}
-/* 窄屏上三颗星竖着排，给左上角的「星图」标题留出位置 */
-@media (max-width:759px){.chart{padding-top:84px}}
 @media (min-width:760px){
-  .chart-head h1{font-size:28px}
+  .vhead h1{font-size:28px}
   .stem{font-size:20px}
 }
 </style>
