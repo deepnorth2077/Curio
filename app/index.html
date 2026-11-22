@@ -81,24 +81,113 @@ p{margin:0}
 .shell{flex:1;display:flex;min-height:0}
 main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
 
-/* 导航（照原型的 .ribbon、.bottomnav）：只有星图、地铁两项；挑战、动手探索、家长页里不显示，家长入口照旧在星图底部 */
+/* 导航（照原型的 .ribbon、.bottomnav，#233）：桌面左侧工具条，手机底部入口，只有一套。挑战、动手探索里不显示 */
 .ribbon{display:none}
-.ibtn{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;color:var(--muted);position:relative}
+.ibtn{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;color:var(--muted);position:relative;flex:none}
 .ibtn:hover{background:var(--hover);color:var(--ink)}
 .ibtn[aria-current="page"]{color:var(--accent);background:var(--accent-soft)}
 .ibtn svg{width:20px;height:20px}
-.bottomnav{position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:repeat(2,1fr);background:var(--side);border-top:1px solid var(--rule);
+.ribbon .sep{width:22px;height:1px;background:var(--rule);margin:6px 0}
+.ribbon .sp{flex:1}
+.ndot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.lock-hint{position:absolute;left:calc(100% + 8px);bottom:9px;white-space:nowrap;font-size:12px;line-height:22px;padding:0 8px;border-radius:99px;background:var(--accent-soft);color:var(--ink);z-index:6;box-shadow:var(--shadow)}
+.bottomnav{position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:repeat(4,1fr);background:var(--side);border-top:1px solid var(--rule);
   padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(4px,env(safe-area-inset-left,0px));padding-right:max(4px,env(safe-area-inset-right,0px))}
-.bottomnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;color:var(--muted);text-decoration:none;font-size:12px}
+.bottomnav a,.bottomnav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;color:var(--muted);text-decoration:none;font-size:12px;position:relative}
 .bottomnav svg{width:22px;height:22px}
-.bottomnav [aria-current="page"]{color:var(--accent)}
+.bottomnav [aria-current="page"],.bottomnav [aria-expanded="true"]{color:var(--accent)}
+.bottomnav .ndot{top:8px;right:calc(50% - 17px)}
+.explorer,.notepane{display:none}
 @media (min-width:760px){
   .bottomnav{display:none}
-  .ribbon{display:flex;flex:none;flex-direction:column;align-items:center;gap:4px;width:48px;padding:8px 0;background:var(--side);border-right:1px solid var(--rule);margin-left:env(safe-area-inset-left,0px)}
+  .ribbon{display:flex;flex:none;flex-direction:column;align-items:center;gap:4px;width:48px;padding:8px 0;background:var(--side);border-right:1px solid var(--rule);margin-left:env(safe-area-inset-left,0px);position:relative;z-index:6}
+  /* 有工具条的页面：整页不滚，星图、索引、笔记各自滚；Curio 标识在索引顶上（照原型，桌面不显示顶栏） */
+  .app:not(:has(main>:is(.quiz,.exploration,.stop))){height:100%}
+  .app:not(:has(main>:is(.quiz,.exploration,.stop))) .topbar{display:none}
+  .explorer{display:flex;flex-direction:column;flex:none;width:232px;background:var(--side);border-right:1px solid var(--rule);overflow:auto;overscroll-behavior:contain;padding-bottom:40px}
+  .app.ex-closed .explorer{display:none}
 }
-.app:has(main>:is(.quiz,.exploration,.parent,.stop)) :is(.ribbon,.bottomnav){display:none}
-/* 手机：底部入口占了下面一条，小卡往上让一让 */
-@media (max-width:759px){.app:has(.bottomnav) .star-card{bottom:calc(68px + env(safe-area-inset-bottom,0px))}}
+.app:has(main>:is(.quiz,.exploration,.stop)) :is(.ribbon,.bottomnav,.explorer,.notepane){display:none!important}
+
+/* 知识索引（照原型 .vault、.xsearch、.tree） */
+.vault{display:flex;align-items:center;gap:10px;padding:14px 14px 8px}
+.vault .vlogo{width:34px;height:34px;flex:none}
+.vault b{font-family:var(--f-serif);color:var(--ink);font-size:17px;font-weight:600;display:block;line-height:1.2}
+.vault small{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}
+.xsearch{margin:6px 12px 4px;position:relative}
+.xsearch input{width:100%;font:inherit;border:1px solid var(--rule);border-radius:8px;background:var(--pane);color:var(--ink);padding:6px 10px 6px 30px;font-size:14px;min-height:36px}
+.xsearch svg{position:absolute;left:9px;top:10px;width:15px;height:15px;color:var(--muted)}
+.tree{padding:4px 8px 16px;display:grid;gap:1px}
+.tree :focus-visible{outline-offset:-2px}
+.tree .sec{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);padding:12px 8px 4px}
+.tree .grp{display:flex;align-items:center;gap:6px;padding:5px 8px;min-height:32px;border-radius:6px;color:var(--ink);font-size:13.5px;width:100%;text-align:left;line-height:1.35}
+.tree .grp:hover{background:var(--hover)}
+.tree .grp>svg{width:12px;height:12px;flex:none;color:var(--muted)}
+.tree .grp[aria-expanded="false"]>svg{transform:rotate(-90deg)}
+.tree .grp .sw{width:8px;height:8px;border-radius:2px;flex:none}
+.tree .grp .gn{min-width:0}
+.tree .grp .gb{color:var(--muted);font-size:11.5px}
+.tree .grp .c{margin-left:auto;font-family:var(--f-mono);font-size:10.5px;color:var(--muted);flex:none}
+.tree .leaf{display:flex;align-items:center;gap:8px;padding:4px 8px 4px 30px;min-height:32px;border-radius:6px;font-size:13.5px;color:var(--text);width:100%;text-align:left;line-height:1.35}
+.tree .leaf:hover{background:var(--hover);color:var(--ink)}
+.tree .leaf[aria-current="true"]{background:var(--accent-soft);color:var(--ink);font-weight:500}
+.tree .leaf[data-state="closed"] .lt{color:var(--muted)}
+.tree .leaf .lstar{flex:none}
+.tree .leaf .lt{min-width:0;flex:1}
+.tree .leaf .alias{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.tree .leaf .g{margin-left:auto;font-family:var(--f-mono);font-size:10px;color:var(--muted);flex:none}
+.tree .ind{padding-left:12px}
+@media (prefers-reduced-motion:no-preference){.tree .grp>svg{transition:transform .15s}}
+/* 手机：知识索引从左边滑出（照原型 openTree） */
+.drawer-scrim{position:fixed;inset:0;z-index:34;background:color-mix(in srgb,var(--ink) 28%,transparent)}
+.drawer{position:fixed;top:0;bottom:0;left:0;z-index:35;width:min(300px,86vw);background:var(--side);border-right:1px solid var(--rule);overflow:auto;overscroll-behavior:contain;box-shadow:var(--shadow);padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-left,0px);display:flex;flex-direction:column}
+.drawer:focus{outline:none}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:drawer-in .2s cubic-bezier(.2,.8,.2,1)}}
+@keyframes drawer-in{from{transform:translateX(-100%)}to{transform:none}}
+
+/* 星球笔记（照原型 .notepane、.sheet-note、.note）：只在星图和地铁页。手机是底部抽屉，平板宽度盖在右边，宽屏是右边一栏 */
+.app.note-open:has(main>.chart) .notepane{display:block}
+.notepane{position:fixed;left:0;right:0;bottom:0;z-index:30;max-height:80vh;overflow:auto;overscroll-behavior:contain;background:var(--pane);border-top:1px solid var(--rule);border-radius:16px 16px 0 0;box-shadow:var(--shadow);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.notepane .grab{width:40px;height:4px;border-radius:9px;background:var(--rule);margin:8px auto 0}
+@media (min-width:760px){
+  .notepane{top:0;left:auto;width:min(420px,62vw);max-height:none;border-radius:0;border-top:0;border-left:1px solid var(--rule);padding-left:0}
+  .notepane .grab{display:none}
+}
+/* 地方够时（宽屏，或索引收起时）照原型把星图往左推，笔记占右边一栏；索引展开、又不够宽时笔记盖在右边 */
+@media (min-width:1100px){.notepane{position:relative;flex:0 0 clamp(340px,34vw,480px);box-shadow:none;z-index:1}}
+@media (min-width:760px){.app.ex-closed .notepane{position:relative;flex:0 0 clamp(320px,42%,480px);width:auto;box-shadow:none;z-index:1}}
+@media (prefers-reduced-motion:no-preference){
+  .app.note-open .notepane{animation:sheetin .24s cubic-bezier(.2,.8,.2,1)}
+  @media (min-width:760px){.app.note-open .notepane{animation-name:notein}}
+}
+@keyframes notein{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes sheetin{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.close{width:38px;height:38px;border-radius:8px;display:grid;place-items:center;color:var(--muted);flex:none}
+.close:hover{background:var(--hover);color:var(--ink)}
+.note-x{position:sticky;top:10px;float:right;margin:10px 10px 0 0;z-index:2;background:var(--pane)}
+.note{padding:18px 22px 40px;display:grid;gap:16px;max-width:760px;margin:0 auto;color:var(--text)}
+@media (min-width:760px){.note{padding:26px 28px 48px;gap:18px}.note h1{font-size:28px!important}}
+.note h1{font-size:24px}
+.note h1:focus{outline:none}
+.crumbs{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;padding-right:40px}
+.crumbs span+span::before{content:"/";margin-right:6px;opacity:.6}
+.props{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;font-size:14px;border-block:1px solid var(--rule);padding-block:10px;margin:0}
+.props dt{color:var(--muted)}
+.props dd{margin:0;color:var(--ink);min-width:0}
+.props .lsw{display:inline-block;width:14px;height:5px;border-radius:9px;vertical-align:middle;margin-right:6px}
+.links{display:flex;flex-wrap:wrap;gap:6px 10px}
+.wikilink{color:var(--accent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 40%,transparent);text-underline-offset:3px;font-size:14px}
+.signal-card{border-radius:14px;padding:16px 18px;color:var(--ink)}
+.signal-card .eyebrow{font-size:12px;color:var(--text)}
+.signal-card p.dq{font-family:var(--f-serif);font-size:19px;line-height:1.45;color:var(--ink);font-weight:600;margin-top:4px}
+.note h2{font-size:17px;display:flex;align-items:center;gap:8px}
+.note h2::before{content:"#";font-family:var(--f-mono);color:var(--muted);font-weight:400;font-size:14px}
+.tasklist{display:grid;gap:8px}
+.taskrow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--rule);border-radius:12px;background:var(--pane)}
+.taskrow b{color:var(--ink);display:block;font-weight:500}
+.taskrow small{color:var(--muted);font-size:12.5px}
+.callout{border-radius:10px;padding:12px 14px;background:var(--hover);display:flex;gap:10px;align-items:flex-start;color:var(--ink)}
+.callout svg{flex:none;margin-top:3px}
 
 /* 知识地铁（#233）：照原型的 .metro、.mscroll、.station；站的样子和星图同一套（chartStar） */
 .app:has(main>.metro){height:100%}
@@ -192,19 +281,8 @@ main:has(>.metro){overflow:hidden}
 .shape-overview .shape-point .shape-mark.closed .shape-outline{stroke-width:1.25;stroke-dasharray:2 1.4;stroke-opacity:.85}
 .shape-overview #gsvg>path.kq{stroke-width:.8;stroke-opacity:.48}
 .shape-overview .cname,.shape-overview .ring-lbl,.shape-overview .ccount,.shape-overview .anno{paint-order:stroke;stroke:var(--pane);stroke-width:2px;stroke-linejoin:round}
-/* 没开放的星：小卡 */
-.star-card{position:fixed;z-index:5;left:50%;transform:translateX(-50%);bottom:max(18px,env(safe-area-inset-bottom,0px));width:min(440px,calc(100% - 24px));display:flex;gap:12px;align-items:flex-start;background:var(--pane);border:1.5px solid var(--ink);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow);color:var(--ink)}
-.star-card svg{flex:none;margin-top:2px}
-.star-card>div{flex:1;min-width:0}
-.star-card h2{font-size:19px}
-.star-card p{font-size:14px;color:var(--muted)}
-.star-card .star-card-word{color:var(--ink);font-weight:600;margin-top:2px}
-.star-card .btn{flex:none;align-self:center}
 .chart-foot{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;margin-top:6px;padding:0 12px max(6px,env(safe-area-inset-bottom,0px))}
 .chart-note{text-align:center;font-size:12px}
-.parent-link{display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:0 14px;border-radius:10px;color:var(--muted);font-size:14px;text-decoration:none}
-.parent-link:hover{background:var(--hover);color:var(--ink)}
-.parent-link .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent)}
 .clean-hint{position:relative;margin-top:8px;font-size:16px;text-align:center;padding:0 12px}
 .clean-hint a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:4px;text-decoration-thickness:2px}
 .banner-btns{display:flex;gap:10px;flex-wrap:wrap}
@@ -240,7 +318,6 @@ a.btn{text-decoration:none}
 .p-aside{color:var(--muted);flex:1 1 180px}
 .p-confirm{margin-top:14px;background:var(--bad-soft);color:var(--ink);border-radius:12px;padding:12px 14px}
 #profileCard:focus{outline:none}
-.parent-link .p-hint{font-size:13px;color:var(--ink);background:var(--accent-soft);border-radius:99px;padding:0 8px;line-height:22px}
 .p-file{font:inherit;font-size:16px;max-width:100%;padding:8px 0;color:var(--ink)}
 .p-file::file-selector-button{font:inherit;min-height:44px;padding:0 16px;margin-right:12px;border-radius:12px;border:1.5px solid var(--ink);background:var(--pane);color:var(--ink);cursor:pointer}
 .p-list{margin:8px 0 0;padding-left:1.3em;font-size:17px}
@@ -331,8 +408,7 @@ main:has(>.exploration){overflow:visible}
 .stop h1{font-size:22px;margin-bottom:8px}
 
 @media (prefers-reduced-motion:no-preference){
-  .choice,.btn,.back,.parent-link{transition:background-color .15s ease,border-color .15s ease}
-  /* 点亮动效：一共 1.2 秒（规格 6.4：不超过 1.5 秒）；reduced-motion 时没有这些规则，直接是亮的样子 */
+  .choice,.btn,.back,  /* 点亮动效：一共 1.2 秒（规格 6.4：不超过 1.5 秒）；reduced-motion 时没有这些规则，直接是亮的样子 */
   .result-star.lighting svg{animation:light-pop 1.2s cubic-bezier(.2,.8,.3,1) both;transform-origin:50% 52%}
   .result-star.lighting .star-fill{animation:light-fill .8s ease-out .15s both}
   .result-star.lighting .ray{animation:light-ray .45s ease-out .75s both}
@@ -360,16 +436,25 @@ main:has(>.exploration){overflow:visible}
   <div id="banner" class="banner" role="status" aria-live="polite" hidden></div>
   <div id="live" class="sr" aria-live="polite" aria-atomic="true"></div>
   <div class="shell">
-    <!-- 全平台只有一套导航：桌面、平板是左侧工具条，手机是底部入口（照原型 renderNav） -->
+    <!-- 全平台只有一套导航（照原型 renderNav）：桌面、平板是左侧工具条，手机是底部入口 -->
     <nav class="ribbon" aria-label="导航">
+      <button class="ibtn" type="button" data-act="tree" aria-controls="explorer" aria-expanded="true" title="收起知识索引" aria-label="收起知识索引"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4.5" width="16" height="15" rx="2"/><path d="M9.5 4.5v15"/></svg></button>
       <a class="ibtn" href="#chart" data-view="chart" title="星图" aria-label="星图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4" stroke-dasharray="2 2.5"/><circle cx="15.6" cy="7.4" r="1.5" fill="currentColor"/><circle cx="8.4" cy="14.6" r="1.1" fill="currentColor"/></svg></a>
       <a class="ibtn" href="#metro" data-view="metro" title="知识地铁" aria-label="知识地铁"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h6l4 8h8"/><path d="M3 16h7"/><circle cx="9" cy="8" r="1.8" fill="var(--side)"/><circle cx="13" cy="16" r="1.8" fill="var(--side)"/><circle cx="19" cy="16" r="1.8" fill="var(--side)"/></svg></a>
+      <span class="sep" aria-hidden="true"></span>
+      <button class="ibtn" type="button" data-act="search" title="搜索知识点" aria-label="搜索知识点"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg></button>
+      <span class="sp"></span>
+      <a class="ibtn" href="#parent" data-view="parent" title="家长" aria-label="家长" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg><span class="ndot" hidden></span><span class="lock-hint" hidden></span></a>
     </nav>
+    <aside class="explorer" id="explorer" aria-label="知识索引"></aside>
     <main id="main"><section class="stop"><p class="muted">正在打开……</p></section></main>
+    <aside class="notepane" id="notepane" aria-label="星球笔记"></aside>
   </div>
   <nav class="bottomnav" aria-label="导航">
     <a href="#chart" data-view="chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4" stroke-dasharray="2 2.5"/><circle cx="15.6" cy="7.4" r="1.5" fill="currentColor"/><circle cx="8.4" cy="14.6" r="1.1" fill="currentColor"/></svg><span>星图</span></a>
     <a href="#metro" data-view="metro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h6l4 8h8"/><path d="M3 16h7"/><circle cx="9" cy="8" r="1.8" fill="var(--side)"/><circle cx="13" cy="16" r="1.8" fill="var(--side)"/><circle cx="19" cy="16" r="1.8" fill="var(--side)"/></svg><span>地铁</span></a>
+    <button type="button" data-act="drawer" aria-expanded="false" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="4" y="4.5" width="16" height="15" rx="2"/><path d="M9.5 4.5v15"/></svg><span>索引</span></button>
+    <a href="#parent" data-view="parent" aria-label="家长" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg><span aria-hidden="true">家长</span><span class="ndot" hidden></span></a>
   </nav>
 </div>
 <div id="printSheet" aria-hidden="true"></div>
