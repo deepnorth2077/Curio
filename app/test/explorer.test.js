@@ -149,3 +149,97 @@ test("笔记：已开放的星有任务入口；未开放的只写「还没开�
   assert.doesNotMatch(closed, /data-start/);
   assert.equal(GALAXY.math, "数学");
 });
+
+/* ---- #233 恢复原型画面：反向链接、图鉴编号、进度弧、笔记里的插图和各节 ---- */
+import { nextPoints, specimenNo, nodeProgress, detailState, detailMark } from "../starchart.js";
+import { AGE_BAND } from "../explorer.js";
+import { iconOf, icon } from "../icons.js";
+
+test("反向链接：目录里以「谁的几分之几」为前置的四颗星，按目录先后", () => {
+  assert.deepEqual(nextPoints(model, "math.fraction.the-whole").map((x) => x.title), ["分数和除法", "分数乘分数", "按比分配", "百分数：都换成 100 份"]);
+  assert.deepEqual(nextPoints(model, "m.g3.mul1-oral").map((x) => x.id), ["m.g3.mul1-written"]);
+  assert.deepEqual(nextPoints(model, "恐龙蛋"), []);
+});
+
+test("图鉴编号：目录里的第几个，补齐三位", () => {
+  assert.equal(model.byId.get("m.g1.count").no, 1);
+  assert.equal(model.byId.get("math.decimal.tenths").no, 76);
+  assert.equal(model.byId.get("math.fraction.the-whole").no, 84);
+  assert.equal(specimenNo(84), "No.084");
+  assert.equal(specimenNo(1), "No.001");
+  assert.equal(specimenNo(102), "No.102");
+});
+
+test("进度：探索按做完的站数，挑战按最好的首答，来过但没做完是 0", () => {
+  const ev = (attempt, seq, verb, payload = {}, extra = {}) => ({
+    attempt_id: attempt, device_seq: seq, device_id: "d", learner_id: "L", actor: { type: "learner", id: "L" }, event_id: attempt + seq, verb, payload,
+    content: { node_id: extra.node || "math.fraction.the-whole", activity_id: extra.act || "act.simulation.whose-half-01", activity_kind: extra.kind || "simulation", activity_version: 1 },
+  });
+  const events = [
+    ev("a1", 1, "attempt.started"),
+    ev("a1", 2, "sim.observed", { observable: "station.completed", value: 1 }),
+    ev("a1", 3, "sim.observed", { observable: "station.completed", value: 1 }),
+    ev("a2", 1, "attempt.started", {}, { node: "math.decimal.tenths", act: "act.simulation.hundred-grid-01" }),
+  ];
+  const stations = (id) => (id.startsWith("act.simulation.") ? 3 : 0);
+  const pr = nodeProgress(events, { nodes: { "m.g3.add3": { state: "explored", best: { correct: 3, answered: 4 } } } }, stations);
+  assert.equal(pr["math.fraction.the-whole"], 1 / 3);
+  assert.equal(pr["math.decimal.tenths"], 0);
+  assert.equal(pr["m.g3.add3"], .75);
+  assert.equal("m.g1.count" in pr, false);
+  // 整次完成算 1
+  const done = nodeProgress([...events, ev("a1", 4, "attempt.completed")], null, stations);
+  assert.equal(done["math.fraction.the-whole"], 1);
+});
+
+test("详情里的星：点亮实心加 ✓、有进度画弧、未探空心、未开放虚线", () => {
+  const m = buildChart({ catalog, nodes: [...nodes, { id: "math.fraction.the-whole", activities: ["act.z"] }, { id: "m.g3.add3", activities: [] }], mastery, grade: 3, progress: { "math.fraction.the-whole": 1 / 3 } });
+  const lit = m.byId.get("math.decimal.tenths"), half = m.byId.get("math.fraction.the-whole"), ex = m.byId.get("math.fraction.unit-fraction");
+  const un = m.byId.get("m.g3.add3"), cl = m.byId.get("m.g1.count");
+  assert.deepEqual([lit, half, ex, un, cl].map(detailState), ["lit", "landed", "landed", "untouched", "closed"]);
+  assert.match(detailMark(lit, 14), /class="dmark lit"/);
+  assert.match(detailMark(half, 14), /class="dprog"/);
+  assert.doesNotMatch(detailMark(ex, 14), /class="dprog"/); // 探过、没有进度数字时只有实线圆
+  assert.doesNotMatch(detailMark(un, 12), /stroke-dasharray/);
+  assert.match(detailMark(cl, 12), /stroke-dasharray="3 4"/);
+});
+
+test("笔记：线路可点、信号卡和任务带插图、图鉴提示、不同年龄看到的样子、反向链接", () => {
+  const p = model.byId.get("math.decimal.tenths");
+  const card = { driving_question: "一块饼切成十份？", lenses: [{ band: "G3-4", approach: "百格板涂色" }, { band: "G5-6", approach: "小数点移动" }] };
+  const html = noteHtml(p, { card, model, tasks: [{ id: "act.x", title: "百格板", meta: "动手探索 · 3 站", go: "开始" }], canStart: true, animate: true });
+  assert.match(html, /<a class="wikilink" href="#metro" data-line="num"><span class="lsw"[^>]*><\/span>数与运算线<\/a>/);
+  assert.match(html, /class="signal-card"[\s\S]*<svg viewBox="0 0 100 100" width="100" height="100" class="drawin"/);
+  assert.match(html, /class="taskrow"><svg viewBox="0 0 100 100" width="48"/);
+  assert.match(html, /图鉴 No\.076/);
+  assert.match(html, /class="minispec">/); // 已点亮：不是灰的
+  assert.match(html, /已收集/);
+  assert.match(html, /不同年龄看到的样子/);
+  assert.match(html, /<div class="on"><span class="b">G3-4<\/span>/);
+  assert.match(html, /<div class=""><span class="b">G5-6<\/span>/);
+  assert.equal(AGE_BAND[model.currentBand], "G3-4");
+  assert.match(html, /反向链接/);
+  assert.match(html, /点亮这里之后可以去：<\/p><div class="links"><a class="wikilink" href="#" data-goto="math\.decimal\.compare-add">/);
+  assert.doesNotMatch(html, /学习|信号站/);
+  // 没点亮：图鉴提示是灰的，写「点亮之后」
+  const ex = noteHtml(model.byId.get("math.fraction.unit-fraction"), { card: {}, model, tasks: [], canStart: true });
+  assert.match(ex, /class="minispec locked"/);
+  assert.match(ex, /点亮之后，这张标本卡会收进图鉴/);
+  assert.doesNotMatch(ex, /不同年龄看到的样子/);
+  assert.match(ex, /小数是什么/); // 反向链接里有它
+  // 插图取法：主题默认，原型有专属插图的点用专属的
+  assert.equal(iconOf(p), "blocks");
+  assert.equal(iconOf({ id: "math.geometry.perimeter", theme: "geo" }), "perimeter");
+  assert.equal(iconOf({ id: "x", theme: "life" }), "sprout");
+  assert.match(icon("sprout", "science", 40, 3), /--icon-fill:var\(--c-sci\)/);
+});
+
+test("笔记：未开放的星没有卡，不显示「不同年龄看到的样子」，反向链接照目录算", () => {
+  const html = noteHtml(model.byId.get("m.g3.mul1-oral"), { model, tasks: [], canStart: true });
+  assert.match(html, /还没开放/);
+  assert.doesNotMatch(html, /不同年龄看到的样子|图鉴/);
+  assert.match(html, /反向链接[\s\S]*data-goto="m\.g3\.mul1-written">笔算乘法<\/a>/);
+  const leaf = noteHtml(model.byId.get("m.g3.mul1-written"), { model, tasks: [], canStart: true });
+  // 笔算乘法后面是两位数乘两位数
+  assert.match(leaf, /两位数乘两位数/);
+});

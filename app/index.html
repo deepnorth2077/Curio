@@ -64,6 +64,9 @@ p{margin:0}
 .k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 .kq{fill:none;stroke:var(--muted);stroke-width:1.4;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .fp{fill:var(--pane)}
+.f{fill:var(--icon-fill,var(--c-sci))}
+.f2{fill:var(--icon-fill-2,var(--c-sci-2))}
+.fa{fill:var(--accent)}
 .star-fill{fill:var(--gold)}
 .star-half{fill:var(--c-math-2)}
 .fig-shade{fill:var(--c-math)}
@@ -177,13 +180,32 @@ main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow
 .props .lsw{display:inline-block;width:14px;height:5px;border-radius:9px;vertical-align:middle;margin-right:6px}
 .links{display:flex;flex-wrap:wrap;gap:6px 10px}
 .wikilink{color:var(--accent);text-decoration:underline;text-decoration-color:color-mix(in srgb,var(--accent) 40%,transparent);text-underline-offset:3px;font-size:14px}
-.signal-card{border-radius:14px;padding:16px 18px;color:var(--ink)}
+/* 信号卡、任务、图鉴提示、不同年龄看到的样子（照原型 .signal-card、.taskrow、.minispec、.lenses） */
+.signal-card{border-radius:14px;padding:16px 16px 16px 18px;color:var(--ink);display:grid;grid-template-columns:1fr 100px;gap:8px;align-items:center}
 .signal-card .eyebrow{font-size:12px;color:var(--text)}
 .signal-card p.dq{font-family:var(--f-serif);font-size:19px;line-height:1.45;color:var(--ink);font-weight:600;margin-top:4px}
+.signal-card svg{width:100px;height:100px}
+@media (max-width:420px){.signal-card{grid-template-columns:1fr 72px}.signal-card svg{width:72px;height:72px}}
+@media (min-width:760px){.signal-card{padding:20px 20px 20px 24px}}
+.minispec{display:flex;gap:10px;align-items:center;border:1px dashed var(--rule);border-radius:10px;padding:8px 10px}
+.minispec svg{width:40px;height:40px;flex:none}
+.minispec.locked svg{filter:grayscale(1);opacity:.35}
+.minispec b{display:block;font-size:13px;color:var(--ink);font-weight:600}
+.minispec small{display:block;color:var(--muted);font-size:12px}
+.lenses{display:grid;gap:6px;font-size:14px}
+.lenses div{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:6px 0;border-bottom:1px dashed var(--rule)}
+.lenses .b{font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-top:2px}
+.lenses .on .b{color:var(--accent)}
+@media (prefers-reduced-motion:no-preference){
+  .drawin .k,.drawin .k1{stroke-dasharray:400;animation:drawin 1.1s ease-out both}
+  @keyframes drawin{from{stroke-dashoffset:400}to{stroke-dashoffset:0}}
+}
 .note h2{font-size:17px;display:flex;align-items:center;gap:8px}
 .note h2::before{content:"#";font-family:var(--f-mono);color:var(--muted);font-weight:400;font-size:14px}
 .tasklist{display:grid;gap:8px}
-.taskrow{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--rule);border-radius:12px;background:var(--pane)}
+.taskrow{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--rule);border-radius:12px;background:var(--pane)}
+.taskrow svg{width:48px;height:48px}
+@media (min-width:760px){.taskrow{padding:12px 14px}}
 .taskrow b{color:var(--ink);display:block;font-weight:500}
 .taskrow small{color:var(--muted);font-size:12.5px}
 .callout{border-radius:10px;padding:12px 14px;background:var(--hover);display:flex;gap:10px;align-items:flex-start;color:var(--ink)}
@@ -272,6 +294,8 @@ main:has(>.metro){overflow:hidden}
 .shape-mark.untouched .shape-outline{stroke:var(--muted)}
 .shape-mark.closed .shape-outline{stroke:var(--muted);stroke-opacity:.7;stroke-width:1.3;stroke-dasharray:3 2.6}
 
+/* 星图详情里的星（照原型 renderConstellation）：暖色实心加 ✓、实线圆加进度弧、淡墨空心圆；未开放是更淡的虚线空心圆 */
+.dmark.closed{opacity:.6}
 .dot.lit{fill:var(--ink)}
 .dot.explored{fill:var(--pane);stroke:var(--ink);stroke-width:1.2}
 .dot.untouched{fill:var(--pane);stroke:var(--muted);stroke-width:1.2}

@@ -11,9 +11,9 @@ import { openSession, localReceipt, assemble, guardDeps, LockLostError } from ".
 import { FrozenError } from "./commit.js";
 import { mountExploration, supportedExploration, stationCount } from "./exploration.js";
 import { Sk } from "./sketch.js";
-import { buildChart, overviewSvg, placeChartLabels, animateOverview, nearestCons, constellationLayout, constellationSvg,
+import { buildChart, nodeProgress, overviewSvg, placeChartLabels, animateOverview, nearestCons, constellationLayout, constellationSvg,
   legendHtml, consName, consId, BAND_NAME } from "./starchart.js";
-import { metroLayout, metroSvg, metroScroll } from "./metro.js";
+import { metroLayout, metroSvg, metroScroll, LINE_NAME } from "./metro.js";
 import { aliasIndex, treeHtml, searchPoints, noteHtml } from "./explorer.js";
 import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT,
   refreshProfile, currentGradeOf, needsProfileHint, PROFILE_TEXT } from "./parent.js";
@@ -390,7 +390,8 @@ function renderStop(title, text) {
    ============================================================ */
 /** 星图的数据：目录 + 已发布卡 + 掌握度投影 + 当前年级。 */
 function chartModel() {
-  return buildChart({ catalog: app.pack ? app.pack.catalog : null, nodes: app.pack ? app.pack.nodes : [], mastery: app.mastery, grade: app.currentGrade(Date.now()) });
+  const progress = app.log ? nodeProgress(app.log.events(), app.mastery, stationCount) : null;
+  return buildChart({ catalog: app.pack ? app.pack.catalog : null, nodes: app.pack ? app.pack.nodes : [], mastery: app.mastery, grade: app.currentGrade(Date.now()), progress });
 }
 let stopFloat = () => {};
 let chartWidth = 0;
@@ -579,8 +580,8 @@ function renderConstellation(main, model, c) {
     <div class="vhead"><div>
       <div class="crumb"><button type="button" class="back" data-zout>${backIcon()} 星图</button><span>/</span><span>${BAND_NAME[c.band]}</span></div>
       <h1 id="consTitle" tabindex="-1">${esc(consName(c))}座</h1>
-      <p class="sub">${c.points.length} 颗星 · 开放 ${openN} 颗 · 点亮 ${litN} 颗</p></div>
-      <div class="legend" aria-hidden="true">${legendHtml()}</div></div>
+      <p class="sub">${c.points.length} 颗星 · 开放 ${openN} 颗 · 点亮 ${litN} 颗 · 属于「${esc(LINE_NAME[c.theme])}」</p></div>
+      <div class="legend"><a class="wikilink" href="#metro" data-metroline="${c.theme}">在地铁上看这条线</a></div></div>
     <div class="graph scroll" id="graph"><svg id="gsvg" role="group" aria-label="${esc(consName(c))}座的星"></svg></div>
     ${chartFoot()}
   </section>`;
@@ -601,11 +602,19 @@ function renderConstellation(main, model, c) {
   const pickEl = pick && svg.querySelector(`.node[data-id="${CSS.escape(pick.id)}"]`);
   if (pickEl && !busy.has(pick.id)) { const r = pick.acts ? 14 : 12; pickEl.insertAdjacentHTML("afterbegin", `<path class="sel-ring" d="${Sk.ellipse(0, 0, r + 9, r + 9, pick.seed + 9, .8)}"/>`); }
   main.querySelector("[data-zout]").addEventListener("click", zoomOut);
+  main.querySelector("[data-metroline]").addEventListener("click", (e) => { e.preventDefault(); showLine(c.theme); });
   for (const el of svg.querySelectorAll(".node")) {
     const open = () => openPoint(model, /** @type {HTMLElement} */ (el).dataset.id || "", /** @type {HTMLElement} */ (el));
     el.addEventListener("click", open);
     el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
   }
+}
+
+/** 切到地铁并只看这一条线（照原型 data-metroline、data-line）：笔记照旧开着。 @param {string} theme */
+function showLine(theme) {
+  app.metroLine = theme;
+  if (app.home === "metro") { renderChart(); document.getElementById("metroTitle")?.focus({ preventScroll: true }); return; }
+  location.hash = "#metro"; // hashchange 换首页、重画
 }
 
 /** 点了星图详情里的一颗星、地铁站：打开这颗星的笔记（照原型 select）。 */
@@ -686,7 +695,7 @@ function whyCantStart() {
 function renderNote(model) {
   const pane = $("#notepane"), shell = $(".app");
   const p = model && app.note ? model.byId.get(app.note) : null;
-  if (!p) { if (app.note && model) app.note = null; shell.classList.remove("note-open"); pane.innerHTML = ""; return; }
+  if (!p) { if (app.note && model) app.note = null; shell.classList.remove("note-open"); pane.innerHTML = ""; delete pane.dataset.for; return; }
   const card = app.pack.nodes.find((n) => n.id === p.id) || null;
   const choices = card ? activityChoices(card) : [];
   const tasks = choices.map((a) => {
@@ -696,9 +705,10 @@ function renderNote(model) {
     return { id: a.entry.id, title: def.title, meta: `${isQuiz ? "挑战" : "动手探索"} · ${isQuiz ? `${def.body.items.length} 道题` : `${stationCount(def.id)} 站`}`, go: resume ? "接着做" : "开始" };
   });
   const canStart = app.mode === "writable" && !!app.session;
-  const top = pane.dataset.for === p.id ? pane.scrollTop : 0;
+  const same = pane.dataset.for === p.id;
+  const top = same ? pane.scrollTop : 0;
   pane.innerHTML = `<div class="grab" aria-hidden="true"></div><button class="close note-x" type="button" aria-label="收起笔记" title="收起">${X_ICON}</button>` +
-    noteHtml(p, { card, model, tasks, canStart, why: whyCantStart() });
+    noteHtml(p, { card, model, tasks, canStart, why: whyCantStart(), animate: !same });
   pane.dataset.for = p.id;
   pane.scrollTop = top;
   shell.classList.add("note-open");
@@ -711,6 +721,9 @@ function renderNote(model) {
       if (a.module) { if (canSwitchActivity()) openExploration(card, a.module); }
       else openQuiz(card, a.def);
     });
+  }
+  for (const l of pane.querySelectorAll("[data-line]")) {
+    l.addEventListener("click", (e) => { e.preventDefault(); showLine(/** @type {HTMLElement} */ (l).dataset.line || ""); });
   }
   for (const l of pane.querySelectorAll("[data-goto]")) {
     l.addEventListener("click", (e) => { e.preventDefault(); selectPoint(/** @type {HTMLElement} */ (l).dataset.goto || "", { reveal: true }); });

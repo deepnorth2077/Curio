@@ -3,6 +3,7 @@
 // 这里大多是「数据 → SVG 字符串」的纯函数，node 里能测；读 DOM 尺寸的只有 placeChartLabels、animateOverview 和 nearestCons。
 import { Sk } from "./sketch.js";
 import { SHAPES } from "./constellation-shapes.js";
+import { groupAttempts, attemptRule } from "../kernel/js/mastery.js";
 
 /* ============================================================
    常量（照原型的 THEMES、BAND_NAME、BANDS、themeShapes）
@@ -81,10 +82,11 @@ export function pointState(open, masteryState) {
 
 /**
  * 星图要用的全部数据。
- * @param {{catalog: any, nodes: any[], mastery?: any, grade: number|null}} input
- *   catalog：发布包里的目录（catalog/1）；nodes：已发布卡；mastery：projectMastery 的结果；grade：当前年级或 null。
+ * @param {{catalog: any, nodes: any[], mastery?: any, grade: number|null, progress?: Record<string, number>|null}} input
+ *   catalog：发布包里的目录（catalog/1）；nodes：已发布卡；mastery：projectMastery 的结果；grade：当前年级或 null；
+ *   progress：nodeProgress 的结果（来过的星 → 进度 0～1），星图详情画进度弧用。
  */
-export function buildChart({ catalog, nodes, mastery, grade }) {
+export function buildChart({ catalog, nodes, mastery, grade, progress = null }) {
   const cards = new Map((nodes || []).map((n) => [n.id, n]));
   const states = (mastery && mastery.nodes) || {};
   const list = (catalog && Array.isArray(catalog.points)) ? catalog.points : [];
@@ -97,6 +99,9 @@ export function buildChart({ catalog, nodes, mastery, grade }) {
       state: pointState(open, states[p.id] && states[p.id].state),
       acts: open && Array.isArray(card.activities) && card.activities.length > 0,
       seed: 11 + i * 7,
+      // 图鉴编号（照原型 no: i+1）：目录里的先后
+      no: i + 1,
+      progress: progress && Object.prototype.hasOwnProperty.call(progress, p.id) ? progress[p.id] : null,
     };
   });
   const byId = new Map(points.map((p) => [p.id, p]));
@@ -122,6 +127,48 @@ export function buildChart({ catalog, nodes, mastery, grade }) {
 export const consId = (p) => p.theme + "|" + p.band;
 /** 星座的名字：初中起科学主题前面加分科名。 */
 export const consName = (c) => { const t = THEMES[c.theme]; return (c.band >= 3 && t.later ? t.later + " · " : "") + t.name; };
+
+/**
+ * 每颗来过的星走了多少（0～1），照原型「登陆过」那一圈进度弧：
+ * 动手探索按做完的站数 ÷ 总站数（整次完成算 1），挑战按掌握度投影里最好的首答成绩；取最大的。
+ * 只要有这颗星的事件就算来过（值可以是 0）。只看合格的尝试（attemptRule 为 0）。
+ * @param {any[]} events 已接收的事件 @param {any} mastery projectMastery 的结果 @param {(activityId: string) => number} stations 动手探索的站数
+ * @returns {Record<string, number>}
+ */
+export function nodeProgress(events, mastery, stations) {
+  /** @type {Record<string, number>} */
+  const out = {};
+  const bump = (id, v) => { out[id] = Math.max(out[id] ?? 0, Math.min(1, Math.max(0, v))); };
+  for (const e of events || []) { const id = e && e.content && e.content.node_id; if (typeof id === "string") bump(id, 0); }
+  for (const evs of groupAttempts(events || []).values()) {
+    if (attemptRule(evs)) continue;
+    const c = evs[0].content;
+    if (!c || c.activity_kind !== "simulation") continue;
+    if (evs[evs.length - 1].verb === "attempt.completed") { bump(c.node_id, 1); continue; }
+    const total = stations(c.activity_id);
+    if (!total) continue;
+    const done = new Set();
+    for (const e of evs) {
+      const v = e.payload && e.payload.value;
+      if (e.verb === "sim.observed" && e.payload.observable === "station.completed" && Number.isInteger(v) && v >= 1 && v <= total) done.add(v);
+    }
+    bump(c.node_id, done.size / total);
+  }
+  const nodes = (mastery && mastery.nodes) || {};
+  for (const [id, m] of Object.entries(nodes)) {
+    if (m && m.best && m.best.answered > 0) bump(id, m.best.correct / m.best.answered);
+  }
+  return out;
+}
+
+/** 图鉴编号（照原型「图鉴 No.093」的写法）。 @param {number} no */
+export const specimenNo = (no) => "No." + String(no).padStart(3, "0");
+
+/**
+ * 反向链接（照原型 nextOnes）：目录里把这颗星写进 prerequisites 的星，按目录先后。
+ * @param {{points: any[]}} model @param {string} id
+ */
+export const nextPoints = (model, id) => model.points.filter((x) => x.prereq.includes(id));
 
 /* ============================================================
    星形状态标记（照原型 chartStar；新加 closed）
@@ -417,6 +464,36 @@ export function constellationLayout(c, width, measure, fonts) {
 }
 
 /**
+ * 详情视图里一颗星的样子（照原型 renderConstellation）：
+ * lit 暖色实心圆加 ✓；landed（探过或有进度）实线圆加进度弧；untouched 淡墨空心圆；closed 更淡的虚线空心圆。
+ * @param {any} p buildChart 的点
+ */
+export function detailState(p) {
+  if (!p.open) return "closed";
+  if (p.state === "lit") return "lit";
+  if (p.state === "explored" || p.progress != null) return "landed";
+  return "untouched";
+}
+/** 详情视图的状态读法。 */
+export const DETAIL_WORD = Object.freeze({ lit: "点亮", landed: "探过", untouched: "未探", closed: "未开放" });
+
+/**
+ * 一颗星的圆形标记（以原点为中心）。 @param {any} p @param {number} r
+ */
+export function detailMark(p, r) {
+  const st = detailState(p), fill = THEMES[p.theme].g === "math" ? "var(--c-math-2)" : "var(--c-sci-2)";
+  if (st === "lit") return `<g class="dmark lit"><path d="${Sk.blob(2, 2, r, r, p.seed)}" style="fill:${fill}"/><path class="k" d="${Sk.ellipse(0, 0, r, r, p.seed + 1)}"/><path class="k1" d="${Sk.line(-4, 0, -1, 4, p.seed + 2) + Sk.line(-1, 4, 5, -4, p.seed + 3)}"/></g>`;
+  if (st === "landed") {
+    const m = Math.min(.999, Math.max(0, p.progress ?? 0)), R = r + 5;
+    const arc = m > 0 ? `<path class="dprog" d="M0 ${-R}A${R} ${R} 0 ${m > .5 ? 1 : 0} 1 ${(R * Math.sin(m * 2 * Math.PI)).toFixed(1)} ${(-R * Math.cos(m * 2 * Math.PI)).toFixed(1)}" fill="none" style="stroke:${fill}" stroke-width="4" stroke-linecap="round"/>` : "";
+    return `<g class="dmark landed"><path class="k" d="${Sk.ellipse(0, 0, r, r, p.seed + 1)}"/>${arc}</g>`;
+  }
+  return `<g class="dmark ${st}"><path class="kq" d="${Sk.ellipse(0, 0, r, r, p.seed + 1)}" ${st === "closed" ? 'stroke-dasharray="3 4"' : ""} style="stroke-width:1.5"/></g>`;
+}
+/** 有任务的星右上角的小叉（照原型）。 @param {number} r @param {number} seed */
+const taskMark = (r, seed) => `<path class="k1 spark" d="${Sk.line(r * .7 + 2, -r * .7 - 2, r * .7 + 8, -r * .7 - 8, seed + 5) + Sk.line(r * .7 + 4, -r * .7 - 9, r * .7 + 9, -r * .7 - 2, seed + 6)}"/>`;
+
+/**
  * 详情视图的 SVG 内容。
  * @param {{theme: string, band: number, points: any[]}} c @param {ReturnType<typeof constellationLayout>} L @param {Set<string>} [busy] 有没做完的挑战的星
  */
@@ -434,16 +511,17 @@ export function constellationSvg(c, L, busy = new Set()) {
     if (!pos[q]) continue;
     const [ax, ay] = pos[q], [bx, by] = pos[p.id], lit = state[q] === "lit";
     const cls = lit ? "k1" : "kq", dash = lit ? "" : 'stroke-dasharray="4 5"';
-    if (ay === by) h += `<path class="${cls}" ${dash} d="${Sk.line(ax + 20, ay, bx - 22, by, 700 + ei) + Sk.line(bx - 22, by, bx - 29, by - 5, 720 + ei, .3) + Sk.line(bx - 22, by, bx - 29, by + 5, 740 + ei, .3)}"/>`;
+    if (ay === by) { const k = bx < ax ? -1 : 1; h += `<path class="${cls}" ${dash} d="${Sk.line(ax + 20 * k, ay, bx - 22 * k, by, 700 + ei) + Sk.line(bx - 22 * k, by, bx - 29 * k, by - 5, 720 + ei, .3) + Sk.line(bx - 22 * k, by, bx - 29 * k, by + 5, 740 + ei, .3)}"/>`; }
     else { const span = Math.round(Math.abs(by - ay) / RH), bulge = Math.min(62, 22 + span * 12); h += `<path class="${cls}" ${dash} opacity=".7" d="${Sk.curve([[ax + 8, ay + 44], [Math.max(ax, bx) + bulge, (ay + by) / 2], [bx + 10, by - 20]], 760 + ei, .6)}"/>`; }
     ei++;
   }
   for (const p of L.points) {
     const [x, y] = pos[p.id], r = p.acts ? 14 : 12;
     const going = busy.has(p.id);
-    const word = STATE_WORD[p.state] + (p.open ? "" : `，${GRADE_NAME[p.grade] || p.grade}`) + (going ? "，正在挑战" : "");
-    h += `<g class="node ${p.open ? "open" : "closed"}" data-id="${esc(p.id)}" data-state="${p.state}" tabindex="0" role="button" aria-label="${esc(p.title)}，${esc(word)}" transform="translate(${f1(x)} ${f1(y)})"><circle class="hit" r="30"/>
-      ${going ? `<path class="sel-ring" d="${Sk.ellipse(0, 0, r + 9, r + 9, p.seed + 9, .8)}"/>` : ""}${chartStar(p.state, r)}${p.acts ? spark(r * .95 + 3, -r * .95 - 3, 3.2, p.seed + 5) : ""}
+    const ds = detailState(p);
+    const word = DETAIL_WORD[ds] + (ds === "landed" && p.progress ? `，走了 ${Math.round(p.progress * 100)}%` : "") + (p.open ? "" : `，${GRADE_NAME[p.grade] || p.grade}`) + (going ? "，正在挑战" : "");
+    h += `<g class="node ${p.open ? "open" : "closed"}" data-id="${esc(p.id)}" data-state="${p.state}" data-mark="${ds}" tabindex="0" role="button" aria-label="${esc(p.title)}，${esc(word)}" transform="translate(${f1(x)} ${f1(y)})"><circle class="hit" r="30"/>
+      ${going ? `<path class="sel-ring" d="${Sk.ellipse(0, 0, r + 9, r + 9, p.seed + 9, .8)}"/>` : ""}${detailMark(p, r)}${p.acts ? taskMark(r, p.seed) : ""}
       <text class="lbl${p.open ? "" : " muted-lbl"}" y="${r + 22}" text-anchor="middle">${L.labels[p.id].map((line, i) => `<tspan x="0" dy="${i ? 18 : 0}">${esc(line)}</tspan>`).join("")}</text></g>`;
   }
   return h;

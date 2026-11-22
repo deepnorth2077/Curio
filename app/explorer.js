@@ -1,7 +1,8 @@
 // Curio · 知识索引和星球笔记（#233，Luka 2026-11-22）：从原型 prototype/index.html 的 treeHTML、leaf、matchesNode、noteHTML 移植。
 // 数据和星图同源：buildChart（starchart.js）给出的现行点、星座和四种状态；旧名来自发布包目录的 catalog.retired。
 // 这里全是「数据 → HTML 字符串」的纯函数，node 里能测；点选、展开、抽屉在 app.js。
-import { THEMES, THEME_ORDER, BAND_NAME, GRADE_NAME, STATE_WORD, chartStar, consName, consId } from "./starchart.js";
+import { THEMES, THEME_ORDER, BAND_NAME, GRADE_NAME, STATE_WORD, chartStar, consName, consId, nextPoints, specimenNo } from "./starchart.js";
+import { icon, iconOf } from "./icons.js";
 import { LINE_NAME } from "./metro.js";
 
 /** 两个星系（照原型 GALAXY）。 */
@@ -113,39 +114,53 @@ export function treeHtml(model, o) {
 }
 
 /* ============================================================
-   星球笔记（照原型 noteHTML；错题、提问、图鉴这些还没接入正式外壳的部分不搬）
+   星球笔记（照原型 noteHTML；错题、提问、信号站这些还没接入正式外壳的部分不搬）
    ============================================================ */
+/** 学段圈 → 知识点卡 lenses 里的年龄段（照原型 AGE_BAND）。 */
+export const AGE_BAND = Object.freeze(["G1-2", "G3-4", "G5-6", "G7-9", "G10-12"]);
+
 /**
  * 一颗星的笔记。
  * @param {any} p buildChart 里的点
- * @param {{card?: any, model: any, tasks: {id: string, title: string, meta: string, go: string}[], canStart: boolean, why?: string}} o
- *   card：已发布的卡（开放的星才有）；tasks：这颗星的入口（动手探索、挑战）；canStart：现在能不能进入；why：不能进入时的一句话
+ * @param {{card?: any, model: any, tasks: {id: string, title: string, meta: string, go: string}[], canStart: boolean, why?: string, animate?: boolean}} o
+ *   card：已发布的卡（开放的星才有）；tasks：这颗星的入口（动手探索、挑战）；canStart：现在能不能进入；why：不能进入时的一句话；
+ *   animate：刚点开这颗星，信号卡的插图画一遍（照原型 drawin）
  */
 export function noteHtml(p, o) {
   const t = THEMES[p.theme];
   const lit = p.state === "lit";
   const prereq = p.prereq.map((id) => o.model.byId.get(id)).filter(Boolean);
-  const dq = o.card && typeof o.card.driving_question === "string" ? o.card.driving_question : "";
+  const card = o.card || null;
+  const dq = card && typeof card.driving_question === "string" ? card.driving_question : "";
+  const art = iconOf(p);
   const props = `<dl class="props">
       <dt>状态</dt><dd><span class="pill ${lit ? "lit" : ""}">${STATE_WORD[p.state]}</span></dd>
       <dt>年级</dt><dd>${esc(GRADE_NAME[p.grade] || p.grade)}</dd>
       ${p.unit ? `<dt>单元</dt><dd>${esc(p.unit)}</dd>` : ""}
-      <dt>线路</dt><dd><span class="lsw" style="background:var(${t.c})"></span>${esc(LINE_NAME[p.theme])}</dd>
+      <dt>线路</dt><dd><a class="wikilink" href="#metro" data-line="${p.theme}"><span class="lsw" style="background:var(${t.c})"></span>${esc(LINE_NAME[p.theme])}</a></dd>
       ${prereq.length ? `<dt>先去</dt><dd class="links">${prereq.map((x) => `<a class="wikilink" href="#" data-goto="${esc(x.id)}">${esc(x.title)}</a>`).join("")}</dd>` : ""}
     </dl>`;
   const head = `<div class="crumbs"><span>${GALAXY[t.g]}</span><span>${esc(consName(p))}座</span><span>${esc(GRADE_NAME[p.grade] || p.grade)}</span></div>
     <h1 id="noteTitle" tabindex="-1">${esc(p.title)}</h1>`;
+  const next = nextPoints(o.model, p.id);
+  const backlinks = next.length ? `<h2>反向链接</h2><p class="muted small">点亮这里之后可以去：</p><div class="links">${next.map((x) => `<a class="wikilink" href="#" data-goto="${esc(x.id)}">${esc(x.title)}</a>`).join("")}</div>` : "";
   if (!p.open) {
     return `<div class="note">${head}${props}
-      <div class="callout closed-call">${leafStar("closed")}<div><b>还没开放</b><p class="muted small">这颗星的探索还在造。</p></div></div></div>`;
+      <div class="callout closed-call">${leafStar("closed")}<div><b>还没开放</b><p class="muted small">这颗星的探索还在造。</p></div></div>
+      ${backlinks}</div>`;
   }
+  const lenses = card && Array.isArray(card.lenses) ? card.lenses.filter((l) => l && typeof l.band === "string" && typeof l.approach === "string") : [];
+  const here = o.model.currentBand == null ? null : AGE_BAND[o.model.currentBand];
   const bg = t.g === "math" ? "var(--c-math-bg)" : "var(--c-sci-bg)";
   return `<div class="note">${head}${props}
-    ${dq ? `<div class="signal-card" style="background:${bg}"><div class="eyebrow">来自这颗星球的信号</div><p class="dq">${esc(dq)}</p></div>` : ""}
+    ${dq ? `<div class="signal-card" style="background:${bg}"><div><div class="eyebrow">来自这颗星球的信号</div><p class="dq">${esc(dq)}</p></div>${icon(art, t.g, 100, p.seed, o.animate ? "drawin" : "")}</div>` : ""}
     <h2>任务</h2>
-    <div class="tasklist">${o.tasks.length ? o.tasks.map((a) => `<div class="taskrow"><div><b>${esc(a.title)}</b><small>${esc(a.meta)}</small></div><button type="button" class="btn ink" data-start="${esc(a.id)}"${o.canStart ? "" : " disabled"}>${esc(a.go)}</button></div>`).join("")
-      : `<p class="muted small">这个还在做。</p>`}</div>
+    <div class="tasklist">${o.tasks.length ? o.tasks.map((a) => `<div class="taskrow">${icon(art, t.g, 48, p.seed + a.id.length)}<div><b>${esc(a.title)}</b><small>${esc(a.meta)}</small></div><button type="button" class="btn ink" data-start="${esc(a.id)}"${o.canStart ? "" : " disabled"}>${esc(a.go)}</button></div>`).join("")
+      : `<p class="muted small">这个还在做。</p>`}
+    <div class="minispec${lit ? "" : " locked"}">${icon(art, t.g, 40, p.seed)}<div><b>图鉴 ${specimenNo(p.no)}</b><small>${lit ? "已收集，这张标本卡会收进图鉴" : "点亮之后，这张标本卡会收进图鉴"}</small></div></div></div>
     ${!o.canStart && o.why ? `<p class="muted small">${esc(o.why)}</p>` : ""}
+    ${lenses.length ? `<h2>不同年龄看到的样子</h2><div class="lenses">${lenses.map((l) => `<div class="${l.band === here ? "on" : ""}"><span class="b">${esc(l.band)}</span><span>${esc(l.approach)}</span></div>`).join("")}</div>` : ""}
+    ${backlinks}
   </div>`;
 }
 
