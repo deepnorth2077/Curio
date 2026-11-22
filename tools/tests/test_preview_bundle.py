@@ -164,7 +164,10 @@ class HomepageTrialBundle(unittest.TestCase):
         chocolate = catalog["math.operation.distributive-law"]
         self.assertEqual((chocolate["series"], chocolate["series_title"]), ("chocolate", "乘法的秘密"))
         self.assertEqual(chocolate["group_title"], "掰巧克力")
-        self.assertEqual(data["activities"]["act.simulation.chocolate-split-01"]["title"], "掰巧克力")
+        # 掰巧克力 2026-11-22 已正式发布（#54）：试玩包只留星图位置，活动由正式包给出
+        self.assertIn("math.operation.distributive-law", approved_nodes)
+        self.assertEqual(formal["activities"]["act.simulation.chocolate-split-01"]["title"], "掰巧克力")
+        self.assertNotIn("act.simulation.chocolate-split-01", data["activities"])
 
         for nid, node in trial_nodes.items():
             with self.subTest(nid=nid):
@@ -187,6 +190,8 @@ class HomepageTrialBundle(unittest.TestCase):
             shutil.copytree(REPO / "content", root / "content")
             path = build.find_node([root], "math.operation.distributive-law")
             node = yaml.safe_load(path.read_text(encoding="utf-8"))
+            # 这颗星 2026-11-22 已正式发布（#54）。先在副本里退回试玩时的草稿
+            node["status"] = "draft"
             node["activities"].append("act.simulation.not-in-trial")
             path.write_text(yaml.safe_dump(node), encoding="utf-8")
             node["id"] = "math.operation.extra"

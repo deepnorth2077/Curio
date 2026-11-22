@@ -1,0 +1,122 @@
+id: act.quiz.distributive-law-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: "掰巧克力大挑战"
+targets: [math.operation.distributive-law]
+age_band: G3-4
+duration_min: 5
+review: approved  # Luka 2026-11-22 要求进正式外壳（#54）
+engine: 1
+sources:
+  - type: textbook
+    ref: "人教版小学数学四年级下册（旧版）第三单元「运算定律」；三年级上册（旧版）「多位数乘一位数」口算乘法"
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: "一块巧克力每排 6 块，有 4 排。沿一条缝掰成两块：左边每排 2 块，右边每排 4 块。两块一共有几块？"
+      answer:
+        type: number
+        value: 24
+        tolerance: 0
+        unit: 块
+        common_wrong:
+          - value: 12
+            misconception: multiply-one-part
+            feedback: "右边那块不止一排。包装纸下面还有几排？"
+          - value: 10
+            misconception: add-instead-of-multiply
+            feedback: "6 是每排几块，4 是有几排。4 排，每排 6 块。"
+      hints:
+        - "掰开以后，两块各有几排？"
+        - "先数左边那块，再数右边那块，最后合起来。"
+      feedback:
+        correct: "你看出了掰开以后两块都还是 4 排：2×4 + 4×4 = 8 + 16 = 24，和没掰时 6×4 一样多。"
+        wrong: "回头看右边那块。它只有一排，还是和左边一样多排？"
+    - id: q2
+      stem: "哪一个算式，能写成 (3+5)×4？"
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: "3×4 + 5×6"
+            misconception: merge-unlike
+            feedback: "一块 4 排，一块 6 排。拼起来，下面会多出一截。"
+          - id: b
+            text: "3×4 + 5×4"
+            correct: true
+          - id: c
+            text: "3×4 + 5"
+            misconception: multiply-one-part
+            feedback: "5 块只够摆一排。另外几排去哪了？"
+      hints:
+        - "把每个乘法想成一块巧克力：每排几块 × 几排。"
+        - "两块要一样多排，才拼得成方方正正的一整块。"
+      feedback:
+        correct: "你看出了两块都是 4 排。拼起来每排 3 + 5 = 8 块，还是 4 排。"
+        wrong: "回头比一比，每个算式里的两块各有几排。"
+    - id: q3
+      stem: "口算 14×6 等于多少？可以像掰巧克力那样，掰开再算。"
+      answer:
+        type: number
+        value: 84
+        tolerance: 0
+        common_wrong:
+          - value: 64
+            misconception: multiply-one-part
+            feedback: "掰下来的 4 只加了一次。它也有 6 份呀。"
+          - value: 60
+            misconception: drop-small-part
+            feedback: "60 只是 10×6。掰下来的那 4 还没算。"
+      hints:
+        - "把 14 掰成 10 和 4。"
+        - "10 和 4 都要乘 6，再合起来。"
+      feedback:
+        correct: "你把 14 掰成 10 和 4，两块都乘了 6：60 + 24 = 84。"
+        wrong: "回头看掰开的那两块，每一块都乘过 6 了吗？"
+    - id: q4
+      stem: "魔术机今天换成了乘 102。24×102 等于多少？"
+      answer:
+        type: number
+        value: 2448
+        tolerance: 0
+        common_wrong:
+          - value: 2402
+            misconception: multiply-one-part
+            feedback: "多出来的 2 只加上了。它也要乘 24。"
+          - value: 2400
+            misconception: drop-small-part
+            feedback: "2400 只是 24×100。102 比 100 还多一点。"
+          - value: 2424
+            feedback: "把 24 写两遍，是乘 101 的魔术。这回乘的是 102。"
+      hints:
+        - "102 可以掰成 100 和 2。"
+        - "100 和 2 都要乘 24。"
+      feedback:
+        correct: "你把 102 掰成 100 和 2，两部分都乘了 24：2400 + 48 = 2448。"
+        wrong: "回头看 102 比 100 多出来的那一点，它算对了吗？"
+    - id: q5
+      stem: "礼堂的座位排得整整齐齐：每排 14 个，一共 12 排。一共有几个座位？"
+      answer:
+        type: number
+        value: 168
+        tolerance: 0
+        unit: 个
+        common_wrong:
+          - value: 108
+            misconception: split-both
+            feedback: "10×10 和 4×2 只是两个角上的两块。两个数都掰开，中间还漏了两大块。"
+          - value: 142
+            misconception: multiply-one-part
+            feedback: "那 2 排也是每排 14 个，不止 2 个。"
+          - value: 26
+            misconception: add-instead-of-multiply
+            feedback: "14 是每排几个，12 是有几排。12 排，每排 14 个。"
+      hints:
+        - "只掰开一个数：把 12 排掰成 10 排和 2 排。"
+        - "掰开的两块，每排都还是 14 个。"
+      feedback:
+        correct: "你只掰开了排数：10 排和 2 排，每排都还是 14 个。140 + 28 = 168。"
+        wrong: "回头看掰开的两块座位，每排是不是都还有 14 个？"
+# END OF FILE

@@ -28,6 +28,8 @@ const stationCounts = new Map([
   ["act.simulation.three-rulers-01", 3],
   ["act.simulation.whose-half-01", 3],
   ["act.simulation.zoom-line-01", 3],
+  // 「乘法的秘密」掰巧克力（#54）
+  ["act.simulation.chocolate-split-01", 3],
 ]);
 export const supportedExploration = (id) => stationCounts.has(id);
 export const stationCount = (id) => stationCounts.get(id) ?? 0;
