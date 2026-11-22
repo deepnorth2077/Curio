@@ -45,6 +45,6 @@ lenses:
 activities:
 - act.simulation.mix-drink-01
 - act.quiz.ratio-meaning-01
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1
 # END OF FILE

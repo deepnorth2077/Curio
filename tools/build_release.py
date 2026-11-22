@@ -180,7 +180,15 @@ def build_package(content_root, source_commit):
         if isinstance(activity_id, str):
             acts[activity_id] = (path, document)
 
-    gate_errors = check_publish_gate(nodes, acts)
+    def read_entry(manifest_file):
+        # 门禁读的入口 HTML 也出自同一份字节快照
+        entry = by_path.get(manifest_path(content_root, manifest_file.parent / "index.html"))
+        try:
+            return entry[1].decode("utf-8") if entry else None
+        except UnicodeDecodeError:
+            return None
+
+    gate_errors = check_publish_gate(nodes, acts, read_entry)
     if gate_errors:
         details = []
         for path, message in gate_errors:

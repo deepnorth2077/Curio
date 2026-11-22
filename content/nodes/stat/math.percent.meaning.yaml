@@ -54,6 +54,6 @@ lenses:
 activities:
 - act.simulation.hundred-grid-01
 - act.quiz.percent-meaning-01
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1
 # END OF FILE

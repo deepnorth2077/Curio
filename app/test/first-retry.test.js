@@ -49,6 +49,17 @@ test("中途退出沿用保存的站；不一致的完成记录不会解锁其�
     {doneStations:[1], activityCompleted:false});
 });
 
+test("三站的数学探索：整次完成给出三站，站号超过三的记录不算", () => {
+  const MATH = { ...LIFE, node_id: "math.fraction.unit-fraction", activity_id: "act.simulation.fair-cut-01", activity_version: 1 };
+  assert.deepEqual(explorationProgress(events(attempt({content:MATH, seq:1})), LRN, MATH.activity_id, 1),
+    {doneStations:[1, 2, 3], activityCompleted:true});
+  const [start, end] = attempt({content:MATH, seq:1, ends:"abandoned"});
+  const observed = (value, seq) => JSON.stringify({...JSON.parse(start), verb:"sim.observed", event_id:"evt_" + body(++n), device_seq:seq,
+    payload:{observable:"station.completed", value}});
+  const history = events(start, observed(1, 2), observed(4, 3), JSON.stringify({...JSON.parse(end), device_seq:4}));
+  assert.deepEqual(explorationProgress(history, LRN, MATH.activity_id, 1), {doneStations:[1], activityCompleted:false});
+});
+
 test("另一台设备上完成过（同一个孩子）→ retry", () => {
   assert.equal(completedBefore(events(attempt({ device: DEV_B, seq: 1 })), LRN, ACT), true);
 });

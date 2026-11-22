@@ -45,5 +45,5 @@ lenses:
 activities:
   - act.simulation.slide-rule-01
   - act.quiz.point-shift-01
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1

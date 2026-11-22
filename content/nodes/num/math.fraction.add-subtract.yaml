@@ -41,6 +41,6 @@ lenses:
   - band: G7-9
     approach: 分式的加减；先通分再运算的道理推广到代数式。
 activities: [act.simulation.measuring-cup-01, act.quiz.add-subtract-01]
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1
 # END OF FILE

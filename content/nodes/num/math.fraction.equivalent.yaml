@@ -40,6 +40,6 @@ lenses:
   - band: G7-9
     approach: 分式的基本性质；有理数的每个值是一类分数的共同的值。
 activities: [act.simulation.recut-01, act.quiz.equivalent-01]
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1
 # END OF FILE

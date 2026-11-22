@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mountExploration } from "../exploration.js";
+import { mountExploration, stationCount } from "../exploration.js";
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 const content = {
@@ -36,8 +36,9 @@ function setup(options = {}, submit) {
   }};
   const handle = mountExploration({
     container: {ownerDocument:{defaultView:win, createElement:()=>frame},append(){}},
-    manifest: {id:content.activity_id, contract:"activity/1.1", type:"simulation", version:2,
-      targets:[content.node_id], age_band:"G3-4", emits:["observed","predicted","answered"]},
+    manifest: {id:(options.content ?? content).activity_id, contract:"activity/1.1", type:"simulation",
+      version:(options.content ?? content).activity_version,
+      targets:[(options.content ?? content).node_id], age_band:"G3-4", emits:["observed","predicted","answered"]},
     html: "<!DOCTYPE html><html><head><title>活动</title></head><body></body></html>",
     session, now:()=>new Date(0).toISOString(), ids:{attempt:()=>"attempt",event:()=>String(++serial)},
     content, onStatus:(s)=>statuses.push(s), ...options,
@@ -98,6 +99,22 @@ test("saved stations allow finishing a former visit; completed activities replay
   assert.equal(replay.messages[0].payload.activity_completed,true);
   replay.progress(1); replay.signals("complete"); await replay.handle.leave();
   assert.deepEqual(replay.events,[]);
+});
+
+test("a three-station exploration completes after its own last station and refuses a fourth", async () => {
+  const math = {...content, activity_id:"act.simulation.fair-cut-01", node_id:"math.fraction.unit-fraction", activity_version:1};
+  assert.equal(stationCount(math.activity_id), 3);
+  assert.equal(stationCount("act.simulation.chocolate-split-01"), 0);
+  const h = setup({content:math});
+  await h.start();
+  h.progress(1); h.progress(2); h.progress(4);
+  h.signals("complete"); await tick();
+  assert.deepEqual(h.events.map(e=>e.verb), ["attempt.started","sim.observed","sim.observed"]);
+  h.progress(3); h.signals("complete"); await tick(); await h.handle.leave();
+  assert.deepEqual(h.events.map(e=>e.verb), ["attempt.started", ...Array(3).fill("sim.observed"), "attempt.completed"]);
+  assert.deepEqual(h.events.slice(1,4).map(e=>e.payload.value), [1,2,3]);
+  const again = setup({content:math, doneStations:[1,2,3,4]}); await again.start();
+  assert.deepEqual(again.messages[0].payload.completed_stations, [1,2,3]);
 });
 
 test("an incomplete visit, timeout, and second navigation terminate once", async () => {

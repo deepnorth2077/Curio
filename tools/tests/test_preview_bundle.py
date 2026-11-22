@@ -205,10 +205,15 @@ class HomepageTrialBundle(unittest.TestCase):
             root = Path(tmp)
             shutil.copytree(REPO / "content", root / "content")
             site = root / "site"
-            build.build_trial_bundle([root], site, copy_modules=True)
-            self.assertTrue((site / "trial-modules" / f"{simulation}.html").is_file())
             path = build.find_node([root], nid)
             node = yaml.safe_load(path.read_text(encoding="utf-8"))
+            # 这颗星 2026-11-22 已正式发布（#233）。先在副本里退回试玩时的草稿，再走一遍「转正」
+            node["status"] = "draft"
+            path.write_text(yaml.safe_dump(node), encoding="utf-8")
+            set_review(root, simulation, "claude-reviewed")
+            set_review(root, quiz, "claude-reviewed")
+            build.build_trial_bundle([root], site, copy_modules=True)
+            self.assertTrue((site / "trial-modules" / f"{simulation}.html").is_file())
             node["status"] = "published"
             path.write_text(yaml.safe_dump(node), encoding="utf-8")
             set_review(root, simulation, "pending")
@@ -220,7 +225,7 @@ class HomepageTrialBundle(unittest.TestCase):
             self.assertNotIn(nid, [n["id"] for n in data["nodes"]])
             self.assertNotIn(simulation, data["activities"])
             self.assertNotIn(quiz, data["activities"])
-            # 第一个目录里还是旧草稿，第二个目录里已正式发布。正式包的同 ID 始终优先。
+            # 两个目录里同 ID 的星都已正式发布时，正式包的同 ID 始终优先，不进试玩包。
             merged = build.build_trial_bundle([REPO, root], site)
             self.assertNotIn(nid, [n["id"] for n in merged["nodes"]])
             self.assertNotIn(simulation, merged["activities"])

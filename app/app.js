@@ -9,7 +9,7 @@ import { startQuiz, step, DEFAULT_FEEDBACK } from "../engine/js/quiz.js";
 import { openStore } from "./store.js";
 import { openSession, localReceipt, assemble, guardDeps, LockLostError } from "./session.js";
 import { FrozenError } from "./commit.js";
-import { mountExploration, supportedExploration, STATION_COUNT } from "./exploration.js";
+import { mountExploration, supportedExploration, stationCount } from "./exploration.js";
 import { Sk } from "./sketch.js";
 import { buildChart, overviewSvg, placeChartLabels, animateOverview, nearestCons, constellationLayout, constellationSvg,
   chartStar, legendHtml, consName, BAND_NAME, GRADE_NAME } from "./starchart.js";
@@ -637,7 +637,7 @@ function renderMenu(node) {
       const def = a.module?.manifest || a.def;
       const isQuiz = a.entry.kind === "quiz";
       const resume = isQuiz && app.quiz?.def.id === def.id && pendingQuiz(app.quiz);
-      const detail = isQuiz ? `${def.body.items.length} 道题` : `${STATION_COUNT} 站`;
+      const detail = isQuiz ? `${def.body.items.length} 道题` : `${stationCount(def.id)} 站`;
       return `<button type="button" class="activity-option" data-kind="${a.entry.kind}" data-activity="${esc(a.entry.id)}"${app.mode === "writable" ? "" : " disabled"}>
         <span class="activity-meta">${isQuiz ? "挑战" : "动手探索"} · ${detail}</span>
         <strong>${esc(def.title)}</strong>
@@ -660,20 +660,20 @@ function renderMenu(node) {
 
 /** 合格尝试里已保存的站包括中途退出前完成的站。通关只认单独的结束事件。 */
 export function explorationProgress(events, learnerId, activityId, version) {
-  const stations = new Set();
+  const stations = new Set(), count = stationCount(activityId);
   for (const attempt of groupAttempts(events).values()) {
     const first = attempt[0];
     const content = first.content;
     if (first.learner_id !== learnerId || content?.activity_id !== activityId ||
         content.activity_kind !== "simulation" || content.activity_version !== version || attemptRule(attempt)) continue;
     if (attempt[attempt.length - 1].verb === "attempt.completed") {
-      // 较早的记录只有整次完成。四站当时必须依次走完，重进时应能任选一站。
-      return { doneStations: Array.from({ length: STATION_COUNT }, (_, i) => i + 1), activityCompleted: true };
+      // 较早的记录只有整次完成。各站当时必须依次走完，重进时应能任选一站。
+      return { doneStations: Array.from({ length: count }, (_, i) => i + 1), activityCompleted: true };
     }
     for (const e of attempt) {
       const value = e.payload.value;
       if (e.verb === "sim.observed" && e.payload.observable === "station.completed" &&
-          Number.isInteger(value) && value >= 1 && value <= STATION_COUNT) stations.add(value);
+          Number.isInteger(value) && value >= 1 && value <= count) stations.add(value);
     }
   }
   return { doneStations: [...stations].sort((a,b) => a-b), activityCompleted: false };

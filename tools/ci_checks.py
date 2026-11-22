@@ -46,12 +46,9 @@ OVERRIDE_LABEL = "越界-已批准"
 KID_FACING_NODE = ["title", "driving_question", "lenses"]
 KID_FACING_ACT = ["title", "predict", "explain"]
 FORBIDDEN_WORD = "学习"
-# slice-5a 已验收、在正式外壳中承担本星讲解的动手探索。
-EXPLANATION_MODULES = {
-    "biology.cell.cell-intro": "act.simulation.cell-zoom-01",
-    "biology.genetics.dna-intro": "act.simulation.dna-book-01",
-    "biology.genetics.chromosome-intro": "act.simulation.chromosome-pack-01",
-}
+# 动手探索的站完成标记（slice-5a）：observed 的结果是 {station, item: "station-complete"}。
+# 入口 HTML 里写了这个标记，正式外壳才能按站记进度、选站重玩，这个模块才能承担讲解（content.md 第 5 节发布门禁）。
+STATION_COMPLETE_MARK = re.compile(r"""\bitem\s*:\s*["']station-complete["']""")
 PATH_SEGMENT = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
 CATALOG_PATH = "content/catalog/points.yaml"
 # 孩子会碰到的外壳页面：样式里要有「长按不选字、不弹菜单」那两条（#156，module_lint.NOSELECT_CSS）。文件不在就不查
@@ -202,19 +199,30 @@ def activity_misconception_refs(doc):
                 yield wrong["misconception"]
 
 
-def explains_node(nid, activity):
-    """仅计入外壳能够按站打开、且为本知识点验收过的讲解模块。"""
-    return (nid in EXPLANATION_MODULES and activity.get("id") == EXPLANATION_MODULES[nid]
-            and activity.get("type") == "simulation" and activity.get("pedagogy") == "explain"
+def explains_node(nid, activity, entry_html):
+    """被收录的动手探索能否承担本星讲解：清单指向本星、activity/1.1、simulation、explain、
+    入口 index.html、声明 observed，并且入口 HTML 用 slice-5a 的站完成标记。entry_html 是入口文件的文字（读不到为 None）。"""
+    return (activity.get("type") == "simulation" and activity.get("pedagogy") == "explain"
             and activity.get("contract") == "activity/1.1" and activity.get("entry") == "index.html"
             and nid in activity.get("targets", []) and isinstance(activity.get("emits"), list)
-            and "observed" in activity["emits"])
+            and "observed" in activity["emits"]
+            and isinstance(entry_html, str) and STATION_COMPLETE_MARK.search(entry_html) is not None)
 
 
-def check_publish_gate(nodes, acts):
+def read_entry_beside(manifest_path):
+    """默认的入口读取：清单旁边的 index.html。"""
+    entry = Path(manifest_path).with_name("index.html")
+    try:
+        return entry.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def check_publish_gate(nodes, acts, read_entry=read_entry_beside):
     """返回发布门禁错误；nodes/acts 的值均为 (文件路径, 已解析文档)。
 
     构建器和 PR 检查都调用这里，保证收录范围、误区覆盖和引用闭包一致。
+    read_entry(清单路径) 返回动手探索入口 HTML 的文字，读不到返回 None；构建器传自己的字节快照。
     """
     errors = []
     for nid, (node_path, node) in nodes.items():
@@ -229,7 +237,8 @@ def check_publish_gate(nodes, acts):
             if aid in acts and isinstance(acts[aid][1], dict) and acts[aid][1].get("review") == "approved":
                 own.append((aid, acts[aid][1]))
         kinds = {activity.get("kind") for _, activity in own}
-        if "explain" not in kinds and not any(explains_node(nid, activity) for _, activity in own):
+        if "explain" not in kinds and not any(
+                "kind" not in activity and explains_node(nid, activity, read_entry(acts[aid][0])) for aid, activity in own):
             errors.append((node_path, "发布前必须有已批准的 explain 讲解或承担本星讲解的正式动手探索"))
         if "quiz" not in kinds:
             errors.append((node_path, "发布前收录的活动中必须至少有一个 quiz 类活动"))

@@ -43,5 +43,5 @@ lenses:
 activities:
   - act.simulation.place-slots-01
   - act.quiz.compare-add-01
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1

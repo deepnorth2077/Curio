@@ -38,6 +38,6 @@ lenses:
   - band: G7-9
     approach: 有理数的定义：能写成两个整数相除的数；分数线就是除号。
 activities: [act.simulation.share-table-01, act.quiz.as-division-01]
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1
 # END OF FILE
