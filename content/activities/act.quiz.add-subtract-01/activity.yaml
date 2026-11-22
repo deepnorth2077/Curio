@@ -7,7 +7,7 @@ targets:
 - math.fraction.add-subtract
 age_band: G5-6
 duration_min: 5
-review: pending
+review: approved  # Luka 2026-11-22 验收（#233）
 engine: 1
 sources:
 - type: textbook

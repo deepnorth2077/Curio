@@ -191,7 +191,7 @@ export async function renderParent(env) {
   const my = ++token;
   const { app, main, esc } = env;
   if (!app.store) { main.innerHTML = `<section class="parent"><p>这个浏览器不能记录。</p></section>`; return; }
-  const head = (title, back = true) => `<div class="p-head">${back ? `<a class="back" href="#" data-p="tochart" aria-label="回到星图"><span aria-hidden="true">←</span><span>星图</span></a>` : ""}<h1>${esc(title)}</h1></div>`;
+  const head = (title, back = true) => `<div class="p-head">${back ? `<a class="back" href="${app.home === "metro" ? "#metro" : "#"}" data-p="tochart" aria-label="回到${app.home === "metro" ? "地铁" : "星图"}"><span aria-hidden="true">←</span><span>${app.home === "metro" ? "地铁" : "星图"}</span></a>` : ""}<h1>${esc(title)}</h1></div>`;
   const msg = pv.msg ? `<p class="p-msg" role="alert">${esc(pv.msg)}</p>` : "";
   let html = "";
 
@@ -371,7 +371,7 @@ function bind(env) {
   const { main } = env;
   const go = (patch) => { pv = { ...pv, msg: null, ...patch }; renderParent(env); };
   const on = (name, fn) => main.querySelectorAll(`[data-p="${name}"]`).forEach((el) => el.addEventListener("click", (e) => { if (running && name !== "reloadParent") return; fn(e); }));
-  on("tochart", (e) => { e.preventDefault(); if (running) return; location.hash = ""; });
+  on("tochart", (e) => { e.preventDefault(); if (running) return; location.hash = env.app.home === "metro" ? "#metro" : ""; });
   on("home", () => { freeUrl(); go({ screen: "home", url: null }); });
   on("openRestore", () => go({ screen: "home", restoreOpen: true }));
   on("abandon", () => abandonUnfinished(env, (m) => go({ msg: m })));

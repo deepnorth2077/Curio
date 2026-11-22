@@ -50,6 +50,6 @@ lenses:
 activities:
 - act.simulation.stretch-frame-01
 - act.quiz.proportion-01
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1
 # END OF FILE

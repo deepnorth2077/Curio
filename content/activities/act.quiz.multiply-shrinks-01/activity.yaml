@@ -7,7 +7,7 @@ targets:
   - math.operation.multiply-shrinks
 age_band: G5-6
 duration_min: 5
-review: pending
+review: approved  # Luka 2026-11-22 验收（#233）
 engine: 1
 sources:
   - type: textbook
@@ -36,7 +36,7 @@ body:
         - 想一想，你取的是整份还是不到一份？
       feedback:
         correct: 把原条平均分成 10 段，只留下 9 段，还差一段才够 8 厘米。
-        wrong: 把旋钮先放在 1，再拨到 0.9。
+        wrong: 还不对。0.9 倍不到一整份，条会比原来短。
     - id: q2
       stem: 6 厘米的条缩成原来的 0.5 倍，新条长多少厘米？
       answer:
@@ -56,7 +56,7 @@ body:
         - 折好后，一段是原来的一半。
       feedback:
         correct: 0.5 倍就是一半。把 6 平分，得到 3 厘米。
-        wrong: 把一根 6 厘米的条对折。
+        wrong: 还不对。0.5 倍是一半，不是多出 0.5。
     - id: q3
       stem: 把边长是 1 的正方形分成百格。圈出宽 0.3、高 0.2 的长方形，占整个正方形的多少？用小数写。
       answer:
@@ -75,7 +75,7 @@ body:
         - 一共圈了几格？每一小格占整个正方形的百分之一。
       feedback:
         correct: 3 列和 2 行重叠了 6 个小格，每格是 0.01，合起来是 0.06。
-        wrong: 先数宽占几列，再数高占几行。
+        wrong: 还不对。重叠的小格，每格只有 0.01。
     - id: q4
       stem: 三个伸缩条原来都是 12 厘米。哪根比原来长？
       answer:
@@ -97,7 +97,7 @@ body:
         - 从那个位置向哪边转，条才变长？
       feedback:
         correct: 1.1 比 1 多 0.1，除了原条还要多出原条的十分之一。
-        wrong: 摸一摸旋钮，在什么位置条正好和原样一样长？
+        wrong: 还不对。乘的数比 1 大，条会变长。
     - id: q5
       stem: 1 米的纸条，每次都剪掉剩下的一半。剪 3 次，还剩多少米？
       answer:
@@ -116,5 +116,5 @@ body:
         - 把三次折完后的长度按顺序记下来。
       feedback:
         correct: 1 米先变 0.5 米，再变 0.25 米，第三剪后还剩 0.125 米。
-        wrong: 从 1 米开始，折一次就把刚才的长度平分。
+        wrong: 还不对。每折一次，长度都变成刚才的一半。
 # END OF FILE

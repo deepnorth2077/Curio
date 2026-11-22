@@ -184,14 +184,25 @@ def related_inputs(root, paths, briefs):
     return affected
 
 
+def accepted(root, brief):
+    """已验收（status.yaml 里是「完成」）的星。只改它的模块、不改原稿时，旧原稿不按新模板审（Luka 2026-11-22，#233）。"""
+    m = re.fullmatch(r"docs/constellations/([^/]+)/stars/(\d+)-[^/]*\.md", brief)
+    status = root / "docs/constellations" / m[1] / "status.yaml" if m else None
+    if not status or not status.is_file():
+        return False
+    stars = yaml.safe_load(status.read_text(encoding="utf-8")).get("stars") or []
+    return any(star.get("n") == int(m[2]) and star.get("state") == "完成" for star in stars)
+
+
 def lint_paths(root, paths):
     sources = [p for p in (root / "prompts").glob("act.simulation.*.md")
                if BRIEF.fullmatch(p.relative_to(root).as_posix())]
     sources.extend((root / "docs/constellations").glob("*/stars/*.md"))
     briefs = {p.relative_to(root).as_posix(): p.read_text(encoding="utf-8") for p in sorted(sources)}
     output = []
+    edited = set(paths)
     paths = related_inputs(root, paths, briefs)
-    changed_briefs = paths.intersection(briefs)
+    changed_briefs = {b for b in paths.intersection(briefs) if b in edited or not accepted(root, b)}
     if changed_briefs:
         lessons = markdown((root / LESSONS).read_text(encoding="utf-8"))["实现"]
         lesson_ids = set(re.findall(r"^(\d+)\.", "\n".join(lessons), re.M))

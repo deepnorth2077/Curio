@@ -143,11 +143,14 @@ const Host = (() => {
 })();
 Host.on("init", p => {
   if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
+  if (p && p.question_available === false) $("qarea").hidden = true;   // 正式外壳先关提问入口（slice-5a）
+  resumeFrom(p);   // 正式外壳记得做过哪几站：先让孩子选站（kit:shell）
 });
 // 每站的猜测和观察只记一次，complete 只发一次（C.0 第 3 条；教训 15、19）
 const sentPred = new Set(), sentObs = new Set();
 let completed = false;
-function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station }); }
+// observed 只在一站做完时发一次，带整站完成的标记（slice-5a）；站内中途的操作不发 observed
+function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station, item: "station-complete" }); }
 let lastState = "";
 function sendState(o){ const s = JSON.stringify(o); if (s === lastState) return; lastState = s; Host.state(o); }
 
@@ -300,12 +303,32 @@ function next(label, go, cls){ actions([{ label, go, cls }]); }
 // observed 靠 observedOnce、complete 靠 completed，都只记第一次。每站怎么复位、怎么进动手是模块自己的事，写在 REPLAY[站号] 里
 let replay = 0;
 const REPLAY = {};
-function nextOr(label, go, cls){ if (replay) next("回星卡", enterEnd); else next(label, go, cls); }
+function nextOr(label, go, cls){ if (replay && picking) next("回到选站", pickStation); else if (replay) next("回星卡", enterEnd); else next(label, go, cls); }
 function replayAt(k){ replay = k; gen++; S.station = k; hint(""); readout(""); disarmCue(); REPLAY[k](); }
-function restart(){ replay = 0; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }   // 从头玩：和以前的「再玩一次」一样
+function restart(){ replay = 0; picking = false; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }   // 从头玩：和以前的「再玩一次」一样
 function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站。enterEnd() 最后调它
-  replay = 0;
+  replay = 0; picking = false;
   actions([{ label: "从头玩", go: restart, cls: "ghost tight" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1), cls: "tight" }))));   // tight：手机上一行排得下
+}
+// 选站（slice-5a）：正式外壳在 init 里给 completed_stations（做完的站号）和 activity_completed（拿过星卡没有）。
+// 有做完的站，打开时先选：重玩做过的站，或从头玩。重玩完回到这里（nextOr 换成「回到选站」）。
+// 没做完的站不能从中间接着做：星卡要用到前面每一站的结果，所以没拿过星卡时「从头玩」接着往下走。
+// 没有这两个字段（试玩页第一次打开、单独打开）就照旧从第 1 站开始
+let doneStations = 0, picking = false;
+function resumeFrom(p){
+  if (picking || doneStations || !p) return;
+  const saved = new Set(Array.isArray(p.completed_stations) ? p.completed_stations : []);
+  const all = p.activity_completed === true;
+  while (doneStations < STATIONS && (all || saved.has(doneStations + 1))) doneStations++;
+  if (doneStations) pickStation();
+}
+function pickStation(){
+  picking = true; replay = 0; gen++; S.mode = "talk"; hint(""); readout(""); disarmCue();
+  const list = [];
+  for (let k = 1; k <= doneStations; k++) list.push({ label: `重玩第 ${k} 站`, go: () => replayAt(k), cls: "tight" });
+  list.push({ label: "从头玩", go: restart, cls: "ghost tight" });
+  say(doneStations < STATIONS ? `上次做完了 ${doneStations} 站。重玩一站，还是从头玩？` : "这几站你都做完了。想重玩哪一站？");
+  actions(list);
 }
 
 (function(){   // 「我有个问题」：随时可以问，发到信号站

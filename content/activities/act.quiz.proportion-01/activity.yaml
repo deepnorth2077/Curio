@@ -7,7 +7,7 @@ targets:
 - math.ratio.proportion
 age_band: G5-6
 duration_min: 5
-review: pending
+review: approved  # Luka 2026-11-22 验收（#233）
 engine: 1
 sources:
 - type: textbook
@@ -36,7 +36,7 @@ body:
         feedback: 宽变成两倍，高还在原地。看相框里的人会不会变扁。
     feedback:
       correct: 宽和高都变成原来的 2 倍，形状保留下来了。
-      wrong: 比较两条边各自放大的倍数。
+      wrong: 还不对。宽和高要放大同样的倍数，形状才不变。
     hints:
     - 比较两条边各自放大的倍数。
     - 找到宽和高放大倍数相同的一张。
@@ -52,7 +52,7 @@ body:
         misconception: add-same-keeps-ratio
     feedback:
       correct: 20 是 4 的 5 倍，高也变成 3 × 5 = 15。
-      wrong: 4 变成 20，是放大几倍？
+      wrong: 还不对。前项放大了几倍，后项也要放大同样的倍数。
     hints:
     - 4 变成 20，是放大几倍？
     - 让高也放大同样的倍数。
@@ -72,7 +72,7 @@ body:
         misconception: scale-as-distance
     feedback:
       correct: 6 × 50000 = 300000 厘米，也就是 3000 米，等于 3 千米。
-      wrong: 先算实际长度有多少厘米。
+      wrong: 还不对。图上 1 厘米是实际的 50000 厘米，最后再换成千米。
     hints:
     - 先算实际长度有多少厘米。
     - 1 千米是 1000 米，每米有 100 厘米。
@@ -94,7 +94,7 @@ body:
         correct: true
     feedback:
       correct: 0 支是 0 元。每向右 1 格都向上 3 格，点在一条经过 0 的直线上。
-      wrong: 先标出 0 支笔和 1 支笔。
+      wrong: 还不对。每多一支笔，总价都多 3 元，看看这些点排成什么样。
     hints:
     - 先标出 0 支笔和 1 支笔。
     - 每多买一支，点向右走几格、向上走几格？
@@ -112,7 +112,7 @@ body:
         feedback: 0.25 说的是月球占地球直径多少，还要用上模型的直径。
     feedback:
       correct: 4 厘米平均分成 4 段，每段 1 厘米。月球模型直径约 1 厘米。
-      wrong: 月球模型比地球模型小。
+      wrong: 还不对。月球比地球小，模型也要比 4 厘米小。
     hints:
     - 月球模型比地球模型小。
     - 把 4 厘米平均分成 4 段，取其中一段。

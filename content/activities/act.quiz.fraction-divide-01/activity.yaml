@@ -7,7 +7,7 @@ targets:
   - math.fraction.divide
 age_band: G5-6
 duration_min: 5
-review: pending
+review: approved  # Luka 2026-11-22 验收（#233）
 engine: 1
 sources:
   - type: textbook
@@ -34,7 +34,7 @@ body:
         - 有 4 个这样的 1 升。
       feedback:
         correct: 1 升可以装 2 个半升杯，4 升里有 8 个半升。
-        wrong: 先看 1 升能装几杯。
+        wrong: 再数一次：每 1 升装满几杯，4 升就重复几次。
     - id: q2
       stem: 3 升水，每杯装四分之一升。能倒满几杯？
       answer:
@@ -51,7 +51,7 @@ body:
         - 3 升里有几组这样的杯子？
       feedback:
         correct: 每升分成 4 个四分之一升，3 升共有 12 杯。
-        wrong: 把 1 升水切成四等份，每份装一杯。
+        wrong: 还不对。一杯只有四分之一升，比 1 升小得多。
     - id: q3
       stem: 6 升水，每杯装三分之二升。一共能装满几杯？
       answer:
@@ -71,7 +71,7 @@ body:
         - 6 升切出来的小份，每几个能装成一杯？
       feedback:
         correct: 每升先切 3 小份，6 升一共 18 小份。每 2 份装一杯，一共 9 杯。
-        wrong: 每升水先切成 3 份。
+        wrong: 还不对。先算 6 升一共切出几小份，再看几份装一杯。
     - id: q4
       stem: 半张饼平均分给 4 人。每人拿到整张饼的几分之几？
       answer:
@@ -88,7 +88,7 @@ body:
         - 把这一半分成 4 份。整张饼能分出多少个这样的小片？
       feedback:
         correct: 半张饼切成 4 个一样大的小片。另一半也这样切，整张就有 8 片，每人拿到一片。
-        wrong: 画一张饼，先圈住一半。
+        wrong: 还不对。每人拿的是半张饼里的一小片，比半张小得多。
     - id: q5
       stem: 3 米长的绳子，每四分之三米剪一段。能剪出几段？
       answer:
@@ -108,5 +108,5 @@ body:
         - 从头开始，每数到 3 小格就剪一刀。
       feedback:
         correct: 3 米可以分成 12 个四分之一米，每 3 个小段合成一段。12 里面有 4 组 3。
-        wrong: 在 3 米的绳子上，每四分之一米作个记号。
+        wrong: 还不对。先数 3 米里有几个四分之一米。
 # END OF FILE

@@ -115,7 +115,7 @@ export function buildChart({ catalog, nodes, mastery, grade }) {
   const currentBand = currentBandOf(grade);
   return {
     points, byId, cons: [...consById.values()], consById, links: [...links],
-    currentBand, wideBand: currentBand == null ? WIDE_BAND : currentBand,
+    grade: currentBand == null ? null : grade, currentBand, wideBand: currentBand == null ? WIDE_BAND : currentBand,
     lit: points.filter((p) => p.state === "lit").length,
   };
 }
@@ -146,7 +146,8 @@ export function chartStar(state, r) {
 export function legendHtml() {
   return STATES.map((st) => `<span><svg aria-hidden="true" width="18" height="18" viewBox="-16 -16 32 32">${chartStar(st, 10)}</svg>${STATE_WORD[st]}</span>`).join("");
 }
-const spark = (x, y, arm, seed) => `<path class="k1 spark" d="${Sk.line(x - arm, y + arm, x + arm, y - arm, seed, .1) + Sk.line(x - arm, y - arm, x + arm, y + arm, seed + 1, .1)}"/>`;
+/** 「有活动」的小火花（星图详情和地铁共用）。 */
+export const spark = (x, y, arm, seed) => `<path class="k1 spark" d="${Sk.line(x - arm, y + arm, x + arm, y - arm, seed, .1) + Sk.line(x - arm, y - arm, x + arm, y + arm, seed + 1, .1)}"/>`;
 
 /* ============================================================
    主题轮廓（照原型 chartShape、chartShapeFigure）

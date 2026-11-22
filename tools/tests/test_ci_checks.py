@@ -899,29 +899,52 @@ class TestPublishGate(Base):
         self.published_set(); self.r.commit()
         self.ok(self.r.check())
 
-    def test_life_exploration_can_supply_the_explanation_for_its_star(self):
-        nid = "biology.cell.cell-intro"
-        aid = "act.simulation.cell-zoom-01"
-        quiz = yaml.safe_load(structured("act.quiz.cell", [nid]))
+    def test_any_approved_exploration_with_station_marks_can_supply_the_explanation(self):
+        # content.md 第 5 节发布门禁：按规则判断，不再按星名单（#233）
+        nid = "math.fraction.unit-fraction"
+        aid = "act.simulation.fair-cut-01"
+        quiz = yaml.safe_load(structured("act.quiz.unit", [nid]))
         manifest = {"id": aid, "type": "simulation", "contract": "activity/1.1",
                     "entry": "index.html", "pedagogy": "explain", "targets": [nid],
-                    "emits": ["observed"], "review": "approved", "misconceptions": ["visible"]}
+                    "emits": ["predicted", "observed"], "review": "approved", "misconceptions": ["visible"]}
+        marked = 'Host.event("observed", { station, item: "station-complete" });'
 
-        def check(module):
+        def check(module, html=marked):
             node = {"status": "published", "activities": [module["id"], quiz["id"]],
                     "misconceptions": [{"id": "visible"}]}
             activities = {module["id"]: ("manifest.yaml", module), quiz["id"]: ("activity.yaml", quiz)}
-            return [message for _, message in ci_checks.check_publish_gate({nid: ("node.yaml", node)}, activities)]
+            return [message for _, message in ci_checks.check_publish_gate(
+                {nid: ("node.yaml", node)}, activities, lambda path: html)]
 
         self.assertEqual(check(manifest), [])
-        for field, value in (("id", "act.simulation.unknown"), ("id", "act.simulation.dna-book-01"),
-                             ("type", "experiment"), ("pedagogy", "POE"), ("review", "pending"),
+        self.assertEqual(check({**manifest, "id": "act.simulation.any-other-01"}), [])
+        self.assertEqual(check(manifest, "Host.event('observed', {station: S.station, item: 'station-complete'})"), [])
+        for field, value in (("type", "experiment"), ("pedagogy", "POE"), ("review", "pending"),
                              ("review", "claude-reviewed"), ("contract", "activity/1.0"),
-                             ("entry", "other.html"), ("targets", ["biology.genetics.dna-intro"]),
+                             ("entry", "other.html"), ("targets", ["math.fraction.equivalent"]),
                              ("emits", ["predicted"])):
             with self.subTest(field=field, value=value):
                 self.assertTrue(any("讲解" in message for message in check({**manifest, field: value})))
+        for html in ('Host.event("observed", { station });', "", None):
+            with self.subTest(html=html):
+                self.assertTrue(any("讲解" in message for message in check(manifest, html)))
         self.assertTrue(any("visible" in message for message in check({**manifest, "misconceptions": []})))
+
+    def test_default_entry_reader_reads_the_html_beside_the_manifest(self):
+        folder = self.r.dir / "content/activities/act.simulation.beside-01"
+        folder.mkdir(parents=True)
+        self.assertIsNone(ci_checks.read_entry_beside(folder / "manifest.yaml"))
+        (folder / "index.html").write_text('item: "station-complete"', encoding="utf-8")
+        self.assertEqual(ci_checks.read_entry_beside(folder / "manifest.yaml"), 'item: "station-complete"')
+
+    def test_life_explorations_still_supply_their_explanations(self):
+        for nid, aid in (("biology.cell.cell-intro", "act.simulation.cell-zoom-01"),
+                         ("biology.genetics.dna-intro", "act.simulation.dna-book-01"),
+                         ("biology.genetics.chromosome-intro", "act.simulation.chromosome-pack-01")):
+            manifest_file = REPO / "content/activities" / aid / "manifest.yaml"
+            with self.subTest(aid=aid):
+                manifest = yaml.safe_load(manifest_file.read_text(encoding="utf-8"))
+                self.assertTrue(ci_checks.explains_node(nid, manifest, ci_checks.read_entry_beside(manifest_file)))
 
     def test_pending_extra_activity_is_not_included_and_does_not_block(self):
         acts = self.published_set()

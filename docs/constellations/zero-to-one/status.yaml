@@ -4,11 +4,11 @@
 # prs 写主要的几个 PR，不用写全；waiting 只有「在做」「等验收」才写，写在等谁、等什么。
 constellation: zero-to-one
 title: 0 和 1 之间
-updated: 2026-11-19
+updated: 2026-11-22
 issue: 127
 total: 19
 preview: https://deepnorth2077.github.io/Curio/preview/zero-to-one/
-now: 前 4 颗已验收。第 5 到 19 颗的动手探索和挑战已接入同一试玩页，等 Luka 统一验收。
+now: 19 颗已由 Luka 验收，进入正式外壳。
 stars:
   - n: 1
     title: 几分之一：越分越小
@@ -28,76 +28,61 @@ stars:
     prs: [167, 168]
   - n: 5
     title: 小数比大小和加减
-    state: 等验收
+    state: 完成
     prs: [169, 171]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 6
     title: 小数点搬家
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 7
     title: 等值分数：再切一刀
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 8
     title: 分数和除法
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 9
     title: 分数比大小
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 10
     title: 分数加减
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 11
     title: 乘了反而变小
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 12
     title: 分数乘分数
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 13
     title: 除以分数
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 14
     title: 比：味道一样的秘密
-    state: 等验收
+    state: 完成
     prs: [169, 171]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 15
     title: 按比分配
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 16
     title: 比例和比例尺
-    state: 等验收
+    state: 完成
     prs: [169, 171]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 17
     title: 百分数：都换成 100 份
-    state: 等验收
+    state: 完成
     prs: [169, 171]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 18
     title: 一个点，几个名字
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战
   - n: 19
     title: 涨一半再跌一半
-    state: 等验收
+    state: 完成
     prs: [169]
-    waiting: Luka 统一验收动手探索和挑战

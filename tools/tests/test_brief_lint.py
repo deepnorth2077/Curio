@@ -177,6 +177,19 @@ class TestFiles(unittest.TestCase):
         self.write("docs/constellations/space/g1.md", "旧课程组的整套说明")
         self.assertTrue(all(e.startswith(CARD) for e in self.lint(html)))
 
+    def test_accepted_star_brief_skipped_only_when_brief_unchanged(self):
+        html = SIM.replace("manifest.yaml", "index.html")
+        authored = "docs/constellations/space/stars/01-shadow.md"
+        self.write(authored, "这里仍是上次的旧模板。")
+        self.write(SIM, {"author": {"prompt_ref": authored}, "targets": ["physics.light"]})
+        self.write(html, "<body>只换了站完成信号</body>")
+        status = "docs/constellations/space/status.yaml"
+        self.write(status, {"stars": [{"n": 1, "state": "等验收"}]})
+        self.assertTrue(any(e.startswith(authored) for e in self.lint(html)))
+        self.write(status, {"stars": [{"n": 1, "state": "完成"}]})
+        self.assertFalse(any(e.startswith(authored) for e in self.lint(html)))
+        self.assertTrue(any(e.startswith(authored) for e in self.lint(html, authored)))
+
     def test_pr_scope_does_not_block_on_archived_work(self):
         def git(*args):
             return subprocess.run(["git", "-c", "user.name=Test", "-c", "user.email=t@example.com", *args],
