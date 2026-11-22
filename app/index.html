@@ -78,7 +78,52 @@ p{margin:0}
 .banner{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--accent-soft);color:var(--ink);border-bottom:1px solid var(--rule);
   padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .banner p{flex:1 1 240px}
-main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+.shell{flex:1;display:flex;min-height:0}
+main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow:auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* 导航（照原型的 .ribbon、.bottomnav）：只有星图、地铁两项；挑战、动手探索、家长页里不显示，家长入口照旧在星图底部 */
+.ribbon{display:none}
+.ibtn{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;color:var(--muted);position:relative}
+.ibtn:hover{background:var(--hover);color:var(--ink)}
+.ibtn[aria-current="page"]{color:var(--accent);background:var(--accent-soft)}
+.ibtn svg{width:20px;height:20px}
+.bottomnav{position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:repeat(2,1fr);background:var(--side);border-top:1px solid var(--rule);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(4px,env(safe-area-inset-left,0px));padding-right:max(4px,env(safe-area-inset-right,0px))}
+.bottomnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;color:var(--muted);text-decoration:none;font-size:12px}
+.bottomnav svg{width:22px;height:22px}
+.bottomnav [aria-current="page"]{color:var(--accent)}
+@media (min-width:760px){
+  .bottomnav{display:none}
+  .ribbon{display:flex;flex:none;flex-direction:column;align-items:center;gap:4px;width:48px;padding:8px 0;background:var(--side);border-right:1px solid var(--rule);margin-left:env(safe-area-inset-left,0px)}
+}
+.app:has(main>:is(.quiz,.exploration,.parent,.stop)) :is(.ribbon,.bottomnav){display:none}
+/* 手机：底部入口占了下面一条，小卡往上让一让 */
+@media (max-width:759px){.app:has(.bottomnav) .star-card{bottom:calc(68px + env(safe-area-inset-bottom,0px))}}
+
+/* 知识地铁（#233）：照原型的 .metro、.mscroll、.station；站的样子和星图同一套（chartStar） */
+.app:has(main>.metro){height:100%}
+main:has(>.metro){overflow:hidden}
+.mscroll{flex:1;min-height:200px;overflow:auto;position:relative;overscroll-behavior:contain}
+.mscroll>svg{display:block}
+.station,.lline{cursor:pointer}
+.station .hit,.lline .hit{fill:transparent}
+.station:hover .slbl,.station:focus-visible .slbl{fill:var(--accent)}
+.station:focus-visible,.lline:focus-visible{outline:none}
+.station:focus-visible .hit,.lline:focus-visible .hit{stroke:var(--accent);stroke-width:2.5}
+.lline[aria-pressed="true"] .line-lbl{fill:var(--accent)}
+.slbl{font-family:var(--f-sans);font-size:12.5px;fill:var(--ink)}
+.slbl.dim{fill:var(--muted)}
+.zone-now{fill:var(--wash);pointer-events:none}
+.zone-lbl{font-family:var(--f-serif);font-size:14px;fill:var(--ink);font-weight:600}
+.zone-lbl.here{fill:var(--accent)}
+.zone-cut{stroke-width:1.6}
+.zone-sub{font-family:var(--f-mono);font-size:10.5px;fill:var(--muted)}
+.line-lbl{font-family:var(--f-sans);font-size:13px;fill:var(--ink);font-weight:500}
+.hand{font-family:var(--f-hand)}
+.inter-ring{fill:var(--pane);stroke:var(--ink);stroke-width:2}
+/* 站在线上留一小段纸色：没开放的站（不填色的虚线星）和在星图上一样看得清 */
+.station-gap{fill:var(--pane)}
+.station .sel-ring{fill:none}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border-radius:12px;border:1.5px solid var(--ink);background:var(--pane);color:var(--ink);font-size:16px}
 .btn:hover:not(:disabled){background:var(--hover)}
@@ -314,7 +359,18 @@ main:has(>.exploration){overflow:visible}
   </header>
   <div id="banner" class="banner" role="status" aria-live="polite" hidden></div>
   <div id="live" class="sr" aria-live="polite" aria-atomic="true"></div>
-  <main id="main"><section class="stop"><p class="muted">正在打开……</p></section></main>
+  <div class="shell">
+    <!-- 全平台只有一套导航：桌面、平板是左侧工具条，手机是底部入口（照原型 renderNav） -->
+    <nav class="ribbon" aria-label="导航">
+      <a class="ibtn" href="#chart" data-view="chart" title="星图" aria-label="星图"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4" stroke-dasharray="2 2.5"/><circle cx="15.6" cy="7.4" r="1.5" fill="currentColor"/><circle cx="8.4" cy="14.6" r="1.1" fill="currentColor"/></svg></a>
+      <a class="ibtn" href="#metro" data-view="metro" title="知识地铁" aria-label="知识地铁"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h6l4 8h8"/><path d="M3 16h7"/><circle cx="9" cy="8" r="1.8" fill="var(--side)"/><circle cx="13" cy="16" r="1.8" fill="var(--side)"/><circle cx="19" cy="16" r="1.8" fill="var(--side)"/></svg></a>
+    </nav>
+    <main id="main"><section class="stop"><p class="muted">正在打开……</p></section></main>
+  </div>
+  <nav class="bottomnav" aria-label="导航">
+    <a href="#chart" data-view="chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4" stroke-dasharray="2 2.5"/><circle cx="15.6" cy="7.4" r="1.5" fill="currentColor"/><circle cx="8.4" cy="14.6" r="1.1" fill="currentColor"/></svg><span>星图</span></a>
+    <a href="#metro" data-view="metro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h6l4 8h8"/><path d="M3 16h7"/><circle cx="9" cy="8" r="1.8" fill="var(--side)"/><circle cx="13" cy="16" r="1.8" fill="var(--side)"/><circle cx="19" cy="16" r="1.8" fill="var(--side)"/></svg><span>地铁</span></a>
+  </nav>
 </div>
 <div id="printSheet" aria-hidden="true"></div>
 <script type="module" src="./app.js"></script>
