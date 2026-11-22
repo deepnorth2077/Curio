@@ -104,7 +104,8 @@ test("saved stations allow finishing a former visit; completed activities replay
 test("a three-station exploration completes after its own last station and refuses a fourth", async () => {
   const math = {...content, activity_id:"act.simulation.fair-cut-01", node_id:"math.fraction.unit-fraction", activity_version:1};
   assert.equal(stationCount(math.activity_id), 3);
-  assert.equal(stationCount("act.simulation.chocolate-split-01"), 0);
+  assert.equal(stationCount("act.simulation.chocolate-split-01"), 3);
+  assert.equal(stationCount("act.simulation.not-hosted-01"), 0);
   const h = setup({content:math});
   await h.start();
   h.progress(1); h.progress(2); h.progress(4);

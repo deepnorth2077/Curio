@@ -190,6 +190,17 @@ class TestFiles(unittest.TestCase):
         self.assertFalse(any(e.startswith(authored) for e in self.lint(html)))
         self.assertTrue(any(e.startswith(authored) for e in self.lint(html, authored)))
 
+    def test_published_star_prompt_brief_skipped_only_when_brief_unchanged(self):
+        html = SIM.replace("manifest.yaml", "index.html")
+        self.write(SIM, {"targets": ["physics.light"]})
+        self.write(html, "<body>只换了站完成信号</body>")
+        self.write(BRIEF_PATH, "旧模板的任务说明")
+        self.write(CARD, {"status": "draft", "misconceptions": [{"id": f"m{i}", "text": f"说法{i}"} for i in range(3)]})
+        self.assertTrue(any(e.startswith(BRIEF_PATH) for e in self.lint(html)))
+        self.write(CARD, {"status": "published", "misconceptions": [{"id": f"m{i}", "text": f"说法{i}"} for i in range(3)]})
+        self.assertFalse(any(e.startswith(BRIEF_PATH) for e in self.lint(html)))
+        self.assertTrue(any(e.startswith(BRIEF_PATH) for e in self.lint(html, BRIEF_PATH)))
+
     def test_pr_scope_does_not_block_on_archived_work(self):
         def git(*args):
             return subprocess.run(["git", "-c", "user.name=Test", "-c", "user.email=t@example.com", *args],
