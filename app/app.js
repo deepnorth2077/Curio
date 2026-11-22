@@ -18,8 +18,11 @@ import { aliasIndex, treeHtml, searchPoints, noteHtml } from "./explorer.js";
 import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT,
   refreshProfile, currentGradeOf, needsProfileHint, PROFILE_TEXT } from "./parent.js";
 
-/** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。 */
-export const ENGINE_LEVEL = 1;
+/** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。
+ * 2：认得发布包里的 navigators（docs/specs/navigators.md 第 2 节）。 */
+export const ENGINE_LEVEL = 2;
+/** 每位领航员的六张脸（docs/specs/navigators.md 第 1 节）。读包时只核对清单里列全了，SVG 要显示时才取。 */
+export const NAVIGATOR_FACES = Object.freeze(["curious", "waiting", "surprised", "clap", "think", "wrong"]);
 /** 这个外壳认得的活动契约版本（内容规格 3.8）。清单的 contracts 里有别的版本时，提示「需要更新」。 */
 export const KNOWN_CONTRACTS = ["activity/1.1"];
 /** 发布包的位置：部署时 release/ 和 app/ 同级（规格第 2、8 节）。 */
@@ -82,6 +85,7 @@ export async function verifyManifest(rel) {
   try {
     const fields = { engine_min: rel.engine_min, contracts: rel.contracts, nodes: rel.nodes, activities: rel.activities, assets: rel.assets };
     if ("catalog" in rel) fields.catalog = rel.catalog;
+    if ("navigators" in rel) fields.navigators = rel.navigators;
     text = canonicalJson(fields);
   } catch (e) { throw new ReleaseError("broken", String(e && e.message)); }
   const h = await sha256Hex(new TextEncoder().encode(text));
@@ -119,7 +123,8 @@ async function fetchVerifiedJson(base, j, fetchFn) {
  * 读发布包并逐个核对。任何一处对不上都抛 ReleaseError。
  * @param {URL} [url]
  * @param {typeof fetch} [fetchFn]
- * @returns {Promise<{release: any, raw: string, nodes: any[], catalog?: any, activities: Map<string, {entry: any, def: any|null, module?: {manifest:any, loadHtml: () => Promise<string>}}>}>}
+ * 领航员只取每位的 navigator.yaml.json（核对过才用）；SVG 不在这里取。没有 navigators 的旧发布包，navigators 是空的 Map。
+ * @returns {Promise<{release: any, raw: string, nodes: any[], catalog?: any, navigators: Map<string, {entry: any, def: any}>, activities: Map<string, {entry: any, def: any|null, module?: {manifest:any, loadHtml: () => Promise<string>}}>}>}
  */
 export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
   let rel, raw;
@@ -132,6 +137,8 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
   } catch { throw new ReleaseError("broken", "读不到 release.json"); }
   await verifyManifest(rel);
   // 同时去拿，不一个等一个：网络慢时几十个文件排队会让首屏等很久
+  const navLoading = loadNavigators(rel, url, fetchFn);
+  navLoading.catch(() => {}); // 先挂上，免得知识点先出错时它的错误没人接；下面照样 await
   const nodes = await Promise.all(rel.nodes.map(async (n) => {
     const def = await fetchVerifiedJson(url, n.json, fetchFn);
     if (!def || def.id !== n.id) throw new ReleaseError("broken", `知识点 ${n.id} 对不上`);
@@ -168,7 +175,8 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
     return [a.id, { entry: a, def }];
   }));
   for (const [id, v] of loaded) activities.set(id, v);
-  const result = { release: rel, raw, nodes, activities };
+  const navigators = await navLoading;
+  const result = { release: rel, raw, nodes, activities, navigators };
   if ("catalog" in rel) {
     const entry = rel.catalog;
     if (entry?.path !== "content/catalog/points.yaml" || entry.json?.path !== entry.path + ".json") {
@@ -177,6 +185,41 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
     result.catalog = await fetchVerifiedJson(url, entry.json, fetchFn);
   }
   return result;
+}
+
+/**
+ * 读清单里的领航员：每位核对文件齐全（yaml 带 .json、六张脸），并行取 navigator.yaml.json，核对哈希和 id。
+ * @param {any} rel 已核对过的清单
+ * @param {URL} url
+ * @param {typeof fetch} fetchFn
+ * @returns {Promise<Map<string, {entry: any, def: any}>>}
+ */
+async function loadNavigators(rel, url, fetchFn) {
+  /** @type {Map<string, {entry: any, def: any}>} */
+  const out = new Map();
+  if (!("navigators" in rel)) return out;
+  if (!Array.isArray(rel.navigators)) throw new ReleaseError("broken", "navigators 不是列表");
+  const loaded = await Promise.all(rel.navigators.map(async (n) => {
+    if (!n || typeof n.id !== "string" || !/^nav\.[a-z0-9-]+$/.test(n.id) || !Array.isArray(n.files)) {
+      throw new ReleaseError("broken", "领航员的清单条目不对");
+    }
+    const dir = "content/navigators/" + n.id + "/";
+    const yamlFile = n.files.find((f) => f && f.path === dir + "navigator.yaml");
+    if (!yamlFile || yamlFile.json?.path !== yamlFile.path + ".json" ||
+        !NAVIGATOR_FACES.every((face) => n.files.some((f) => f && f.path === dir + face + ".svg"))) {
+      throw new ReleaseError("broken", `领航员 ${n.id} 的文件不完整`);
+    }
+    const def = await fetchVerifiedJson(url, yamlFile.json, fetchFn);
+    if (!def || def.schema !== "navigator/1" || def.id !== n.id || def.version !== n.version) {
+      throw new ReleaseError("broken", `领航员 ${n.id} 和发布清单对不上`);
+    }
+    return [n.id, { entry: n, def }];
+  }));
+  for (const [id, v] of loaded) {
+    if (out.has(id)) throw new ReleaseError("broken", `领航员 ${id} 重复`);
+    out.set(id, v);
+  }
+  return out;
 }
 
 

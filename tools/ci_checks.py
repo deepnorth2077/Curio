@@ -59,6 +59,8 @@ ENGINE_REQUIREMENTS = {
     "kind": {"explain": 1, "quiz": 1, "reflection": 1},
     "answer": {"choice": 1, "number": 1, "fraction": 1},
     "figure": {"pie": 1, "rect": 1, "rect-unequal": 1, "number-line": 1, "svg": 1},
+    # 发布包里的可选内容：收录了就要这么高的外壳（docs/specs/navigators.md 第 2 节：旧外壳读到 navigators 会判成哈希不对）
+    "content": {"navigators": 2},
 }
 
 SVG_ELEMENTS = {
@@ -75,6 +77,120 @@ SVG_ATTRIBUTES = {
     "gradientUnits", "clip-path", "id", "class", "xmlns", "aria-label", "role",
     "href", "xlink:href",
 }
+
+# 领航员（docs/specs/navigators.md 第 1 节）。目录 content/navigators/<id>/ 里恰好是 navigator.yaml 和六张脸。
+NAVIGATOR_ROOT = "content/navigators"
+NAVIGATOR_FACES = ["curious", "waiting", "surprised", "clap", "think", "wrong"]
+NAVIGATOR_FILES = frozenset(["navigator.yaml"] + [face + ".svg" for face in NAVIGATOR_FACES])
+# 领航员的 SVG 比内容规格 3.6 的白名单更严：去掉 title、desc、id、use、defs、渐变、clipPath、text 和只为它们服务的属性
+NAVIGATOR_DRAWABLE = {"path", "circle", "ellipse", "rect", "line", "polyline", "polygon"}
+NAVIGATOR_ELEMENTS = NAVIGATOR_DRAWABLE | {"svg", "g"}
+NAVIGATOR_ATTRIBUTES = SVG_ATTRIBUTES - {
+    "id", "href", "xlink:href", "clip-path", "offset", "stop-color", "stop-opacity", "gradientUnits",
+    "font-size", "font-weight", "text-anchor", "dominant-baseline",
+}
+NAVIGATOR_CLASSES = {"k", "k1", "f-ink", "f-pane", "f-sky", "f-sage", "f-apricot", "f-paper", "f-muted", "f-accent"}
+NAVIGATOR_MAX_DRAWABLE = 16
+NAVIGATOR_MAX_BYTES = 3072
+
+
+def check_navigator_svg(data):
+    """一张领航员表情 SVG 的严格检查（规格第 1 节「每个 SVG」），data 是原始字节。返回错误文字列表。
+    PR 检查和发布构建共用；外壳读包时按同一份规则再查一遍。"""
+    errors = []
+    if len(data) > NAVIGATOR_MAX_BYTES:
+        errors.append(f"领航员的 SVG 不能超过 {NAVIGATOR_MAX_BYTES} 字节，现在是 {len(data)}")
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return errors + ["领航员的 SVG 不是 UTF-8"]
+    if "<!--" in text:
+        errors.append("领航员的 SVG 不能有注释")
+    if "<![CDATA[" in text.upper():
+        errors.append("领航员的 SVG 不能有 CDATA")
+    if re.search(r"<!\s*(?:DOCTYPE|ENTITY)\b", text, re.I):
+        errors.append("领航员的 SVG 不能有 DOCTYPE 或实体")
+    for match_ in re.finditer(r"<\?([A-Za-z0-9_-]+).*?\?>", text, re.S):
+        if not (match_.group(1).lower() == "xml" and match_.start() == 0):
+            errors.append("领航员的 SVG 只允许第一行的 XML 声明，不允许其他处理指令")
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError as exc:
+        return errors + [f"领航员的 SVG 不是合法的 XML：{exc}"]
+    local = lambda tag: tag.rsplit("}", 1)[-1] if isinstance(tag, str) else ""
+    if local(root.tag) != "svg":
+        errors.append("领航员的 SVG 最外层必须是 <svg>")
+    if root.get("viewBox") != "0 0 48 48":
+        errors.append(f"领航员的 SVG 的 viewBox 必须是 0 0 48 48，现在是 {root.get('viewBox')!r}")
+    drawable = accent = 0
+    for element in root.iter():
+        tag = local(element.tag)
+        if tag not in NAVIGATOR_ELEMENTS:
+            errors.append(f"领航员的 SVG 不能用元素 {tag or element.tag}")
+        if tag in NAVIGATOR_DRAWABLE:
+            drawable += 1
+        if (element.text or "").strip() or (element is not root and (element.tail or "").strip()):
+            errors.append("领航员的 SVG 里不能有文字")
+        for raw_name, value in element.attrib.items():
+            name = "xlink:href" if raw_name == "{http://www.w3.org/1999/xlink}href" else raw_name.rsplit("}", 1)[-1]
+            if name not in NAVIGATOR_ATTRIBUTES:
+                errors.append(f"领航员的 SVG 不能用属性 {name}")
+            if name in ("fill", "stroke") and value != "none":
+                errors.append(f"领航员的 SVG 颜色只能用 class，{name} 只许写 none，现在是 {value!r}")
+            if re.search(r"url\s*\(", value, re.I):
+                errors.append("领航员的 SVG 不能用 url(…)")
+        if "class" in element.attrib:
+            classes = element.get("class").split()
+            if tag in ("g", "svg"):
+                errors.append(f"领航员的 SVG 颜色类不能写在 <{tag}> 上")
+            for name in classes:
+                if name not in NAVIGATOR_CLASSES:
+                    errors.append(f"领航员的 SVG 不认识颜色类 {name}（只许 {'、'.join(sorted(NAVIGATOR_CLASSES))}）")
+            if "f-accent" in classes:
+                accent += 1
+    if drawable > NAVIGATOR_MAX_DRAWABLE:
+        errors.append(f"领航员的 SVG 能画出东西的元素不能超过 {NAVIGATOR_MAX_DRAWABLE} 个，现在是 {drawable}")
+    if accent > 1:
+        errors.append(f"领航员的 SVG 每张最多一个元素用 f-accent，现在是 {accent}")
+    return errors
+
+
+def check_navigator(directory, files, doc, schema):
+    """一位领航员的检查：files 是 {文件名: 字节}，doc 是解析过的 navigator.yaml（解析失败为 None）。
+    返回 [(文件名或 None, 错误文字)]。目录名等于 id、文件恰好七个、yaml 合 schema、每张脸过严格检查。"""
+    from jsonschema import Draft202012Validator
+    errors = []
+    for name in sorted(NAVIGATOR_FILES - set(files)):
+        errors.append((None, f"领航员 {directory} 缺少 {name}"))
+    for name in sorted(set(files) - NAVIGATOR_FILES):
+        errors.append((name, f"领航员目录里只能有 navigator.yaml 和六张脸，不能有 {name}"))
+    if "navigator.yaml" in files:
+        if not isinstance(doc, dict):
+            errors.append(("navigator.yaml", "领航员的 navigator.yaml 必须是一个 YAML 对象"))
+        else:
+            for error in Draft202012Validator(schema).iter_errors(doc):
+                loc = "/".join(str(x) for x in error.absolute_path) or "(根)"
+                errors.append(("navigator.yaml", f"领航员 {loc}：{error.message}"))
+            if doc.get("id") != directory:
+                errors.append(("navigator.yaml", f"领航员的目录名必须等于 id：目录是 {directory}，id 是 {doc.get('id')!r}"))
+            for key in ("title", "intro"):
+                if isinstance(doc.get(key), str) and FORBIDDEN_WORD in doc[key]:
+                    errors.append(("navigator.yaml", f"领航员给孩子看的「{key}」里出现了「{FORBIDDEN_WORD}」"))
+    for face in NAVIGATOR_FACES:
+        name = face + ".svg"
+        if name in files:
+            errors.extend((name, message) for message in check_navigator_svg(files[name]))
+    return errors
+
+
+def navigator_gate_errors(docs):
+    """发布门禁：docs 是 {目录名: 解析过的 navigator.yaml}。有领航员时至少要有一位 approved 且 unlock.start 为 true。"""
+    if not docs:
+        return []
+    for doc in docs.values():
+        if isinstance(doc, dict) and doc.get("review") == "approved" and isinstance(doc.get("unlock"), dict) and doc["unlock"].get("start") is True:
+            return []
+    return ["领航员里至少要有一位 review: approved、unlock: {start: true}，舰长才有人可选"]
 
 
 class Result:
@@ -705,6 +821,49 @@ def run(repo, base="origin/main", branch="", labels=()):
     for svg in sorted(asset_root.rglob("*.svg")) if asset_root.exists() else []:
         for message in check_svg(svg):
             r.err(message, rel(repo, svg))
+
+    # 领航员（docs/specs/navigators.md 第 1 节）：每位的 yaml 和六张脸，门禁，和主线比 id、unlock。
+    nav_root = repo / NAVIGATOR_ROOT
+    navigator_schema = schemas.get("navigator.schema.json")
+    nav_docs = {}
+    if nav_root.exists():
+        if navigator_schema is None:
+            r.err("缺少可用的 schemas/navigator.schema.json", NAVIGATOR_ROOT)
+        for entry in sorted(nav_root.iterdir()):
+            where = f"{NAVIGATOR_ROOT}/{entry.name}"
+            if not entry.is_dir():
+                r.err("content/navigators/ 下只能放领航员目录", where)
+                continue
+            files = {f.name: f.read_bytes() for f in entry.iterdir() if f.is_file()}
+            for d in sorted(f.name for f in entry.iterdir() if not f.is_file()):
+                r.err(f"领航员目录里不能有子目录 {d}", where)
+            doc = load(entry / "navigator.yaml") if "navigator.yaml" in files else None
+            nav_docs[entry.name] = doc
+            if navigator_schema is not None:
+                for name, message in check_navigator(entry.name, files, doc, navigator_schema):
+                    r.err(message, f"{where}/{name}" if name else where)
+        for message in navigator_gate_errors(nav_docs):
+            r.err(message, NAVIGATOR_ROOT)
+    base_navs = sorted({p.split("/")[2] for p in git(repo, "ls-tree", "-r", "--name-only", base, NAVIGATOR_ROOT).stdout.splitlines()
+                        if p.count("/") == 3 and p.endswith("/navigator.yaml")})
+    for directory in base_navs:
+        where = f"{NAVIGATOR_ROOT}/{directory}/navigator.yaml"
+        try:
+            old = load_yaml_text(base_text(where) or "")
+        except Exception:
+            continue
+        if not isinstance(old, dict):
+            continue
+        current = nav_docs.get(directory)
+        if directory not in nav_docs or not (nav_root / directory / "navigator.yaml").is_file():
+            r.err(f"已进 main 的领航员 {directory} 不能删（id 永不改动；要换就出一位新的）", where)
+        elif not isinstance(current, dict):
+            continue   # 解析失败已经报过
+        else:
+            if current.get("id") != old.get("id"):
+                r.err(f"已进 main 的领航员 id 从 {old.get('id')} 改成了 {current.get('id')}。ID 永不改动", where)
+            if "unlock" not in current or current.get("unlock") != old.get("unlock"):
+                r.err(f"已进 main 的领航员 {directory} 的 unlock 不能改（要换条件就出一位新的）", where)
 
     # 发布门禁只看已发布知识点引用的 approved 活动。
     for f, message in check_publish_gate(nodes, acts):

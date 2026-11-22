@@ -11,6 +11,7 @@ export const SLICE_VERBS = Object.freeze([
   "attempt.completed",
   "attempt.abandoned",
   "profile.set",
+  "navigator.chosen",
 ]);
 
 /** schemas/event.schema.json 里 verb 的全部取值（信封校验用；可摄入的动词见 SLICE_VERBS）。 */
@@ -23,7 +24,7 @@ const SCHEMA_VERBS = new Set([
   "plan.created", "plan.task_done", "plan.task_undone",
   "reward.goal_set", "reward.redeem_requested", "reward.spent", "reward.adjusted", "reward.revoked",
   "import.voided", "attachment.erased", "text.erased",
-  "profile.set",
+  "profile.set", "navigator.chosen",
 ]);
 
 const ULID = "[0-7][0-9A-HJKMNP-TV-Z]{25}";
@@ -39,6 +40,7 @@ const RE = {
   node: /^[a-z]+(\.[a-z0-9-]+)+$/,
   act: /^act\.[a-z]+\.[a-z0-9-]+$/,
   grader: /^[a-z][a-z0-9-]*\/[1-9][0-9]*$/,
+  nav: /^nav\.[a-z0-9-]+$/,
   ts: /^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\.[0-9]{3}Z$/,
 };
 
@@ -159,6 +161,7 @@ const VERB_RULES = {
   "attempt.completed": { scope: "attempt", actors: ["learner"] },
   "attempt.abandoned": { scope: "attempt", actors: ["learner", "system"] },
   "profile.set": { scope: "none", actors: ["caregiver"] },
+  "navigator.chosen": { scope: "none", actors: ["learner"] },
 };
 
 /** profile.set 的教材：键是科目，值是允许的教材代号（docs/specs/profile.md 第 1 节）。 */
@@ -245,6 +248,15 @@ export function checkVerb(e) {
         if (!has(TEXTBOOKS, subject)) return `textbooks 多了 ${subject}`;
         if (!TEXTBOOKS[subject].includes(book)) return `textbooks.${subject} 不认识`;
       }
+      return null;
+    }
+    case "navigator.chosen": {
+      // docs/specs/navigators.md 第 3 节。不查 navigator_id 在不在发布包里：事件比发布包活得久
+      if (e.actor.id !== e.learner_id) return "navigator.chosen 的 actor.id 必须等于 learner_id";
+      const k = keys(p, ["rev", "navigator_id"], ["rev", "navigator_id"], "payload ");
+      if (k) return k;
+      if (!isInt(p.rev) || p.rev < 1) return "rev 要是正整数";
+      if (!isStr(p.navigator_id) || codePoints(p.navigator_id) > 40 || !RE.nav.test(p.navigator_id)) return "navigator_id 格式不对";
       return null;
     }
   }

@@ -150,6 +150,7 @@ payload 里以 `_text_id` 结尾或叫 `text_id` 的字段，值是 `txt_<ULID>`
 | `attachment.erased` | 无 | caregiver | `{attachment_id, reason: requested \| mistake \| other}`；附件的密钥已销毁 |
 | `text.erased` | 无 | learner、caregiver | `{text_id, reason: requested \| mistake \| other \| orphan \| lost}`；删除一段私人文字（第 4 节）。`orphan`：没有事件引用的文字；`lost`：文字已经永久找不回来（例如设备丢失） |
 | `profile.set` | 无 | caregiver | `{rev, entry_year, textbooks}`；舰长资料的完整一份，不是增量。`rev` 正整数；`entry_year` 整数 2010～2040；`textbooks` 必填对象，可以是 `{}`，键只能是 `math`（值 `renjiao`）、`science`（值 `jiaoke`）。详见 `docs/specs/profile.md` 第 1 节 |
+| `navigator.chosen` | 无 | learner | `{rev, navigator_id}`；舰长选了哪位领航员。`rev` 正整数，保存时取当前生效的 `rev` 加 1，第一次是 1；`actor.id` 必须等于 `learner_id`；`navigator_id` 是 `nav.` 加小写字母、数字、连字符，总长不超过 40，**不**校验它在不在发布包里。详见 `docs/specs/navigators.md` 第 3 节 |
 
 ### 3.6 不进事件流的东西
 
@@ -331,6 +332,11 @@ payload 里以 `_text_id` 结尾或叫 `text_id` 的字段，值是 `txt_<ULID>`
 - `rev` 最大的 `profile.set` 生效；`rev` 相同时，排序键**最大**的生效（后改的盖过先改的）。
 - 被更高 `rev` 盖过的是正常的历史，不列进 `conflicts`；同 `rev` 里没生效的列进 `conflicts`，写成 `{event_id, reason: "same_rev"}`。
 - 输出 `{algorithm_version: "profile/1", profile, conflicts}`，`profile` 是生效那条的 payload 加上它的 `occurred_at`，没有时是 `null`。不读当前时间；年级由调用方另算（`docs/specs/profile.md` 第 2、3 节，`kernel/js/profile.js`）。
+
+**领航员选择（navigator/1）**
+
+- 规则照舰长资料：输入照 6.1，集合里有 `import.voided` 时投影自己去掉被作废批次里的 `navigator.chosen`；`rev` 最大的生效，`rev` 相同时排序键**最大**的生效；同 `rev` 里没生效的列进 `conflicts`，写成 `{event_id, reason: "same_rev"}`，按 `event_id` 升序；被更高 `rev` 盖过的不列。
+- 输出 `{algorithm_version: "navigator/1", navigator_id, rev, conflicts}`；还没选过时 `navigator_id` 是 `null`、`rev` 是 0。选的那位不在发布包里时怎么退回，由外壳按 `docs/specs/navigators.md` 第 4 节处理，退回不写事件（`kernel/js/navigator.js`）。
 
 **问题（questions/1）**
 
