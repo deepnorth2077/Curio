@@ -119,7 +119,7 @@ async function fetchVerifiedJson(base, j, fetchFn) {
  * 读发布包并逐个核对。任何一处对不上都抛 ReleaseError。
  * @param {URL} [url]
  * @param {typeof fetch} [fetchFn]
- * @returns {Promise<{release: any, raw: string, nodes: any[], catalog?: any, activities: Map<string, {entry: any, def: any|null, module?: {manifest:any, html:string}}>}>}
+ * @returns {Promise<{release: any, raw: string, nodes: any[], catalog?: any, activities: Map<string, {entry: any, def: any|null, module?: {manifest:any, loadHtml: () => Promise<string>}}>}>}
  */
 export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
   let rel, raw;
@@ -131,15 +131,15 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
     rel = JSON.parse(raw);
   } catch { throw new ReleaseError("broken", "读不到 release.json"); }
   await verifyManifest(rel);
-  const nodes = [];
-  for (const n of rel.nodes) {
+  // 同时去拿，不一个等一个：网络慢时几十个文件排队会让首屏等很久
+  const nodes = await Promise.all(rel.nodes.map(async (n) => {
     const def = await fetchVerifiedJson(url, n.json, fetchFn);
     if (!def || def.id !== n.id) throw new ReleaseError("broken", `知识点 ${n.id} 对不上`);
-    nodes.push(def);
-  }
-  /** @type {Map<string, {entry: any, def: any|null, module?: {manifest:any, html:string}}>} */
+    return def;
+  }));
+  /** @type {Map<string, {entry: any, def: any|null, module?: {manifest:any, loadHtml: () => Promise<string>}}>} */
   const activities = new Map();
-  for (const a of rel.activities) {
+  const loaded = await Promise.all(rel.activities.map(async (a) => {
     if (supportedExploration(a.id)) {
       const dir = "content/activities/" + a.id + "/";
       const manifestFile = a.files.find((f) => f.path === dir + "manifest.yaml");
@@ -147,9 +147,7 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
       if (a.kind !== "simulation" || !manifestFile || manifestFile.json?.path !== manifestFile.path + ".json" || !htmlFile) {
         throw new ReleaseError("broken", `探索 ${a.id} 的文件不完整`);
       }
-      const [manifest, html] = await Promise.all([
-        fetchVerifiedJson(url, manifestFile.json, fetchFn), fetchVerifiedText(url, htmlFile, fetchFn)
-      ]);
+      const manifest = await fetchVerifiedJson(url, manifestFile.json, fetchFn);
       const targets = nodes.filter((n) => n.activities?.includes(a.id));
       if (manifest?.id !== a.id || manifest.version !== a.version || manifest.type !== a.kind ||
           manifest.contract !== "activity/1.1" || manifest.entry !== "index.html" || manifest.pedagogy !== "explain" ||
@@ -157,18 +155,19 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
           !targets.length || !targets.every((n) => manifest.targets.includes(n.id))) {
         throw new ReleaseError("broken", `探索 ${a.id} 和发布清单或所属星对不上`);
       }
-      activities.set(a.id, { entry: a, def: null, module: { manifest, html } });
-      continue;
+      // 模块的 HTML 最大，等孩子真的打开这个探索时才去拿，照样核对字节数和哈希；拿到一次就记住
+      let html = null;
+      const loadHtml = () => (html ||= fetchVerifiedText(url, htmlFile, fetchFn).catch((e) => { html = null; throw e; }));
+      return [a.id, { entry: a, def: null, module: { manifest, loadHtml } }];
     }
     let def = null;
-    for (const f of a.files) {
-      if (!f.json) continue;
-      const v = await fetchVerifiedJson(url, f.json, fetchFn);
-      if (/\/activity\.yaml$/.test(f.path)) def = v;
+    for (const v of await Promise.all(a.files.filter((f) => f.json).map(async (f) => [f, await fetchVerifiedJson(url, f.json, fetchFn)]))) {
+      if (/\/activity\.yaml$/.test(v[0].path)) def = v[1];
     }
     if (def && def.id !== a.id) throw new ReleaseError("broken", `活动 ${a.id} 对不上`);
-    activities.set(a.id, { entry: a, def });
-  }
+    return [a.id, { entry: a, def }];
+  }));
+  for (const [id, v] of loaded) activities.set(id, v);
   const result = { release: rel, raw, nodes, activities };
   if ("catalog" in rel) {
     const entry = rel.catalog;
@@ -929,7 +928,7 @@ export function explorationProgress(events, learnerId, activityId, version) {
 
 function openExploration(node, module) {
   if (app.exploration || app.mode !== "writable" || !app.session) return;
-  const { manifest, html } = module;
+  const { manifest } = module;
   const session = app.session;
   const history = explorationProgress(session.log.events(), session.identity.learner_id, manifest.id, manifest.version);
   const run = { host: null, leaving: null, failed:false };
@@ -948,6 +947,17 @@ function openExploration(node, module) {
     if (await closeExploration(run) && app.view === "exploration") renderChart();
   });
   $("#exploreTitle").focus({ preventScroll: true });
+  module.loadHtml().then((html) => {
+    if (app.exploration !== run) return;
+    startExploration(run, node, manifest, html, session, history, { status, refresh, panel, back });
+  }, () => {
+    if (app.exploration !== run) return;
+    status.textContent = "打不开这个探索。请检查网络，再刷新一次。";
+    refresh.hidden = false;
+  });
+}
+
+function startExploration(run, node, manifest, html, session, history, { status, refresh, panel, back }) {
   try {
     run.host = mountExploration({
       container: $("#main .workbench"), manifest, html, session, ids, now,
