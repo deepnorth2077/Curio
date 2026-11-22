@@ -104,7 +104,7 @@ _这一段由 `tools/status_gen.py` 按 `docs/constellations/newton-track/status
 
 - **数学**。「0 和 1 之间」六组 19 颗均可玩，家庭验收进度见上表。Luka 可以一次试玩剩余 15 颗。记下舰长在哪一步卡住、当时看到了什么，把反馈用进下一组。第 5、16 颗改了动手操作，第 14、17 颗重做了挑战末题。[数学试玩](https://deepnorth2077.github.io/Curio/preview/zero-to-one/) · [四处改动 #171](https://github.com/deepnorth2077/Curio/pull/171)
 - **生命**。「生命的说明书」三项活动已由 Luka 验收。在正式外壳里能从星图进入隔离活动，平台校验消息，回来可选已完成的站重玩。染色体两道数字题会按实际输入给反馈。[正式外壳](https://deepnorth2077.github.io/Curio/app/) · [实现 #173](https://github.com/deepnorth2077/Curio/pull/173)
-- **首页**。分配律（掰巧克力）1 颗、数学 19 颗、生命 3 颗，已接进首页星图和知识地铁。撤下 9 个重叠占位后，星图、地铁和图鉴各有 93 个知识点，其中这 23 颗有课程。旧名仍可搜，错题、提问和成绩保留原 ID。首页的试玩入口与上面的正式外壳分开，首页里玩完活动的标记仅在本次打开期间保留。[首页星图](https://deepnorth2077.github.io/Curio/?shapes=1) · [知识地铁](https://deepnorth2077.github.io/Curio/?shapes=1#metro) · [接入 #182](https://github.com/deepnorth2077/Curio/pull/182) · [去重 #184](https://github.com/deepnorth2077/Curio/pull/184)
+- **首页**。分配律（掰巧克力）1 颗、数学 19 颗、生命 3 颗，已接进首页星图和知识地铁。撤下 9 个重叠占位后，星图、地铁和图鉴各有 93 个知识点，其中这 23 颗有课程。旧名仍可搜，错题、提问和成绩保留原 ID。首页的试玩入口与上面的正式外壳分开，首页里玩完活动的标记仅在本次打开期间保留。[首页星图](https://deepnorth2077.github.io/Curio/prototype/?shapes=1) · [知识地铁](https://deepnorth2077.github.io/Curio/prototype/?shapes=1#metro) · [接入 #182](https://github.com/deepnorth2077/Curio/pull/182) · [去重 #184](https://github.com/deepnorth2077/Curio/pull/184)
 
 ### 下一版的顺序
 
@@ -116,7 +116,7 @@ _这一段由 `tools/status_gen.py` 按 `docs/constellations/newton-track/status
 
 #### 主线（一步验收了再开下一步）
 
-第 0 步「知识点目录入库」已由 #190 完成（#188 待试玩）。第 1 步「舰长资料」已由 #226（读程序）、#227（家长页）交付，Luka 2026-11-21 验收（#224）。第 2 步正式星图已由 #231 交付（`app/starchart.js`），#230 待试玩。
+第 0 步「知识点目录入库」已由 #190 完成（#188 待试玩）。第 1 步「舰长资料」已由 #226（读程序）、#227（家长页）交付，Luka 2026-11-21 验收（#224）。第 2 步正式星图 #231，Luka 2026-11-22 验收（#230）。第 3 步（#233）：数学 19 颗进正式外壳 #235、知识地铁 #234、首页根地址改为正式外壳（原型挪到 `/prototype/`）；待 Luka 试玩。主线下一步是第 4 步选领航员。
 
 | 步骤 | 做什么 | 要不要独立审 | 放行条件 |
 | --- | --- | --- | --- |
