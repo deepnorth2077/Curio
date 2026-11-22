@@ -364,3 +364,34 @@ test("只存了一条 profile.set 的设备不算干净：恢复别的孩子的�
   const plan = planRestore(structuredClone(existing), structuredClone(other), OPTS);
   assert.deepEqual(plain(plan), { ok: false, reason: "other_learner" });
 });
+
+// ---------------------------------------------------------------- #242 PR 1：navigator.chosen 的备份往返（docs/specs/navigators.md 第 3 节、测试接缝）
+// 期望值：备份里的原文恢复后一字不差地在收件表里；重放后 projectNavigator 选出 rev 最大的那位（手算：rev 2 的 nav.ring）。
+const navRaw = (rev, navigatorId, device, seq, tag, at) => JSON.stringify({
+  schema: "event/2", event_id: `evt_${ulid(tag)}`, learner_id: L, device_id: device, device_seq: seq,
+  occurred_at: at, actor: { type: "learner", id: L }, verb: "navigator.chosen", payload: { rev, navigator_id: navigatorId },
+});
+
+test("备份往返：两条 navigator.chosen 备份、恢复到干净设备，原文不变，投影出同一位（rev 2 的 nav.ring）", async () => {
+  // rev 2 的时钟比 rev 1 还早：只有按 rev 比才选出 nav.ring
+  const first = navRaw(1, "nav.lamp", DEV_B, 1, "NV1", "2026-11-12T03:00:00.000Z");
+  const second = navRaw(2, "nav.ring", DEV_B, 2, "NV2", "2026-11-12T02:00:00.000Z");
+  const all = [...events(DEV_B, "H", 3, 4), first, second];
+  const { header, backup } = backupOf(DEV_B, all, all.map(localReceipt));
+  const plan = planRestore(cleanDevice(), structuredClone({ header, backup }), OPTS);
+  assert.equal(plan.ok, true, `恢复计划应当通过：${JSON.stringify(plan).slice(0, 200)}`);
+  assert.ok(plan.items.some((it) => it.inbox === first) && plan.items.some((it) => it.inbox === second),
+    "两条 navigator.chosen 的原文都在待写的项里（不被当成这一版不认识）");
+  assert.equal(plan.items.filter((it) => it.inbox).length, 4, "4 条事件都接收");
+  const store = createFakeBackupStore(cleanDevice());
+  assert.deepEqual(plain(await runRestore(store, plan, { lockLost: never })), { ok: true });
+  assert.ok(store.state.inbox.includes(first) && store.state.inbox.includes(second), "收件表里有这两条原文，一字不差");
+  const log = createLog();
+  for (const r of store.state.inbox) log.ingest(r);
+  assert.equal(log.quarantined().length, 0);
+  assert.equal(log.events().filter((e) => e.verb === "navigator.chosen").length, 2);
+  const { projectNavigator } = await import("../../kernel/js/navigator.js");
+  assert.deepEqual(projectNavigator(log.events()), {
+    algorithm_version: "navigator/1", navigator_id: "nav.ring", rev: 2, conflicts: [],
+  });
+});

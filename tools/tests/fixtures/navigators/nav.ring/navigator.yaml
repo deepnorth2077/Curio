@@ -1,0 +1,11 @@
+schema: navigator/1
+id: nav.ring
+version: 1
+title: 小环
+intro: 我是一个小圆环，什么都爱转一转。
+unlock:
+  start: true
+review: approved
+author:
+  model: Claude Opus 5.5
+  prompt_ref: prototype/design/navigator.html

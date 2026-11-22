@@ -1,0 +1,106 @@
+{
+  "name": "navigator-ingest-valid",
+  "about": "navigator.chosen 的合法样例乱序、重复摄入 20 次，结果不变（和 navigator-ingest 的合法部分相同）。",
+  "order_free": true,
+  "base": {
+    "schema": "event/2",
+    "learner_id": "lrn_01JC00000000000000000000K1",
+    "device_id": "dev_01JC00000000000000000000D1",
+    "actor": {
+      "type": "learner",
+      "id": "lrn_01JC00000000000000000000K1"
+    }
+  },
+  "inputs": [
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N01",
+        "device_seq": 1,
+        "occurred_at": "2026-11-22T03:01:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "accepted",
+      "why": "第一次选：rev 1，nav.lamp（规格第 3 节：rev 第一次是 1）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N02",
+        "device_seq": 2,
+        "occurred_at": "2026-11-22T03:02:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 2,
+          "navigator_id": "nav.ring"
+        }
+      },
+      "expect": "accepted",
+      "why": "换一位：rev 加 1"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N03",
+        "device_seq": 3,
+        "occurred_at": "2026-11-22T03:03:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 3,
+          "navigator_id": "nav.gone"
+        }
+      },
+      "expect": "accepted",
+      "why": "不校验 navigator_id 在不在发布包里（规格：事件比发布包活得久）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N04",
+        "device_seq": 4,
+        "occurred_at": "2026-11-22T03:04:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 4,
+          "navigator_id": "nav.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "expect": "accepted",
+      "why": "navigator_id 正好 40 个字符，合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N05",
+        "device_seq": 5,
+        "occurred_at": "2026-11-22T03:05:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 5,
+          "navigator_id": "nav.moon-2"
+        }
+      },
+      "expect": "accepted",
+      "why": "小写字母、数字、连字符都可以"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N06",
+        "device_seq": 6,
+        "occurred_at": "2026-11-22T03:06:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 2,
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "accepted",
+      "why": "同 rev 平手（两台设备各自从 rev 1 改）：两条都照常接收，谁生效由投影按排序键定"
+    }
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {},
+    "conflicts": []
+  },
+  "worked": "6 条合法的 navigator.chosen（含 rev 2 同 rev 的两条）无论什么顺序、重复几次都全部接收，没有隔离；它们不属于任何尝试，掌握度投影为空。"
+}

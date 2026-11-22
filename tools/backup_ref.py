@@ -610,8 +610,10 @@ def build_export(accepted_raws, *, exported_at, learner_id):
 # ---------------------------------------------------------------- 6. 恢复计划
 # 和 kernel/js/validate.js 的 SLICE_VERBS 一致。profile.set（docs/specs/profile.md 第 1 节）的范围、actor 和
 # payload（rev、entry_year 范围、textbooks 的键和值）全由 schemas/event.schema.json 查，这里不用另写。
+# navigator.chosen（docs/specs/navigators.md 第 3 节）：范围、actor 类型和 payload 由 schema 查；schema 表达不了的两条
+# （actor.id 等于 learner_id；navigator_id 整串匹配，挡住「$」前的换行）在 Log._judge 里另查。
 SLICE_VERBS = ("attempt.started", "sim.observed", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned",
-               "profile.set")
+               "profile.set", "navigator.chosen")
 _VALIDATOR = None
 
 
@@ -666,6 +668,7 @@ def same(a, b):
 
 
 GRADER = re.compile(r"[a-z][a-z0-9-]*/[1-9][0-9]*")
+NAVIGATOR_ID = re.compile(r"nav\.[a-z0-9-]+")
 
 
 class Log:
@@ -689,6 +692,10 @@ class Log:
         if e["verb"] == "attempt.started" and "grader" in p:
             g = p["grader"]
             if not (isinstance(g, str) and len(g) <= 32 and GRADER.fullmatch(g)):
+                return ("quarantined", "invalid"), None
+        if e["verb"] == "navigator.chosen":
+            nid = p["navigator_id"]
+            if e["actor"]["id"] != e["learner_id"] or not (len(nid) <= 40 and NAVIGATOR_ID.fullmatch(nid)):
                 return ("quarantined", "invalid"), None
         old = self.by_id.get(e["event_id"])
         if old is not None:
