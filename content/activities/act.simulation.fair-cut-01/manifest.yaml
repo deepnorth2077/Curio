@@ -1,7 +1,7 @@
 id: act.simulation.fair-cut-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 切分机
 targets: [math.fraction.unit-fraction]
 age_band: G3-4

@@ -1,7 +1,7 @@
 id: act.simulation.mix-drink-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 调饮料台
 targets:
 - math.ratio.meaning

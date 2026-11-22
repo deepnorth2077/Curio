@@ -427,6 +427,51 @@ main:has(>.exploration){overflow:visible}
 .result-star{display:flex;justify-content:center;margin-bottom:6px}
 .result h2{font-size:22px;margin-bottom:6px}
 
+/* 领航员（docs/specs/navigators.md 第 1、5 节）：脸只用十个类 k、k1、f-*，颜色取外壳的变量，深浅色共用一套线稿；线稿跟着脸一起缩放 */
+.navsvg{display:block;overflow:visible}
+.navsvg .k,.navsvg .k1{vector-effect:none}
+.navsvg .f-ink{fill:var(--ink)} .navsvg .f-pane{fill:var(--pane)} .navsvg .f-sky{fill:var(--c-sky)} .navsvg .f-sage{fill:var(--c-sci)}
+.navsvg .f-apricot{fill:var(--c-math)} .navsvg .f-paper{fill:var(--wash)} .navsvg .f-muted{fill:var(--muted)} .navsvg .f-accent{fill:var(--accent)}
+.vtitle{display:flex;align-items:center;gap:8px}
+.nav-ava{width:52px;height:52px;flex:none;border-radius:50%;display:grid;place-items:center;margin-left:-6px;background:var(--bg);border:1.5px solid var(--rule)}
+.nav-ava:hover{border-color:var(--ink)}
+.nav-ava .navsvg{width:44px;height:44px}
+.pick{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;width:100%;max-width:680px;margin:0 auto;
+  padding:28px max(14px,env(safe-area-inset-right,0px)) 40px max(14px,env(safe-area-inset-left,0px))}
+.pick h1:focus{outline:none}
+.pick-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(10px,2.5vw,18px);width:100%}
+.nav-card{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-width:0;border:1.5px solid var(--rule);border-radius:20px;background:var(--pane);color:var(--ink);padding:16px clamp(8px,2vw,16px) 16px}
+button.nav-card:hover{border-color:var(--ink)}
+.nav-card.on{border:2px solid var(--ink);box-shadow:var(--shadow)}
+.nav-card:focus{outline:none}.nav-card:focus-visible{outline:2.5px solid var(--accent);outline-offset:3px}
+.card-face{width:clamp(92px,24vw,150px);height:auto;aspect-ratio:1/1}
+.nc-name{font-family:var(--f-serif);font-size:22px;font-weight:600;line-height:1.3}
+.nc-intro{background:var(--bg);border:1px solid var(--rule);border-radius:14px;padding:8px 12px;font-size:15px;line-height:1.55;color:var(--ink);width:100%;text-wrap:pretty}
+@media (max-width:420px){.nc-intro{font-size:14px;padding:6px 8px}.nc-name{font-size:20px}}
+.pick-line{font-size:18px;color:var(--ink);text-align:center;text-wrap:balance}
+.pick .btns{margin-top:0;min-height:52px}
+.pick-msg{background:var(--bad-soft);color:var(--ink);border-radius:12px;padding:8px 14px;margin-top:10px;text-align:center}
+.with-you{display:inline-flex;align-items:center;border-radius:99px;padding:0 12px;line-height:26px;font-size:14px;background:var(--ink);color:var(--pane);margin-top:2px}
+.cabin-scrim{position:fixed;inset:0;z-index:40;background:color-mix(in srgb,var(--ink) 28%,transparent)}
+.cabin{position:fixed;z-index:41;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 20px));max-height:calc(100dvh - 20px);overflow:auto;overscroll-behavior:contain;
+  background:var(--bg);border:1px solid var(--rule);border-radius:20px;box-shadow:var(--shadow);padding:12px clamp(10px,3vw,18px) 18px}
+.cabin:focus{outline:none}
+.cabin-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.cabin-head h2{font-size:20px}
+.cabin .card-face{width:clamp(80px,20vw,112px)}
+.cabin .nav-card.still{opacity:.92}
+.cabin-note{margin-top:12px;text-align:center;color:var(--muted);font-size:15px}
+.pilot{display:flex;gap:10px;align-items:flex-start;margin-top:12px}
+.pilot-face{width:46px;height:46px;flex:none;margin-top:2px}
+.pilot-says{flex:1;min-width:0}
+.pilot-says>:first-child{margin-top:0}
+@media (prefers-reduced-motion:no-preference){
+  .nav-card.on .card-face{animation:nav-pop .32s cubic-bezier(.2,.8,.3,1)}
+  .cabin{animation:cabin-in .18s ease-out}
+}
+@keyframes nav-pop{0%{transform:scale(.9)}60%{transform:scale(1.05)}100%{transform:none}}
+@keyframes cabin-in{from{opacity:0;transform:translate(-50%,-48%)}to{opacity:1;transform:translate(-50%,-50%)}}
+
 .stop{max-width:520px;margin:12vh auto 0;text-align:center;padding:0 20px}
 .stop-art{display:flex;justify-content:center;margin-bottom:12px}
 .stop h1{font-size:22px;margin-bottom:8px}

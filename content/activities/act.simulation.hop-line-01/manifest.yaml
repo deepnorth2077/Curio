@@ -1,7 +1,7 @@
 id: act.simulation.hop-line-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 数线跳跳
 targets: [math.fraction.count-on-line]
 age_band: G3-4

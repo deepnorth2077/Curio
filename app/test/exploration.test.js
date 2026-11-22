@@ -154,3 +154,21 @@ test("resize before the first ready is bounded, coalesced and does not block com
   assert.equal(h.frame.style.height,"2400px");
   await h.handle.leave();
 });
+
+// docs/specs/navigators.md 第 6 节：init 里多一个可选的 navigator
+const FACES6 = Object.fromEntries(["curious","waiting","surprised","clap","think","wrong"].map((k) => [k, `<circle class="f-ink" cx="1" cy="1" r="1" data-k="${k}"/>`]));
+test("init carries the chosen navigator's six faces when the shell gives them", async () => {
+  const h = setup({navigator: {id: "nav.ring", faces: FACES6}});
+  await h.start();
+  assert.deepEqual(h.messages[0].payload.navigator, {id: "nav.ring", faces: FACES6});
+  await h.handle.leave();
+});
+test("without a navigator (old release) or with a malformed one, init has no navigator field", async () => {
+  for (const navigator of [undefined, null, {id: "nav.ring"}, {id: "nav.ring", faces: {...FACES6, wrong: undefined}},
+    {id: "nav.ring", faces: {...FACES6, extra: "x"}}, {id: 3, faces: FACES6}]) {
+    const h = setup(navigator === undefined ? {} : {navigator});
+    await h.start();
+    assert.equal("navigator" in h.messages[0].payload, false, JSON.stringify(navigator));
+    await h.handle.leave();
+  }
+});

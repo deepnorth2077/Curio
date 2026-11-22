@@ -56,16 +56,26 @@ function stationNumber(n, count) {
   return Number.isInteger(n) && n >= 1 && n <= count;
 }
 
+const FACES = ["curious", "waiting", "surprised", "clap", "think", "wrong"];
+/** init.navigator：{id, faces: {六张脸: 字符串}}，少一张或多一样都不发（模块照旧用自带的脸）。 */
+export function navigatorPayload(n) {
+  if (!record(n) || typeof n.id !== "string" || !exact(n.faces, FACES) ||
+      !FACES.every((k) => typeof n.faces[k] === "string" && n.faces[k])) return null;
+  return { id: n.id, faces: Object.fromEntries(FACES.map((k) => [k, n.faces[k]])) };
+}
+
 /** Mount only after the release loader verifies the manifest and HTML bytes. */
 export function mountExploration({
   container, manifest, html, session, ids, now, content, mode = "first",
-  doneStations = [], activityCompleted = false, onStatus = () => {},
+  doneStations = [], activityCompleted = false, onStatus = () => {}, navigator = null,
 }) {
   if (!supportedExploration(manifest.id) || manifest.contract !== CONTRACT ||
       manifest.type !== "simulation" || manifest.id !== content.activity_id ||
       manifest.version !== content.activity_version || content.activity_kind !== "simulation" ||
       !manifest.targets.includes(content.node_id) || !Array.isArray(manifest.emits) ||
       !manifest.emits.includes("observed")) throw new Error("活动清单和入口不符");
+  // 选好的领航员（docs/specs/navigators.md 第 6 节）：外壳核对过哈希、按白名单查过、去掉了最外层 <svg>。形状不对就不发
+  const pilot = navigatorPayload(navigator);
   const srcdoc = isolatedDocument(html);
   const doc = container.ownerDocument;
   const win = doc.defaultView;
@@ -148,6 +158,7 @@ export function mountExploration({
         contract: CONTRACT, type: "init", payload: {
           age_band: manifest.age_band, lang: "zh-CN", phase: "observe",
           completed_stations: previous, activity_completed: activityCompleted, question_available: false,
+          ...(pilot ? { navigator: pilot } : {}),
         },
       }, "*"); // sandboxed srcdoc has an opaque origin.
       frame.inert = false;

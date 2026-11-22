@@ -1,7 +1,7 @@
 id: act.simulation.three-rulers-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 三把尺子
 targets:
 - math.number.same-point

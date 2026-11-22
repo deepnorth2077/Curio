@@ -80,6 +80,8 @@ body.narrow .dialn{font-size:29px} body.narrow .ttl{font-size:30px}
 @media (prefers-reduced-motion:reduce){.cue{animation:none;opacity:.5}}
 .talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
 .ava{flex:none;width:42px;height:42px}
+/* 领航员的脸（docs/specs/navigators.md 第 6 节）：正式外壳在 init.navigator 里给选好的那位，十个类 k、k1、f-* 的颜色在这里 */
+.f-ink{fill:var(--ink)} .f-pane{fill:var(--pane)} .f-sky{fill:var(--sky)} .f-sage{fill:var(--sage)} .f-apricot{fill:var(--apricot)} .f-paper{fill:var(--paper)} .f-muted{fill:var(--muted)} .f-accent{fill:var(--accent)}
 .bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
 .bubble.good{background:var(--good-soft);border-color:transparent}
 .bubble.bad{background:var(--bad-soft);border-color:transparent}
@@ -168,7 +170,12 @@ const Host = (() => {
   return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
     state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
 })();
+// 领航员（docs/specs/navigators.md 第 6 节）：正式外壳在 init.navigator 给选好的那位的六张脸（去掉了最外层 <svg>），
+// .ava 换成它，表情跟着 say() 换。没给（单独打开、试玩页、旧宿主）就留着自带的脸
+let navFaces = null, navNow = "curious";
+function navFace(k){ navNow = k; if (navFaces && typeof navFaces[k] === "string") document.querySelector(".ava").innerHTML = navFaces[k]; }
 Host.on("init", p => {
+  if (p && p.navigator && p.navigator.faces && typeof p.navigator.faces.curious === "string"){ navFaces = p.navigator.faces; navFace(navNow); }
   if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
   if (p && p.question_available === false) $("qarea").hidden = true;   // 正式外壳先关提问入口（slice-5a）
   resumeFrom(p);   // 正式外壳记得做过哪几站：先让孩子选站（slice-5a）
@@ -261,7 +268,7 @@ let gen = 0;          // 每换一站加一：延时回调先确认还在原来�
 function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
 function hint(s){ $("hint").textContent = s || ""; }
 function readout(html){ $("readout").innerHTML = html || ""; }
-function say(text, tone){ const b = $("say"); b.textContent = text; b.className = "bubble" + (tone ? " " + tone : ""); }
+function say(text, tone){ const b = $("say"); b.textContent = text; b.className = "bubble" + (tone ? " " + tone : ""); navFace(tone === "good" ? "clap" : tone === "bad" || tone === "hmm" ? "think" : "curious"); }   // 领航员的表情跟着气泡换
 // 手指还按着时换出来的新按钮，先禁用到手指抬起，免得松手时误点（按住类操作刚完成时最常见）
 let fingerDown = false;
 // 焦点框只给键盘用户看（教训 27）：程序把焦点移到 svg 时，触摸后的 Chrome 也会算 focus-visible
@@ -300,7 +307,7 @@ function actions(list){
   return box;
 }
 function ask(question, options, onAnswer){
-  say(question);
+  say(question); navFace("waiting");   // 等舰长回答
   actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
     if (!sentPred.has(S.station)){ sentPred.add(S.station); Host.event("predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null }); }
     say(o.feedback, o.correct ? "good" : "bad");
