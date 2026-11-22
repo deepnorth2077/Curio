@@ -24,5 +24,5 @@ emits:
 author:
   model: Codex
   prompt_ref: docs/constellations/zero-to-one/stars/17-meaning.md
-review: pending
+review: approved  # Luka 2026-11-22 验收（#233）
 # END OF FILE

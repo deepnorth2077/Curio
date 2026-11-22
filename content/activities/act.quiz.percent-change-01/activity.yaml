@@ -7,7 +7,7 @@ targets:
 - math.percent.change
 age_band: G5-6
 duration_min: 5
-review: pending
+review: approved  # Luka 2026-11-22 验收（#233）
 engine: 1
 sources:
 - type: textbook
@@ -29,7 +29,7 @@ body:
         feedback: 你减了 80 元。80% 表示要付的是原价的多少。
     feedback:
       correct: 每 10 元付 8 元，200 元里有 20 个 10 元，所以要付 160 元。
-      wrong: 把原价平均分成 10 份，取其中 8 份。
+      wrong: 还不对。打八折是付原价的十分之八，不是减掉 8 元。
     hints:
     - 打八折，每 10 元只付 8 元。
     - 把原价平均分成 10 份，取其中 8 份。
@@ -46,7 +46,7 @@ body:
         misconception: percent-adds
     feedback:
       correct: 先涨 20 元到 120 元，再从 120 元里降 24 元，剩 96 元。
-      wrong: 第二步要用涨价后的钱数算该降多少。
+      wrong: 还不对。降的 20% 是按涨价后的钱算的，不是按 100 元。
     hints:
     - 画两根柱子，先求第一步之后的高度。
     - 第二步要用涨价后的钱数算该降多少。
@@ -66,7 +66,7 @@ body:
         misconception: half-of-change
     feedback:
       correct: 新价是 40 元，还缺 40 元。要涨的钱和新价一样多，就是涨 100%。
-      wrong: 把新价当 1，量量还缺的那段占几个 1。
+      wrong: 还不对。涨价要拿降价后的新价当 1 来比。
     hints:
     - 先算出降价后还有多少元。
     - 把新价当 1，量量还缺的那段占几个 1。
@@ -83,7 +83,7 @@ body:
         misconception: percent-adds
     feedback:
       correct: 把原价看成 100 份，第一次付 80 份，再付这 80 份的八成，剩 64 份。
-      wrong: 两次各拿当时的价钱乘 0.8。
+      wrong: 还不对。第二次的八折，是打在已经打过折的价钱上。
     hints:
     - 可以自己定一个好算的原价。
     - 两次各拿当时的价钱乘 0.8。
@@ -100,7 +100,7 @@ body:
         misconception: linear-growth
     feedback:
       correct: 第一年有 110 元。第二年多出 110 元的 10%，也就是 11 元。两年后共 121 元。
-      wrong: 把第一年结束时的钱当成新的 1，再算第二年的涨幅。
+      wrong: 还不对。第二年的 10%，要按第一年结束时的钱来算。
     hints:
     - 先看第一年结束时柱子有多高。
     - 把第一年结束时的钱当成新的 1，再算第二年的涨幅。

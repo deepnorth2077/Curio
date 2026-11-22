@@ -42,6 +42,6 @@ lenses:
   - band: G7-9
     approach: 作差或作商比较；分式的通分。
 activities: [act.simulation.match-cuts-01, act.quiz.fraction-order-01]
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1
 # END OF FILE

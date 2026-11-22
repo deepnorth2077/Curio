@@ -17,7 +17,7 @@ objectives:
   - 知道每份一样大的分数才能直接相加减：分母不变，分子相加减。
   - 知道分母不同时要先通分，换成一样大的份：1/2 + 1/3 = 3/6 + 2/6 = 5/6。
   - 会估一估结果对不对：半杯再加一些，不可能比半杯少。
-  - 知道加起来超过 1 时可以写成带分数。
+  - 加起来超过 1 时，能把结果写成带分数。
 misconceptions:
   - id: add-tops-and-bottoms
     text: 分子加分子、分母加分母，例如把 1/2 + 1/3 算成 2/5，把 1/2 + 1/2 算成 2/4。
@@ -41,6 +41,6 @@ lenses:
   - band: G7-9
     approach: 分式的加减；先通分再运算的道理推广到代数式。
 activities: [act.simulation.measuring-cup-01, act.quiz.add-subtract-01]
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1
 # END OF FILE

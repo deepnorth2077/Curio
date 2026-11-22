@@ -43,6 +43,6 @@ lenses:
   - band: G7-9
     approach: 用 10 的负整数次幂表示小数点右边各数位的计数单位，再引出科学记数法。
 activities: [act.simulation.zoom-line-01, act.quiz.tenths-01]
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1
 # END OF FILE

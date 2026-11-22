@@ -12,5 +12,5 @@ capabilities: [pointer, keyboard]
 misconceptions: [no-numbers-between, whole-line-as-one, two-numbers, count-ticks-not-steps]
 emits: [predicted, observed]
 author: {model: Claude Fable 5.2 (claude-fable-5-2), prompt_ref: docs/constellations/zero-to-one/g1.md}
-review: claude-reviewed
+review: approved  # Luka 2026-11-22 验收（#233）
 # END OF FILE

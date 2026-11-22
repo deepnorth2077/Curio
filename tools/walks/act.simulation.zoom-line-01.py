@@ -485,7 +485,7 @@ def play(w):
     w.check("三次预测，记录对应的误区", [(r["station"], r["misconception"]) for v, r in before
             if v == "predicted"] == list(enumerate(mistake, 1)), before)
     w.check("三次观察且没有其他事件", [v for v, _ in before] == ["predicted", "observed"] * 3
-            and [r for v, r in before if v == "observed"] == [{"station": i} for i in (1, 2, 3)], before)
+            and [r for v, r in before if v == "observed"] == [{"station": i, "item": "station-complete"} for i in (1, 2, 3)], before)
     w.check("只完成一次", len(w.sent("complete")) == 1 and w.sent("complete")[0]["payload"] == {},
             w.sent("complete"))
 

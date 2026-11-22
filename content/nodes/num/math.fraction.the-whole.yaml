@@ -55,6 +55,6 @@ lenses:
   - band: G7-9
     approach: 增长率、浓度、概率这类题，都要先说清拿谁当 1（基准）；同一个量换了基准，数就变了。（百分数、比在小学高年级已经学过，到初中是接着用。）
 activities: [act.simulation.whose-half-01, act.quiz.the-whole-01]
-status: draft
+status: published  # Luka 2026-11-22 验收（#233）
 version: 1
 # END OF FILE

@@ -2,13 +2,35 @@
 import { assemble, localReceipt } from "./session.js";
 
 const CONTRACT = "activity/1.1";
-export const STATION_COUNT = 4;
-const activities = new Set([
-  "act.simulation.cell-zoom-01",
-  "act.simulation.chromosome-pack-01",
-  "act.simulation.dna-book-01",
+// Explorations this shell hosts, with each module's station count (slice-5a; zero-to-one in #233).
+// The count bounds station numbers and decides when the whole exploration is done.
+const stationCounts = new Map([
+  ["act.simulation.cell-zoom-01", 4],
+  ["act.simulation.chromosome-pack-01", 4],
+  ["act.simulation.dna-book-01", 4],
+  // 「0 和 1 之间」19 颗（#233）
+  ["act.simulation.cross-cut-01", 3],
+  ["act.simulation.fair-cut-01", 3],
+  ["act.simulation.grow-shrink-01", 3],
+  ["act.simulation.hop-line-01", 3],
+  ["act.simulation.hundred-grid-01", 3],
+  ["act.simulation.match-cuts-01", 3],
+  ["act.simulation.measuring-cup-01", 3],
+  ["act.simulation.mix-drink-01", 3],
+  ["act.simulation.place-slots-01", 3],
+  ["act.simulation.pour-cups-01", 3],
+  ["act.simulation.ratio-chute-01", 3],
+  ["act.simulation.recut-01", 3],
+  ["act.simulation.share-table-01", 3],
+  ["act.simulation.slide-rule-01", 3],
+  ["act.simulation.stretch-bar-01", 3],
+  ["act.simulation.stretch-frame-01", 3],
+  ["act.simulation.three-rulers-01", 3],
+  ["act.simulation.whose-half-01", 3],
+  ["act.simulation.zoom-line-01", 3],
 ]);
-export const supportedExploration = (id) => activities.has(id);
+export const supportedExploration = (id) => stationCounts.has(id);
+export const stationCount = (id) => stationCounts.get(id) ?? 0;
 
 const policy = [
   "default-src 'none'", "script-src 'unsafe-inline'", "style-src 'unsafe-inline'",
@@ -28,8 +50,8 @@ function record(value) {
 function exact(value, keys) {
   return record(value) && Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 }
-function stationNumber(n) {
-  return Number.isInteger(n) && n >= 1 && n <= STATION_COUNT;
+function stationNumber(n, count) {
+  return Number.isInteger(n) && n >= 1 && n <= count;
 }
 
 /** Mount only after the release loader verifies the manifest and HTML bytes. */
@@ -53,7 +75,8 @@ export function mountExploration({
   frame.inert = true;
   frame.style.visibility = "hidden";
 
-  const previous = [...new Set(doneStations.filter(stationNumber))].sort((a,b) => a-b);
+  const count = stationCount(manifest.id);
+  const previous = [...new Set(doneStations.filter((n) => stationNumber(n, count)))].sort((a,b) => a-b);
   const stations = new Set(previous);
   const attempt = activityCompleted ? null : ids.attempt();
   let phase = "loading", ready = false, loaded = false, accepting = true;
@@ -161,12 +184,12 @@ export function mountExploration({
     if (m.type === "event" && exact(p, ["verb", "result"]) && p.verb === "observed" && manifest.emits.includes(p.verb)) {
       const result = p.result;
       if (!exact(result, ["station", "item"]) || result.item !== "station-complete" ||
-          !stationNumber(result.station) || stations.has(result.station)) return;
+          !stationNumber(result.station, count) || stations.has(result.station)) return;
       for (let n = 1; n < result.station; n++) if (!stations.has(n)) return;
       const value = result.station;
       stations.add(value);
       enqueue(() => write("sim.observed", { observable: "station.completed", value }));
-    } else if (m.type === "complete" && exact(p, []) && stations.size === STATION_COUNT) {
+    } else if (m.type === "complete" && exact(p, []) && stations.size === count) {
       phase = "finishing"; // Reserve the terminal event synchronously, including against a simultaneous leave.
       const duration_ms = Math.max(0, Date.now() - startedAt);
       enqueue(async () => {
