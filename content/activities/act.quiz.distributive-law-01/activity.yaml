@@ -15,7 +15,7 @@ body:
   shuffle: false
   items:
     - id: q1
-      stem: "一块巧克力每排 6 块，有 4 排。沿一条缝掰成两块：左边每排 2 块，右边每排 4 块。两块一共有几块？"
+      stem: "一大块巧克力每排 6 小块，有 4 排。沿一条缝掰成两大块：左边每排 2 小块，右边每排 4 小块。两大块一共有几小块？"
       answer:
         type: number
         value: 24
@@ -24,7 +24,7 @@ body:
         common_wrong:
           - value: 12
             misconception: multiply-one-part
-            feedback: "右边那块不止一排。包装纸下面还有几排？"
+            feedback: "右边那块不止一排。它有几排？和左边比一比。"
           - value: 10
             misconception: add-instead-of-multiply
             feedback: "6 是每排几块，4 是有几排。4 排，每排 6 块。"
@@ -33,7 +33,7 @@ body:
         - "先数左边那块，再数右边那块，最后合起来。"
       feedback:
         correct: "你看出了掰开以后两块都还是 4 排：2×4 + 4×4 = 8 + 16 = 24，和没掰时 6×4 一样多。"
-        wrong: "回头看右边那块。它只有一排，还是和左边一样多排？"
+        wrong: "回头看右边那块有几排，和左边比一比。"
     - id: q2
       stem: "哪一个算式，能写成 (3+5)×4？"
       answer:
@@ -52,7 +52,7 @@ body:
             feedback: "5 块只够摆一排。另外几排去哪了？"
       hints:
         - "把每个乘法想成一块巧克力：每排几块 × 几排。"
-        - "两块要一样多排，才拼得成方方正正的一整块。"
+        - "看看哪个选项里，两块的排数一样。"
       feedback:
         correct: "你看出了两块都是 4 排。拼起来每排 3 + 5 = 8 块，还是 4 排。"
         wrong: "回头比一比，每个算式里的两块各有几排。"
@@ -74,7 +74,7 @@ body:
         - "10 和 4 都要乘 6，再合起来。"
       feedback:
         correct: "你把 14 掰成 10 和 4，两块都乘了 6：60 + 24 = 84。"
-        wrong: "回头看掰开的那两块，每一块都乘过 6 了吗？"
+        wrong: "回头看：掰开以后，你是不是漏算了哪一块？"
     - id: q4
       stem: "魔术机今天换成了乘 102。24×102 等于多少？"
       answer:
@@ -106,7 +106,7 @@ body:
         common_wrong:
           - value: 108
             misconception: split-both
-            feedback: "10×10 和 4×2 只是两个角上的两块。两个数都掰开，中间还漏了两大块。"
+            feedback: "两个数都掰开了。10×10 和 4×2 之外，还有 10 排的 4 个和 2 排的 10 个没算。"
           - value: 142
             misconception: multiply-one-part
             feedback: "那 2 排也是每排 14 个，不止 2 个。"
@@ -118,5 +118,5 @@ body:
         - "掰开的两块，每排都还是 14 个。"
       feedback:
         correct: "你只掰开了排数：10 排和 2 排，每排都还是 14 个。140 + 28 = 168。"
-        wrong: "回头看掰开的两块座位，每排是不是都还有 14 个？"
+        wrong: "回头看：掰开的两块座位，每一块都乘了 14 吗？"
 # END OF FILE
