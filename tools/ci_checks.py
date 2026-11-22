@@ -118,15 +118,15 @@ def check_navigator_svg(data):
     except ET.ParseError as exc:
         return errors + [f"领航员的 SVG 不是合法的 XML：{exc}"]
     local = lambda tag: tag.rsplit("}", 1)[-1] if isinstance(tag, str) else ""
-    if local(root.tag) != "svg":
-        errors.append("领航员的 SVG 最外层必须是 <svg>")
+    if root.tag != "{http://www.w3.org/2000/svg}svg":
+        errors.append("领航员的 SVG 最外层必须是 SVG 命名空间的 <svg>")
     if root.get("viewBox") != "0 0 48 48":
         errors.append(f"领航员的 SVG 的 viewBox 必须是 0 0 48 48，现在是 {root.get('viewBox')!r}")
     drawable = accent = 0
     for element in root.iter():
         tag = local(element.tag)
-        if tag not in NAVIGATOR_ELEMENTS:
-            errors.append(f"领航员的 SVG 不能用元素 {tag or element.tag}")
+        if tag not in NAVIGATOR_ELEMENTS or (tag == "svg" and element is not root):
+            errors.append(f"领航员的 SVG 不能用元素 {tag or element.tag}" + ("（不能嵌套 <svg>）" if tag == "svg" else ""))
         if tag in NAVIGATOR_DRAWABLE:
             drawable += 1
         if (element.text or "").strip() or (element is not root and (element.tail or "").strip()):
