@@ -64,10 +64,10 @@ test("改了清单（content_hash 对不上 / release_id 对不上）：broken",
   await assert.rejects(loadRelease(urlOf(d2), fileFetch), (e) => e.kind === "broken");
 });
 
-test("engine_min 大于 1：需要更新（不往下读）", async () => {
+test("engine_min 大于外壳的引擎等级：需要更新（不往下读；#242 把等级升到 2，所以这里用 3）", async () => {
   const d = copy();
   const m = JSON.parse(readFileSync(join(d, "release.json"), "utf8"));
-  m.engine_min = 2;
+  m.engine_min = 3;
   writeFileSync(join(d, "release.json"), JSON.stringify(m));
   await assert.rejects(loadRelease(urlOf(d), fileFetch), (e) => e.kind === "update");
 });

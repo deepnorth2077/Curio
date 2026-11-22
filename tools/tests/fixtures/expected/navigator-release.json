@@ -1,0 +1,168 @@
+{
+  "schema": "release/1",
+  "release_id": "rel_e50ac3e0147486afc2c89ce8b1384792b78f999a3aa73b93b98f7ecf7e2828e3",
+  "content_hash": "e50ac3e0147486afc2c89ce8b1384792b78f999a3aa73b93b98f7ecf7e2828e3",
+  "engine_min": 2,
+  "contracts": [],
+  "nodes": [
+    {
+      "id": "math.number.fraction-intro",
+      "version": 1,
+      "path": "content/nodes/num/math.number.fraction-intro.yaml",
+      "sha256": "21b3a1f15adeef754f5bf1844d88cc87ba43eba1d1f9efe996c7b607f4fa2271",
+      "json": {
+        "path": "content/nodes/num/math.number.fraction-intro.yaml.json",
+        "sha256": "40797f4879c1516bc68c963319233521af43df2a5bd9ed9bb9f68001b568c62f",
+        "bytes": 1226
+      }
+    }
+  ],
+  "activities": [
+    {
+      "id": "act.explain.fraction-intro-01",
+      "version": 1,
+      "kind": "explain",
+      "files": [
+        {
+          "path": "content/activities/act.explain.fraction-intro-01/activity.yaml",
+          "sha256": "3b31d671d5a7ec3c65c2a3d1cd6cfd27fa4a427ca56e7ede64aa6f44650e8484",
+          "bytes": 2130,
+          "json": {
+            "path": "content/activities/act.explain.fraction-intro-01/activity.yaml.json",
+            "sha256": "948df83b8fc59633e7588ec2d4934aec3c810bb4729aa2d064baa59f2ab4e413",
+            "bytes": 1921
+          }
+        }
+      ]
+    },
+    {
+      "id": "act.quiz.fraction-intro-01",
+      "version": 1,
+      "kind": "quiz",
+      "files": [
+        {
+          "path": "content/activities/act.quiz.fraction-intro-01/activity.yaml",
+          "sha256": "a9c04f4979096edd843691b3cbb6c3e07c396a442c9a8ad60dcf872eab4ea2f8",
+          "bytes": 3689,
+          "json": {
+            "path": "content/activities/act.quiz.fraction-intro-01/activity.yaml.json",
+            "sha256": "810229efef4d1832027de68e8117d145f42c828bfbb943a8febcb605ee12376b",
+            "bytes": 3141
+          }
+        }
+      ]
+    },
+    {
+      "id": "act.reflection.fraction-intro-01",
+      "version": 1,
+      "kind": "reflection",
+      "files": [
+        {
+          "path": "content/activities/act.reflection.fraction-intro-01/activity.yaml",
+          "sha256": "244225117db8b8957a9c680e5a8e78e4738f4640123872cf3aefcd204d2497cb",
+          "bytes": 380,
+          "json": {
+            "path": "content/activities/act.reflection.fraction-intro-01/activity.yaml.json",
+            "sha256": "8de2860b49534c46859c81b75e4c713175c111b445839450970cec684d9e61df",
+            "bytes": 397
+          }
+        }
+      ]
+    }
+  ],
+  "assets": [],
+  "navigators": [
+    {
+      "id": "nav.lamp",
+      "version": 1,
+      "files": [
+        {
+          "path": "content/navigators/nav.lamp/clap.svg",
+          "sha256": "68b500cb1e59aeb5f7efcbf722cb1e2928f79a57bd2a82ef5eb514793ae35e4c",
+          "bytes": 352
+        },
+        {
+          "path": "content/navigators/nav.lamp/curious.svg",
+          "sha256": "31e0f3125eac36e3a258d397e4772d22c7632e491d8dd54154e34cd62f7f05f0",
+          "bytes": 333
+        },
+        {
+          "path": "content/navigators/nav.lamp/navigator.yaml",
+          "sha256": "85bf2c2a9d15fd1f7a9367b1f0d9576a87a94a6e7172bd26424c475110e58399",
+          "bytes": 235,
+          "json": {
+            "path": "content/navigators/nav.lamp/navigator.yaml.json",
+            "sha256": "fd531cad312f53358032b0977097ec93596a08992365c135eb3c092a5610d473",
+            "bytes": 260
+          }
+        },
+        {
+          "path": "content/navigators/nav.lamp/surprised.svg",
+          "sha256": "7cb996475316be2ccd9df55fb85a37bcd1920fcca7fd28a4ed599527da27fcf1",
+          "bytes": 352
+        },
+        {
+          "path": "content/navigators/nav.lamp/think.svg",
+          "sha256": "31a58212529a825fff4034495ea2b58103a9778d0208f03a4b1c4e0da330ec6c",
+          "bytes": 345
+        },
+        {
+          "path": "content/navigators/nav.lamp/waiting.svg",
+          "sha256": "126cfb5a9f261d6fb78d573646b07b44cfb65874fe0cfa69a8bdf2e407e5599f",
+          "bytes": 342
+        },
+        {
+          "path": "content/navigators/nav.lamp/wrong.svg",
+          "sha256": "87e92099c8b497d0cd7f259dc317a53588707afb9aede95e62d68b4b432e3170",
+          "bytes": 350
+        }
+      ]
+    },
+    {
+      "id": "nav.ring",
+      "version": 1,
+      "files": [
+        {
+          "path": "content/navigators/nav.ring/clap.svg",
+          "sha256": "791400a36dd1f14f6874972b83c4696c8f1a4de8617241833ae3ecc8af5398ae",
+          "bytes": 353
+        },
+        {
+          "path": "content/navigators/nav.ring/curious.svg",
+          "sha256": "68b500cb1e59aeb5f7efcbf722cb1e2928f79a57bd2a82ef5eb514793ae35e4c",
+          "bytes": 352
+        },
+        {
+          "path": "content/navigators/nav.ring/navigator.yaml",
+          "sha256": "f583c727667c748b873d99911acdc78769c39aee56be2045b080c71d9bf30e01",
+          "bytes": 232,
+          "json": {
+            "path": "content/navigators/nav.ring/navigator.yaml.json",
+            "sha256": "43532121a6a8d5f834ce38c2cc3e605e4b8a1f2d05147ac153a0d69ffffb37f0",
+            "bytes": 257
+          }
+        },
+        {
+          "path": "content/navigators/nav.ring/surprised.svg",
+          "sha256": "87e92099c8b497d0cd7f259dc317a53588707afb9aede95e62d68b4b432e3170",
+          "bytes": 350
+        },
+        {
+          "path": "content/navigators/nav.ring/think.svg",
+          "sha256": "eb0bfad596761747d60b48ec661e5c2c3cb584a6b5921e78e8a3c03673c02cb2",
+          "bytes": 346
+        },
+        {
+          "path": "content/navigators/nav.ring/waiting.svg",
+          "sha256": "31a58212529a825fff4034495ea2b58103a9778d0208f03a4b1c4e0da330ec6c",
+          "bytes": 345
+        },
+        {
+          "path": "content/navigators/nav.ring/wrong.svg",
+          "sha256": "4ec19eed00be28f8be33f760dc20c78da2ad92128cd9a204914fe2f2a9bce84e",
+          "bytes": 336
+        }
+      ]
+    }
+  ]
+}

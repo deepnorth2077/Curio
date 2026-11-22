@@ -1,0 +1,500 @@
+{
+  "name": "navigator-ingest",
+  "about": "navigator.chosen 的摄入：合法与不合法的 payload、actor、范围（docs/specs/navigators.md 第 3 节，#242）。期望值来自规格第 3 节的表和「摄入向量另含」。navigator.chosen 不影响掌握度，所以投影是空的。",
+  "order_free": false,
+  "base": {
+    "schema": "event/2",
+    "learner_id": "lrn_01JC00000000000000000000K1",
+    "device_id": "dev_01JC00000000000000000000D1",
+    "actor": {
+      "type": "learner",
+      "id": "lrn_01JC00000000000000000000K1"
+    }
+  },
+  "inputs": [
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N01",
+        "device_seq": 1,
+        "occurred_at": "2026-11-22T03:01:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "accepted",
+      "why": "第一次选：rev 1，nav.lamp（规格第 3 节：rev 第一次是 1）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N02",
+        "device_seq": 2,
+        "occurred_at": "2026-11-22T03:02:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 2,
+          "navigator_id": "nav.ring"
+        }
+      },
+      "expect": "accepted",
+      "why": "换一位：rev 加 1"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N03",
+        "device_seq": 3,
+        "occurred_at": "2026-11-22T03:03:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 3,
+          "navigator_id": "nav.gone"
+        }
+      },
+      "expect": "accepted",
+      "why": "不校验 navigator_id 在不在发布包里（规格：事件比发布包活得久）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N04",
+        "device_seq": 4,
+        "occurred_at": "2026-11-22T03:04:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 4,
+          "navigator_id": "nav.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "expect": "accepted",
+      "why": "navigator_id 正好 40 个字符，合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N05",
+        "device_seq": 5,
+        "occurred_at": "2026-11-22T03:05:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 5,
+          "navigator_id": "nav.moon-2"
+        }
+      },
+      "expect": "accepted",
+      "why": "小写字母、数字、连字符都可以"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N06",
+        "device_seq": 6,
+        "occurred_at": "2026-11-22T03:06:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 2,
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "accepted",
+      "why": "同 rev 平手（两台设备各自从 rev 1 改）：两条都照常接收，谁生效由投影按排序键定"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N01",
+        "device_seq": 1,
+        "occurred_at": "2026-11-22T03:01:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "duplicate",
+      "why": "第 1 条再来一次：同一事件重复，不是新记录"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N10",
+        "device_seq": 7,
+        "occurred_at": "2026-11-22T03:07:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "缺 rev"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N11",
+        "device_seq": 8,
+        "occurred_at": "2026-11-22T03:08:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "缺 navigator_id"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N12",
+        "device_seq": 9,
+        "occurred_at": "2026-11-22T03:09:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {}
+      },
+      "expect": "quarantined:invalid",
+      "why": "payload 是空对象"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N13",
+        "device_seq": 10,
+        "occurred_at": "2026-11-22T03:10:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp",
+          "name": "小灯"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "payload 多了 name（不许多字段）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N14",
+        "device_seq": 11,
+        "occurred_at": "2026-11-22T03:11:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 0,
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "rev 是正整数，0 不合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N15",
+        "device_seq": 12,
+        "occurred_at": "2026-11-22T03:12:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1.5,
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "rev 1.5 不是整数"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N16",
+        "device_seq": 13,
+        "occurred_at": "2026-11-22T03:13:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": -1,
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "rev 负数不合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N17",
+        "device_seq": 14,
+        "occurred_at": "2026-11-22T03:14:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": "1",
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "rev 是字符串"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N18",
+        "device_seq": 15,
+        "occurred_at": "2026-11-22T03:15:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": null,
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "rev 是 null"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N19",
+        "device_seq": 16,
+        "occurred_at": "2026-11-22T03:16:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": true,
+          "navigator_id": "nav.lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "rev 是布尔值 true，不是整数"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N20",
+        "device_seq": 17,
+        "occurred_at": "2026-11-22T03:17:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "navigator_id 41 个字符，超过 40"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N21",
+        "device_seq": 18,
+        "occurred_at": "2026-11-22T03:18:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "navigator_id 不以 nav. 开头"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N22",
+        "device_seq": 19,
+        "occurred_at": "2026-11-22T03:19:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav."
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "nav. 后面什么都没有"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N23",
+        "device_seq": 20,
+        "occurred_at": "2026-11-22T03:20:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.Lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "大写字母不合格（只许小写）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N24",
+        "device_seq": 21,
+        "occurred_at": "2026-11-22T03:21:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp_x"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "下划线不合格（只许小写字母、数字、连字符）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N25",
+        "device_seq": 22,
+        "occurred_at": "2026-11-22T03:22:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp\n"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "末尾带换行：整串匹配，不是 search（「$」会放过换行）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N26",
+        "device_seq": 23,
+        "occurred_at": "2026-11-22T03:23:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": " nav.lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "开头带空格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N27",
+        "device_seq": 24,
+        "occurred_at": "2026-11-22T03:24:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.小灯"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "navigator_id 里不能有汉字"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N28",
+        "device_seq": 25,
+        "occurred_at": "2026-11-22T03:25:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "NAV.lamp"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "前缀 NAV. 大写不合格"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N29",
+        "device_seq": 26,
+        "occurred_at": "2026-11-22T03:26:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": 5
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "navigator_id 是数字"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N30",
+        "device_seq": 27,
+        "occurred_at": "2026-11-22T03:27:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": null
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "navigator_id 是 null"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N31",
+        "device_seq": 28,
+        "occurred_at": "2026-11-22T03:28:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp"
+        },
+        "actor": {
+          "type": "caregiver",
+          "id": "cg_01JC00000000000000000000G1"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "actor 是 caregiver：navigator.chosen 只允许 learner"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N32",
+        "device_seq": 29,
+        "occurred_at": "2026-11-22T03:29:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp"
+        },
+        "actor": {
+          "type": "system",
+          "id": "sys:shell"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "actor 是 system：navigator.chosen 只允许 learner"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N33",
+        "device_seq": 30,
+        "occurred_at": "2026-11-22T03:30:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp"
+        },
+        "actor": {
+          "type": "learner",
+          "id": "lrn_01JC00000000000000000000K2"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "actor 是 learner，但 actor.id 不等于 learner_id（规格：必须相等）"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N34",
+        "device_seq": 31,
+        "occurred_at": "2026-11-22T03:31:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp"
+        },
+        "attempt_id": "att_01JC00000000000000000000A1"
+      },
+      "expect": "quarantined:invalid",
+      "why": "带了 attempt_id：navigator.chosen 的范围是无"
+    },
+    {
+      "event": {
+        "event_id": "evt_01JC0000000000000000000N35",
+        "device_seq": 32,
+        "occurred_at": "2026-11-22T03:32:00.000Z",
+        "verb": "navigator.chosen",
+        "payload": {
+          "rev": 1,
+          "navigator_id": "nav.lamp"
+        },
+        "content": {
+          "node_id": "math.number.fraction-intro",
+          "activity_id": "act.quiz.fraction-intro-01",
+          "activity_kind": "quiz",
+          "activity_version": 1,
+          "content_release": "rel_b12263a7dba6595337ca156c88d0b1a3d313edf2e00a672b66ee32f1269b94fe"
+        }
+      },
+      "expect": "quarantined:invalid",
+      "why": "带了 content：navigator.chosen 的范围是无"
+    }
+  ],
+  "mastery": {
+    "algorithm_version": "mastery/1",
+    "nodes": {},
+    "conflicts": []
+  },
+  "worked": "合法的 6 条（rev 1 的 nav.lamp、rev 2 的 nav.ring、不在发布包里的 nav.gone、正好 40 个字符的 id、带连字符的 id、同 rev 2 平手的一条）照常接收，再来一次的第 1 条是重复。其余 26 条各错一处：缺字段 3、多字段 1、rev 不合格 6（0、1.5、-1、字符串、null、布尔）、navigator_id 不合格 11（超过 40 个字符、缺前缀、nav. 后为空、大写、下划线、末尾换行、开头空格、汉字、前缀大写、数字、null）、actor 不是 learner 2、actor.id 不等于 learner_id 1、带 attempt_id 或 content 2，全部进隔离区。navigator.chosen 不带 content、不属于任何尝试，掌握度投影里没有它：nodes 为空，conflicts 为空。"
+}

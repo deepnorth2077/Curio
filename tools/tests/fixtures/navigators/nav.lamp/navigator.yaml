@@ -1,0 +1,11 @@
+schema: navigator/1
+id: nav.lamp
+version: 1
+title: 小灯
+intro: 我头顶有一盏小灯，想到什么它就亮。
+unlock:
+  start: true
+review: approved
+author:
+  model: Claude Opus 5.5
+  prompt_ref: prototype/design/navigator.html

@@ -22,12 +22,14 @@ KERNEL_VECTORS = REPO / "kernel/vectors"
 GRADING = REPO / "engine/vectors/grading.json"
 EVENT_SCHEMA = json.loads((REPO / "schemas/event.schema.json").read_text(encoding="utf-8"))
 VALIDATOR = Draft202012Validator(EVENT_SCHEMA)
-SLICE_VERBS = {"sim.observed", "attempt.started", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned", "profile.set"}
+SLICE_VERBS = {"sim.observed", "attempt.started", "item.answered", "hint.used", "answer.revealed", "attempt.completed", "attempt.abandoned", "profile.set", "navigator.chosen"}
 # profile.set（docs/specs/profile.md 第 1 节）：键和值都是枚举
 PROFILE_TEXTBOOKS = {"math": {"renjiao"}, "science": {"jiaoke"}}
 # attempt.started 的 grader（CURIO-013）：整串匹配，最多 32 个字符。schema 也查，这里再用 fullmatch 查一遍，
 # 因为 jsonschema 的 pattern 用 re.search，「$」会放过末尾的换行。
 GRADER = re.compile(r"[a-z][a-z0-9-]*/[1-9][0-9]*")
+# navigator.chosen（docs/specs/navigators.md 第 3 节）：nav.<小写字母、数字、连字符>，总长不超过 40；fullmatch 同样为了挡「$」前的换行
+NAVIGATOR_ID = re.compile(r"nav\.[a-z0-9-]+")
 EXPECTS = {"accepted", "duplicate", "quarantined:invalid", "quarantined:conflict"}
 MAX_SAFE = 2**53 - 1
 
@@ -100,11 +102,26 @@ def _profile_set_ok(event):
     return isinstance(tb, dict) and all(k in PROFILE_TEXTBOOKS and v in PROFILE_TEXTBOOKS[k] for k, v in tb.items())
 
 
+def _navigator_chosen_ok(event):
+    """navigator.chosen 的规则（规格第 3 节）：learner 且 actor.id 等于 learner_id、范围无、payload 恰好 rev/navigator_id。"""
+    p = event["payload"]
+    actor = event["actor"]
+    if actor["type"] != "learner" or actor["id"] != event["learner_id"] or "attempt_id" in event or "content" in event:
+        return False
+    if set(p) != {"rev", "navigator_id"}:
+        return False
+    nid = p["navigator_id"]
+    return (_int(p["rev"]) and p["rev"] >= 1 and isinstance(nid, str) and len(nid) <= 40
+            and NAVIGATOR_ID.fullmatch(nid) is not None)
+
+
 def _slice_payload_ok(event):
     """schema 之外、本切片还要查的 payload 规则。answer.revealed 的 {item_id} 由 schema 查全。"""
     payload = event["payload"]
     if event["verb"] == "profile.set":
         return _profile_set_ok(event)
+    if event["verb"] == "navigator.chosen":
+        return _navigator_chosen_ok(event)
     if event["verb"] == "attempt.started" and "grader" in payload:
         grader = payload["grader"]
         return isinstance(grader, str) and len(grader) <= 32 and GRADER.fullmatch(grader) is not None
@@ -208,7 +225,7 @@ def _check_rule(events, rule):
 def ref_mastery(events):
     attempts = {}
     for e in events:
-        if e["verb"] == "profile.set":
+        if e["verb"] in ("profile.set", "navigator.chosen"):
             continue  # 不属于任何尝试，不影响掌握度
         attempts.setdefault(e["attempt_id"], []).append(e)
     nodes = {e["content"]["node_id"]: {"explored": False, "best": None} for e in events if "content" in e}
