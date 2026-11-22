@@ -13,6 +13,7 @@ import { mountExploration, supportedExploration, stationCount } from "./explorat
 import { Sk } from "./sketch.js";
 import { buildChart, overviewSvg, placeChartLabels, animateOverview, nearestCons, constellationLayout, constellationSvg,
   chartStar, legendHtml, consName, BAND_NAME, GRADE_NAME } from "./starchart.js";
+import { metroLayout, metroSvg, metroScroll } from "./metro.js";
 import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT,
   refreshProfile, currentGradeOf, needsProfileHint, PROFILE_TEXT } from "./parent.js";
 
@@ -297,6 +298,8 @@ const app = {
   /** 正在做的挑战 */ quiz: /** @type {null|{q: any, def: any, node: any, content: any, attempt_id: string, startedMs: number, cur: null|{id: number, raw: string, receipt: object}, busy: boolean, error: any, solved: string|null, wrongBy: Record<string, string[]>, litBefore: boolean}} */ (null),
   selectedNode: null,
   /** 星图正在看的星座（详情视图），null 是总览 */ chartZoom: /** @type {string|null} */ (null),
+  /** 首页是星图还是知识地铁（#233）：URL 的 #metro 记住它；从星、站进去的活动退出来回到这里 */ home: /** @type {"chart"|"metro"} */ ("chart"),
+  /** 地铁上只看哪一条线（点左边的线名），null 是全部 */ metroLine: /** @type {string|null} */ (null),
   exploration: /** @type {null|{host: ReturnType<typeof mountExploration>|null, leaving: Promise<boolean>|null, failed:boolean}} */ (null),
   view: /** @type {"chart"|"menu"|"quiz"|"exploration"|"parent"} */ ("chart"),
   notice: /** @type {string|null} */ (null),
@@ -396,12 +399,25 @@ let chartWidth = 0;
 function renderChart() {
   app.view = "chart";
   stopFloat();
+  syncNav();
   const main = $("#main");
   if (app.mode === "readonly" && !app.hasIdentity) { main.innerHTML = ""; return; }
   const model = chartModel();
+  if (app.home === "metro") { renderMetro(main, model); return; }
   const c = app.chartZoom ? model.consById.get(app.chartZoom) : null;
   if (c) renderConstellation(main, model, c);
   else { app.chartZoom = null; renderOverview(main, model); }
+}
+
+/** URL 的 hash → 首页是哪一个（#metro 是地铁，其余是星图）。 @param {string} hash */
+export const homeOfHash = (hash) => (hash === "#metro" ? "metro" : "chart");
+/** 返回按钮上的字。 */
+const homeName = () => (app.home === "metro" ? "地铁" : "星图");
+/** 导航上标出当前的首页。 */
+function syncNav() {
+  for (const a of document.querySelectorAll(".ribbon [data-view], .bottomnav [data-view]")) {
+    a.setAttribute("aria-current", /** @type {HTMLElement} */ (a).dataset.view === app.home ? "page" : "false");
+  }
 }
 
 /** 底部：家长入口、干净设备的提示、小字。总览和详情视图共用。 */
@@ -491,6 +507,54 @@ function zoomOut() {
   else go();
 }
 
+/* ============================================================
+   知识地铁（#233）：画法在 metro.js，数据和星图同一份（chartModel）
+   ============================================================ */
+function renderMetro(main, model) {
+  const tip = app.mode === "recovering" ? "正在准备……" : "每条线是一个大概念，从一年级开到高中。换乘站是两条线相遇的地方。";
+  main.innerHTML = `<section class="chart metro" aria-labelledby="metroTitle">
+    <div class="vhead"><div><h1 id="metroTitle" tabindex="-1">知识地铁</h1><p class="sub">${tip}</p></div>
+      <div class="legend" aria-hidden="true">${legendHtml()}<span class="mono">${model.lit}/${model.points.length}</span></div></div>
+    <p class="sr">点亮了 ${model.lit} 站，一共 ${model.points.length} 站。</p>
+    ${model.currentBand == null ? `<p class="grade-hint">在「家长」里填年级，地铁会标出你在哪一段</p>` : ""}
+    <div class="mscroll" id="mscroll"></div>
+    ${chartFoot()}
+  </section>`;
+  const L = metroLayout(model);
+  const sel = app.selectedNode && model.byId.has(app.selectedNode.id) ? app.selectedNode.id : null;
+  const { map, labels } = metroSvg(model, L, { focusLine: app.metroLine, selected: sel });
+  const sc = /** @type {HTMLElement} */ (main.querySelector("#mscroll"));
+  sc.innerHTML = `<svg width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" role="group" aria-label="知识地铁线路图">${map}<g id="mlabels">${labels}</g></svg>`;
+  const ml = sc.querySelector("#mlabels");
+  const pin = () => ml.setAttribute("transform", `translate(${sc.scrollLeft} 0)`);
+  sc.addEventListener("scroll", pin, { passive: true });
+  const { left, top } = metroScroll(L, sc.clientWidth, sc.clientHeight, sel);
+  sc.scrollLeft = left; sc.scrollTop = top;
+  pin();
+  for (const el of sc.querySelectorAll(".station")) {
+    const open = () => openPoint(model, /** @type {HTMLElement} */ (el).dataset.id || "", /** @type {HTMLElement} */ (el));
+    el.addEventListener("click", open);
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+    // 键盘移到被左边线名栏挡住的站时，把它滚出来
+    el.addEventListener("focus", () => {
+      const p = L.pos[/** @type {HTMLElement} */ (el).dataset.id || ""];
+      if (p && p[0] - 24 < sc.scrollLeft + 150) sc.scrollLeft = Math.max(0, p[0] - 150 - 60);
+    });
+  }
+  for (const el of sc.querySelectorAll(".lline")) {
+    const toggle = () => {
+      const k = /** @type {HTMLElement} */ (el).dataset.line || null;
+      app.metroLine = app.metroLine === k ? null : k;
+      const keepL = sc.scrollLeft, keepT = sc.scrollTop;
+      renderChart();
+      const ns = /** @type {HTMLElement|null} */ (document.getElementById("mscroll"));
+      if (ns) { ns.scrollLeft = keepL; ns.scrollTop = keepT; /** @type {HTMLElement|null} */ (ns.querySelector(`.lline[data-line="${k}"]`))?.focus({ preventScroll: true }); }
+    };
+    el.addEventListener("click", toggle);
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+  }
+}
+
 let measureCtx = null;
 function renderConstellation(main, model, c) {
   const litN = c.points.filter((p) => p.state === "lit").length, openN = c.points.filter((p) => p.open).length;
@@ -557,7 +621,7 @@ if (typeof window !== "undefined") window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     const g = document.getElementById("graph");
-    if (app.view === "chart" && g && Math.abs(g.clientWidth - chartWidth) > 24 && !document.getElementById("starCard")) {
+    if (app.view === "chart" && app.home === "chart" && g && Math.abs(g.clientWidth - chartWidth) > 24 && !document.getElementById("starCard")) {
       renderChart();
     }
   }, 180);
@@ -631,7 +695,7 @@ function renderMenu(node) {
   const acts = nodeActivities(node);
   const choices = acts.filter((a) => a.module || (a.entry.kind === "quiz" && a.def));
   main.innerHTML = `<section class="activity-menu" aria-labelledby="menuTitle">
-    <button type="button" class="back" data-act="back">${backIcon()} 星图</button>
+    <button type="button" class="back" data-act="back">${backIcon()} ${homeName()}</button>
     <h1 id="menuTitle" tabindex="-1">${esc(node.title)}</h1>
     <div class="activity-options">${choices.map((a) => {
       const def = a.module?.manifest || a.def;
@@ -688,7 +752,7 @@ function openExploration(node, module) {
   app.exploration = run;
   app.view = "exploration";
   $("#main").innerHTML = `<section class="exploration" aria-labelledby="exploreTitle">
-    <header class="quiz-head"><button type="button" class="back" data-act="leave" aria-label="退出探索，回到星图">${backIcon()} 星图</button>
+    <header class="quiz-head"><button type="button" class="back" data-act="leave" aria-label="退出探索，回到${homeName()}">${backIcon()} ${homeName()}</button>
     <div><h1 id="exploreTitle" tabindex="-1">${esc(manifest.title)}</h1><p class="sub">${esc(node.title)}</p></div></header>
     <div class="explore-status"><p role="status">正在打开……</p><button type="button" class="btn" data-act="refresh" hidden>刷新</button></div><div class="workbench"></div></section>`;
   const back = $("#main [data-act=leave]");
@@ -1052,7 +1116,7 @@ function renderQuiz() {
   }
   main.innerHTML = `<section class="quiz" aria-labelledby="quizTitle">
     <div class="quiz-head">
-      <button class="back" type="button" data-act="back" aria-label="回到星图">${backIcon()}<span>星图</span></button>
+      <button class="back" type="button" data-act="back" aria-label="回到${homeName()}">${backIcon()}<span>${homeName()}</span></button>
       <div><h1 id="quizTitle">${esc(z.def.title)}</h1><p class="sub">${esc(z.node.title)}</p></div>
     </div>
     ${z.q.phase !== "done" ? progressHtml(z) : ""}
@@ -1165,7 +1229,7 @@ function resultHtml(z) {
     <div class="result-star ${play ? "lighting" : ""}" data-state="${st}">${starSvg(st, 11, 150)}</div>
     <h2 tabindex="-1">第一次就答对了 ${r.first_try_correct} 道，一共 ${r.total} 道</h2>
     <p>${esc(line)}</p>
-    <div class="btns center"><button class="btn big" type="button" data-act="again">再来一遍</button><button class="btn ink big" type="button" data-act="back">回到星图</button></div>
+    <div class="btns center"><button class="btn big" type="button" data-act="again">再来一遍</button><button class="btn ink big" type="button" data-act="back">回到${homeName()}</button></div>
   </div>`;
 }
 
@@ -1302,14 +1366,23 @@ async function boot() {
   window.addEventListener("pageshow", (e) => { if (e.persisted) lostLock(); });
   // 家长页用 #parent，浏览器的「返回」也能回到星图
   app.view = location.hash === "#parent" ? "parent" : "chart";
+  app.home = homeOfHash(location.hash);
+  syncNav();
   window.addEventListener("hashchange", async () => {
     if (app.exploration && location.hash === "#parent") {
       if (!await closeExploration()) return;
       if (location.hash !== "#parent") { renderChart(); return; }
     }
     if (location.hash === "#parent") { if (app.view !== "parent") resetParent(); app.view = "parent"; }
-    else if (app.view === "parent") app.view = "chart";
-    else return;
+    else {
+      // 星图 / 地铁切换（#233）：在挑战、动手探索里只记下来，退出时回到这里
+      const home = homeOfHash(location.hash), changed = home !== app.home;
+      app.home = home;
+      syncNav();
+      if (app.view === "parent") app.view = "chart";
+      else if (changed && (app.view === "chart" || app.view === "menu")) { app.view = "chart"; closeStarCard(); }
+      else return;
+    }
     if (app.mode !== "loading" && app.mode !== "stopped") renderCurrent();
   });
   if (!globalThis.crypto || !crypto.subtle || typeof crypto.getRandomValues !== "function") {
