@@ -33,7 +33,7 @@ body:
         feedback: 第一壶水少了，它的粉也少了。把粉和水一起比一比。
     feedback:
       correct: 第二壶的粉和水都是第一壶的 2 倍。分成两壶，每壶刚好是 3 勺兑 5 杯。
-      wrong: 把大壶平均分成两小壶。
+      wrong: 还不对。大壶的粉和水都翻了一倍，分开看每小壶。
     hints:
     - 把大壶平均分成两小壶。
     - 看看每小壶分到几勺粉、几杯水。
@@ -55,7 +55,7 @@ body:
         correct: true
     feedback:
       correct: 都兑 6 杯水，第一壶要 3 勺粉，第二壶要 4 勺粉。第二壶浓。
-      wrong: 把两壶的水都换成 6 杯。
+      wrong: 还不对。比浓淡，要先让两壶的水一样多。
     hints:
     - 把两壶的水都换成 6 杯。
     - 水变成几倍，粉也变成同样的倍数。
@@ -72,7 +72,7 @@ body:
         misconception: add-same-keeps-ratio
     feedback:
       correct: 8 勺是 2 勺的 4 倍，水也要 4 倍。3 × 4 = 12。
-      wrong: 先看粉变成几倍。
+      wrong: 还不对。粉变成了几倍，水也要变成同样的倍数。
     hints:
     - 先看粉变成几倍。
     - 让水也变成这个倍数。
@@ -88,7 +88,7 @@ body:
         misconception: add-same-keeps-ratio
     feedback:
       correct: '15 和 20 同时除以 5，最简单的整数比是 3 : 4。'
-      wrong: 想想大桶怎么均分成小壶。
+      wrong: 还不对。15 和 20 要同时缩小同样的倍数。
     hints:
     - 想想大桶怎么均分成小壶。
     - 15 平均分几份，每份才是 3？
