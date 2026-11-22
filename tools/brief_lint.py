@@ -185,7 +185,14 @@ def related_inputs(root, paths, briefs):
 
 
 def accepted(root, brief):
-    """已验收（status.yaml 里是「完成」）的星。只改它的模块、不改原稿时，旧原稿不按新模板审（Luka 2026-11-22，#233）。"""
+    """已验收的星：status.yaml 里是「完成」，或模块原稿对应的知识点卡都已发布。只改模块、不改原稿时，
+    旧原稿不按新模板审（Luka 2026-11-22，#233、#54）。"""
+    p = re.fullmatch(r"prompts/(act\.simulation\.[^/]+)\.md", brief)
+    manifest = root / "content/activities" / p[1] / "manifest.yaml" if p else None
+    if manifest and manifest.is_file():
+        targets = yaml.safe_load(manifest.read_text(encoding="utf-8")).get("targets") or []
+        cards = [c for t in targets for c in (root / "content/nodes").rglob(f"{t}.yaml")]
+        return bool(cards) and all(yaml.safe_load(c.read_text(encoding="utf-8")).get("status") == "published" for c in cards)
     m = re.fullmatch(r"docs/constellations/([^/]+)/stars/(\d+)-[^/]*\.md", brief)
     status = root / "docs/constellations" / m[1] / "status.yaml" if m else None
     if not status or not status.is_file():
