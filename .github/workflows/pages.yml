@@ -36,6 +36,7 @@ jobs:
           mkdir -p _site/relay _site/prototype
           # 首页根地址打开正式外壳（#233，Luka 2026-11-22）；原型挪到 /prototype/ 继续可用，试玩页不动
           cp -r prototype/. _site/prototype/
+          mv _site/prototype/preview _site/preview   # 试玩页地址照旧是 /preview/...（页面自带数据，不引用原型的文件）
           printf '%s\n' '<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>Curio</title>' \
             '<meta name="viewport" content="width=device-width,initial-scale=1">' \
             '<meta http-equiv="refresh" content="0; url=app/">' \
