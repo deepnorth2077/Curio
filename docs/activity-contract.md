@@ -20,7 +20,7 @@
 | 方向 | type | payload | 说明 |
 | --- | --- | --- | --- |
 | 模块 → 平台 | `ready` | — | 模块加载完成。平台 3 秒内没收到 `ready`，会记一条契约警告。 |
-| 平台 → 模块 | `init` | `{age_band, lang, phase, palette, mastery}` | `palette` 是当前主题的颜色表，模块据此设置自己的 CSS 变量，保证和平台的明暗主题一致。 |
+| 平台 → 模块 | `init` | `{age_band, lang, phase, palette, mastery}`，可选 `navigator` | `palette` 是当前主题的颜色表，模块据此设置自己的 CSS 变量，保证和平台的明暗主题一致。可选的 `navigator: {id, faces: {curious, waiting, surprised, clap, think, wrong}}` 是舰长选的领航员，每个值是那张脸的 SVG 去掉最外层 `<svg>` 以后的内容（宿主核对过哈希、按白名单查过，只用 `k`、`k1`、`f-*` 十个类，颜色由模块的样式给）；模块拿它换掉自带的那张脸，表情跟着场合换（`docs/specs/navigators.md` 第 6 节）。缺了不算契约警告；契约版本仍是 1.1，不认识它的模块忽略。 |
 | 平台 → 模块 | `phase` | `{phase}` | 实验类的阶段：`predict`（锁定操作）、`observe`（解锁）。 |
 | 模块 → 平台 | `event` | `{verb, result}` | 一条学习事件。`verb` 必须在 manifest 的 `emits` 里声明过，否则平台会记一条契约警告。 |
 | 模块 → 平台 | `state` | 可观测量的当前值 | 实验类在每次变化时发送，平台用它生成「解释」一步里的对比，例如亮度从「很暗」变成「较亮」。 |

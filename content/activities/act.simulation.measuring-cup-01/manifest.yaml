@@ -1,7 +1,7 @@
 id: act.simulation.measuring-cup-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 量杯
 targets:
 - math.fraction.add-subtract

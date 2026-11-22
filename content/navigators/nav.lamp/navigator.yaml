@@ -1,0 +1,8 @@
+schema: navigator/1
+id: nav.lamp
+version: 1
+title: 小灯
+intro: 我的天线上顶着一盏小灯。想到好问题，它就亮。
+unlock: {start: true}
+review: approved  # Luka 2026-11-11 定两位都留下（#112），2026-11-22 第一版（#242）
+author: {model: Claude Opus 5.5 (claude-opus-5-5), prompt_ref: prototype/design/navigator.html}

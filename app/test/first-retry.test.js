@@ -29,14 +29,41 @@ const ACT = CONTENT_V1.activity_id;
 const LIFE = { ...CONTENT_V1, node_id: "biology.cell.cell-intro", activity_kind: "simulation",
   activity_id: "act.simulation.cell-zoom-01", activity_version: 2 };
 
-test("旧探索只有整次完成记录：同一个孩子、同一版在另一台设备也可以重玩全部四站", () => {
+test("旧探索只有整次完成记录：同一个孩子在另一台设备也可以重玩全部四站；别的孩子没有进度", () => {
   const history = events(attempt({device:DEV_B, content:LIFE, seq:1}));
-  assert.deepEqual(explorationProgress(history, LRN, LIFE.activity_id, 2),
+  assert.deepEqual(explorationProgress(history, LRN, LIFE.activity_id),
     {doneStations:[1, 2, 3, 4], activityCompleted:true});
-  for (const [who, version] of [[OTHER, 2], [LRN, 3]]) {
-    assert.deepEqual(explorationProgress(history, who, LIFE.activity_id, version),
-      {doneStations:[], activityCompleted:false});
-  }
+  assert.deepEqual(explorationProgress(history, OTHER, LIFE.activity_id),
+    {doneStations:[], activityCompleted:false});
+  assert.deepEqual(explorationProgress(history, LRN, "act.simulation.dna-book-01"),
+    {doneStations:[], activityCompleted:false});
+});
+
+// docs/specs/navigators.md 第 6 节：进度按活动 id 重建，不按 activity_version 过滤
+test("模块版本加 1 以后，旧版本做过的站在新版本里仍算；整次完成过的仍算拿过星卡", () => {
+  const MATH = { ...LIFE, node_id: "math.fraction.unit-fraction", activity_id: "act.simulation.fair-cut-01", activity_version: 1 };
+  const [start, end] = attempt({content:MATH, seq:1, ends:"abandoned"});
+  const observed = (value, seq) => JSON.stringify({...JSON.parse(start), verb:"sim.observed", event_id:"evt_" + body(++n), device_seq:seq,
+    payload:{observable:"station.completed", value}});
+  const v1 = events(start, observed(1, 2), observed(2, 3), JSON.stringify({...JSON.parse(end), device_seq:4}));
+  // 外壳现在装的是第 2 版：调用方不再传版本，第 1 版的两站照样回来
+  assert.deepEqual(explorationProgress(v1, LRN, MATH.activity_id), {doneStations:[1, 2], activityCompleted:false});
+  const done = events(attempt({content:{...MATH, activity_version: 1}, seq:1}));
+  assert.deepEqual(explorationProgress(done, LRN, MATH.activity_id), {doneStations:[1, 2, 3], activityCompleted:true});
+  // 新旧两版混在一起：取并集
+  const v2start = attempt({content:{...MATH, activity_version: 2}, seq:10, ends:"abandoned"});
+  const v2obs = JSON.stringify({...JSON.parse(v2start[0]), verb:"sim.observed", event_id:"evt_" + body(++n), device_seq:11, payload:{observable:"station.completed", value:3}});
+  const mixed = events(start, observed(1, 2), JSON.stringify({...JSON.parse(end), device_seq:4}), v2start[0], v2obs, JSON.stringify({...JSON.parse(v2start[1]), device_seq:12}));
+  assert.deepEqual(explorationProgress(mixed, LRN, MATH.activity_id), {doneStations:[1, 3], activityCompleted:false});
+});
+
+test("站号超出当前模块站数的不算（旧版本站多、新版本站少时也一样）", () => {
+  const MATH = { ...LIFE, node_id: "math.fraction.unit-fraction", activity_id: "act.simulation.fair-cut-01", activity_version: 1 };
+  const [start, end] = attempt({content:MATH, seq:1, ends:"abandoned"});
+  const observed = (value, seq) => JSON.stringify({...JSON.parse(start), verb:"sim.observed", event_id:"evt_" + body(++n), device_seq:seq,
+    payload:{observable:"station.completed", value}});
+  const history = events(start, observed(2, 2), observed(4, 3), observed(9, 4), JSON.stringify({...JSON.parse(end), device_seq:5}));
+  assert.deepEqual(explorationProgress(history, LRN, MATH.activity_id), {doneStations:[2], activityCompleted:false});
 });
 
 test("中途退出沿用保存的站；不一致的完成记录不会解锁其余站", () => {
@@ -45,19 +72,19 @@ test("中途退出沿用保存的站；不一致的完成记录不会解锁其�
     payload:{observable:"station.completed", value:1}};
   const history = events(start, JSON.stringify(observation), JSON.stringify({...JSON.parse(end), device_seq:3}),
     attempt({content:LIFE, seq:4, actor:{type:"learner", id:OTHER}}));
-  assert.deepEqual(explorationProgress(history, LRN, LIFE.activity_id, 2),
+  assert.deepEqual(explorationProgress(history, LRN, LIFE.activity_id),
     {doneStations:[1], activityCompleted:false});
 });
 
 test("三站的数学探索：整次完成给出三站，站号超过三的记录不算", () => {
   const MATH = { ...LIFE, node_id: "math.fraction.unit-fraction", activity_id: "act.simulation.fair-cut-01", activity_version: 1 };
-  assert.deepEqual(explorationProgress(events(attempt({content:MATH, seq:1})), LRN, MATH.activity_id, 1),
+  assert.deepEqual(explorationProgress(events(attempt({content:MATH, seq:1})), LRN, MATH.activity_id),
     {doneStations:[1, 2, 3], activityCompleted:true});
   const [start, end] = attempt({content:MATH, seq:1, ends:"abandoned"});
   const observed = (value, seq) => JSON.stringify({...JSON.parse(start), verb:"sim.observed", event_id:"evt_" + body(++n), device_seq:seq,
     payload:{observable:"station.completed", value}});
   const history = events(start, observed(1, 2), observed(4, 3), JSON.stringify({...JSON.parse(end), device_seq:4}));
-  assert.deepEqual(explorationProgress(history, LRN, MATH.activity_id, 1), {doneStations:[1], activityCompleted:false});
+  assert.deepEqual(explorationProgress(history, LRN, MATH.activity_id), {doneStations:[1], activityCompleted:false});
 });
 
 test("另一台设备上完成过（同一个孩子）→ retry", () => {

@@ -7,7 +7,9 @@ import { projectMastery, groupAttempts, attemptRule } from "../kernel/js/mastery
 import { createUlid } from "../kernel/js/ulid.js";
 import { startQuiz, step, DEFAULT_FEEDBACK } from "../engine/js/quiz.js";
 import { openStore } from "./store.js";
-import { openSession, localReceipt, assemble, guardDeps, LockLostError } from "./session.js";
+import { openSession, localReceipt, assemble, guardDeps, LockLostError, submitNavigatorChoice } from "./session.js";
+import { projectNavigator } from "../kernel/js/navigator.js";
+import { NAVIGATOR_FACES, checkNavigatorSvg, innerSvg, shownNavigator } from "./navigator.js";
 import { FrozenError } from "./commit.js";
 import { mountExploration, supportedExploration, stationCount } from "./exploration.js";
 import { Sk } from "./sketch.js";
@@ -21,8 +23,8 @@ import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT a
 /** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。
  * 2：认得发布包里的 navigators（docs/specs/navigators.md 第 2 节）。 */
 export const ENGINE_LEVEL = 2;
-/** 每位领航员的六张脸（docs/specs/navigators.md 第 1 节）。读包时只核对清单里列全了，SVG 要显示时才取。 */
-export const NAVIGATOR_FACES = Object.freeze(["curious", "waiting", "surprised", "clap", "think", "wrong"]);
+/** 每位领航员的六张脸（docs/specs/navigators.md 第 1 节，定义在 navigator.js）。读包时只核对清单里列全了，SVG 要显示时才取。 */
+export { NAVIGATOR_FACES };
 /** 这个外壳认得的活动契约版本（内容规格 3.8）。清单的 contracts 里有别的版本时，提示「需要更新」。 */
 export const KNOWN_CONTRACTS = ["activity/1.1"];
 /** 发布包的位置：部署时 release/ 和 app/ 同级（规格第 2、8 节）。 */
@@ -102,13 +104,18 @@ export async function verifyManifest(rel) {
  * @param {{path: string, bytes: number, sha256: string}} j
  * @param {typeof fetch} fetchFn
  */
-async function fetchVerifiedText(base, j, fetchFn) {
+async function fetchVerifiedBytes(base, j, fetchFn) {
   if (!j || typeof j.path !== "string") throw new ReleaseError("broken", "清单里缺少文件路径");
   const res = await fetchFn(new URL(j.path, base), { cache: "no-cache" });
   if (!res.ok) throw new ReleaseError("broken", `读不到 ${j.path}`);
   const buf = new Uint8Array(await res.arrayBuffer());
   if (buf.byteLength !== j.bytes) throw new ReleaseError("broken", `${j.path} 的字节数对不上`);
   if ((await sha256Hex(buf)) !== j.sha256) throw new ReleaseError("broken", `${j.path} 的哈希对不上`);
+  return buf;
+}
+
+async function fetchVerifiedText(base, j, fetchFn) {
+  const buf = await fetchVerifiedBytes(base, j, fetchFn);
   try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); }
   catch { throw new ReleaseError("broken", `${j.path} 不是 UTF-8 文件`); }
 }
@@ -222,6 +229,30 @@ async function loadNavigators(rel, url, fetchFn) {
   return out;
 }
 
+
+/**
+ * 取一位领航员的六张脸（规格第 2 节：要显示时才取）：每张核对字节数和 SHA-256，再按白名单查一遍（checkNavigatorSvg），
+ * 通过了才去掉最外层 <svg>（innerSvg）。任何一张不对都抛 ReleaseError，这位领航员就不显示。
+ * @param {any} entry 发布清单里这位的条目（loadRelease 结果 navigators 里的 entry）
+ * @param {URL} [url] release.json 的地址
+ * @param {typeof fetch} [fetchFn]
+ * @returns {Promise<Readonly<Record<string, string>>>} 脸 → 去掉最外层 <svg> 的内容
+ */
+export async function loadNavigatorFaces(entry, url = RELEASE_URL, fetchFn = fetch) {
+  const dir = "content/navigators/" + entry.id + "/";
+  /** @type {Record<string, string>} */
+  const faces = {};
+  await Promise.all(NAVIGATOR_FACES.map(async (face) => {
+    const f = entry.files.find((x) => x && x.path === dir + face + ".svg");
+    if (!f) throw new ReleaseError("broken", `领航员 ${entry.id} 缺少 ${face}.svg`);
+    const bytes = await fetchVerifiedBytes(url, f, fetchFn);
+    const errors = checkNavigatorSvg(bytes);
+    if (errors.length) throw new ReleaseError("broken", `${f.path}：${errors[0]}`);
+    try { faces[face] = innerSvg(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
+    catch { throw new ReleaseError("broken", `${f.path} 去不掉最外层 <svg>`); }
+  }));
+  return Object.freeze(Object.fromEntries(NAVIGATOR_FACES.map((k) => [k, faces[k]])));
+}
 
 /* ============================================================
    小工具
@@ -344,7 +375,13 @@ const app = {
   /** 首页是星图还是知识地铁（#233）：URL 的 #metro 记住它；从星、站进去的活动退出来回到这里 */ home: /** @type {"chart"|"metro"} */ ("chart"),
   /** 地铁上只看哪一条线（点左边的线名），null 是全部 */ metroLine: /** @type {string|null} */ (null),
   exploration: /** @type {null|{host: ReturnType<typeof mountExploration>|null, leaving: Promise<boolean>|null, failed:boolean}} */ (null),
-  view: /** @type {"chart"|"quiz"|"exploration"|"parent"} */ ("chart"),
+  view: /** @type {"chart"|"quiz"|"exploration"|"parent"|"pick"} */ ("chart"),
+  /** 领航员（docs/specs/navigators.md 第 3～5 节）：生效的选择（投影 navigator/1，还没选是 null）和显示的那位（发布包里没有领航员时是 null） */
+  navChosen: /** @type {string|null} */ (null),
+  navShown: /** @type {string|null} */ (null),
+  /** 挑选页上点了谁（还没点「出发」）；pickStart：干净设备第一次点「开始」时，挑完要进的活动 */
+  pickSel: /** @type {string|null} */ (null),
+  pickStart: /** @type {null|{node: any, a: any}} */ (null),
   notice: /** @type {string|null} */ (null),
   /** 打开时读到的：干净的设备（backup.md 6.1）、上次备份、最早一条记录的时间（家长入口的小圆点） */
   clean: false,
@@ -379,6 +416,7 @@ const parentEnv = () => ({
 /** 按当前的 view 重画。 */
 function renderCurrent() {
   if (app.view === "quiz" && app.quiz) renderQuiz();
+  else if (app.view === "pick") renderPick();
   else if (app.view === "exploration" && app.exploration) return; // 保留已装入的实物和当前手势。
   else if (app.view === "parent") { syncNav(); renderExplorer(); renderParent(parentEnv()); }
   else renderChart();
@@ -387,6 +425,8 @@ function renderCurrent() {
 function recompute() {
   app.mastery = app.log ? projectMastery(app.log.events()) : null;
   if (app.log) refreshProfile(app); else app.profile = null;
+  app.navChosen = app.log ? projectNavigator(app.log.events()).navigator_id : null;
+  app.navShown = shownNavigator(app.navChosen, app.pack ? app.pack.navigators : new Map());
 }
 const nodeState = (id) => (app.mastery && app.mastery.nodes[id] ? app.mastery.nodes[id].state : "untouched");
 
@@ -446,6 +486,8 @@ function renderChart() {
   const main = $("#main");
   renderExplorer();
   if (app.mode === "readonly" && !app.hasIdentity) { main.innerHTML = ""; renderNote(); return; }
+  // 已经有记录、还没选过领航员：打开就先挑（规格第 5 节）。导航照常在，家长入口不挡
+  if (needsPick()) { app.pickStart = null; renderPick(); return; }
   const model = chartModel();
   // 笔记先放好：宽屏上它占右边一栏，星图要按剩下的宽度排
   renderNote(model);
@@ -495,7 +537,7 @@ function chartFoot() {
 function renderOverview(main, model) {
   const tip = app.mode === "recovering" ? "正在准备……" : "从里到外是年级。点一个星座，飞进去看看。";
   main.innerHTML = `<section class="chart" aria-labelledby="chartTitle">
-    <div class="vhead"><div><h1 id="chartTitle">星图</h1><p class="sub">${tip}</p></div>
+    <div class="vhead"><div class="vtitle">${avatarButton()}<div><h1 id="chartTitle">星图</h1><p class="sub">${tip}</p></div></div>
       <div class="legend" aria-hidden="true">${legendHtml()}<span class="mono">${model.lit}/${model.points.length}</span></div></div>
     <p class="sr">点亮了 ${model.lit} 颗，一共 ${model.points.length} 颗。</p>
     <div class="graph shape-overview" id="graph">
@@ -537,6 +579,7 @@ function renderOverview(main, model) {
     if (id) zoomTo(id, svg.querySelector(`.cons[data-id="${CSS.escape(id)}"]`));
   });
   stopFloat = animateOverview(svg, geometry, reducedMotion());
+  bindAvatar(main);
 }
 
 function zoomTo(id, el) {
@@ -622,7 +665,7 @@ function renderConstellation(main, model, c) {
   main.innerHTML = `<section class="chart detail" aria-labelledby="consTitle">
     <div class="vhead"><div>
       <div class="crumb"><button type="button" class="back" data-zout>${backIcon()} 星图</button><span>/</span><span>${BAND_NAME[c.band]}</span></div>
-      <h1 id="consTitle" tabindex="-1">${esc(consName(c))}座</h1>
+      <div class="vtitle">${avatarButton()}<h1 id="consTitle" tabindex="-1">${esc(consName(c))}座</h1></div>
       <p class="sub">${c.points.length} 颗星 · 开放 ${openN} 颗 · 点亮 ${litN} 颗 · 属于「${esc(LINE_NAME[c.theme])}」</p></div>
       <div class="legend"><a class="wikilink" href="#metro" data-metroline="${c.theme}">在地铁上看这条线</a></div></div>
     <div class="graph scroll" id="graph"><svg id="gsvg" role="group" aria-label="${esc(consName(c))}座的星"></svg></div>
@@ -645,6 +688,7 @@ function renderConstellation(main, model, c) {
   const pickEl = pick && svg.querySelector(`.node[data-id="${CSS.escape(pick.id)}"]`);
   if (pickEl && !busy.has(pick.id)) { const r = pick.acts ? 14 : 12; pickEl.insertAdjacentHTML("afterbegin", `<path class="sel-ring" d="${Sk.ellipse(0, 0, r + 9, r + 9, pick.seed + 9, .8)}"/>`); }
   main.querySelector("[data-zout]").addEventListener("click", zoomOut);
+  bindAvatar(main);
   main.querySelector("[data-metroline]").addEventListener("click", (e) => { e.preventDefault(); showLine(c.theme); });
   for (const el of svg.querySelectorAll(".node")) {
     const open = () => openPoint(model, /** @type {HTMLElement} */ (el).dataset.id || "", /** @type {HTMLElement} */ (el));
@@ -761,8 +805,9 @@ function renderNote(model) {
       if (app.mode !== "writable" || !app.session || !card) return;
       const a = choices.find((x) => x.entry.id === /** @type {HTMLElement} */ (b).dataset.start);
       if (!a) return;
-      if (a.module) { if (canSwitchActivity()) openExploration(card, a.module); }
-      else openQuiz(card, a.def);
+      // 干净的设备第一次点「开始」：先挑领航员，挑完再进活动（规格第 5 节）
+      if (pickFirst() && !(a.entry.kind === "quiz" && app.quiz?.def.id === a.def?.id && pendingQuiz(app.quiz))) { app.pickStart = { node: card, a }; app.pickSel = null; renderPick(); return; }
+      startActivity(card, a);
     });
   }
   for (const l of pane.querySelectorAll("[data-line]")) {
@@ -771,6 +816,205 @@ function renderNote(model) {
   for (const l of pane.querySelectorAll("[data-goto]")) {
     l.addEventListener("click", (e) => { e.preventDefault(); selectPoint(/** @type {HTMLElement} */ (l).dataset.goto || "", { reveal: true }); });
   }
+}
+
+/** 从笔记的「任务」进一个活动：动手探索或挑战。 */
+function startActivity(card, a) {
+  if (a.module) { if (canSwitchActivity()) openExploration(card, a.module); }
+  else openQuiz(card, a.def);
+}
+
+/* ============================================================
+   领航员（docs/specs/navigators.md 第 4、5 节）：挑选页、星图标题旁的头像、领航员舱。
+   脸的 SVG 要显示时才取（loadNavigatorFaces：核对哈希、白名单），取到前先画一个空的框
+   ============================================================ */
+/** 能写、还没有生效的选择、发布包里有领航员。 */
+const canPick = () => app.mode === "writable" && !!app.session && !app.lockLost && !!app.pack && app.pack.navigators.size > 0 && app.navChosen === null;
+/** 打开时就出挑选页：设备已经有记录（干净的设备等第一次点「开始」，这样恢复不被挡）。 */
+const needsPick = () => canPick() && !showCleanHint();
+/** 点「开始」时先挑。 */
+const pickFirst = () => canPick();
+/** 发布包里的领航员，按 id 码点排序（和 shownNavigator 同一个顺序）。 */
+const navList = () => (app.pack ? [...app.pack.navigators.values()].sort((x, y) => cmpCodePoints(x.def.id, y.def.id)) : []);
+
+/** @type {Map<string, {value: Readonly<Record<string,string>>|null, failed: boolean, promise: Promise<Readonly<Record<string,string>>|null>}>} */
+const faceCache = new Map();
+/** 取一位的六张脸；核对不过就记下失败，不再取（这位不显示脸）。 @param {string} id */
+function wantFaces(id) {
+  const n = app.pack && app.pack.navigators.get(id);
+  if (!n) return Promise.resolve(null);
+  let c = faceCache.get(id);
+  if (!c) {
+    const entry = { value: null, failed: false, promise: /** @type {any} */ (null) };
+    entry.promise = loadNavigatorFaces(n.entry).then((v) => { entry.value = v; paintFaces(); return v; },
+      (e) => { console.warn("领航员的脸没有核对通过", id, e); entry.failed = true; return null; });
+    faceCache.set(id, entry);
+    c = entry;
+  }
+  return c.promise;
+}
+/** 一张脸：取到了就直接画；没取到先画空框，取到以后 paintFaces 补上。 */
+function faceSvg(id, face, cls) {
+  const v = faceCache.get(id)?.value;
+  return `<svg class="navsvg ${cls || ""}" viewBox="0 0 48 48" aria-hidden="true" data-nav="${esc(id)}" data-face="${face}"${v ? ` data-shown="${face}"` : ""}>${v ? v[face] : ""}</svg>`;
+}
+/** 页面上还空着、或表情换了的脸补画一遍。 @param {ParentNode} [root] */
+function paintFaces(root = document) {
+  for (const el of /** @type {NodeListOf<SVGElement>} */ (root.querySelectorAll("svg[data-nav]"))) {
+    const id = el.dataset.nav || "", face = el.dataset.face || "curious";
+    const c = faceCache.get(id);
+    if (c && c.value) { if (el.dataset.shown !== face) { el.innerHTML = c.value[face]; el.dataset.shown = face; } }
+    else if (!c) wantFaces(id);
+  }
+}
+const navTitle = (id) => app.pack?.navigators.get(id)?.def.title || "";
+
+/** 星图标题旁的头像；发布包里没有领航员时什么都不画。 */
+function avatarButton() {
+  if (!app.navShown) return "";
+  return `<button type="button" class="nav-ava" data-cabin aria-haspopup="dialog" aria-label="领航员${esc(navTitle(app.navShown))}，点一下打开领航员舱" title="领航员舱">${faceSvg(app.navShown, "curious")}</button>`;
+}
+function bindAvatar(root) {
+  root.querySelector("[data-cabin]")?.addEventListener("click", (e) => openCabin(/** @type {HTMLElement} */ (e.currentTarget)));
+  paintFaces(root);
+}
+
+/** 一位领航员的卡：脸、名字、见面的话。 */
+function navCard(n, face, extra = "") {
+  return `${faceSvg(n.def.id, face, "card-face")}<b class="nc-name">${esc(n.def.title)}</b><span class="nc-intro">${esc(n.def.intro)}</span>${extra}`;
+}
+
+/** 挑选页（规格第 5 节）：两位并排；点一位它鼓掌，出现「出发」；点「出发」写 navigator.chosen。 */
+function renderPick() {
+  if (!canPick()) { app.pickStart = null; app.pickSel = null; renderChart(); return; }
+  app.view = app.pickStart ? "pick" : "chart";
+  stopFloat();
+  syncNav();
+  renderExplorer();
+  renderNote();
+  const sel = app.pickSel;
+  const main = $("#main");
+  main.innerHTML = `<section class="pick" aria-labelledby="pickTitle">
+    <h1 id="pickTitle" tabindex="-1" class="sr">挑一位领航员</h1>
+    <div class="pick-row" role="group" aria-label="领航员">
+      ${navList().map((n) => `<button type="button" class="nav-card${sel === n.def.id ? " on" : ""}" data-pick="${esc(n.def.id)}" aria-pressed="${sel === n.def.id}">${navCard(n, sel === n.def.id ? "clap" : "curious")}</button>`).join("")}
+    </div>
+    <p class="pick-line">舰长，选一位陪你出发吧。以后随时可以换。</p>
+    <div class="btns center">
+      ${app.pickStart ? `<button type="button" class="btn big" data-act="pickBack">回到${homeName()}</button>` : ""}
+      <button type="button" class="btn ink big" data-act="pickGo"${sel ? "" : " hidden"}>出发</button>
+    </div>
+    <p class="pick-msg" role="alert" hidden></p>
+  </section>`;
+  for (const b of main.querySelectorAll("[data-pick]")) b.addEventListener("click", () => {
+    app.pickSel = /** @type {HTMLElement} */ (b).dataset.pick || null;
+    renderPick();
+    /** @type {HTMLElement|null} */ (main.querySelector(`[data-pick="${CSS.escape(app.pickSel || "")}"]`))?.focus({ preventScroll: true });
+  });
+  main.querySelector('[data-act="pickBack"]')?.addEventListener("click", () => { app.pickStart = null; app.pickSel = null; renderChart(); });
+  const go = /** @type {HTMLButtonElement} */ (main.querySelector('[data-act="pickGo"]'));
+  go.addEventListener("click", async () => {
+    const id = app.pickSel;
+    if (!id || go.disabled) return;
+    go.disabled = true;
+    if (!await choose(id, main.querySelector(".pick-msg"))) { go.disabled = false; return; }
+    const start = app.pickStart;
+    app.pickStart = null; app.pickSel = null;
+    app.view = "chart";
+    if (start) startActivity(start.node, start.a);
+    else renderChart();
+  });
+  paintFaces(main);
+  if (!sel) /** @type {HTMLElement|null} */ (main.querySelector("#pickTitle"))?.focus({ preventScroll: true });
+}
+
+/**
+ * 写一条 navigator.chosen（rev = 当前生效 rev + 1），存好了才换。失败时在 msgEl 里说一句。
+ * @param {string} id @param {Element|null} msgEl
+ * @returns {Promise<boolean>}
+ */
+async function choose(id, msgEl) {
+  const s = app.session;
+  if (!s || app.mode !== "writable") return false;
+  try {
+    await submitNavigatorChoice(s, guardDeps({ ids, now }, () => app.lockLost), id);
+  } catch (e) {
+    console.error(e);
+    if (msgEl) { msgEl.textContent = e instanceof FrozenError || e instanceof LockLostError ? "没存上。请刷新页面。" : "没存上。再点一次就好。"; /** @type {HTMLElement} */ (msgEl).hidden = false; }
+    if (e instanceof FrozenError && app.mode === "writable") { app.mode = "readonly"; app.why = "lost"; renderBanner(); }
+    return false;
+  }
+  recompute();
+  return true;
+}
+
+/** 领航员舱：点星图标题旁的头像弹出。两位并排，现在这位标「陪着你」，点另一位就换（干净设备、只读时只看不换）。 */
+let cabinFrom = /** @type {HTMLElement|null} */ (null);
+function openCabin(from) {
+  if (document.getElementById("cabin")) return;
+  cabinFrom = from;
+  const sc = document.createElement("div");
+  sc.className = "cabin-scrim";
+  sc.id = "cabinScrim";
+  sc.addEventListener("click", closeCabin);
+  const d = document.createElement("div");
+  d.className = "cabin";
+  d.id = "cabin";
+  d.tabIndex = -1;
+  d.setAttribute("role", "dialog");
+  d.setAttribute("aria-modal", "true");
+  d.setAttribute("aria-labelledby", "cabinTitle");
+  d.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeCabin(); return; }
+    if (e.key !== "Tab") return;
+    const f = /** @type {HTMLElement[]} */ ([...d.querySelectorAll("button:not([disabled])")]);
+    if (!f.length) return;
+    if (e.shiftKey && (document.activeElement === f[0] || document.activeElement === d)) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  });
+  document.body.append(sc, d);
+  /** @type {any} */ ($(".app")).inert = true;
+  renderCabin();
+  d.focus({ preventScroll: true });
+}
+function closeCabin() {
+  const d = document.getElementById("cabin");
+  if (!d) return;
+  d.remove();
+  document.getElementById("cabinScrim")?.remove();
+  /** @type {any} */ ($(".app")).inert = false;
+  const back = /** @type {HTMLElement|null} */ (document.querySelector("[data-cabin]")) || cabinFrom;
+  cabinFrom = null;
+  back?.focus({ preventScroll: true });
+}
+function renderCabin(focusId) {
+  const d = document.getElementById("cabin");
+  if (!d) return;
+  const cur = app.navShown;
+  const clean = showCleanHint();
+  const canChange = app.mode === "writable" && !!app.session && !app.lockLost && !clean;
+  const tag = '<span class="with-you">陪着你</span>';
+  d.innerHTML = `<div class="cabin-head"><h2 id="cabinTitle">领航员舱</h2><button class="close" type="button" data-act="cabinClose" aria-label="关上领航员舱" title="关上">${X_ICON}</button></div>
+    <div class="pick-row">
+      ${navList().map((n) => {
+        const on = n.def.id === cur;
+        return canChange && !on
+          ? `<button type="button" class="nav-card" data-switch="${esc(n.def.id)}" aria-label="换成${esc(n.def.title)}">${navCard(n, "curious")}</button>`
+          : `<div class="nav-card${on ? " on" : " still"}"${on ? ' aria-current="true"' : ""} tabindex="-1" data-card="${esc(n.def.id)}">${navCard(n, "curious", on ? tag : "")}</div>`;
+      }).join("")}
+    </div>
+    ${clean ? `<p class="cabin-note">先去玩一颗星，再回来换。</p>` : !canChange ? `<p class="cabin-note">这里只能看，现在换不了。</p>` : ""}
+    <p class="pick-msg" role="alert" hidden></p>`;
+  d.querySelector('[data-act="cabinClose"]')?.addEventListener("click", closeCabin);
+  for (const b of d.querySelectorAll("[data-switch]")) b.addEventListener("click", async () => {
+    const id = /** @type {HTMLElement} */ (b).dataset.switch || "";
+    /** @type {HTMLButtonElement} */ (b).disabled = true;
+    if (!await choose(id, d.querySelector(".pick-msg"))) { /** @type {HTMLButtonElement} */ (b).disabled = false; return; }
+    if (app.view === "chart") redrawChart(true); // 标题旁的头像跟着换
+    renderCabin(id);
+  });
+  paintFaces(d);
+  if (focusId) /** @type {HTMLElement|null} */ (d.querySelector(`[data-card="${CSS.escape(focusId)}"]`))?.focus({ preventScroll: true });
 }
 
 /* ============================================================
@@ -961,14 +1205,18 @@ function canSwitchActivity() {
   return false;
 }
 
-/** 合格尝试里已保存的站包括中途退出前完成的站。通关只认单独的结束事件。 */
-export function explorationProgress(events, learnerId, activityId, version) {
+/**
+ * 合格尝试里已保存的站包括中途退出前完成的站。通关只认单独的结束事件。
+ * 按活动 id 重建，不看 activity_version（docs/specs/navigators.md 第 6 节、slice-5a）：模块改了字节加版本，舰长做过的站照样算；
+ * 站号超出当前模块站数的不算。要让旧进度失效的大改，出新的活动 id。
+ */
+export function explorationProgress(events, learnerId, activityId) {
   const stations = new Set(), count = stationCount(activityId);
   for (const attempt of groupAttempts(events).values()) {
     const first = attempt[0];
     const content = first.content;
     if (first.learner_id !== learnerId || content?.activity_id !== activityId ||
-        content.activity_kind !== "simulation" || content.activity_version !== version || attemptRule(attempt)) continue;
+        content.activity_kind !== "simulation" || attemptRule(attempt)) continue;
     if (attempt[attempt.length - 1].verb === "attempt.completed") {
       // 较早的记录只有整次完成。各站当时必须依次走完，重进时应能任选一站。
       return { doneStations: Array.from({ length: count }, (_, i) => i + 1), activityCompleted: true };
@@ -986,7 +1234,7 @@ function openExploration(node, module) {
   if (app.exploration || app.mode !== "writable" || !app.session) return;
   const { manifest } = module;
   const session = app.session;
-  const history = explorationProgress(session.log.events(), session.identity.learner_id, manifest.id, manifest.version);
+  const history = explorationProgress(session.log.events(), session.identity.learner_id, manifest.id);
   const run = { host: null, leaving: null, failed:false };
   app.exploration = run;
   app.view = "exploration";
@@ -1003,9 +1251,12 @@ function openExploration(node, module) {
     if (await closeExploration(run) && app.view === "exploration") renderChart();
   });
   $("#exploreTitle").focus({ preventScroll: true });
-  module.loadHtml().then((html) => {
+  // 选好的领航员的脸也在这时取（规格第 6 节）；取不到就不发，模块用自带的脸
+  const pilotId = app.navShown;
+  Promise.all([module.loadHtml(), pilotId ? wantFaces(pilotId) : null]).then(([html, faces]) => {
     if (app.exploration !== run) return;
-    startExploration(run, node, manifest, html, session, history, { status, refresh, panel, back });
+    const navigator = pilotId && faces ? { id: pilotId, faces } : null;
+    startExploration(run, node, manifest, html, session, history, { status, refresh, panel, back }, navigator);
   }, () => {
     if (app.exploration !== run) return;
     status.textContent = "打不开这个探索。请检查网络，再刷新一次。";
@@ -1013,10 +1264,10 @@ function openExploration(node, module) {
   });
 }
 
-function startExploration(run, node, manifest, html, session, history, { status, refresh, panel, back }) {
+function startExploration(run, node, manifest, html, session, history, { status, refresh, panel, back }, navigator = null) {
   try {
     run.host = mountExploration({
-      container: $("#main .workbench"), manifest, html, session, ids, now,
+      container: $("#main .workbench"), manifest, html, session, ids, now, navigator,
       content: Object.freeze({ node_id: node.id, activity_id: manifest.id, activity_kind: "simulation",
         activity_version: manifest.version, content_release: app.pack.release.release_id }),
       mode: history.activityCompleted ? "retry" : "first", ...history,
@@ -1331,9 +1582,9 @@ function renderQuiz() {
     const right = a.type === "choice" ? a.choices.find((c) => c.correct === true).id : null;
     const shown = a.type === "choice" ? null : revealed ? { ok: true, text: fbo.answer_text } : { ok: true, text: z.lastResponse[z.solved] + (a.unit ? " " + a.unit : "") };
     const last = z.q.phase !== "answering";
-    const bubble = revealed
+    const bubble = pilotHtml(revealed ? "surprised" : "clap", revealed
       ? `<div class="bub reveal" role="status"><p><b>答案是 ${rich(fbo.answer_text)}</b></p><p>${rich(fbo.text)}</p></div>`
-      : `<div class="bub good" role="status">${starMini()}<p>${rich(fbo ? fbo.text : "")}</p></div>`;
+      : `<div class="bub good" role="status">${starMini()}<p>${rich(fbo ? fbo.text : "")}</p></div>`);
     body = itemHtml(solvedItem, { wrong: z.wrongBy[z.solved] || [], right, disabled: true, shown }) + bubble +
       `<div class="btns"><button class="btn ink big" type="button" data-act="next" ${last && z.q.phase !== "done" ? "disabled" : ""}>${last ? "看看结果" : "下一题"}</button></div>`;
   } else if (z.q.phase === "answering" && v.item) {
@@ -1349,8 +1600,10 @@ function renderQuiz() {
           ${hintMax > 0 ? `<button class="btn big" type="button" data-act="hint" ${v.can_hint ? "" : "disabled"}>${hintIcon()}${v.hints.length >= hintMax ? "提示用完了" : "要个提示"}</button>` : ""}
           <button class="btn big" type="button" data-act="reveal" ${v.can_reveal ? "" : "disabled"}>看答案</button>
         </div>` : "";
-    const after = (fb ? `<div class="bub bad" tabindex="-1"><p>${rich(fb.text)}</p>${again ? `<p class="muted small">${again}</p>` : ""}</div>` : "") +
-      hintsHtml(v.hints) + tools;
+    // 领航员的脸（规格第 5 节）：等回答是 waiting，答错 think，只看提示时 curious
+    const after = pilotHtml(fb ? "think" : v.hints.length ? "curious" : "waiting",
+      (fb ? `<div class="bub bad" tabindex="-1"><p>${rich(fb.text)}</p>${again ? `<p class="muted small">${again}</p>` : ""}</div>` : "") +
+      hintsHtml(v.hints)) + tools;
     // 数字题、分数题：同一道题里只换输入框周围的部分，不重建输入框，焦点和平板上的输入法都不丢
     const formNow = /** @type {HTMLFormElement|null} */ (main.querySelector("[data-form]"));
     if (formNow && v.answer_type !== "choice" && formNow.dataset.item === v.item_id && !z.solved) {
@@ -1392,6 +1645,7 @@ function renderQuiz() {
     sync();
   }
   bindActs(z, main);
+  paintFaces(main);
   focusQuiz(z);
 }
 
@@ -1410,6 +1664,7 @@ function patchTyped(z, form, after) {
   form.dispatchEvent(new Event("input")); // 重新算「确定」能不能点
   bindActs(z, a);
   bindActs(z, st);
+  paintFaces(a);
   focusQuiz(z);
 }
 
@@ -1483,6 +1738,9 @@ function resultHtml(z) {
   </div>`;
 }
 
+/** 挑战里说话的地方：左边是选的那位领航员（表情跟着场合换），右边是气泡。发布包里没有领航员时只有气泡。 */
+const pilotHtml = (face, inner) => (app.navShown
+  ? `<div class="pilot">${faceSvg(app.navShown, face, "pilot-face")}<div class="pilot-says">${inner}</div></div>` : inner);
 const starMini = () => `<svg class="mini" viewBox="0 0 100 100" aria-hidden="true"><path class="star-fill" d="${Sk.area(starPoints(52, 55, 38, 16))}"/><path class="k" d="${Sk.poly(starPoints(50, 52, 38, 16), 3, true, .6)}"/></svg>`;
 const hintIcon = () => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="k1" d="${Sk.ellipse(12, 10, 6, 6, 8, .4) + Sk.line(9.5, 17, 14.5, 17, 9, .2) + Sk.line(10, 20, 14, 20, 10, .2)}"/></svg>`;
 const backIcon = () => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="k" d="${Sk.line(19, 12, 5, 12, 2, .3) + Sk.line(5, 12, 11, 6, 3, .3) + Sk.line(5, 12, 11, 18, 4, .3)}"/></svg>`;

@@ -1,7 +1,7 @@
 id: act.simulation.stretch-bar-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 伸缩条
 targets:
   - math.operation.multiply-shrinks

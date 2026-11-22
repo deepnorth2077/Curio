@@ -1,7 +1,7 @@
 id: act.simulation.slide-rule-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 滑尺
 targets:
   - math.decimal.point-shift

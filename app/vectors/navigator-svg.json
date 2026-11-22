@@ -1,0 +1,282 @@
+{
+ "$comment": "领航员 SVG 的检查向量（docs/specs/navigators.md 第 1 节）：checks 里每条 ok 是期望结果，tools/ci_checks.py 的 check_navigator_svg 和 app/navigator.js 的 checkNavigatorSvg 都要和它一致；inner 是 innerSvg 的输入和输出。",
+ "checks": [
+  {
+   "name": "最小的合法脸",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": true
+  },
+  {
+   "name": "fixtures 的合法脸",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"k f-paper\" cx=\"8\" cy=\"10\" r=\"3\"/><ellipse class=\"f-ink\" cx=\"24\" cy=\"13\" rx=\"6\" ry=\"4\"/><rect class=\"k1\" x=\"6\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-sky\" fill=\"none\" d=\"M9 40 Q24 41 39 40\"/><circle class=\"f-apricot\" cx=\"12\" cy=\"14\" r=\"3\"/></svg>\n",
+   "ok": true
+  },
+  {
+   "name": "16 个元素、1 个 f-accent、正好 3072 字节",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><ellipse class=\"f-accent\" cx=\"24\" cy=\"13\" rx=\"6\" ry=\"4\"/><rect class=\"k1\" x=\"6\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-sky\" fill=\"none\" d=\"M9 40 Q24 41 39 40\"/><circle class=\"f-apricot\" cx=\"12\" cy=\"14\" r=\"3\"/><ellipse class=\"k f-pane\" cx=\"24\" cy=\"17\" rx=\"6\" ry=\"4\"/><rect class=\"f-sage\" x=\"10\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-muted\" fill=\"none\" d=\"M13 40 Q24 37 35 40\"/><circle class=\"k f-paper\" cx=\"16\" cy=\"18\" r=\"3\"/><ellipse class=\"f-ink\" cx=\"24\" cy=\"21\" rx=\"6\" ry=\"4\"/><rect class=\"k1\" x=\"14\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-sky\" fill=\"none\" d=\"M17 40 Q24 33 31 40\"/><circle class=\"f-apricot\" cx=\"20\" cy=\"22\" r=\"3\"/><ellipse class=\"k f-pane\" cx=\"24\" cy=\"25\" rx=\"6\" ry=\"4\"/><rect class=\"f-sage\" x=\"18\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-muted\" fill=\"none\" d=\"M21 40 Q24 29 27 40\"/><circle class=\"k f-paper\" cx=\"24\" cy=\"26\" r=\"3\"/>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          </svg>\n",
+   "ok": true
+  },
+  {
+   "name": "第一行的 XML 声明",
+   "svg": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": true
+  },
+  {
+   "name": "g 上有 transform、没有 class",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><g transform=\"rotate(-7 24 30)\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></g></svg>\n",
+   "ok": true
+  },
+  {
+   "name": "fill 和 stroke 写 none",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><path class=\"k\" fill=\"none\" stroke=\"none\" d=\"M1 1L5 5\"/></svg>\n",
+   "ok": true
+  },
+  {
+   "name": "单引号属性",
+   "svg": "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>",
+   "ok": true
+  },
+  {
+   "name": "属性值里有实体",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><path class=\"k\" aria-label=\"a&amp;b\" d=\"M1 1L5 5\"/></svg>\n",
+   "ok": true
+  },
+  {
+   "name": "元素之间有换行",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\">\n  <circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/>\n  <circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/>\n</svg>\n",
+   "ok": true
+  },
+  {
+   "name": "两个类：线稿加色块",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"k f-paper\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": true
+  },
+  {
+   "name": "带前缀的根（命名空间对）",
+   "svg": "<s:svg xmlns:s=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><s:circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></s:svg>",
+   "ok": true
+  },
+  {
+   "name": "title",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/><title>脸</title></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "desc",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/><desc>脸</desc></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "注释",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/><!-- 草稿 --></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "CDATA",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/><![CDATA[x]]></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "DOCTYPE",
+   "svg": "<!DOCTYPE svg><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "中间的处理指令",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/><?php x ?></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "viewBox 0 0 100 100",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "没有 viewBox",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "text",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><text x=\"2\" y=\"4\" class=\"f-ink\">好</text></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "类 f-red",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-red\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "类写在 g 上",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><g class=\"k\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></g></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "类写在根 svg 上",
+   "svg": "<svg class=\"k\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "fill=#000",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle fill=\"#000\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "stroke=red",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><path stroke=\"red\" d=\"M1 1L5 5\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "17 个能画出东西的元素",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"k f-paper\" cx=\"8\" cy=\"10\" r=\"3\"/><ellipse class=\"f-ink\" cx=\"24\" cy=\"13\" rx=\"6\" ry=\"4\"/><rect class=\"k1\" x=\"6\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-sky\" fill=\"none\" d=\"M9 40 Q24 41 39 40\"/><circle class=\"f-apricot\" cx=\"12\" cy=\"14\" r=\"3\"/><ellipse class=\"k f-pane\" cx=\"24\" cy=\"17\" rx=\"6\" ry=\"4\"/><rect class=\"f-sage\" x=\"10\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-muted\" fill=\"none\" d=\"M13 40 Q24 37 35 40\"/><circle class=\"k f-paper\" cx=\"16\" cy=\"18\" r=\"3\"/><ellipse class=\"f-ink\" cx=\"24\" cy=\"21\" rx=\"6\" ry=\"4\"/><rect class=\"k1\" x=\"14\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-sky\" fill=\"none\" d=\"M17 40 Q24 33 31 40\"/><circle class=\"f-apricot\" cx=\"20\" cy=\"22\" r=\"3\"/><ellipse class=\"k f-pane\" cx=\"24\" cy=\"25\" rx=\"6\" ry=\"4\"/><rect class=\"f-sage\" x=\"18\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-muted\" fill=\"none\" d=\"M21 40 Q24 29 27 40\"/><circle class=\"k f-paper\" cx=\"24\" cy=\"26\" r=\"3\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "两个元素用 f-accent",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-accent\" cx=\"8\" cy=\"10\" r=\"3\"/><ellipse class=\"f-accent\" cx=\"24\" cy=\"13\" rx=\"6\" ry=\"4\"/><rect class=\"k1\" x=\"6\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-sky\" fill=\"none\" d=\"M9 40 Q24 41 39 40\"/><circle class=\"f-apricot\" cx=\"12\" cy=\"14\" r=\"3\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "id 属性",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle id=\"a\" class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "超过 3 KiB",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"k f-paper\" cx=\"8\" cy=\"10\" r=\"3\"/><ellipse class=\"f-ink\" cx=\"24\" cy=\"13\" rx=\"6\" ry=\"4\"/><rect class=\"k1\" x=\"6\" y=\"30\" width=\"6\" height=\"5\" rx=\"1\"/><path class=\"f-sky\" fill=\"none\" d=\"M9 40 Q24 41 39 40\"/><circle class=\"f-apricot\" cx=\"12\" cy=\"14\" r=\"3\"/>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </svg>\n",
+   "ok": false
+  },
+  {
+   "name": "use",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><use href=\"#a\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "defs",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><defs></defs><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "linearGradient",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><linearGradient></linearGradient><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "clipPath",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><clipPath></clipPath><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "script",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><script>alert(1)</script></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "带命名空间的 script",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><x:script xmlns:x=\"http://www.w3.org/2000/svg\"></x:script></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "foreignObject",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><foreignObject></foreignObject></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "事件属性",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\" onclick=\"x()\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "style 属性",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" style=\"fill:red\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "xlink:href",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" viewBox=\"0 0 48 48\"><path class=\"k\" xlink:href=\"#a\" d=\"M1 1\"/></svg>",
+   "ok": false
+  },
+  {
+   "name": "url(…) 在属性里",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><path class=\"k\" opacity=\"url(#a)\" d=\"M1 1\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "嵌套 svg",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/><svg viewBox=\"0 0 48 48\"></svg></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "根不在 SVG 命名空间",
+   "svg": "<svg xmlns=\"urn:x\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "根不是 svg",
+   "svg": "<g xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></g>",
+   "ok": false
+  },
+  {
+   "name": "元素里有文字",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><g>好</g></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "元素后面有文字",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/>好</svg>\n",
+   "ok": false
+  },
+  {
+   "name": "不是合法的 XML：标签没关",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/>",
+   "ok": false
+  },
+  {
+   "name": "不是合法的 XML：标签对不上",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><g></path></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "不认识的实体",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><path class=\"k\" aria-label=\"&nbsp;\" d=\"M1 1\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "属性重复",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" class=\"k\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "根外面有文字",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\nx",
+   "ok": false
+  },
+  {
+   "name": "两个根",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "ok": false
+  },
+  {
+   "name": "xml:space 属性",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><g xml:space=\"preserve\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></g></svg>\n",
+   "ok": false
+  }
+ ],
+ "inner": [
+  {
+   "name": "去掉根，留下里面",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></svg>\n",
+   "inner": "<circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/>"
+  },
+  {
+   "name": "XML 声明和两边空白",
+   "svg": "<?xml version=\"1.0\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\">\n <circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/>\n</svg>\n",
+   "inner": "<circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/>"
+  },
+  {
+   "name": "g 和子元素原样",
+   "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\"><g transform=\"rotate(4 24 30)\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></g></svg>\n",
+   "inner": "<g transform=\"rotate(4 24 30)\"><circle class=\"f-ink\" cx=\"5\" cy=\"5\" r=\"2\"/></g>"
+  }
+ ]
+}

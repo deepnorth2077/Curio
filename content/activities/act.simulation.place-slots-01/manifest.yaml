@@ -1,7 +1,7 @@
 id: act.simulation.place-slots-01
 contract: activity/1.1
 type: simulation
-version: 2
+version: 3
 title: 位值格
 targets:
   - math.decimal.compare-add

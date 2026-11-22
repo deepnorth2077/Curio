@@ -1,7 +1,7 @@
 id: act.simulation.cross-cut-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 横切再竖切
 targets:
   - math.fraction.multiply

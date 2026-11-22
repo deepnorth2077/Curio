@@ -1,7 +1,7 @@
 id: act.simulation.whose-half-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 谁的一半
 targets: [math.fraction.the-whole]
 age_band: G3-4
