@@ -12,8 +12,9 @@ import { FrozenError } from "./commit.js";
 import { mountExploration, supportedExploration, stationCount } from "./exploration.js";
 import { Sk } from "./sketch.js";
 import { buildChart, overviewSvg, placeChartLabels, animateOverview, nearestCons, constellationLayout, constellationSvg,
-  chartStar, legendHtml, consName, BAND_NAME, GRADE_NAME } from "./starchart.js";
+  legendHtml, consName, consId, BAND_NAME } from "./starchart.js";
 import { metroLayout, metroSvg, metroScroll } from "./metro.js";
+import { aliasIndex, treeHtml, searchPoints, noteHtml } from "./explorer.js";
 import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT,
   refreshProfile, currentGradeOf, needsProfileHint, PROFILE_TEXT } from "./parent.js";
 
@@ -296,12 +297,12 @@ const app = {
   /** 「再试一次」正在进行 */ relocking: false,
   /** @type {any} */ mastery: null,
   /** 正在做的挑战 */ quiz: /** @type {null|{q: any, def: any, node: any, content: any, attempt_id: string, startedMs: number, cur: null|{id: number, raw: string, receipt: object}, busy: boolean, error: any, solved: string|null, wrongBy: Record<string, string[]>, litBefore: boolean}} */ (null),
-  selectedNode: null,
+  /** 星球笔记打开着的那颗星（#233）：星图、地铁、索引里同步高亮；null 是没打开 */ note: /** @type {string|null} */ (null),
   /** 星图正在看的星座（详情视图），null 是总览 */ chartZoom: /** @type {string|null} */ (null),
   /** 首页是星图还是知识地铁（#233）：URL 的 #metro 记住它；从星、站进去的活动退出来回到这里 */ home: /** @type {"chart"|"metro"} */ ("chart"),
   /** 地铁上只看哪一条线（点左边的线名），null 是全部 */ metroLine: /** @type {string|null} */ (null),
   exploration: /** @type {null|{host: ReturnType<typeof mountExploration>|null, leaving: Promise<boolean>|null, failed:boolean}} */ (null),
-  view: /** @type {"chart"|"menu"|"quiz"|"exploration"|"parent"} */ ("chart"),
+  view: /** @type {"chart"|"quiz"|"exploration"|"parent"} */ ("chart"),
   notice: /** @type {string|null} */ (null),
   /** 打开时读到的：干净的设备（backup.md 6.1）、上次备份、最早一条记录的时间（家长入口的小圆点） */
   clean: false,
@@ -336,9 +337,8 @@ const parentEnv = () => ({
 /** 按当前的 view 重画。 */
 function renderCurrent() {
   if (app.view === "quiz" && app.quiz) renderQuiz();
-  else if (app.view === "menu" && app.selectedNode) renderMenu(app.selectedNode);
   else if (app.view === "exploration" && app.exploration) return; // 保留已装入的实物和当前手势。
-  else if (app.view === "parent") renderParent(parentEnv());
+  else if (app.view === "parent") { syncNav(); renderExplorer(); renderParent(parentEnv()); }
   else renderChart();
 }
 
@@ -401,8 +401,11 @@ function renderChart() {
   stopFloat();
   syncNav();
   const main = $("#main");
-  if (app.mode === "readonly" && !app.hasIdentity) { main.innerHTML = ""; return; }
+  renderExplorer();
+  if (app.mode === "readonly" && !app.hasIdentity) { main.innerHTML = ""; renderNote(); return; }
   const model = chartModel();
+  // 笔记先放好：宽屏上它占右边一栏，星图要按剩下的宽度排
+  renderNote(model);
   if (app.home === "metro") { renderMetro(main, model); return; }
   const c = app.chartZoom ? model.consById.get(app.chartZoom) : null;
   if (c) renderConstellation(main, model, c);
@@ -413,18 +416,34 @@ function renderChart() {
 export const homeOfHash = (hash) => (hash === "#metro" ? "metro" : "chart");
 /** 返回按钮上的字。 */
 const homeName = () => (app.home === "metro" ? "地铁" : "星图");
-/** 导航上标出当前的首页。 */
+/**
+ * 导航上标出当前页（星图、地铁，或家长页的锁）；家长入口的两个提醒挂在锁上：
+ * 30 天没备份是一个小圆点，「还没填舰长资料」在工具条上是锁旁的小字（手机上是小圆点），读屏读出原话（profile.md 第 4 节：和备份提醒放在同一处）。
+ */
 function syncNav() {
+  const cur = app.view === "parent" ? "parent" : app.home;
   for (const a of document.querySelectorAll(".ribbon [data-view], .bottomnav [data-view]")) {
-    a.setAttribute("aria-current", /** @type {HTMLElement} */ (a).dataset.view === app.home ? "page" : "false");
+    a.setAttribute("aria-current", /** @type {HTMLElement} */ (a).dataset.view === cur ? "page" : "false");
+  }
+  const show = !!(app.store && app.hasIdentity);
+  const old = show && needsDot({ clean: app.clean, lastBackup: app.lastBackup, firstEventAt: app.firstEventAt }, Date.now());
+  const noProfile = show && !!app.profile && needsProfileHint({ clean: showCleanHint(), profile: app.profile.profile });
+  const words = ["家长", ...(old ? ["很久没备份了"] : []), ...(noProfile ? [PROFILE_TEXT.missing] : [])].join("，");
+  for (const a of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('[data-view="parent"]'))) {
+    a.hidden = !show;
+    a.setAttribute("aria-label", words);
+    if (a.classList.contains("ibtn")) a.title = words;
+    const dot = /** @type {HTMLElement|null} */ (a.querySelector(".ndot"));
+    const hint = /** @type {HTMLElement|null} */ (a.querySelector(".lock-hint"));
+    if (hint) { hint.textContent = PROFILE_TEXT.missing; hint.hidden = !noProfile; }
+    if (dot) dot.hidden = !(old || (noProfile && !hint));
   }
 }
 
-/** 底部：家长入口、干净设备的提示、小字。总览和详情视图共用。 */
+/** 底部：干净设备的提示、小字。总览和详情视图共用（家长入口在导航的锁上）。 */
 function chartFoot() {
   return `${showCleanHint() ? `<p class="clean-hint"><a href="#parent">${esc(PTEXT.cleanHint)}</a></p>` : ""}
     <div class="chart-foot">
-      ${app.store && app.hasIdentity ? `<a class="parent-link" href="#parent">家长${needsDot({ clean: app.clean, lastBackup: app.lastBackup, firstEventAt: app.firstEventAt }, Date.now()) ? `<span class="dot" role="img" aria-label="很久没备份了"></span>` : ""}${app.profile && needsProfileHint({ clean: showCleanHint(), profile: app.profile.profile }) ? `<span class="p-hint">${esc(PROFILE_TEXT.missing)}</span>` : ""}</a>` : ""}
       <p class="chart-note muted">记录存在这台设备上，记得在「家长」里备份</p>
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>`;
@@ -495,7 +514,6 @@ function zoomOut() {
   const from = app.chartZoom;
   const go = () => {
     app.chartZoom = null;
-    closeStarCard();
     renderChart();
     const back = from && document.querySelector(`#gsvg .cons[data-id="${CSS.escape(from)}"]`);
     if (back) /** @type {HTMLElement} */ (back).focus({ preventScroll: true });
@@ -521,7 +539,7 @@ function renderMetro(main, model) {
     ${chartFoot()}
   </section>`;
   const L = metroLayout(model);
-  const sel = app.selectedNode && model.byId.has(app.selectedNode.id) ? app.selectedNode.id : null;
+  const sel = app.note && model.byId.has(app.note) ? app.note : null;
   const { map, labels } = metroSvg(model, L, { focusLine: app.metroLine, selected: sel });
   const sc = /** @type {HTMLElement} */ (main.querySelector("#mscroll"));
   sc.innerHTML = `<svg width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" role="group" aria-label="知识地铁线路图">${map}<g id="mlabels">${labels}</g></svg>`;
@@ -579,6 +597,10 @@ function renderConstellation(main, model, c) {
   svg.setAttribute("viewBox", `0 0 ${L.W} ${L.H}`);
   svg.setAttribute("width", String(L.W));
   svg.innerHTML = constellationSvg(c, L, busy);
+  // 笔记打开着的那颗星：画一个选中圈（照原型 select）
+  const pick = app.note ? model.byId.get(app.note) : null;
+  const pickEl = pick && svg.querySelector(`.node[data-id="${CSS.escape(pick.id)}"]`);
+  if (pickEl && !busy.has(pick.id)) { const r = pick.acts ? 14 : 12; pickEl.insertAdjacentHTML("afterbegin", `<path class="sel-ring" d="${Sk.ellipse(0, 0, r + 9, r + 9, pick.seed + 9, .8)}"/>`); }
   main.querySelector("[data-zout]").addEventListener("click", zoomOut);
   for (const el of svg.querySelectorAll(".node")) {
     const open = () => openPoint(model, /** @type {HTMLElement} */ (el).dataset.id || "", /** @type {HTMLElement} */ (el));
@@ -587,33 +609,247 @@ function renderConstellation(main, model, c) {
   }
 }
 
-/** 点了详情视图里的一颗星：已开放的进活动入口，没开放的弹小卡。 */
-function openPoint(model, id, el) {
-  const p = model.byId.get(id);
-  if (!p) return;
-  if (p.open) { closeStarCard(); openNode(id); return; }
-  showStarCard(p, el);
+/** 点了星图详情里的一颗星、地铁站：打开这颗星的笔记（照原型 select）。 */
+function openPoint(_model, id, el) { selectPoint(id, { from: el, reveal: false }); }
+
+/* ============================================================
+   星球笔记（#233，照原型 select、noteHTML、bindNote、closeNote）：只在星图和地铁页
+   ============================================================ */
+/** 笔记收起时焦点回到哪里（点开笔记的那颗星、那个站或索引里的叶子）。 */
+let noteFrom = /** @type {string|null} */ (null);
+const X_ICON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+
+/** 一个元素 → 重画以后还能找回它的选择器。 @param {Element|null} el */
+function focusKey(el) {
+  if (!el || !(el instanceof Element)) return null;
+  const d = /** @type {HTMLElement} */ (el).dataset || {};
+  if (el.closest("#drawer")) return '.bottomnav [data-act="drawer"]';
+  if (d.node) return `#explorer [data-node="${CSS.escape(d.node)}"]`;
+  if (el.classList.contains("node") && d.id) return `#gsvg .node[data-id="${CSS.escape(d.id)}"]`;
+  if (el.classList.contains("station") && d.id) return `#mscroll .station[data-id="${CSS.escape(d.id)}"]`;
+  if (d.goto) return null;
+  return el.id ? "#" + CSS.escape(el.id) : null;
 }
 
-function showStarCard(p, from) {
-  closeStarCard();
-  const card = document.createElement("div");
-  card.className = "star-card";
-  card.id = "starCard";
-  card.setAttribute("role", "dialog");
-  card.setAttribute("aria-labelledby", "starCardTitle");
-  card.innerHTML = `<svg aria-hidden="true" width="34" height="34" viewBox="-16 -16 32 32">${chartStar("closed", 12)}</svg>
-    <div><h2 id="starCardTitle">${esc(p.title)}</h2>
-    <p>${esc(GRADE_NAME[p.grade] || p.grade)}${p.unit ? ` · ${esc(p.unit)}` : ""}</p>
-    <p class="star-card-word">还没开放</p></div>
-    <button type="button" class="btn" data-close>知道了</button>`;
-  const close = () => { closeStarCard(); if (from && from.isConnected) from.focus({ preventScroll: true }); };
-  card.querySelector("[data-close]").addEventListener("click", close);
-  card.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-  $("#main").querySelector(".chart")?.appendChild(card);
-  /** @type {HTMLElement} */ (card.querySelector("[data-close]")).focus({ preventScroll: true });
+/**
+ * 选中一颗星，打开它的笔记。reveal：从索引、笔记里的链接来的，星图飞进这颗星的星座、地铁滚到这一站；
+ * 从星图、地铁上点的，画面不动，只换选中圈。
+ * @param {string} id @param {{from?: Element|null, reveal?: boolean}} [o]
+ */
+function selectPoint(id, { from = null, reveal = false } = {}) {
+  const model = chartModel();
+  const p = model.byId.get(id);
+  if (!p) return;
+  app.note = id;
+  tree.sel = id;
+  tree.open[consId(p)] = true;
+  const key = focusKey(from);
+  if (key) noteFrom = key;
+  if (reveal && app.home === "chart") app.chartZoom = consId(p);
+  redrawChart(!reveal);
+  /** @type {HTMLElement|null} */ (document.getElementById("noteTitle"))?.focus({ preventScroll: true });
 }
-function closeStarCard() { document.getElementById("starCard")?.remove(); }
+
+/** 收起笔记（× 或 Esc），焦点回到点开它的地方。 */
+function closeNote() {
+  if (!app.note) return;
+  app.note = null;
+  tree.sel = null;
+  redrawChart(true);
+  const back = noteFrom && /** @type {HTMLElement|null} */ (document.querySelector(noteFrom));
+  noteFrom = null;
+  if (back) back.focus({ preventScroll: true });
+}
+
+/** 重画星图或地铁；keep 为真时留住滚动位置（笔记开合会改变宽度，详情视图要按新宽度重新排）。 @param {boolean} keep */
+function redrawChart(keep) {
+  const main = $("#main");
+  const sc = document.getElementById("mscroll"), gr = document.getElementById("graph");
+  const saved = { top: main.scrollTop, sl: sc ? sc.scrollLeft : 0, st: sc ? sc.scrollTop : 0, gt: gr ? gr.scrollTop : 0, metro: !!sc };
+  renderChart();
+  if (!keep) return;
+  main.scrollTop = saved.top;
+  const ns = document.getElementById("mscroll");
+  if (ns && saved.metro) { ns.scrollLeft = saved.sl; ns.scrollTop = saved.st; ns.dispatchEvent(new Event("scroll")); }
+}
+
+/** 这颗星能进的活动（动手探索、挑战）。 @param {any} node */
+function activityChoices(node) {
+  return nodeActivities(node).filter((a) => a.module || (a.entry.kind === "quiz" && a.def));
+}
+
+/** 现在不能开始活动时的一句话。 */
+function whyCantStart() {
+  return app.mode === "recovering" ? "正在准备，等一下再点。" : app.mode === "unfinished" ? "请家长先看一看上面的提示。" : app.why === "lost" ? "请刷新页面。" : "这里只能看，不能开始挑战。";
+}
+
+/** 画笔记（星图、地铁页）。 @param {ReturnType<typeof chartModel>} [model] */
+function renderNote(model) {
+  const pane = $("#notepane"), shell = $(".app");
+  const p = model && app.note ? model.byId.get(app.note) : null;
+  if (!p) { if (app.note && model) app.note = null; shell.classList.remove("note-open"); pane.innerHTML = ""; return; }
+  const card = app.pack.nodes.find((n) => n.id === p.id) || null;
+  const choices = card ? activityChoices(card) : [];
+  const tasks = choices.map((a) => {
+    const def = a.module?.manifest || a.def;
+    const isQuiz = a.entry.kind === "quiz";
+    const resume = isQuiz && app.quiz?.def.id === def.id && pendingQuiz(app.quiz);
+    return { id: a.entry.id, title: def.title, meta: `${isQuiz ? "挑战" : "动手探索"} · ${isQuiz ? `${def.body.items.length} 道题` : `${stationCount(def.id)} 站`}`, go: resume ? "接着做" : "开始" };
+  });
+  const canStart = app.mode === "writable" && !!app.session;
+  const top = pane.dataset.for === p.id ? pane.scrollTop : 0;
+  pane.innerHTML = `<div class="grab" aria-hidden="true"></div><button class="close note-x" type="button" aria-label="收起笔记" title="收起">${X_ICON}</button>` +
+    noteHtml(p, { card, model, tasks, canStart, why: whyCantStart() });
+  pane.dataset.for = p.id;
+  pane.scrollTop = top;
+  shell.classList.add("note-open");
+  pane.querySelector(".note-x").addEventListener("click", closeNote);
+  for (const b of pane.querySelectorAll("[data-start]")) {
+    b.addEventListener("click", () => {
+      if (app.mode !== "writable" || !app.session || !card) return;
+      const a = choices.find((x) => x.entry.id === /** @type {HTMLElement} */ (b).dataset.start);
+      if (!a) return;
+      if (a.module) { if (canSwitchActivity()) openExploration(card, a.module); }
+      else openQuiz(card, a.def);
+    });
+  }
+  for (const l of pane.querySelectorAll("[data-goto]")) {
+    l.addEventListener("click", (e) => { e.preventDefault(); selectPoint(/** @type {HTMLElement} */ (l).dataset.goto || "", { reveal: true }); });
+  }
+}
+
+/* ============================================================
+   知识索引（#233，照原型 treeHTML、bindTree、renderExplorer、openTree）
+   ============================================================ */
+const EX_KEY = "curio.explorer";
+const tree = {
+  query: "",
+  /** 星座 id → 展开没有；没记的按「是不是舰长当前学段」 */ open: /** @type {Record<string, boolean>} */ ({}),
+  sel: /** @type {string|null} */ (null),
+  /** @type {Map<string, string[]>|null} */ aliases: null,
+  collapsed: false,
+};
+/** 收起状态记在 localStorage；读写失败就默认展开。 */
+function readCollapsed() { try { return localStorage.getItem(EX_KEY) === "closed"; } catch { return false; } }
+function writeCollapsed(v) { try { localStorage.setItem(EX_KEY, v ? "closed" : "open"); } catch { /* 记不住就算了 */ } }
+
+const isOpenIn = (model) => (c) => (c.id in tree.open ? tree.open[c.id] : c.band === model.currentBand);
+
+function renderExplorer() {
+  const roots = /** @type {HTMLElement[]} */ ([document.getElementById("explorer"), document.getElementById("drawer")].filter(Boolean));
+  const ready = !!(app.pack && app.pack.catalog) && !(app.mode === "readonly" && !app.hasIdentity) && app.mode !== "stopped";
+  const model = ready ? chartModel() : null;
+  if (model && !tree.aliases) tree.aliases = aliasIndex(app.pack.catalog, model.byId);
+  for (const root of roots) {
+    if (!model) { root.innerHTML = ""; continue; }
+    // 重画以后焦点、光标、滚动位置都留在原处
+    const ae = /** @type {HTMLElement|null} */ (document.activeElement);
+    let key = null, pos = null;
+    if (ae && root.contains(ae)) {
+      if (ae.matches("[data-treeq]")) { key = "[data-treeq]"; pos = /** @type {HTMLInputElement} */ (ae).selectionStart; }
+      else if (ae.dataset.cons) key = `[data-cons="${CSS.escape(ae.dataset.cons)}"]`;
+      else if (ae.dataset.node) key = `[data-node="${CSS.escape(ae.dataset.node)}"]`;
+    }
+    const top = root.scrollTop;
+    root.innerHTML = treeHtml(model, { query: tree.query, isOpen: isOpenIn(model), selected: tree.sel, aliases: /** @type {Map<string, string[]>} */ (tree.aliases) });
+    root.scrollTop = top;
+    bindTree(root, model);
+    const el = key && /** @type {HTMLElement|null} */ (root.querySelector(key));
+    if (el) { el.focus({ preventScroll: true }); if (pos != null) /** @type {HTMLInputElement} */ (el).setSelectionRange(pos, pos); }
+  }
+}
+
+let liveTimer = 0;
+function bindTree(root, model) {
+  for (const b of root.querySelectorAll("[data-cons]")) {
+    b.addEventListener("click", () => {
+      const id = /** @type {HTMLElement} */ (b).dataset.cons || "", c = model.consById.get(id);
+      tree.open[id] = !(c && isOpenIn(model)(c));
+      renderExplorer();
+    });
+  }
+  for (const b of root.querySelectorAll("[data-node]")) b.addEventListener("click", () => openLeaf(/** @type {HTMLElement} */ (b).dataset.node || "", /** @type {HTMLElement} */ (b)));
+  const qi = /** @type {HTMLInputElement|null} */ (root.querySelector("[data-treeq]"));
+  if (qi) qi.addEventListener("input", () => {
+    tree.query = qi.value;
+    renderExplorer();
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => {
+      const q = tree.query.trim();
+      $("#live").textContent = q ? `找到 ${searchPoints(chartModel(), /** @type {any} */ (tree.aliases), q).length} 颗星球` : "";
+    }, 400);
+  });
+}
+
+/** 点了索引里的一颗星：不在星图或地铁时先回去，再打开它的笔记。 */
+function openLeaf(id, el) {
+  const inDrawer = !!el.closest("#drawer");
+  if (inDrawer) closeDrawer(false);
+  if (app.view === "quiz" || app.view === "exploration" || app.mode === "stopped") return;
+  if (app.view === "parent") {
+    app.view = "chart"; // 先设好：hashchange 看到已经不在家长页，不再重画
+    location.hash = app.home === "metro" ? "#metro" : "#chart";
+  }
+  selectPoint(id, { from: el, reveal: true });
+}
+
+/** 桌面：收起、展开左边的知识索引。 @param {boolean} collapsed */
+function setCollapsed(collapsed) {
+  tree.collapsed = collapsed;
+  writeCollapsed(collapsed);
+  applyCollapsed();
+  if (app.view === "chart") redrawChart(true); // 星图可用的宽度变了
+}
+function applyCollapsed() {
+  $(".app").classList.toggle("ex-closed", tree.collapsed);
+  const b = document.querySelector('.ribbon [data-act="tree"]');
+  if (!b) return;
+  const words = tree.collapsed ? "展开知识索引" : "收起知识索引";
+  b.setAttribute("aria-expanded", String(!tree.collapsed));
+  b.setAttribute("aria-label", words);
+  b.setAttribute("title", words);
+}
+
+/** 手机：知识索引从左边滑出（照原型 openTree），带遮罩；Esc、点遮罩关上，焦点回到底部的「索引」。 */
+function openDrawer() {
+  if (document.getElementById("drawer")) return;
+  const btn = document.querySelector('.bottomnav [data-act="drawer"]');
+  const sc = document.createElement("div");
+  sc.className = "drawer-scrim";
+  sc.id = "drawerScrim";
+  sc.addEventListener("click", () => closeDrawer(true));
+  const d = document.createElement("aside");
+  d.className = "drawer";
+  d.id = "drawer";
+  d.tabIndex = -1;
+  d.setAttribute("role", "dialog");
+  d.setAttribute("aria-modal", "true");
+  d.setAttribute("aria-label", "知识索引");
+  d.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeDrawer(true); return; }
+    if (e.key !== "Tab") return;
+    const f = /** @type {HTMLElement[]} */ ([...d.querySelectorAll("button, input, a[href]")]);
+    if (!f.length) return;
+    if (e.shiftKey && (document.activeElement === f[0] || document.activeElement === d)) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  });
+  document.body.append(sc, d);
+  /** @type {any} */ ($(".app")).inert = true;
+  btn?.setAttribute("aria-expanded", "true");
+  renderExplorer();
+  d.focus({ preventScroll: true });
+}
+/** @param {boolean} restore 焦点回到「索引」按钮 */
+function closeDrawer(restore) {
+  const d = document.getElementById("drawer");
+  if (!d) return;
+  d.remove();
+  document.getElementById("drawerScrim")?.remove();
+  /** @type {any} */ ($(".app")).inert = false;
+  const btn = /** @type {HTMLElement|null} */ (document.querySelector('.bottomnav [data-act="drawer"]'));
+  btn?.setAttribute("aria-expanded", "false");
+  if (restore) btn?.focus({ preventScroll: true });
+}
 
 // 宽度变了（转屏、改窗口）：重画星图，排版和标签避让跟着变
 let resizeTimer = 0;
@@ -621,8 +857,8 @@ if (typeof window !== "undefined") window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     const g = document.getElementById("graph");
-    if (app.view === "chart" && app.home === "chart" && g && Math.abs(g.clientWidth - chartWidth) > 24 && !document.getElementById("starCard")) {
-      renderChart();
+    if (app.view === "chart" && app.home === "chart" && g && Math.abs(g.clientWidth - chartWidth) > 24) {
+      redrawChart(true);
     }
   }, 180);
 });
@@ -641,27 +877,8 @@ function toast(text) {
 }
 
 /* ============================================================
-   开始挑战（规格 6.3「开始一次挑战」）
+   开始挑战（规格 6.3「开始一次挑战」）：从笔记的「任务」进来
    ============================================================ */
-function openNode(nodeId) {
-  if (app.mode !== "writable" || !app.session) {
-    toast(app.mode === "recovering" ? "正在准备，等一下再点。" : app.mode === "unfinished" ? "请家长先看一看上面的提示。" : app.why === "lost" ? "请刷新页面。" : "这里只能看，不能开始挑战。");
-    return;
-  }
-  const node = app.pack.nodes.find((n) => n.id === nodeId);
-  if (!node) return;
-  const acts = nodeActivities(node);
-  if (acts.some((a) => a.module)) {
-    app.selectedNode = node;
-    renderMenu(node);
-    $("#menuTitle").focus({ preventScroll: true });
-  } else {
-    const quiz = acts.find((a) => a.entry.kind === "quiz" && a.def);
-    if (quiz) openQuiz(node, quiz.def);
-    else toast("这个还在做。");
-  }
-}
-
 function nodeActivities(node) {
   return (node.activities || []).map((id) => app.pack.activities.get(id)).filter(Boolean);
 }
@@ -687,39 +904,6 @@ function canSwitchActivity() {
     toast("正在保存上次的挑战，稍等一下再点。");
   }
   return false;
-}
-
-function renderMenu(node) {
-  app.view = "menu";
-  const main = $("#main");
-  const acts = nodeActivities(node);
-  const choices = acts.filter((a) => a.module || (a.entry.kind === "quiz" && a.def));
-  main.innerHTML = `<section class="activity-menu" aria-labelledby="menuTitle">
-    <button type="button" class="back" data-act="back">${backIcon()} ${homeName()}</button>
-    <h1 id="menuTitle" tabindex="-1">${esc(node.title)}</h1>
-    <div class="activity-options">${choices.map((a) => {
-      const def = a.module?.manifest || a.def;
-      const isQuiz = a.entry.kind === "quiz";
-      const resume = isQuiz && app.quiz?.def.id === def.id && pendingQuiz(app.quiz);
-      const detail = isQuiz ? `${def.body.items.length} 道题` : `${stationCount(def.id)} 站`;
-      return `<button type="button" class="activity-option" data-kind="${a.entry.kind}" data-activity="${esc(a.entry.id)}"${app.mode === "writable" ? "" : " disabled"}>
-        <span class="activity-meta">${isQuiz ? "挑战" : "动手探索"} · ${detail}</span>
-        <strong>${esc(def.title)}</strong>
-        <span class="activity-go">${resume ? "接着做" : "进入"} <span aria-hidden="true">→</span></span>
-      </button>`;
-    }).join("")}</div>
-    <div id="toast" class="toast" role="status" hidden></div>
-  </section>`;
-  main.querySelector('[data-act="back"]').addEventListener("click", renderChart);
-  for (const el of main.querySelectorAll("[data-activity]")) {
-    const activity = choices.find((a) => a.entry.id === el.dataset.activity);
-    el.addEventListener("click", () => {
-      if (app.mode !== "writable" || !app.session) return;
-      if (activity.module) {
-        if (canSwitchActivity()) openExploration(node, activity.module);
-      } else openQuiz(node, activity.def);
-    });
-  }
 }
 
 /** 合格尝试里已保存的站包括中途退出前完成的站。通关只认单独的结束事件。 */
@@ -1367,8 +1551,31 @@ async function boot() {
   // 家长页用 #parent，浏览器的「返回」也能回到星图
   app.view = location.hash === "#parent" ? "parent" : "chart";
   app.home = homeOfHash(location.hash);
+  tree.collapsed = readCollapsed();
+  applyCollapsed();
   syncNav();
+  // 导航上的按钮：收起、展开知识索引，搜索，手机上打开索引抽屉
+  document.addEventListener("click", (e) => {
+    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest?.("[data-act]"));
+    if (!b || !b.closest(".ribbon, .bottomnav")) return;
+    const act = b.dataset.act;
+    if (act === "tree") setCollapsed(!tree.collapsed);
+    else if (act === "search") {
+      if (tree.collapsed) setCollapsed(false);
+      /** @type {HTMLElement|null} */ (document.querySelector("#explorer [data-treeq]"))?.focus();
+    } else if (act === "drawer") openDrawer();
+  });
+  // Esc 收起笔记（抽屉、对话框自己先接住 Esc）
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || !app.note || app.view !== "chart" || document.getElementById("drawer")) return;
+    closeNote();
+  });
+  // 转到桌面宽度时，抽屉不再需要
+  const wide = matchMedia("(min-width: 760px)");
+  const onWide = () => { if (wide.matches) closeDrawer(false); };
+  if (wide.addEventListener) wide.addEventListener("change", onWide); else wide.addListener(onWide);
   window.addEventListener("hashchange", async () => {
+    closeDrawer(false);
     if (app.exploration && location.hash === "#parent") {
       if (!await closeExploration()) return;
       if (location.hash !== "#parent") { renderChart(); return; }
@@ -1380,7 +1587,7 @@ async function boot() {
       app.home = home;
       syncNav();
       if (app.view === "parent") app.view = "chart";
-      else if (changed && (app.view === "chart" || app.view === "menu")) { app.view = "chart"; closeStarCard(); }
+      else if (changed && app.view === "chart") { /* 换到另一个首页，笔记照旧开着 */ }
       else return;
     }
     if (app.mode !== "loading" && app.mode !== "stopped") renderCurrent();
