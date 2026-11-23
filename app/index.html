@@ -477,7 +477,9 @@ button.nav-card:hover{border-color:var(--ink)}
 .stop h1{font-size:22px;margin-bottom:8px}
 
 @media (prefers-reduced-motion:no-preference){
-  .choice,.btn,.back,  /* 点亮动效：一共 1.2 秒（规格 6.4：不超过 1.5 秒）；reduced-motion 时没有这些规则，直接是亮的样子 */
+  .choice,.btn,.back{transition:background-color .15s,border-color .15s,transform .08s}
+  .choice:active:not(:disabled),.btn:active:not(:disabled),.back:active{transform:scale(.98)}
+  /* 点亮动效：一共 1.2 秒（规格 6.4：不超过 1.5 秒）；reduced-motion 时没有这些规则，直接是亮的样子 */
   .result-star.lighting svg{animation:light-pop 1.2s cubic-bezier(.2,.8,.3,1) both;transform-origin:50% 52%}
   .result-star.lighting .star-fill{animation:light-fill .8s ease-out .15s both}
   .result-star.lighting .ray{animation:light-ray .45s ease-out .75s both}
