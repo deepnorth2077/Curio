@@ -2,7 +2,7 @@
 task: act.simulation.lever-dock-01
 issue: 195
 constellation_issue: 193
-version: v4
+version: v4a
 ---
 
 > 契约 activity/1.1 · 基于提交 `{{commit}}`
@@ -22,6 +22,19 @@ v4 是重写。v3 被 Luka 和舰长打回，原因记在这里，实现者也�
 4. 「还差一点」和「方向错了」各有一种画面上的样子，领航员的话照原句写，一句只说一件事。
 
 实现者不能自己加记号、加台词、改目标。觉得哪里不顺，写进交付说明，不要自己改。
+
+## 0. 这一次只交 A：开场 + 第 1 站
+
+整颗星分三次交付（见第 11 节）。**这一次只做 A**：
+
+- 做：开场（猜测题和三种反馈）、第 1 站「放秤秤出来」的全部内容、第 1 站的揭晓和页脚读数。
+- 第 1 站完成后（按下「就这样」以后），进入一个**临时结尾**：卡片标题「第 1 站完成」，画一张小图：孩子按「就这样」时的那根杆（按固定排版画，不用动画位置），下面写「1 枚铁环，第 k 格，翘起 6 牛」，再放「再玩一次」按钮。临时结尾第一次出现时发 `complete`（payload `{}`），「再玩一次」回到开场，不再发 `complete`。
+- `#station` 写「第 1 站 · 共 3 站」，临时结尾写「星卡」。
+- 不做：第 2、3 站，星卡三格，挑战。后面这些章节照样读，用来理解整颗星往哪走、哪些零件以后会复用（比如铁环和圆钮），但不要实现。
+- manifest：`misconceptions` 这次只写 `heavy-wins`、`balance-ceiling`；`emits` 写 `[predicted, observed]`；`version: 4`；`title: 货舱里的杠杆`；`duration_min: 3`；`author` 写你自己的模型名，`prompt_ref: prompts/act.simulation.lever-dock-01.md`，`review: pending`。其他字段照第 12 节给的旧 manifest。
+- 第 10 节验收清单里，这次只查和开场、第 1 站有关的条目。
+
+交付前自查：逐条对照第 2 节验收用例里第 1 站的四行、第 10 节第 1、2、2a、4、5、6、7、9、10 条，把对不上的和你拿不准的写进交付包的「说明」。
 
 ## 项目背景
 
@@ -230,3 +243,44 @@ v4 是重写。v3 被 Luka 和舰长打回，原因记在这里，实现者也�
 - **A**：开场 + 第 1 站 + 一个临时结尾（只有「第 1 站完成」一行）+ 走查的第 1 站部分。Luka 在 iPad 上看第一屏：目标看得懂、秤秤数字掉得清楚、箱子翘起来够明显。通过再派 B。
 - **B**：第 2、3 站 + 星卡。
 - **C**：挑战（`act.quiz.lever-dock-01`，见 `docs/constellations/energy-dock/lever-challenge.md`）。
+
+## 12. 附：要原样遵守的平台文件
+
+### 旧 manifest（v3，照它的字段写新的）
+
+{{embed: content/activities/act.simulation.lever-dock-01/manifest.yaml}}
+
+### manifest 的格式
+
+{{embed: schemas/activity.schema.json}}
+
+### 技术契约 activity/1.1
+
+{{embed: docs/activity-contract.md}}
+
+### 经验清单（第 7 节列的编号在这里查原文）
+
+{{embed: .claude/skills/curio-anatomy/references/lessons.md#实现}}
+
+### 写给孩子的内容要求
+
+{{embed: docs/standards.md#给孩子看的内容}}
+
+### 术语表
+
+{{embed: GLOSSARY.md#给孩子看的世界}}
+
+{{embed: GLOSSARY.md#协作}}
+
+## 13. 交付格式（必须遵守）
+
+文件清单：
+
+- `content/activities/act.simulation.lever-dock-01/manifest.yaml`
+- `content/activities/act.simulation.lever-dock-01/index.html`
+
+开头信息里的 issue 写 `#195`，任务写 `act.simulation.lever-dock-01`，提示词版本写 `v4a`，基于提交照抄本文件最开头的提交号。
+
+{{embed: docs/submission.md#格式}}
+
+{{embed: docs/submission.md#规则}}
