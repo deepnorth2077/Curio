@@ -26,11 +26,10 @@
 <!-- status:begin energy-dock -->
 _这一段由 `tools/status_gen.py` 按 `docs/constellations/energy-dock/status.yaml` 生成，不要手改。_
 
-**状态（2026-11-20）**：6 颗星：完成 0、等验收 1、在做 0、草案 5。主 issue #193。试玩页 https://deepnorth2077.github.io/Curio/preview/lever/
+**状态（2026-11-23）**：6 颗星：完成 0、等验收 0、在做 0、草案 6。主 issue #193。试玩页 https://deepnorth2077.github.io/Curio/preview/lever/
 
 | 星 | 状态 | 主要 PR | 在等什么 |
 | --- | --- | --- | --- |
-| 第 1 颗「杠杆：把支点挪一格」 | 等验收 | #218、#222 | 等舰长试玩，观察他是否主动把环拖回第六孔、再试第七孔 |
 
-**现在**：只交杠杆新版给 Luka 和舰长试玩。其余五颗保留为退回的草稿，待这颗通过家庭验收再重新设计。
+**现在**：杠杆 v3 被打回，v4 按「每站目标卡」重写，分三次交付（第 1 站先交）。其余五颗等杠杆通过家庭验收再重新设计。
 <!-- status:end energy-dock -->
