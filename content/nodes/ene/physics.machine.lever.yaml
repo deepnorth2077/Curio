@@ -36,6 +36,8 @@ misconceptions:
   text: 支点离用力的手近一点才好使劲，所以该往手这边挪。
 - id: balance-lifts
   text: 两边打平了，就能把重的那头抬起来。
+- id: more-rings-enough
+  text: 只要多挂铁环就够了，不管支点离石头多远。
 sources:
 - type: reference
   ref: OpenStax · College Physics 2e · 9.5
