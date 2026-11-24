@@ -1,314 +1,207 @@
-"""从孩子看见的钉头、墨印、粉笔和拓杆位置检验杠杆。不读取活动的模型。"""
+# Curio · 货舱里的杠杆（v4，交付 A：开场 + 第 1 站 + 临时结尾）走查。
+# 用法：python tools/walks/act.simulation.lever-dock-01.py <index.html> <截图目录> [--only tablet|phone|desk]
+# 期望值来自 tools/tests/fixtures/expected/lever-dock.json，由任务说明 v5 手算；不读模块代码，不能为了通过去改。
 import json
-import math
 import re
 import sys
 from pathlib import Path
 
-TOOLS = Path(__file__).resolve().parents[1]
+TOOLS = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(TOOLS))
-import walklib
+import walklib  # noqa: E402
 
-VECTORS = json.loads((TOOLS / "tests/fixtures/expected/lever-dock.json").read_text(encoding="utf-8"))
-LIVE = '[data-lever="live"]'
-RINGS = {(s["rings"], s["hole"]): s for s in VECTORS["ring_moves"]}
-PIVOTS = {(s["pivot"], s["left_weight"]): s for s in VECTORS["pivot_moves"]}
-
-# 直接量实际绘制的圆钉。boundingBox 包含整棵 SVG 的旋转、缩放与窄屏布局。
-def center(element):
-    box = element.bounding_box(timeout=2000)
-    if not box or min(box["width"], box["height"]) <= 0:
-        raise walklib.WalkError("画面上应能看见这枚钉子")
-    return box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+EXP = json.loads((TOOLS / "tests/fixtures/expected/lever-dock.json").read_text(encoding="utf-8"))
+INTRO, S1 = EXP["intro"], EXP["station1"]
+HOLES = {h["k"]: h for h in S1["holes"]}
 
 
-def pins(w, drawing):
-    root = w.doc.locator(drawing)
-    return [center(root.locator(f'[data-part="{part}"]')) for part in ("left-hook", "pivot", "right-hook")]
-
-
-def check_beam(w, drawing, left_arm, right_arm, low_end):
-    left, pivot, right = pins(w, drawing)
-    span = right[0] - left[0]
-    fraction = (pivot[0] - left[0]) / span if span > 0 else -1
-    w.check(f"支点分开的两段实际距离为 {left_arm} 对 {right_arm}",
-            abs(fraction - left_arm / (left_arm + right_arm)) < 0.025, (left, pivot, right))
-    gap = left[1] - right[1]
-    w.check(f"这根杆实际画成 {low_end}", {"level": abs(gap) <= 1, "left": gap > 1, "right": gap < -1}[low_end],
-            (left[1], right[1]))
-
-
-def visible_shapes(root, selector):
-    return sum(shape.is_visible() for shape in root.locator(selector).all())
-
-
-def beam_imprints(w, drawing, side, hook, pivot, holes, weight):
-    # 在屏幕上沿倾斜的木杆轴投影。光有正确总数，还不能证明印落在对应的两孔之间。
-    groups = drawing.locator(f'[data-beam-segment="{side}"]').evaluate_all("""segments => segments.map(
-        segment => Array.from(segment.querySelectorAll('[data-beam-stamp]'), stamp => {
-            const box = stamp.getBoundingClientRect();
-            const style = getComputedStyle(stamp);
-            if (!box.width || !box.height || style.visibility === 'hidden' || style.opacity === '0') return null;
-            return [box.x + box.width / 2, box.y + box.height / 2];
-        }).filter(Boolean))""")
-    dx, dy = hook[0] - pivot[0], hook[1] - pivot[1]
-    length = math.hypot(dx, dy)
-    pitch = length / holes
-    slots = []
-    for stamps in groups:
-        indices = set()
-        for x, y in stamps:
-            x, y = x - pivot[0], y - pivot[1]
-            along = (x * dx + y * dy) / length
-            offset = abs(x * dy - y * dx) / length
-            indices.add(math.floor(along / pitch) if offset < pitch / 2 else -1)
-        # 同一孔距所有墨印必须都贴在同一段杆上，段数从木尖向钩子递增。
-        slots.append((next(iter(indices)) if len(indices) == 1 else -1, len(stamps)))
-    w.check(f"{side} 杆从木尖到钩子每段都有 {weight} 枚方印",
-            sorted(slots) == [(i, weight) for i in range(holes)], sorted(slots))
-
-
-def position(w, spec):
-    drawing = w.doc.locator(LIVE)
-    if "hole" in spec:
-        left, right = spec["hole"], 1
-        left_hook, pivot, right_hook = pins(w, LIVE)
-        beam_imprints(w, drawing, "left", left_hook, pivot, left, spec["rings"])
-        beam_imprints(w, drawing, "right", right_hook, pivot, right, 6)
-        w.check("左钩上的铁环个数", visible_shapes(drawing, '[data-part="ring"]') == spec["rings"])
-    else:
-        left, right = spec["pivot"], 6 - spec["pivot"]
-    check_beam(w, LIVE, left, right, spec["low_end"])
-    for side in ("left", "right"):
-        n = visible_shapes(w.doc.locator("#stage"), f'[data-stamp="{side}"]')
-        w.check(f'{side} 棚中能数到 {spec[side + "_stamps"]} 枚印', n == spec[side + "_stamps"], n)
-
-
-def chalk_gap(w, detail=False):
-    def box(part):
-        tag = f'#stage [data-detail="{part}"]' if detail else f'#stage [data-part="{part}"]'
-        return w.doc.locator(tag).bounding_box(timeout=2000)
-    crate, chalk = box("crate"), box("footprint")
-    w.check("粉笔印在箱底下方的同一处", min(chalk["x"] + chalk["width"], crate["x"] + crate["width"])
-            > max(chalk["x"], crate["x"]), (crate, chalk))
-    return chalk["y"] - crate["y"] - crate["height"]
-
-
-def arrow(w, key, steps=1):
-    stage = w.doc.locator("#stage")
-    stage.focus()
-    for _ in range(steps):
-        stage.press(key)
-    w.wait(350)
-
-
-def drag_holes(w, kind, signed_steps, count):
-    grip = w.doc.locator(f'[data-grip="{kind}"]')
-    grip.scroll_into_view_if_needed()
-    x, y = center(grip)
-    left, _, right = pins(w, LIVE)
-    distance = (right[0] - left[0]) * signed_steps / count
-    points = [(x + distance * i / 12, y) for i in range(13)]
-    (w.touch_drag if w.touch else w.mouse_drag)(points)
-    w.wait(350)
-
-
-def hidden_formula(w):
-    text = w.doc.locator("body").inner_text()
-    w.check("还没有翻纸，页面没有乘法或力矩等式", re.search(r"[×✕]|牛[·⋅]格", text) is None, text[-200:])
-
-
-def masked_shot(w, name, mask):
-    # 遮词只用于拍证据，不改动实物，也不触发游戏操作。
-    style = w.doc.add_style_tag(content=mask + " {visibility:hidden !important}")
-    try:
-        w.shot(name)
-    finally:
-        style.evaluate("(el) => el.remove()")
-
-
-def request_clue(w, expected):
-    w.check("没求助时只问哪头先低了", w.said() == "哪头先低了？", w.said())
-    clue = w.doc.get_by_role("button", name="给我一点线索", exact=True)
-    w.check("杆歪了可以自己要线索", clue.is_visible())
-    if not clue.is_visible():
-        return
-
-    def snapshot():
-        return (w.readout(), pins(w, LIVE), w.doc.locator("[data-proof]").count(),
-                w.sent("state"), w.sent("event"), w.sent("complete"))
-
-    before = snapshot()
-    w.btn("给我一点线索")
-    w.check("线索跟着压低的那头变", w.said() == expected, w.said())
-    w.check("只看线索不挪杆、不盖印、不给宿主记进度", snapshot() == before)
-
-
-def watch_small_labels(w):
-    # 在真实触摸前开始逐帧量字框，包括拖动尚未松手的画面。
-    return w.doc.locator("#stage").evaluate_handle("""stage => {
-        let minSealMargin = Infinity, minWeightGap = Infinity, raf;
-        const tiltsWithBothPrints = new Set();
-        function sample() {
-            const box = stage.getBoundingClientRect();
-            const seal = [...stage.querySelectorAll('text')].find(t => t.textContent === '钩上的封条');
-            const s = seal.getBoundingClientRect();
-            minSealMargin = Math.min(minSealMargin, s.top-box.top, box.bottom-s.bottom,
-                                     s.left-box.left, box.right-s.right);
-            const live = stage.querySelector('[data-lever="live"]');
-            const hookY = side => live.querySelector('[data-part="' + side + '-hook"]').getBoundingClientRect().y;
-            const tilt = hookY('left') - hookY('right');
-            const proofLabels = stage.querySelectorAll('[data-proof] text');
-            if (proofLabels.length === 2 && Math.abs(tilt) > 1) tiltsWithBothPrints.add(Math.sign(tilt));
-            for (const weight of live.querySelectorAll('text')) {
-                const a = weight.getBoundingClientRect();
-                for (const proof of proofLabels) {
-                    const b = proof.getBoundingClientRect();
-                    const gap = Math.max(b.left-a.right, a.left-b.right, b.top-a.bottom, a.top-b.bottom);
-                    minWeightGap = Math.min(minWeightGap, gap);
-                }
-            }
-            raf = requestAnimationFrame(sample);
-        }
-        sample();
-        return () => {
-            cancelAnimationFrame(raf);
-            return {minSealMargin, minWeightGap, tiltsWithBothPrints: [...tiltsWithBothPrints]};
-        };
-    }""")
-
-
-def play_one(w, route):
-    w.open(hosted=True)
-    hidden_formula(w)
-    w.btn("不能，箱子重")
-    w.btn("松开木杆")
-    position(w, RINGS[(1, 1)])
-    hidden_formula(w)
-    w.shot("01-ring", first=True)
-    if route == "A":
-        drag_holes(w, "ring", -4, 2)
-        position(w, RINGS[(1, 5)])
-        hidden_formula(w)
-        arrow(w, "ArrowLeft")
-    else:
-        # 一气拖到杆尾，掠过六格时没有停、没有松手，不能替孩子认领「看见停平」。
-        drag_holes(w, "ring", -6, 2)
-        position(w, RINGS[(1, 7)])
-        for label in ("加一枚环", "拓下这根杆"):
-            btn = w.doc.get_by_role("button", name=label, exact=True)
-            w.check("只看过抬箱，还不能" + label, not btn.count() or btn.is_disabled())
-        arrow(w, "ArrowRight")
-    position(w, RINGS[(1, 6)])
-    hidden_formula(w)
-    level_gap = chalk_gap(w)
-    w.check("停平时箱底遮着粉笔印", level_gap <= 1, level_gap)
-    if route == "A":
-        w.shot("02-level")
-        before = pins(w, LIVE)
-        w.btn("翻看算式")
-        w.check("翻开才读得到两组相等的数", re.search(r"1\s*(?:牛|N)?\s*×\s*6", w.doc.locator("body").inner_text())
-                and re.search(r"6\s*(?:牛|N)?\s*×\s*1", w.doc.locator("body").inner_text()))
-        w.check("翻纸不挪杆", pins(w, LIVE) == before)
-        w.btn("合上算式")
-        hidden_formula(w)
-    arrow(w, "ArrowLeft")
-    position(w, RINGS[(1, 7)])
-    up_gap = chalk_gap(w)
-    w.check("箱底高过粉笔印，能看清两者之间的缝", up_gap > 1 and up_gap > level_gap + 1, (level_gap, up_gap))
-    seats = w.doc.locator('[data-lever="seesaw"]')
-    lseat, rseat = [center(seats.locator(f'[data-part="{s}-hook"]')) for s in ("left", "right")]
-    w.check("旁边的跷跷板也画成远端低、近端高", lseat[1] > rseat[1] + 1, (lseat, rseat))
-    closeup = chalk_gap(w, detail=True)
-    w.check("纸框中真实露出至少六像素的亮缝", closeup >= 6, closeup)
-    if route == "A":
-        masked_shot(w, "03-wow-without-words", "#say, #readout, #hint, #stage text")
-    arrow(w, "ArrowRight")
-    position(w, RINGS[(1, 6)])
-    w.check("退一孔又遮回去", abs(chalk_gap(w) - level_gap) <= 1)
-    arrow(w, "ArrowLeft")
-    w.check("再进杆尾，缝重新出现", abs(chalk_gap(w) - up_gap) <= 1)
-    if route == "B":
-        w.btn("加一枚环")
-        arrow(w, "ArrowRight", 4)
-        position(w, RINGS[(2, 3)])
-        arrow(w, "ArrowRight")
-        position(w, RINGS[(2, 2)])
-        arrow(w, "ArrowLeft")
-    w.btn("拓下这根杆")
-    position(w, PIVOTS[(3, 6)])
-    proofs = w.doc.locator("[data-proof]")
-    collect = w.doc.get_by_role("button", name="收进星卡", exact=True)
-    w.check("刚看到中档不自动盖印", proofs.count() == 0, proofs.count())
-    w.check("两个台架端点尚未比较不能收卡", not collect.count() or collect.is_disabled())
-    if route == "A":
-        clue = w.doc.get_by_role("button", name="给我一点线索", exact=True)
-        w.check("开场杆平，还没有倾斜线索", not clue.is_visible())
-    w.btn("取下 1 牛")
-    if route == "A":
-        request_clue(w, "试着给左盘添一牛，再看。")
-    w.btn("加上 1 牛")
-    if route == "A":
-        w.check("添回一牛后不再显示上一条线索", "试着给左盘添一牛" not in w.said())
-        w.check("孩子把杆配平后线索按钮收起", not clue.is_visible())
-    position(w, PIVOTS[(3, 6)])
-    w.check("亲手调回中档才有一印", proofs.count() == 1, proofs.count())
-    w.check("只找到中档仍不能收卡", not collect.count() or collect.is_disabled())
-    if route == "A":
-        w.shot("04-sealed", first=True)
-    small_phone = w.name == "phone" and route == "A"
-    if small_phone:
-        w.page.set_viewport_size({**w.vp, "width": 360})
-        watcher = watch_small_labels(w)
-    drag_holes(w, "pivot", 1, 6)
-    position(w, PIVOTS[(4, 6)])
-    if route == "A":
-        request_clue(w, "试着从左盘取下一牛，再看哪头动。")
-    w.btn("取下 1 牛")
-    if route == "A":
-        w.check("卸一牛后把线索收起，重新让孩子观察", w.said() == "哪头先低了？", w.said())
-    for _ in range(2):
-        w.btn("取下 1 牛")
-    position(w, PIVOTS[(4, 3)])
-    w.check("两次平衡分别留下两印", proofs.count() == 2, proofs.count())
-    arrow(w, "ArrowLeft")
-    position(w, PIVOTS[(3, 3)])
-    if route == "A":
-        arrow(w, "ArrowRight")
-    else:
-        for _ in range(3):
-            w.btn("加上 1 牛")
-    if small_phone:
-        w.btn("加上 1 牛")
-        w.shot("04-tilted-360")
-        w.btn("取下 1 牛")
-        metrics = watcher.evaluate("stop => stop()")
-        watcher.dispose()
-        w.check("360 宽深色，两印收好后杆向两头都歪过", set(metrics["tiltsWithBothPrints"]) == {-1, 1}, metrics)
-        w.check("360 宽封条标签四边都在画面内", metrics["minSealMargin"] >= 0, metrics)
-        gap = metrics["minWeightGap"]
-        w.check("360 宽倾斜过程中两边配重与收好的印始终有间隙", math.isfinite(gap) and gap >= 1, metrics)
-        w.page.set_viewport_size(w.vp)
-    w.btn("收进星卡")
-    chosen = VECTORS["prints"][route]
-    first, second = '[data-lever="print-1"]', '[data-lever="print-2"]'
-    check_beam(w, first, chosen["ring_hole"], 1, chosen["first_low_end"])
-    check_beam(w, second, chosen["pivot"], 6 - chosen["pivot"], "level")
-    count_rings = visible_shapes(w.doc.locator(first), '[data-part="ring"]')
-    count_weights = visible_shapes(w.doc.locator(second), '[data-part="weight"]')
-    w.check("上幅还挂着我选的铁环", count_rings == chosen["rings"], count_rings)
-    w.check("下幅还留着我选的配重", count_weights == chosen["weights"], count_weights)
-    masked_shot(w, f"05-print-{route}-without-words", "#say, #readout, #hint, #stage text")
-    w.shot(f"06-print-{route}")
-    events = [m["payload"] for m in w.sent("event")]
-    observed = [e["result"]["station"] for e in events if e["verb"] == "observed"]
-    w.check("两站各记一次观察", observed == [1, 2], observed)
-    w.check("只领一张星卡", len(w.sent("complete")) == 1)
+def ns(s):
+    return re.sub(r"\s+", "", s or "")
 
 
 def play(w):
-    play_one(w, "A")
-    play_one(w, "B")
+    page, ev, check, btn, shot = w.page, w.ev, w.check, w.btn, w.shot
+
+    def box(part):
+        return ev("(()=>{const e=document.querySelector('[data-part=%s]');if(!e)return null;const r=e.getBoundingClientRect();"
+                  "return {x:r.x,y:r.y,w:r.width,h:r.height,b:r.bottom}})()" % part)
+
+    def text(sel):   # innerText；SVG 元素没有 innerText 时退到 textContent
+        return ns(ev("(()=>{const e=document.querySelector(%s);return e?(e.innerText??e.textContent):''})()" % json.dumps(sel)))
+
+    def state():
+        return w.sent("state")[-1]["payload"]
+
+    def events(verb):
+        return [m["payload"]["result"] for m in w.sent("event") if m["payload"]["verb"] == verb]
+
+    def can_finish():
+        return ev("[...document.querySelectorAll('#actions button')].some(b=>/就这样/.test(b.innerText)&&!b.disabled)")
+
+    def same(a, b, tol=1):
+        return all(abs(a[k] - b[k]) <= tol for k in ("x", "y", "w", "h"))
+
+    cur = {"k": 1}
+
+    def goto(k):   # 键盘一次一格：← 往外（格数加一），→ 往里。次数是算好的，不用 while
+        n = k - cur["k"]
+        for _ in range(abs(n)):
+            page.keyboard.press("ArrowLeft" if n > 0 else "ArrowRight")
+            page.wait_for_timeout(120)
+        cur["k"] = k
+        page.wait_for_timeout(1800 if k >= 7 else 900)
+
+    def to_choices():   # 开场可能有几句要点「下一句」；最多点 4 次，直到出现三个选项
+        for _ in range(4):
+            if ev("document.querySelectorAll('#actions .choice').length") > 0:
+                return
+            first = ev("(document.querySelector('#actions button')||{innerText:''}).innerText.replace(/\\s+/g,'')")
+            if not first:
+                return
+            btn(first)
+
+    def to_end():   # 揭晓之后到临时结尾：最多点 4 次，直到出现「再玩一次」
+        for _ in range(4):
+            if "再玩一次" in w.buttons():
+                return
+            first = ev("(document.querySelector('#actions button')||{innerText:''}).innerText.replace(/\\s+/g,'')")
+            if not first:
+                return
+            btn(first)
+
+    def ending_dx():   # 结尾小图里铁环相对支点的水平偏移；取页面里最后一枚铁环和最后一个支点
+        return ev("(()=>{const rs=[...document.querySelectorAll('[data-part=ring]')],ps=[...document.querySelectorAll('[data-part=pivot]')];"
+                  "if(!rs.length||!ps.length)return null;const r=rs[rs.length-1].getBoundingClientRect(),p=ps[ps.length-1].getBoundingClientRect();"
+                  "return r.x+r.width/2-(p.x+p.width/2)})()")
+
+    w.open()
+    check("ready 先于别的消息", w.sent()[0]["type"] == "ready", w.sent()[:1])
+
+    # ---------- 开场 ----------
+    shot("1-intro")
+    check("开场没有木杆", box("beam") is None or box("beam")["w"] == 0, box("beam"))
+    check("开场秤秤屏幕是 6", text("[data-part=robot-screen]") == str(INTRO["screen_at_open"]), text("[data-part=robot-screen]"))
+    to_choices(); shot("2-ask")
+    labels = ev("[...document.querySelectorAll('#actions .choice')].map(b=>b.innerText.replace(/\\s+/g,''))")
+    check("三个选项的文字和顺序", labels == [ns(o["text"]) for o in INTRO["options"]], labels)
+    check("提问时还没有铁环", ev("document.querySelectorAll('[data-part=ring]').length") == 0 or box("ring") is None or box("ring")["w"] == 0, None)
+    btn(INTRO["options"][0]["text"])   # 第 1 个：heavy-wins（错）
+    pred = events("predicted")
+    check("predicted 一次，开场 station 1", len(pred) == 1 and pred[0].get("station") == 1, pred)
+    check("heavy-wins：correct false、误区 id", pred and pred[0].get("correct") is False and pred[0].get("misconception") == "heavy-wins", pred)
+    check("猜错用中性气泡", "hmm" in ev("document.getElementById('say').className"), ev("document.getElementById('say').className"))
+    check("heavy-wins 反馈原句", INTRO["say_wrong_heavy_wins"] in ns(ev("document.getElementById('say').innerText")), ev("document.getElementById('say').innerText"))
+    page.wait_for_timeout(1200)
+
+    # ---------- 第 1 站：动手 ----------
+    shot("3-act-first", first=True)
+    check("#station 写第 1 站", text("#station") == S1["station_label"], text("#station"))
+    check("左下提示是一句话目标", S1["hint"] in text("#hint"), text("#hint"))
+    check("开场状态：铁环在第 1 格、屏幕 5", text("[data-part=robot-screen]") == "5", text("[data-part=robot-screen]"))
+    check("读数「铁环：第 1 格」，还没有乘法", text("#readout") == "铁环：第1格", text("#readout"))
+    check("第 1 站没有「就这样」", not can_finish(), w.buttons())
+    page.locator("#stage").focus()
+    beam0, crate0, robot0 = box("beam"), box("crate"), box("robot")
+    check("木杆、箱子、秤秤都在画面上", all(b and b["w"] > 0 for b in (beam0, crate0, robot0)), [beam0, crate0, robot0])
+    robot_top0 = robot0["y"]
+
+    # 铁环依次第 1～6 格
+    for k in range(1, 7):
+        if k > 1:
+            goto(k)
+        e, st = HOLES[k], state()
+        check(f"第 {k} 格：秤秤屏幕 {e['screen']}", text("[data-part=robot-screen]") == str(e["screen"]), text("[data-part=robot-screen]"))
+        check(f"第 {k} 格：state hole/screen/lifted/robot_out", (st.get("station"), st.get("hole"), st.get("screen"), st.get("lifted"), st.get("robot_out")) == (1, k, e["screen"], False, False), st)
+        check(f"第 {k} 格：杆保持水平、箱子秤秤不动", same(box("beam"), beam0) and same(box("crate"), crate0) and same(box("robot"), robot0), [box("beam"), beam0])
+        check(f"第 {k} 格：读数「铁环：第 {k} 格」", text("#readout") == f"铁环：第{k}格", text("#readout"))
+        check(f"第 {k} 格：还不能按「就这样」", not can_finish(), w.buttons())
+        if k == 2:
+            said = ns(ev("document.getElementById('say').innerText"))
+            check("第一次松手说出「杠杆」「支点」", "杠杆" in said and "支点" in said, said)
+        if k == 3:
+            said = ns(ev("document.getElementById('say').innerText"))
+            check("屏幕 3：往外一格少压 1 牛", "少压秤秤1牛" in said, said)
+        if k == 6:
+            said = ns(ev("document.getElementById('say').innerText"))
+            check("第 6 格：秤秤说「一点都不压了」，箱子仍挨着", "一点都不压了" in said and "出不去" in said, said)
+            shot("4-hole6")
+            gap6 = robot_top0 - box("crate")["b"]
+            check("第 6 格箱底还挨着秤秤（空隙小于 12）", gap6 < S1["min_gap_px"], gap6)
+
+    # 第 7 格：翘起
+    goto(7)
+    e, st, gap = HOLES[7], state(), robot_top0 - box("crate")["b"]
+    print(f"  第 7 格箱底和秤秤原顶边的空隙：{gap:.1f} CSS px（{w.name}）")
+    check("第 7 格：屏幕 0", text("[data-part=robot-screen]") == "0", text("[data-part=robot-screen]"))
+    check("第 7 格：state lifted、robot_out", (st.get("hole"), st.get("screen"), st.get("lifted"), st.get("robot_out")) == (7, 0, True, True), st)
+    check(f"第 7 格：箱底和秤秤原顶边空隙 ≥ {S1['min_gap_px']} CSS px", gap >= S1["min_gap_px"], gap)
+    check("第 7 格：杆转动了（和水平时不同）", not same(box("beam"), beam0, 1.5), [box("beam"), beam0])
+    rb = box("robot")
+    check("第 7 格：秤秤开出来了（位置变了）", abs(rb["x"] - robot0["x"]) > 10 or abs(rb["y"] - robot0["y"]) > 10, [rb, robot0])
+    said = ns(ev("document.getElementById('say').innerText"))
+    check("第 7 格：领航员说「箱子没变轻」", "箱子没变轻" in said, said)
+    check("第 7 格可按「就这样」", can_finish(), w.buttons())
+    shot("5-wow")
+
+    # 退回第 5 格
+    goto(5)
+    st = state()
+    check("退回第 5 格：robot_out 仍是 true、lifted false", (st.get("hole"), st.get("robot_out"), st.get("lifted")) == (5, True, False), st)
+    check("退回第 5 格：屏幕显示 0（秤秤身上没东西）", text("[data-part=robot-screen]") == "0", text("[data-part=robot-screen]"))
+    check("退回第 5 格：箱子比开场更低（落到地板）", box("crate")["b"] > crate0["b"] + 4, [box("crate")["b"], crate0["b"]])
+    check("退回第 5 格：「就这样」不可用", not can_finish(), w.buttons())
+    shot("6-back5")
+
+    # 第 8 格，按「就这样」
+    goto(8)
+    st = state()
+    gap8 = robot_top0 - box("crate")["b"]
+    check("第 8 格：state lifted、robot_out", (st.get("hole"), st.get("lifted"), st.get("robot_out")) == (8, True, True), st)
+    check(f"第 8 格：空隙 ≥ {S1['min_gap_px']} CSS px", gap8 >= S1["min_gap_px"], gap8)
+    check("第 8 格可按「就这样」", can_finish(), w.buttons())
+    check("按之前读数里没有乘法", "×" not in text("#readout"), text("#readout"))
+    btn("就这样")
+    obs = events("observed")
+    check("observed 一次，station 1", len(obs) == 1 and obs[0].get("station") == 1, obs)
+    check("揭晓说「第 6 格刚好打平」", S1["reveal_say"] in ns(ev("document.getElementById('say').innerText")), ev("document.getElementById('say').innerText"))
+    check("揭晓后读数出现乘法", "×" in text("#readout"), text("#readout"))
+    shot("7-reveal")
+    to_end(); page.wait_for_timeout(500)
+    shot("8-end")
+    body = ns(ev("document.body.innerText"))
+    check("临时结尾：#station 写「星卡」", text("#station") == S1["end_station"], text("#station"))
+    check("临时结尾：标题「第 1 站完成」", S1["end_title"] in body, body[:200])
+    check("临时结尾：「1 枚铁环，第 8 格，翘起 6 牛」", S1["end_caption"]["8"] in body, body[:300])
+    check("临时结尾有「再玩一次」", "再玩一次" in w.buttons(), w.buttons())
+    check("complete 一次，payload 空", [m["payload"] for m in w.sent("complete")] == [{}], w.sent("complete"))
+    dx8 = ending_dx()
+    check("结尾小图里有铁环和支点", dx8 is not None, dx8)
+
+    # ---------- 再玩一次：停在第 7 格 ----------
+    btn("再玩一次"); to_choices()
+    check("再玩一次回到开场（三个选项）", ev("document.querySelectorAll('#actions .choice').length") == 3, w.buttons())
+    btn(INTRO["options"][1]["text"])   # 第 2 个：正确答案
+    check("猜对用的不是 hmm 气泡", "hmm" not in ev("document.getElementById('say').className"), ev("document.getElementById('say').className"))
+    check("猜对反馈原句", INTRO["say_right"] in ns(ev("document.getElementById('say').innerText")), ev("document.getElementById('say').innerText"))
+    page.wait_for_timeout(1200)
+    st = state()
+    check("再玩一次后全部复位", (st.get("hole"), st.get("lifted"), st.get("robot_out")) == (1, False, False), st)
+    check("再玩一次后屏幕回到 5", text("[data-part=robot-screen]") == "5", text("[data-part=robot-screen]"))
+    check("再玩一次后「就这样」不可用", not can_finish(), w.buttons())
+    page.locator("#stage").focus(); cur["k"] = 1
+    goto(7)
+    check("第二遍第 7 格可按「就这样」", can_finish(), w.buttons())
+    btn("就这样")
+    check("第二遍读数「1 × 7 = 7 · 比 6 多 · 翘起」", text("#readout") == S1["reveal_readout_k7"], text("#readout"))
+    to_end(); page.wait_for_timeout(500)
+    shot("9-end-again")
+    body = ns(ev("document.body.innerText"))
+    check("第二遍结尾：「1 枚铁环，第 7 格，翘起 6 牛」", S1["end_caption"]["7"] in body, body[:300])
+    dx7 = ending_dx()
+    check("结尾小图里的铁环位置和第 8 格那次不同（第 7 格在里侧）", dx8 is not None and dx7 is not None and dx8 < dx7 - 2, [dx8, dx7])
+    check("再玩一次以后 complete 仍只一次", len(w.sent("complete")) == 1, len(w.sent("complete")))
+    check("predicted、observed 各只记第一次", len(events("predicted")) == 1 and len(events("observed")) == 1, [events("predicted"), events("observed")])
+    check("页面没有横向溢出", ev("document.documentElement.scrollWidth <= innerWidth"), ev("document.documentElement.scrollWidth"))
 
 
 if __name__ == "__main__":
