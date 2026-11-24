@@ -2,7 +2,7 @@
 task: act.simulation.lever-dock-01
 issue: 195
 constellation_issue: 193
-version: v5
+version: v6
 ---
 
 > 契约 activity/1.1 · 基于提交 `{{commit}}`
@@ -215,6 +215,14 @@ v4 是重写。v3 被 Luka 和舰长打回，原因记在这里，实现者也�
 - `state`：第 1 站 `{station:1, hole:k, screen:n, lifted:bool, robot_out:bool}`；第 2 站 `{station:2, hole:h, rings:r, tilt:deg, level:bool, found:[[r,h],…]}`；第 3 站 `{station:3, from_rock:d, pressing:bool, gauge:n, open:bool}`，`gauge` 撬开后是 0。
 - `event`：`predicted`（开场、第 2 站、第 3 站各一次，`{station, choice, correct, misconception}`，开场的 `station` 写 1）、`observed`（每站完成时一次，`{station}`）。manifest 的 `emits` 写 `[predicted, observed]`。
 - `complete` 只在第一次打开星卡时发一次，payload `{}`。
+- 交付 A 的走查已经写好，按下面这些细节断言，照做：
+  - 第 1 站键盘：← 让铁环往外走一格（格数加 1），→ 往里走一格。
+  - `data-part` 的范围：`beam` 只包木杆本身（不含铁环、孔号、挡块）；`robot` 包秤秤的身体和屏幕；`robot-screen` 里只有数字；`crate` 只包箱子本身（不含绳子）；`ring` 只包铁环。
+  - 临时结尾（和以后的星卡）画在 `#stage` 之后的另一个 `<svg id="card">` 里，里面的杆、支点、铁环也带同样的 `data-part`；进入结尾时 `#stage` 隐藏。
+  - 结尾的说明「1 枚铁环，第 k 格，翘起 6 牛」写在同一个元素里，不拆开。
+  - 揭晓后的页脚读数照第 5 节的写法：第 7 格 `1 × 7 = 7 · 比 6 多 · 翘起`，第 8 格 `1 × 8 = 8 · 比 6 多 · 翘起`；揭晓前读数只有「铁环：第 k 格」。
+  - `state` 在每次变化后 0.8 秒内发出（动画中途可以先发，结束时再发一次终值）。
+  - 「再玩一次」以后，`predicted`、`observed`、`complete` 都不再发（骨架的 `sentPred`、`sentObs` 原样保留）。
 
 ## 9. 起步的骨架
 
@@ -279,7 +287,7 @@ v4 是重写。v3 被 Luka 和舰长打回，原因记在这里，实现者也�
 - `content/activities/act.simulation.lever-dock-01/manifest.yaml`
 - `content/activities/act.simulation.lever-dock-01/index.html`
 
-开头信息里的 issue 写 `#195`，任务写 `act.simulation.lever-dock-01`，提示词版本写 `v5`，基于提交照抄本文件最开头的提交号。
+开头信息里的 issue 写 `#195`，任务写 `act.simulation.lever-dock-01`，提示词版本写 `v6`，基于提交照抄本文件最开头的提交号。
 
 {{embed: docs/submission.md#格式}}
 
