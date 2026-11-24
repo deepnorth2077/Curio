@@ -6,4 +6,12 @@
 - docs/constellations/energy-dock/lever-challenge.md：配套五题
 - 知识点卡 v4、brief-template 加目标卡、lessons 加两条
 
-卡在：等独立设计审查（Sonnet 子 agent）和 Luka 看三站大纲。通过后开 PR，派 A（开场 + 第 1 站）。
+设计审查：Sonnet 子 agent，修改后通过，十项必改已改（提交 20588cd）。
+
+2026-11-23 Luka 决定这颗星的交付 A 交外部模型实现、Claude 审核（AGENTS.md 里外部通道已冻结，这次是 Luka 指定的例外）。
+任务文件由 `python tools/make_task.py act.simulation.lever-dock-01 --draft` 从本分支 57a891d 生成（v5）。本会话 gh 登录失效，开不了 PR，所以没从 main 生成；收货后整合时一起开 PR。
+
+收货命令：
+python tools/intake.py <交付包…> --expect-issue #195 --expect-task act.simulation.lever-dock-01 --expect-commit 57a891da1686e83356de934b18ff58d7e341964a --expect-version v5
+
+接下来：交付回来 → curio-intake-review → 跑走查（tools/walks/act.simulation.lever-dock-01.py 要按 v4 重写，旧的是 v3）。
