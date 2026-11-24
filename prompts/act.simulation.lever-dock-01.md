@@ -2,7 +2,7 @@
 task: act.simulation.lever-dock-01
 issue: 195
 constellation_issue: 193
-version: v4a
+version: v5
 ---
 
 > 契约 activity/1.1 · 基于提交 `{{commit}}`
@@ -279,7 +279,7 @@ v4 是重写。v3 被 Luka 和舰长打回，原因记在这里，实现者也�
 - `content/activities/act.simulation.lever-dock-01/manifest.yaml`
 - `content/activities/act.simulation.lever-dock-01/index.html`
 
-开头信息里的 issue 写 `#195`，任务写 `act.simulation.lever-dock-01`，提示词版本写 `v4a`，基于提交照抄本文件最开头的提交号。
+开头信息里的 issue 写 `#195`，任务写 `act.simulation.lever-dock-01`，提示词版本写 `v5`，基于提交照抄本文件最开头的提交号。
 
 {{embed: docs/submission.md#格式}}
 
