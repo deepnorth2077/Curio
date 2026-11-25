@@ -93,7 +93,8 @@ main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow
 .ribbon .sep{width:22px;height:1px;background:var(--rule);margin:6px 0}
 .ribbon .sp{flex:1}
 .ndot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
-.lock-hint{position:absolute;left:calc(100% + 8px);bottom:9px;white-space:nowrap;font-size:12px;line-height:22px;padding:0 8px;border-radius:99px;background:var(--accent-soft);color:var(--ink);z-index:6;box-shadow:var(--shadow)}
+.lock-hint{position:absolute;left:calc(100% + 8px);bottom:9px;white-space:nowrap;font-size:12px;line-height:22px;padding:0 8px;border-radius:99px;background:var(--accent-soft);color:var(--ink);z-index:20;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .15s}
+.ibtn:hover .lock-hint,.ibtn:focus-visible .lock-hint{opacity:1}
 .bottomnav{position:sticky;bottom:0;z-index:4;display:grid;grid-template-columns:repeat(4,1fr);background:var(--side);border-top:1px solid var(--rule);
   padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(4px,env(safe-area-inset-left,0px));padding-right:max(4px,env(safe-area-inset-right,0px))}
 .bottomnav a,.bottomnav button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;color:var(--muted);text-decoration:none;font-size:12px;position:relative}
@@ -120,6 +121,10 @@ main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow
 .xsearch{margin:6px 12px 4px;position:relative}
 .xsearch input{width:100%;font:inherit;border:1px solid var(--rule);border-radius:8px;background:var(--pane);color:var(--ink);padding:6px 10px 6px 30px;font-size:14px;min-height:36px}
 .xsearch svg{position:absolute;left:9px;top:10px;width:15px;height:15px;color:var(--muted)}
+.xbar{display:flex;align-items:center;padding:2px 12px 2px}
+.xfilter{font-size:12px;line-height:24px;padding:0 10px;border-radius:99px;border:1px solid var(--rule);background:var(--pane);color:var(--muted)}
+.xfilter:hover{background:var(--hover);color:var(--ink)}
+.xfilter[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--pane)}
 .tree{padding:4px 8px 16px;display:grid;gap:1px}
 .tree :focus-visible{outline-offset:-2px}
 .tree .sec{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);padding:12px 8px 4px}
@@ -156,9 +161,9 @@ main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow
   .notepane{top:0;left:auto;width:min(420px,62vw);max-height:none;border-radius:0;border-top:0;border-left:1px solid var(--rule);padding-left:0}
   .notepane .grab{display:none}
 }
-/* 地方够时（宽屏，或索引收起时）照原型把星图往左推，笔记占右边一栏；索引展开、又不够宽时笔记盖在右边 */
-@media (min-width:1100px){.notepane{position:relative;flex:0 0 clamp(340px,34vw,480px);box-shadow:none;z-index:1}}
-@media (min-width:760px){.app.ex-closed .notepane{position:relative;flex:0 0 clamp(320px,42%,480px);width:auto;box-shadow:none;z-index:1}}
+/* 地方够时（宽屏，或索引收起时）照原型把星图往左推，笔记占右边一栏；中等宽度打开笔记时自动收起索引，避免左右夹挤 */
+@media (min-width:1200px){.notepane{position:relative;flex:0 0 clamp(340px,33vw,460px);box-shadow:none;z-index:1}}
+@media (min-width:760px){.app.ex-closed .notepane{position:relative;flex:0 0 clamp(320px,42%,460px);width:auto;box-shadow:none;z-index:1}}
 @media (prefers-reduced-motion:no-preference){
   .app.note-open .notepane{animation:sheetin .24s cubic-bezier(.2,.8,.2,1)}
   @media (min-width:760px){.app.note-open .notepane{animation-name:notein}}
@@ -168,8 +173,8 @@ main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow
 .close{width:38px;height:38px;border-radius:8px;display:grid;place-items:center;color:var(--muted);flex:none}
 .close:hover{background:var(--hover);color:var(--ink)}
 .note-x{position:sticky;top:10px;float:right;margin:10px 10px 0 0;z-index:2;background:var(--pane)}
-.note{padding:18px 22px 40px;display:grid;gap:16px;max-width:760px;margin:0 auto;color:var(--text)}
-@media (min-width:760px){.note{padding:26px 28px 48px;gap:18px}.note h1{font-size:28px!important}}
+.note{padding:18px 20px 40px;display:grid;gap:16px;max-width:760px;margin:0 auto;color:var(--text)}
+@media (min-width:760px){.note{padding:24px clamp(16px,2.2vw,28px) 48px;gap:18px}.note h1{font-size:28px!important}}
 .note h1{font-size:24px}
 .note h1:focus{outline:none}
 .crumbs{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;padding-right:40px}
@@ -189,9 +194,11 @@ main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow
 @media (min-width:760px){.signal-card{padding:20px 20px 20px 24px}}
 .minispec{display:flex;gap:10px;align-items:center;border:1px dashed var(--rule);border-radius:10px;padding:8px 10px}
 .minispec svg{width:40px;height:40px;flex:none}
+.minispec>div{flex:1;min-width:0}
 .minispec.locked svg{filter:grayscale(1);opacity:.35}
 .minispec b{display:block;font-size:13px;color:var(--ink);font-weight:600}
 .minispec small{display:block;color:var(--muted);font-size:12px}
+.spec-go{flex:none;white-space:nowrap;font-size:13px}
 .lenses{display:grid;gap:6px;font-size:14px}
 .lenses div{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:6px 0;border-bottom:1px dashed var(--rule)}
 .lenses .b{font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-top:2px}
@@ -203,11 +210,12 @@ main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;overflow
 .note h2{font-size:17px;display:flex;align-items:center;gap:8px}
 .note h2::before{content:"#";font-family:var(--f-mono);color:var(--muted);font-weight:400;font-size:14px}
 .tasklist{display:grid;gap:8px}
-.taskrow{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;padding:10px;border:1px solid var(--rule);border-radius:12px;background:var(--pane)}
-.taskrow svg{width:48px;height:48px}
-@media (min-width:760px){.taskrow{padding:12px 14px}}
-.taskrow b{color:var(--ink);display:block;font-weight:500}
+.taskrow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--rule);border-radius:12px;background:var(--pane)}
+.taskrow svg{width:44px;height:44px}
+@media (min-width:760px){.taskrow{padding:11px 12px}}
+.taskrow b{color:var(--ink);display:block;font-weight:500;line-height:1.35;text-wrap:balance}
 .taskrow small{color:var(--muted);font-size:12.5px}
+.taskrow .btn{padding:0 14px;flex:none;white-space:nowrap}
 .callout{border-radius:10px;padding:12px 14px;background:var(--hover);display:flex;gap:10px;align-items:flex-start;color:var(--ink)}
 .callout svg{flex:none;margin-top:3px}
 
@@ -235,6 +243,26 @@ main:has(>.metro){overflow:hidden}
 /* 站在线上留一小段纸色：没开放的站（不填色的虚线星）和在星图上一样看得清 */
 .station-gap{fill:var(--pane)}
 .station .sel-ring{fill:none}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:9px;overflow:hidden;background:var(--bg)}
+.seg button{padding:5px 13px;font-size:13px;color:var(--muted);min-height:32px}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--pane);font-weight:500}
+.cards{padding:8px max(18px,env(safe-area-inset-right,0px)) 40px max(18px,env(safe-area-inset-left,0px));display:grid;gap:22px}
+.card-sec h2{font-size:15px;display:flex;align-items:center;gap:8px;font-family:var(--f-serif)}
+.card-sec h2 i{width:18px;height:6px;border-radius:9px;display:inline-block}
+.card-sec h2 small{font-family:var(--f-mono);font-weight:400;font-size:11px;color:var(--muted)}
+.cardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px;margin-top:10px}
+.spec{border:1px solid var(--rule);border-radius:12px;background:var(--bg);padding:10px 10px 12px;display:grid;gap:3px;text-align:left;position:relative}
+.spec:hover{background:var(--hover);border-color:var(--ink)}
+.spec.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.spec .no{font-family:var(--f-mono);font-size:10.5px;color:var(--muted)}
+.spec svg{width:64px;height:64px;margin:2px auto 4px;display:block}
+.spec b{font-size:13px;color:var(--ink);font-weight:500;line-height:1.35}
+.spec small{font-size:11.5px;color:var(--muted)}
+.spec.locked{background:transparent;border-style:dashed}
+.spec.locked svg{filter:grayscale(1);opacity:.35}
+.spec.locked b{color:var(--muted)}
+.spec .stamp{position:absolute;top:8px;right:8px;font-family:var(--f-hand);font-size:12px;color:var(--accent);transform:rotate(8deg)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border-radius:12px;border:1.5px solid var(--ink);background:var(--pane);color:var(--ink);font-size:16px}
 .btn:hover:not(:disabled){background:var(--hover)}
@@ -365,10 +393,12 @@ a.btn{text-decoration:none}
 .activity-option strong{font-family:var(--f-serif);font-size:20px}
 .activity-meta{font-size:14px;color:var(--muted)}
 .activity-go{margin-top:12px}
-.exploration{max-width:900px}
+.exploration{max-width:900px;padding-top:6px;padding-bottom:20px}
 /* 手机上实物比一屏长；退出始终在屏上，免得在滑回页首时错触实物。 */
 main:has(>.exploration){overflow:visible}
-.exploration .quiz-head{position:sticky;top:0;z-index:1;background:var(--bg);padding-block:6px;margin-bottom:10px}
+.exploration .quiz-head{position:sticky;top:0;z-index:1;background:var(--bg);padding-block:4px;margin-bottom:4px}
+.exploration .quiz-head h1{font-size:19px}
+.exploration .quiz-head .sub{font-size:13px}
 .workbench iframe{display:block;width:100%;border:0}
 .explore-status{background:var(--pane);border-radius:12px;padding:12px 16px}
 @media (max-width:520px){.exploration{padding-left:0;padding-right:0}.exploration .quiz-head{padding:6px 12px}.activity-menu h1{margin:10px 0 16px}}

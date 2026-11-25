@@ -87,29 +87,36 @@ function leafHtml(p, { flat, selected, alias }) {
 }
 
 /**
- * 整个索引的 HTML（照原型 treeHTML）：标志、搜索框，然后是分节和星座分组，或者搜索结果。
+ * 整个索引的 HTML（照原型 treeHTML）：标志、搜索框、只看已开放开关，然后是分节和星座分组，或者搜索结果。
  * @param {ReturnType<typeof import("./starchart.js").buildChart>} model
- * @param {{query?: string, isOpen: (c: {id: string, band: number}) => boolean, selected?: string|null, aliases: Map<string, string[]>}} o
+ * @param {{query?: string, isOpen: (c: {id: string, band: number}) => boolean, selected?: string|null, aliases: Map<string, string[]>, onlyOpen?: boolean}} o
  */
 export function treeHtml(model, o) {
   const q = (o.query || "").trim();
+  const onlyOpen = !!o.onlyOpen;
+  const openCount = model.points.filter((p) => p.open).length;
   let body = "";
   if (q) {
-    const hits = searchPoints(model, o.aliases, q);
+    const allHits = searchPoints(model, o.aliases, q);
+    const hits = onlyOpen ? allHits.filter((h) => h.point.open) : allHits;
     body = `<div class="sec">找到 ${hits.length} 颗星球</div>` + hits.map((h) => leafHtml(h.point, { flat: true, selected: o.selected, alias: h.alias })).join("");
   } else {
     for (const s of explorerTree(model)) {
-      body += `<div class="sec">${s.name}星系 · <span class="mono">${s.lit}/${s.total}</span></div>`;
+      const sOpen = s.cons.reduce((n, c) => n + c.points.filter((p) => p.open).length, 0);
+      body += `<div class="sec">${s.name}星系 · <span class="mono">${s.lit}/${onlyOpen ? sOpen : s.total}</span></div>`;
       for (const c of s.cons) {
+        const pts = onlyOpen ? c.points.filter((p) => p.open) : c.points;
+        if (onlyOpen && !pts.length) continue;
         const open = o.isOpen(c);
-        body += `<button type="button" class="grp" data-cons="${esc(c.id)}" aria-expanded="${open}">${CHEVRON}<span class="sw" style="background:var(${THEMES[c.theme].c})"></span><span class="gn">${esc(c.name)}<span class="gb"> · ${c.bandName}</span></span><span class="c"><span class="sr">点亮 </span>${c.lit}/${c.total}</span></button>`;
-        if (open) body += c.points.map((p) => leafHtml(p, { flat: false, selected: o.selected, alias: null })).join("");
+        body += `<button type="button" class="grp" data-cons="${esc(c.id)}" aria-expanded="${open}">${CHEVRON}<span class="sw" style="background:var(${THEMES[c.theme].c})"></span><span class="gn">${esc(c.name)}<span class="gb"> · ${c.bandName}</span></span><span class="c"><span class="sr">点亮 </span>${c.lit}/${pts.length}</span></button>`;
+        if (open) body += pts.map((p) => leafHtml(p, { flat: false, selected: o.selected, alias: null })).join("");
       }
     }
   }
   const who = Number.isInteger(model.grade) ? `舰长 · ${GRADE_NAME["G" + model.grade]}` : "舰长";
   return `<div class="vault">${SHIP}<div><b>Curio</b><small>${esc(who)}</small></div></div>
     <div class="xsearch">${LENS}<input type="search" placeholder="搜索知识点" value="${esc(o.query || "")}" aria-label="搜索知识点" enterkeyhint="search" autocomplete="off" data-treeq></div>
+    <div class="xbar"><button type="button" class="xfilter" data-treeopen aria-pressed="${onlyOpen}">只看已开放 · <span class="mono">${openCount}</span></button></div>
     <div class="tree">${body}</div>`;
 }
 
@@ -155,9 +162,9 @@ export function noteHtml(p, o) {
   return `<div class="note">${head}${props}
     ${dq ? `<div class="signal-card" style="background:${bg}"><div><div class="eyebrow">来自这颗星球的信号</div><p class="dq">${esc(dq)}</p></div>${icon(art, t.g, 100, p.seed, o.animate ? "drawin" : "")}</div>` : ""}
     <h2>任务</h2>
-    <div class="tasklist">${o.tasks.length ? o.tasks.map((a) => `<div class="taskrow">${icon(art, t.g, 48, p.seed + a.id.length)}<div><b>${esc(a.title)}</b><small>${esc(a.meta)}</small></div><button type="button" class="btn ink" data-start="${esc(a.id)}"${o.canStart ? "" : " disabled"}>${esc(a.go)}</button></div>`).join("")
+    <div class="tasklist">${o.tasks.length ? o.tasks.map((a) => `<div class="taskrow">${icon(art, t.g, 48, p.seed + a.id.length)}<div><b>${esc(a.title)}</b><small>${esc(a.meta)}</small></div><button type="button" class="btn${a.primary === false ? "" : " ink"}" data-start="${esc(a.id)}"${o.canStart ? "" : " disabled"}>${esc(a.go)}</button></div>`).join("")
       : `<p class="muted small">这个还在做。</p>`}
-    <div class="minispec${lit ? "" : " locked"}">${icon(art, t.g, 40, p.seed)}<div><b>图鉴 ${specimenNo(p.no)}</b><small>${lit ? "已收集，这张标本卡会收进图鉴" : "点亮之后，这张标本卡会收进图鉴"}</small></div></div></div>
+    <div class="minispec${lit ? "" : " locked"}">${icon(art, t.g, 40, p.seed)}<div><b>图鉴 ${specimenNo(p.no)}</b><small>${lit ? "已收集，这张标本卡会收进图鉴" : "点亮之后，这张标本卡会收进图鉴"}</small></div><a class="wikilink spec-go" href="#metro" data-specjump="${esc(p.id)}">看图鉴</a></div></div>
     ${!o.canStart && o.why ? `<p class="muted small">${esc(o.why)}</p>` : ""}
     ${lenses.length ? `<h2>不同年龄看到的样子</h2><div class="lenses">${lenses.map((l) => `<div class="${l.band === here ? "on" : ""}"><span class="b">${esc(l.band)}</span><span>${esc(l.approach)}</span></div>`).join("")}</div>` : ""}
     ${backlinks}
