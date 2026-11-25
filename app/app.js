@@ -15,7 +15,7 @@ import { mountExploration, supportedExploration, stationCount } from "./explorat
 import { Sk } from "./sketch.js";
 import { buildChart, nodeProgress, overviewSvg, placeChartLabels, animateOverview, nearestCons, constellationLayout, constellationSvg,
   legendHtml, consName, consId, BAND_NAME } from "./starchart.js";
-import { metroLayout, metroSvg, metroScroll, LINE_NAME } from "./metro.js";
+import { metroLayout, metroSvg, metroScroll, metroCardsHtml, LINE_NAME } from "./metro.js";
 import { aliasIndex, treeHtml, searchPoints, noteHtml } from "./explorer.js";
 import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT,
   refreshProfile, currentGradeOf, needsProfileHint, PROFILE_TEXT } from "./parent.js";
@@ -374,6 +374,7 @@ const app = {
   /** 星图正在看的星座（详情视图），null 是总览 */ chartZoom: /** @type {string|null} */ (null),
   /** 首页是星图还是知识地铁（#233）：URL 的 #metro 记住它；从星、站进去的活动退出来回到这里 */ home: /** @type {"chart"|"metro"} */ ("chart"),
   /** 地铁上只看哪一条线（点左边的线名），null 是全部 */ metroLine: /** @type {string|null} */ (null),
+  /** 知识地铁的显示方式（照原型 metroMode）：线路图或图鉴标本墙 */ metroMode: /** @type {"lines"|"cards"} */ ("lines"),
   exploration: /** @type {null|{host: ReturnType<typeof mountExploration>|null, leaving: Promise<boolean>|null, failed:boolean}} */ (null),
   view: /** @type {"chart"|"quiz"|"exploration"|"parent"|"pick"} */ ("chart"),
   /** 领航员（docs/specs/navigators.md 第 3～5 节）：生效的选择（投影 navigator/1，还没选是 null）和显示的那位（发布包里没有领航员时是 null） */
@@ -521,7 +522,7 @@ function syncNav() {
     const dot = /** @type {HTMLElement|null} */ (a.querySelector(".ndot"));
     const hint = /** @type {HTMLElement|null} */ (a.querySelector(".lock-hint"));
     if (hint) { hint.textContent = PROFILE_TEXT.missing; hint.hidden = !noProfile; }
-    if (dot) dot.hidden = !(old || (noProfile && !hint));
+    if (dot) dot.hidden = !(old || noProfile);
   }
 }
 
@@ -615,19 +616,39 @@ function zoomOut() {
    知识地铁（#233）：画法在 metro.js，数据和星图同一份（chartModel）
    ============================================================ */
 function renderMetro(main, model) {
-  const tip = app.mode === "recovering" ? "正在准备……" : "每条线是一个大概念，从一年级开到高中。换乘站是两条线相遇的地方。";
+  const cards = app.metroMode === "cards";
+  const tip = app.mode === "recovering" ? "正在准备……"
+    : cards ? "点亮一颗星，就收集一张它的标本卡。" : "每条线是一个大概念，从一年级开到高中。换乘站是两条线相遇的地方。";
+  const seg = `<div class="seg" role="group" aria-label="显示方式"><button type="button" data-mm="lines" aria-pressed="${!cards}">线路图</button><button type="button" data-mm="cards" aria-pressed="${cards}">图鉴</button></div>`;
   main.innerHTML = `<section class="chart metro" aria-labelledby="metroTitle">
     <div class="vhead"><div><h1 id="metroTitle" tabindex="-1">知识地铁</h1><p class="sub">${tip}</p></div>
-      <div class="legend" aria-hidden="true">${legendHtml()}<span class="mono">${model.lit}/${model.points.length}</span></div></div>
+      <div class="legend">${cards ? `<span class="mono">已收集 ${model.lit}/${model.points.length}</span>` : `<span class="legend" aria-hidden="true">${legendHtml()}<span class="mono">${model.lit}/${model.points.length}</span></span>`}${seg}</div></div>
     <p class="sr">点亮了 ${model.lit} 站，一共 ${model.points.length} 站。</p>
-    ${model.currentBand == null ? `<p class="grade-hint">在「家长」里填年级，地铁会标出你在哪一段</p>` : ""}
+    ${!cards && model.currentBand == null ? `<p class="grade-hint">在「家长」里填年级，地铁会标出你在哪一段</p>` : ""}
     <div class="mscroll" id="mscroll"></div>
     ${chartFoot()}
   </section>`;
-  const L = metroLayout(model);
+  for (const b of main.querySelectorAll("[data-mm]")) {
+    b.addEventListener("click", () => {
+      const m = /** @type {"lines"|"cards"} */ (/** @type {HTMLElement} */ (b).dataset.mm === "cards" ? "cards" : "lines");
+      if (app.metroMode === m) return;
+      app.metroMode = m;
+      renderChart();
+      /** @type {HTMLElement|null} */ (document.querySelector(`[data-mm="${m}"]`))?.focus({ preventScroll: true });
+    });
+  }
   const sel = app.note && model.byId.has(app.note) ? app.note : null;
-  const { map, labels } = metroSvg(model, L, { focusLine: app.metroLine, selected: sel });
   const sc = /** @type {HTMLElement} */ (main.querySelector("#mscroll"));
+  if (cards) {
+    sc.innerHTML = metroCardsHtml(model, { selected: sel });
+    for (const el of sc.querySelectorAll("[data-spec]")) {
+      el.addEventListener("click", () => openPoint(model, /** @type {HTMLElement} */ (el).dataset.spec || "", /** @type {HTMLElement} */ (el)));
+    }
+    if (sel) sc.querySelector(`[data-spec="${CSS.escape(sel)}"]`)?.scrollIntoView({ block: "nearest" });
+    return;
+  }
+  const L = metroLayout(model);
+  const { map, labels } = metroSvg(model, L, { focusLine: app.metroLine, selected: sel });
   sc.innerHTML = `<svg width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" role="group" aria-label="知识地铁线路图">${map}<g id="mlabels">${labels}</g></svg>`;
   const ml = sc.querySelector("#mlabels");
   const pin = () => ml.setAttribute("transform", `translate(${sc.scrollLeft} 0)`);
@@ -699,10 +720,23 @@ function renderConstellation(main, model, c) {
 
 /** 切到地铁并只看这一条线（照原型 data-metroline、data-line）：笔记照旧开着。 @param {string} theme */
 function showLine(theme) {
+  app.metroMode = "lines";
   app.metroLine = theme;
   if (app.home === "metro") { renderChart(); document.getElementById("metroTitle")?.focus({ preventScroll: true }); return; }
   location.hash = "#metro"; // hashchange 换首页、重画
 }
+
+/** 切到知识地铁的「图鉴」标本墙，并定位到这颗星的标本卡。 @param {string} id */
+function showSpecimens(id) {
+  app.metroMode = "cards";
+  app.metroLine = null;
+  if (id) app.note = id;
+  if (app.home === "metro") { renderChart(); /** @type {HTMLElement|null} */ (document.querySelector(id ? `[data-spec="${CSS.escape(id)}"]` : '[data-mm="cards"]'))?.focus({ preventScroll: true }); return; }
+  location.hash = "#metro";
+}
+
+/** 中等桌面宽度（760～1199）：左索引和右笔记不同时敞开，免得把中间的星图挤成窄缝。 */
+const narrowThreeCol = () => typeof window !== "undefined" && window.innerWidth >= 760 && window.innerWidth < 1200;
 
 /** 点了星图详情里的一颗星、地铁站：打开这颗星的笔记（照原型 select）。 */
 function openPoint(_model, id, el) { selectPoint(id, { from: el, reveal: false }); }
@@ -738,6 +772,7 @@ function selectPoint(id, { from = null, reveal = false } = {}) {
   app.note = id;
   tree.sel = id;
   tree.open[consId(p)] = true;
+  if (narrowThreeCol() && !tree.collapsed) { tree.collapsed = true; applyCollapsed(); }
   const key = focusKey(from);
   if (key) noteFrom = key;
   if (reveal && app.home === "chart") app.chartZoom = consId(p);
@@ -785,11 +820,25 @@ function renderNote(model) {
   if (!p) { if (app.note && model) app.note = null; shell.classList.remove("note-open"); pane.innerHTML = ""; delete pane.dataset.for; return; }
   const card = app.pack.nodes.find((n) => n.id === p.id) || null;
   const choices = card ? activityChoices(card) : [];
+  const evs = app.log ? app.log.events() : [];
+  const lid = app.session?.identity.learner_id || evs.find((e) => typeof e.learner_id === "string")?.learner_id || "";
+  const simChoice = choices.find((a) => a.module);
+  const simProg = simChoice && lid ? explorationProgress(evs, lid, simChoice.entry.id) : null;
+  const hasUnfinishedSim = !!simChoice && !(simProg && simProg.activityCompleted);
   const tasks = choices.map((a) => {
     const def = a.module?.manifest || a.def;
     const isQuiz = a.entry.kind === "quiz";
     const resume = isQuiz && app.quiz?.def.id === def.id && pendingQuiz(app.quiz);
-    return { id: a.entry.id, title: def.title, meta: `${isQuiz ? "挑战" : "动手探索"} · ${isQuiz ? `${def.body.items.length} 道题` : `${stationCount(def.id)} 站`}`, go: resume ? "接着做" : "开始" };
+    if (!isQuiz) {
+      const total = stationCount(def.id);
+      const pr = lid ? explorationProgress(evs, lid, def.id) : { doneStations: [], activityCompleted: false };
+      const meta = pr.activityCompleted ? `动手探索 · ${total} 站 · 已探完`
+        : pr.doneStations.length > 0 ? `动手探索 · 已探 ${pr.doneStations.length}/${total} 站`
+        : `动手探索 · ${total} 站`;
+      const go = pr.activityCompleted ? "再探一次" : pr.doneStations.length > 0 ? "接着探" : "开始";
+      return { id: a.entry.id, title: def.title, meta, go, primary: !resume };
+    }
+    return { id: a.entry.id, title: def.title, meta: `挑战 · ${def.body.items.length} 道题`, go: resume ? "接着做" : "开始", primary: resume || !hasUnfinishedSim };
   });
   const canStart = app.mode === "writable" && !!app.session;
   const same = pane.dataset.for === p.id;
@@ -815,6 +864,9 @@ function renderNote(model) {
   }
   for (const l of pane.querySelectorAll("[data-goto]")) {
     l.addEventListener("click", (e) => { e.preventDefault(); selectPoint(/** @type {HTMLElement} */ (l).dataset.goto || "", { reveal: true }); });
+  }
+  for (const l of pane.querySelectorAll("[data-specjump]")) {
+    l.addEventListener("click", (e) => { e.preventDefault(); showSpecimens(/** @type {HTMLElement} */ (l).dataset.specjump || p.id); });
   }
 }
 
@@ -1027,12 +1079,20 @@ const tree = {
   sel: /** @type {string|null} */ (null),
   /** @type {Map<string, string[]>|null} */ aliases: null,
   collapsed: false,
+  onlyOpen: false,
 };
-/** 收起状态记在 localStorage；读写失败就默认展开。 */
-function readCollapsed() { try { return localStorage.getItem(EX_KEY) === "closed"; } catch { return false; } }
+/** 收起状态记在 localStorage；还没手动设过时，中等宽度（760～1199）默认收起，把地方留给星图。 */
+function readCollapsed() {
+  try {
+    const v = localStorage.getItem(EX_KEY);
+    if (v === "closed") return true;
+    if (v === "open") return false;
+  } catch { /* ignore */ }
+  return narrowThreeCol();
+}
 function writeCollapsed(v) { try { localStorage.setItem(EX_KEY, v ? "closed" : "open"); } catch { /* 记不住就算了 */ } }
 
-const isOpenIn = (model) => (c) => (c.id in tree.open ? tree.open[c.id] : c.band === model.currentBand);
+const isOpenIn = (model) => (c) => (c.id in tree.open ? tree.open[c.id] : tree.onlyOpen ? true : c.band === model.currentBand);
 
 function renderExplorer() {
   const roots = /** @type {HTMLElement[]} */ ([document.getElementById("explorer"), document.getElementById("drawer")].filter(Boolean));
@@ -1046,11 +1106,12 @@ function renderExplorer() {
     let key = null, pos = null;
     if (ae && root.contains(ae)) {
       if (ae.matches("[data-treeq]")) { key = "[data-treeq]"; pos = /** @type {HTMLInputElement} */ (ae).selectionStart; }
+      else if (ae.matches("[data-treeopen]")) key = "[data-treeopen]";
       else if (ae.dataset.cons) key = `[data-cons="${CSS.escape(ae.dataset.cons)}"]`;
       else if (ae.dataset.node) key = `[data-node="${CSS.escape(ae.dataset.node)}"]`;
     }
     const top = root.scrollTop;
-    root.innerHTML = treeHtml(model, { query: tree.query, isOpen: isOpenIn(model), selected: tree.sel, aliases: /** @type {Map<string, string[]>} */ (tree.aliases) });
+    root.innerHTML = treeHtml(model, { query: tree.query, isOpen: isOpenIn(model), selected: tree.sel, aliases: /** @type {Map<string, string[]>} */ (tree.aliases), onlyOpen: tree.onlyOpen });
     root.scrollTop = top;
     bindTree(root, model);
     const el = key && /** @type {HTMLElement|null} */ (root.querySelector(key));
@@ -1068,6 +1129,11 @@ function bindTree(root, model) {
     });
   }
   for (const b of root.querySelectorAll("[data-node]")) b.addEventListener("click", () => openLeaf(/** @type {HTMLElement} */ (b).dataset.node || "", /** @type {HTMLElement} */ (b)));
+  const fo = root.querySelector("[data-treeopen]");
+  if (fo) fo.addEventListener("click", () => {
+    tree.onlyOpen = !tree.onlyOpen;
+    renderExplorer();
+  });
   const qi = /** @type {HTMLInputElement|null} */ (root.querySelector("[data-treeq]"));
   if (qi) qi.addEventListener("input", () => {
     tree.query = qi.value;
@@ -1075,7 +1141,9 @@ function bindTree(root, model) {
     clearTimeout(liveTimer);
     liveTimer = setTimeout(() => {
       const q = tree.query.trim();
-      $("#live").textContent = q ? `找到 ${searchPoints(chartModel(), /** @type {any} */ (tree.aliases), q).length} 颗星球` : "";
+      const hits = q ? searchPoints(chartModel(), /** @type {any} */ (tree.aliases), q) : [];
+      const shown = tree.onlyOpen ? hits.filter((h) => h.point.open) : hits;
+      $("#live").textContent = q ? `找到 ${shown.length} 颗星球` : "";
     }, 400);
   });
 }
@@ -1096,6 +1164,7 @@ function openLeaf(id, el) {
 function setCollapsed(collapsed) {
   tree.collapsed = collapsed;
   writeCollapsed(collapsed);
+  if (!collapsed && narrowThreeCol() && app.note) { app.note = null; tree.sel = null; }
   applyCollapsed();
   if (app.view === "chart") redrawChart(true); // 星图可用的宽度变了
 }
@@ -1441,6 +1510,7 @@ async function pump() {
 function answer(response) {
   const z = app.quiz;
   if (!z || app.mode !== "writable") return;
+  z.inputHint = null;
   const before = z.q;
   z.q = step(z.q, { type: "answer", response });
   if (z.q === before) return;
@@ -1452,6 +1522,7 @@ function answer(response) {
 function askHint() {
   const z = app.quiz;
   if (!z || app.mode !== "writable") return;
+  z.inputHint = null;
   const before = z.q;
   z.q = step(z.q, { type: "hint" });
   if (z.q === before) return;
@@ -1462,11 +1533,17 @@ function askHint() {
 function revealAnswer() {
   const z = app.quiz;
   if (!z || app.mode !== "writable") return;
+  z.inputHint = null;
   const before = z.q;
   z.q = step(z.q, { type: "reveal" });
   if (z.q === before) return;
   pump();
 }
+
+/** 分数框分母填 0 时温和提示，不白白花掉第一次作答机会。 */
+export const ZERO_DENOM_TEXT = "横线下面写分成几份，不能写 0 哦。";
+/** @param {string} raw */
+export const isZeroDenominator = (raw) => /^[0０]+$/.test(String(raw ?? "").trim());
 
 /** 数字框、分数框交上来的作答；框是空的时不提交。 */
 function submitTyped(form) {
@@ -1481,6 +1558,14 @@ function submitTyped(form) {
   } else if (t === "fraction") {
     const a = val("a").trim(), b = val("b").trim();
     if (!a || !b) return;
+    if (isZeroDenominator(b)) {
+      z.inputHint = { item_id: z.q.view.item_id, text: ZERO_DENOM_TEXT };
+      z.announce = ZERO_DENOM_TEXT;
+      renderQuiz();
+      const denom = /** @type {HTMLInputElement|null} */ (document.querySelector("#ans-b"));
+      if (denom) { denom.focus({ preventScroll: true }); denom.select(); }
+      return;
+    }
     response = `${a}/${b}`;
   } else return;
   answer(response);
@@ -1496,9 +1581,31 @@ function retry() {
 /* ============================================================
    挑战界面
    ============================================================ */
+/**
+ * 挑战顶上的题号与进度条：刚答对或刚点「看答案」还在看本题解析时（solvedId 非空），题号仍显示当前这道题，点「下一题」才跳号。
+ * @param {any} q 挑战状态机
+ * @param {string|null} [solvedId]
+ */
+export function quizProgress(q, solvedId = null) {
+  const v = q.view;
+  const solvedBars = q.phase === "answering" ? v.index : v.total;
+  const order = q.s && Array.isArray(q.s.order) ? q.s.order : [];
+  const idx = solvedId ? order.indexOf(solvedId) : -1;
+  const current = idx >= 0 ? idx + 1 : Math.min(v.index + 1, v.total);
+  return { current, total: v.total, solvedBars };
+}
+
+/** 点「看答案」时，去掉复用自答对文案开头的「对。」「答对了！」「你看出了」等表扬前缀，只留原理说明。 @param {string} text */
+export function cleanRevealText(text) {
+  let s = String(text ?? "").trim();
+  s = s.replace(/^(?:答对了|没错|对)[！!。，,、\s]*/, "");
+  s = s.replace(/^你看出了/, "").replace(/^你分别看了/, "分别看").replace(/^你(?=[把只给])/, "");
+  return s || DEFAULT_FEEDBACK.revealed;
+}
+
 function progressHtml(z) {
-  const v = z.q.view, solvedN = z.q.phase === "answering" ? v.index : v.total;
-  return `<div class="prog" role="img" aria-label="第 ${Math.min(v.index + 1, v.total)} 题，一共 ${v.total} 题">${Array.from({ length: v.total }, (_, i) => `<i class="${i < solvedN ? "on" : ""}"></i>`).join("")}<span>${Math.min(v.index + 1, v.total)} / ${v.total}</span></div>`;
+  const { current, total, solvedBars } = quizProgress(z.q, z.solved);
+  return `<div class="prog" role="img" aria-label="第 ${current} 题，一共 ${total} 题">${Array.from({ length: total }, (_, i) => `<i class="${i < solvedBars ? "on" : ""}"></i>`).join("")}<span>${current} / ${total}</span></div>`;
 }
 
 /** 一道题：配图、题干、作答区（选项，或数字框，或上下两个分数框）。 */
@@ -1583,16 +1690,17 @@ function renderQuiz() {
     const shown = a.type === "choice" ? null : revealed ? { ok: true, text: fbo.answer_text } : { ok: true, text: z.lastResponse[z.solved] + (a.unit ? " " + a.unit : "") };
     const last = z.q.phase !== "answering";
     const bubble = pilotHtml(revealed ? "surprised" : "clap", revealed
-      ? `<div class="bub reveal" role="status"><p><b>答案是 ${rich(fbo.answer_text)}</b></p><p>${rich(fbo.text)}</p></div>`
+      ? `<div class="bub reveal" role="status"><p><b>答案是 ${rich(fbo.answer_text)}</b></p><p>${rich(cleanRevealText(fbo.text))}</p></div>`
       : `<div class="bub good" role="status">${starMini()}<p>${rich(fbo ? fbo.text : "")}</p></div>`);
     body = itemHtml(solvedItem, { wrong: z.wrongBy[z.solved] || [], right, disabled: true, shown }) + bubble +
       `<div class="btns"><button class="btn ink big" type="button" data-act="next" ${last && z.q.phase !== "done" ? "disabled" : ""}>${last ? "看看结果" : "下一题"}</button></div>`;
   } else if (z.q.phase === "answering" && v.item) {
     const item = z.def.body.items.find((it) => it.id === v.item_id);
-    const fb = v.feedback && v.feedback.item_id === v.item_id && !v.feedback.correct ? v.feedback : null;
+    const guard = z.inputHint && z.inputHint.item_id === v.item_id ? z.inputHint : null;
+    const fb = guard || (v.feedback && v.feedback.item_id === v.item_id && !v.feedback.correct ? v.feedback : null);
     const off = v.waiting || app.mode !== "writable";
-    // 默认的话已经说了「再试一次」时，下面不再加小字
-    const again = fb && fb.text === DEFAULT_FEEDBACK.wrong ? "" : v.answer_type === "choice" ? "再选一个试试。" : "改一改，再试试。";
+    // 默认的话已经说了「再试一次」或输入格式提醒时，下面不再加小字
+    const again = guard || (fb && fb.text === DEFAULT_FEEDBACK.wrong) ? "" : v.answer_type === "choice" ? "再选一个试试。" : "改一改，再试试。";
     // 有过一次已存好的作答以后，才出现「要个提示」「看答案」（等存储时先变灰，不跳来跳去）
     const hintMax = Math.min(Array.isArray(item.hints) ? item.hints.length : 0, 3);
     const tools = z.answered[v.item_id]
@@ -1634,6 +1742,7 @@ function renderQuiz() {
       const d = {};
       for (const el of /** @type {any} */ (form.elements)) if (el.name) d[el.name] = el.value;
       z.draft[id] = d;
+      if (z.inputHint && d.b !== undefined && !isZeroDenominator(d.b)) z.inputHint = null;
       const empty = [...form.querySelectorAll("input")].some((el) => !/** @type {HTMLInputElement} */ (el).value.trim());
       /** @type {HTMLButtonElement} */ (form.querySelector("[type=submit]")).disabled = empty || z.q.view.waiting || app.mode !== "writable";
     };
@@ -1878,8 +1987,16 @@ async function boot() {
   tree.collapsed = readCollapsed();
   applyCollapsed();
   syncNav();
-  // 导航上的按钮：收起、展开知识索引，搜索，手机上打开索引抽屉
+  // 导航上的按钮：收起、展开知识索引，搜索，手机上打开索引抽屉；点星图/地铁切换顶层视图时收起星球笔记
   document.addEventListener("click", (e) => {
+    const navLink = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest?.(".ribbon a[data-view], .bottomnav a[data-view]"));
+    if (navLink) {
+      const v = navLink.dataset.view;
+      if ((v === "chart" || v === "metro") && app.note && (v !== app.home || narrowThreeCol())) {
+        app.note = null;
+        tree.sel = null;
+      }
+    }
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest?.("[data-act]"));
     if (!b || !b.closest(".ribbon, .bottomnav")) return;
     const act = b.dataset.act;
