@@ -2,7 +2,8 @@
 // 数据和星图同源：buildChart（starchart.js）给出的现行点、已开放判定和四种状态；站的样子和图例也用星图的 chartStar。
 // 这里全是「数据 → SVG 字符串」的纯函数，node 里能测；滚动、点选在 app.js。
 import { Sk } from "./sketch.js";
-import { THEMES, THEME_ORDER, GRADE_NAME, STATE_WORD, chartStar, spark } from "./starchart.js";
+import { THEMES, THEME_ORDER, GRADE_NAME, STATE_WORD, chartStar, spark, specimenNo } from "./starchart.js";
+import { icon, iconOf } from "./icons.js";
 
 /** 每条线的名字（照原型 THEMES[k].line）。 */
 export const LINE_NAME = Object.freeze({ num: "数与运算线", rel: "数量关系线", geo: "图形与测量线", stat: "统计与概率线", mat: "物质线", ene: "能量线", life: "生命线", earth: "地球线" });
@@ -148,4 +149,32 @@ export function metroScroll(L, viewW, viewH, selected) {
   const left = sp && (sp[0] < home + LBLW + 20 || sp[0] > home + viewW - 40) ? Math.max(0, sp[0] - LBLW - (viewW - LBLW) / 2) : home;
   const top = sp ? Math.max(0, sp[1] - viewH / 2) : 0;
   return { left, top };
+}
+
+/**
+ * 知识地铁里的「图鉴」标本墙（照原型 renderCards）：按八条线分节陈列 102 张标本卡。
+ * 点亮的卡上色并盖「已收集」章；已开放或在当前学段及以前的卡显示标题，更高学段未开放的卡显示「？？？」。
+ * @param {ReturnType<typeof import("./starchart.js").buildChart>} model
+ * @param {{selected?: string|null}} [opts]
+ */
+export function metroCardsHtml(model, opts = {}) {
+  const selected = opts.selected || null;
+  const lines = lineStations(model);
+  const maxBand = model.currentBand == null ? 1 : model.currentBand;
+  let h = `<div class="cards">`;
+  for (const k of THEME_ORDER) {
+    const t = THEMES[k], list = lines[k], got = list.filter((p) => p.state === "lit").length;
+    h += `<section class="card-sec"><h2><i style="background:var(${t.c})" aria-hidden="true"></i>${LINE_NAME[k]}<small>${got}/${list.length}</small></h2><div class="cardgrid">`;
+    for (const p of list) {
+      const lit = p.state === "lit";
+      const known = lit || p.open || p.band <= maxBand;
+      const shown = known ? p.title : "？？？";
+      const word = lit ? "已收集" : p.open ? STATE_WORD[p.state] : "未开放";
+      h += `<button type="button" class="spec${lit ? "" : " locked"}${p.id === selected ? " sel" : ""}" data-spec="${esc(p.id)}" aria-current="${p.id === selected}" aria-label="图鉴 ${specimenNo(p.no)}，${esc(shown)}，${GRADE_NAME[p.grade] || p.grade}，${word}">` +
+        `<span class="no">${specimenNo(p.no)}</span>${lit ? `<span class="stamp" aria-hidden="true">已收集</span>` : ""}` +
+        `${icon(iconOf(p), t.g, 64, p.seed)}<b>${esc(shown)}</b><small>${esc(GRADE_NAME[p.grade] || p.grade)}</small></button>`;
+    }
+    h += `</div></section>`;
+  }
+  return h + `</div>`;
 }
