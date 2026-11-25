@@ -16,7 +16,8 @@ from pathlib import Path
 
 import yaml
 
-from ci_checks import check_publish_gate
+from ci_checks import (CATALOG_PATH, ENGINE_REQUIREMENTS, NAVIGATOR_ROOT, check_catalog, check_navigator, check_publish_gate,
+                       navigator_gate_errors)
 
 PATH_SEGMENT = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
 MAX_SAFE_INTEGER = 2**53 - 1
@@ -180,7 +181,15 @@ def build_package(content_root, source_commit):
         if isinstance(activity_id, str):
             acts[activity_id] = (path, document)
 
-    gate_errors = check_publish_gate(nodes, acts)
+    def read_entry(manifest_file):
+        # 门禁读的入口 HTML 也出自同一份字节快照
+        entry = by_path.get(manifest_path(content_root, manifest_file.parent / "index.html"))
+        try:
+            return entry[1].decode("utf-8") if entry else None
+        except UnicodeDecodeError:
+            return None
+
+    gate_errors = check_publish_gate(nodes, acts, read_entry)
     if gate_errors:
         details = []
         for path, message in gate_errors:
@@ -245,6 +254,10 @@ def build_package(content_root, source_commit):
     for display_path in sorted(asset_paths):
         assets.append(file_entry(display_path, by_path[display_path][1], outputs))
 
+    navigator_entries = navigator_package(by_path, outputs)
+    if navigator_entries:
+        engine_min = max(engine_min, ENGINE_REQUIREMENTS["content"]["navigators"])
+
     hash_input = {
         "engine_min": engine_min,
         "contracts": sorted(contracts),
@@ -252,6 +265,16 @@ def build_package(content_root, source_commit):
         "activities": activity_entries,
         "assets": assets,
     }
+    if navigator_entries:
+        # 可选键（docs/specs/navigators.md 第 2 节）：有领航员时才出现、才进 content_hash，旧发布包的哈希不变
+        hash_input["navigators"] = navigator_entries
+    if CATALOG_PATH in by_path:
+        data = by_path[CATALOG_PATH][1]
+        document = load_document(data, CATALOG_PATH)
+        errors = check_catalog(document, nodes)
+        if errors:
+            raise BuildError(f"{CATALOG_PATH}：\n" + "\n".join(errors))
+        hash_input["catalog"] = file_entry(CATALOG_PATH, data, outputs)
     canonical = json.dumps(hash_input, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     content_hash = hashlib.sha256(canonical).hexdigest()
     manifest = {
@@ -262,6 +285,46 @@ def build_package(content_root, source_commit):
         **hash_input,
     }
     return manifest, outputs
+
+
+def navigator_package(by_path, outputs):
+    """领航员进发布包（docs/specs/navigators.md 第 1、2 节）：只收 review: approved 的，每位按严格规则查一遍，
+    返回按 id 排序的清单条目。有领航员目录、却没有一位 approved 且 start: true 时构建失败。没有领航员目录时返回 []。"""
+    prefix = NAVIGATOR_ROOT + "/"
+    dirs = {}
+    for display_path in by_path:
+        if display_path.startswith(prefix):
+            parts = display_path[len(prefix):].split("/")
+            if len(parts) != 2:
+                raise BuildError(f"{display_path}：content/navigators/ 下只能是 <id>/<文件>")
+            dirs.setdefault(parts[0], {})[parts[1]] = by_path[display_path][1]
+    if not dirs:
+        return []
+    schema = json.loads((Path(__file__).resolve().parents[1] / "schemas/navigator.schema.json").read_text(encoding="utf-8"))
+    docs = {}
+    for directory, files in sorted(dirs.items()):
+        where = f"{prefix}{directory}/navigator.yaml"
+        if "navigator.yaml" not in files:
+            raise BuildError(f"{prefix}{directory}：领航员目录缺少 navigator.yaml")
+        docs[directory] = load_document(files["navigator.yaml"], where)
+    gate = navigator_gate_errors(docs)
+    if gate:
+        raise BuildError("发布门禁未通过：\n" + "\n".join(f"{NAVIGATOR_ROOT}：{message}" for message in gate))
+    entries = []
+    for directory in sorted(d for d, doc in docs.items() if doc.get("review") == "approved"):
+        files = dirs[directory]
+        errors = check_navigator(directory, files, docs[directory], schema)
+        if errors:
+            raise BuildError("收录的领航员没有通过检查：\n" + "\n".join(
+                f"{prefix}{directory}/{name or ''}：{message}" for name, message in errors))
+        file_entries = [file_entry(f"{prefix}{directory}/{name}", files[name], outputs) for name in sorted(files)]
+        entries.append({
+            "id": docs[directory]["id"],
+            "version": manifest_int(docs[directory]["version"], f"{prefix}{directory}/navigator.yaml", "version"),
+            "files": file_entries,
+        })
+    entries.sort(key=lambda entry: entry["id"])
+    return entries
 
 
 def manifest_digests(manifest):
@@ -279,6 +342,11 @@ def manifest_digests(manifest):
             add(entry)
     for asset in manifest["assets"]:
         add(asset)
+    for navigator in manifest.get("navigators", []):
+        for entry in navigator["files"]:
+            add(entry)
+    if "catalog" in manifest:
+        add(manifest["catalog"])
     return listed
 
 

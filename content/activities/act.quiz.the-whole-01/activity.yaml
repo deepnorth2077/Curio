@@ -1,0 +1,116 @@
+id: act.quiz.the-whole-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: "谁的一半大挑战"
+targets: [math.fraction.the-whole]
+age_band: G3-4
+duration_min: 5
+review: approved  # Luka 2026-11-22 验收（#233）
+engine: 1
+sources:
+  - type: textbook
+    ref: "人教版小学数学三年级上册（2024 年新教材，2025 年秋起用）第六单元「分数的初步认识」"
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: "一盒有 8 个鸡蛋。这盒鸡蛋的四分之一，是几个？"
+      answer:
+        type: number
+        value: 2
+        tolerance: 0
+        unit: 个
+        common_wrong:
+          - value: 1
+            misconception: numerator-as-count
+            feedback: "你看到上面的 1，就想到 1 个。想一想：1 份里装着几个鸡蛋？"
+          - value: 4
+            misconception: denominator-as-count
+            feedback: "你看到下面的 4，就想到 4 个。再想想，这个 4 数的是什么？"
+      feedback:
+        correct: "对。8 个鸡蛋平均分成 4 份，1 份是 2 个。"
+        wrong: "先看这盒蛋平均分成了几份，再数 1 份里有几个。"
+      hints:
+        - "想想发糖：一袋糖平均发到 4 个盘子里，每个盘子几颗？"
+        - "这盒蛋平均分成 4 份。每一份里有几个蛋？"
+    - id: q2
+      stem: "一袋有 15 颗糖，平均分成 5 份。3 份一共有几颗？"
+      answer:
+        type: number
+        value: 9
+        tolerance: 0
+        unit: 颗
+        common_wrong:
+          - value: 3
+            misconception: numerator-as-count
+            feedback: "你看到要拿 3 份，就想到 3 颗。想一想：1 份里装着几颗？"
+          - value: 5
+            misconception: denominator-as-count
+            feedback: "你看到分成 5 份，就想到 5 颗。再想想，这个 5 数的是什么？"
+      feedback:
+        correct: "对。1 份是 3 颗，3 份一共 9 颗。"
+        wrong: "先算 1 份有几颗，再看一共拿了几份。"
+      hints:
+        - "想想发糖那一站：一袋糖发到几个盘子里，每盘有几颗？"
+        - "先想 1 份里有几颗，再想拿了几份。"
+    - id: q3
+      stem: "一张小饼的二分之一，和一张大饼的二分之一，哪块多？"
+      figure:
+        type: svg
+        src: content/assets/math.fraction.the-whole/two-pies.svg
+      answer:
+        type: choice
+        choices:
+          - id: c
+            text: "一样多，都是二分之一"
+            misconception: ignore-the-whole
+            feedback: "都是二分之一，这一点没错。再想想，两张饼本身一样大吗？"
+          - id: b
+            text: "大饼的那块多"
+            correct: true
+      feedback:
+        correct: "对。同样是二分之一，大饼分出来的那块更大。"
+        wrong: "两块都是二分之一。想想，它们是谁的二分之一？"
+      hints:
+        - "想想拉蛋糕卷：蛋糕卷拉长以后，它的四分之一怎么变？"
+        - "想象两张饼摆在一起，各切下自己的一半，放在一起比。"
+    - id: q4
+      stem: "盘子里有 6 颗糖，是一袋糖的三分之一。一整袋有几颗？"
+      answer:
+        type: number
+        value: 18
+        tolerance: 0
+        unit: 颗
+        common_wrong:
+          - value: 3
+            misconception: denominator-as-count
+            feedback: "你看到下面的 3，就想到一袋有 3 颗。想想，盘里的 6 颗只是一份，整袋会比它少吗？"
+          - value: 9
+            misconception: add-instead-of-copy
+            feedback: "你把 6 和 3 加到一起，是想把两个数合起来。再想想，整袋是怎么由一份变出来的？"
+      feedback:
+        correct: "对。6 颗是一份，3 份拼成一整袋，一共 18 颗。"
+        wrong: "盘里的 6 颗是一份。整袋是由几份拼成的？"
+      hints:
+        - "想想第 3 站：先摆一份，再一份一份摆满一整袋。"
+        - "一整袋是几份？每份有几颗？"
+    - id: q5
+      stem: "绳子甲的二分之一，和绳子乙的四分之一，一样长。乙长 20 厘米，甲长几厘米？"
+      answer:
+        type: number
+        value: 10
+        tolerance: 0
+        unit: 厘米
+        common_wrong:
+          - value: 5
+            feedback: "你算出乙的四分之一是 5 厘米，这一步没错。再看看，这 5 厘米是整根甲，还是甲的一部分？"
+          - value: 40
+            feedback: "你想直接从乙算到甲。可两根绳子中间有一段一样长的，先看看它有多长？"
+      feedback:
+        correct: "对。一样长的那一段是 5 厘米，甲有 2 个这样的一段，是 10 厘米。"
+        wrong: "先看一样长的那一段有多长，再想它是甲的几分之几。"
+      hints:
+        - "想想第 3 站：知道一份有多长，就能一份一份摆出整根。"
+        - "先求乙的四分之一有几厘米，再想它是甲的几份。"
+# END OF FILE

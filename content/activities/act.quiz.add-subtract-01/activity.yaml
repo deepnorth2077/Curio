@@ -1,0 +1,121 @@
+id: act.quiz.add-subtract-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 量杯大挑战
+targets:
+- math.fraction.add-subtract
+age_band: G5-6
+duration_min: 5
+review: approved  # Luka 2026-11-22 验收（#233）
+engine: 1
+sources:
+- type: textbook
+  ref: 人教版小学数学五年级下册（旧版）第六单元「分数的加法和减法」
+body:
+  shuffle: false
+  items:
+  - stem: 同一杯果汁，先倒入七分之二杯，又倒入七分之三杯。一共多少杯？
+    answer:
+      type: fraction
+      numerator: 5
+      denominator: 7
+      accept_equivalent: true
+      common_wrong:
+      - numerator: 5
+        denominator: 14
+        feedback: 格数数对了。两次用的都是同一种格，杯壁上的刻度变了吗？
+        misconception: add-tops-and-bottoms
+    feedback:
+      correct: 每一格都是七分之一杯，2 格再加 3 格，是七分之五杯。
+      wrong: 先看看两次用的每一格是不是一样大。
+    hints:
+    - 杯壁被平均分成了七格。
+    - 涂上两格，再接着涂三格，数一数。
+    id: q1
+  - stem: 半杯水再加四分之一杯，合起来是多少杯？
+    answer:
+      type: fraction
+      numerator: 3
+      denominator: 4
+      accept_equivalent: true
+      common_wrong:
+      - numerator: 2
+        denominator: 6
+        feedback: 半杯再加一些，水面该更高。把你的答案和半杯比比。
+        misconception: add-tops-and-bottoms
+      - numerator: 2
+        denominator: 4
+        feedback: 半杯换成四等分后不止一格。再数数原来半杯占了几格。
+        misconception: keep-numerators
+    feedback:
+      correct: 把半杯换成两个四分之一，和一个四分之一合在一起，就是四分之三杯。
+      wrong: 给杯壁换成一种两次都能量出的刻度。
+    hints:
+    - 一杯平均分四格，半杯对应几格？
+    - 在那条线的基础上，再往上数一格。
+    id: q2
+  - stem: 壶里有三分之二壶水，倒走半壶。还剩几分之几壶？
+    answer:
+      type: fraction
+      numerator: 1
+      denominator: 6
+      accept_equivalent: true
+      common_wrong:
+      - numerator: 1
+        denominator: 1
+        feedback: 倒走以后水应当减少。先让两种刻度变得一样大。
+        misconception: add-tops-and-bottoms
+    feedback:
+      correct: 用六等分量，原来有四格，倒走三格，还剩一格。
+      wrong: 换一套刻度，让两个水面都能准确读数。
+    hints:
+    - 杯壁的格数要能被 2 和 3 都整除。
+    - 原来有几格？倒走几格？
+    id: q3
+  - stem: 半杯果汁再加半杯，合起来有多少？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 四分之二杯
+        feedback: 两半合在一起，杯子本身的大小和每一半的大小变了吗？
+        misconception: add-tops-and-bottoms
+      - id: b
+        text: 四分之一杯
+        feedback: 两次都倒了半杯。水面应该比原来高还是低？
+        misconception: add-denominators
+      - id: c
+        text: 一整杯
+        correct: true
+    feedback:
+      correct: 两个半杯拼满一整杯，在杯壁上正好到顶。
+      wrong: 想象一个空杯子，先倒半杯，再倒同样多。
+    hints:
+    - 纸条对折后分成了几份？
+    - 把两份都展开，看看是不是又铺满了一整条。
+    id: q4
+  - stem: 一杯水，先喝了全杯的三分之一，又喝了剩下水的一半。一共喝了原来这杯水的几分之几？
+    answer:
+      type: fraction
+      numerator: 2
+      denominator: 3
+      accept_equivalent: true
+      common_wrong:
+      - numerator: 5
+        denominator: 6
+        feedback: 第二次喝的是剩下水的一半。画一画，那一半来自多大的一段？
+      - numerator: 2
+        denominator: 5
+        feedback: 先找到第二次喝了原杯的多少，再把两次的份数相加。
+    feedback:
+      correct: 第一次剩下三分之二，把剩下的对半分是三分之一。两次共喝了三分之二杯。
+      wrong: 先留出剩下的水，再只把那一段对半分。
+    hints:
+    - 把整杯画成三格。第一次喝走一格。
+    - 第二次只在还剩的格子里取一半。
+    id: q5
+    figure:
+      type: svg
+      src: content/assets/math.fraction.add-subtract/instrument.svg
+# END OF FILE

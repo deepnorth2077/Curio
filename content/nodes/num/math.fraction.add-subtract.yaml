@@ -1,0 +1,46 @@
+id: math.fraction.add-subtract
+schema: knode/1
+title: 分数加减
+subjects: [math]
+theme: num
+grade: G5
+unit: 五下 · 分数的加法和减法（人教版旧版册次，新版以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第二学段：会同分母分数的加减；第三学段：能进行简单的分数四则运算
+  - textbook: 人教版小学数学五年级下册（旧版）
+    unit: 第六单元 分数的加法和减法
+prerequisites: [math.fraction.compare]
+related: [math.decimal.compare-add]
+driving_question: 半杯加上 1/3 杯，为什么不是 2/5 杯？
+objectives:
+  - 知道每份一样大的分数才能直接相加减：分母不变，分子相加减。
+  - 知道分母不同时要先通分，换成一样大的份：1/2 + 1/3 = 3/6 + 2/6 = 5/6。
+  - 会估一估结果对不对：半杯再加一些，不可能比半杯少。
+  - 加起来超过 1 时，能把结果写成带分数。
+misconceptions:
+  - id: add-tops-and-bottoms
+    text: 分子加分子、分母加分母，例如把 1/2 + 1/3 算成 2/5，把 1/2 + 1/2 算成 2/4。
+  - id: keep-numerators
+    text: 通分时只换了分母，分子没换就相加，例如把 1/2 + 1/3 算成 2/6。
+  - id: add-denominators
+    text: 把两个分母加起来当成公分母，例如认为 1/2 和 1/3 要换成分母是 5 的分数。
+  - id: no-common-unit
+    text: 觉得不用换成一样大的份也能读出结果，随便用其中一个分母就行。
+sources:
+  - type: textbook
+    ref: 人教版小学数学五年级下册（旧版）第六单元「分数的加法和减法」
+  - type: reference
+    ref: 大英博物馆 Hieroglyphs： unlocking ancient Egypt（莱因德数学纸草书与单位分数）
+    url: https://www.britishmuseum.org/sites/default/files/2022-10/Hieroglyphs_unlocking_ancient_Egypt_large_print_guide_The_British_Museum_2.pdf
+lenses:
+  - band: G3-4
+    approach: 只做分母一样的：2 个 1/5 加 1 个 1/5 是 3 个 1/5，在数线上跳。
+  - band: G5-6
+    approach: 两杯果汁倒进一个没有刻度的大杯；转刻度盘，只有分成 6 格或 12 格时水面才正好压在线上；再做减法和装不下的加法。
+  - band: G7-9
+    approach: 分式的加减；先通分再运算的道理推广到代数式。
+activities: [act.simulation.measuring-cup-01, act.quiz.add-subtract-01]
+status: published  # Luka 2026-11-22 验收（#233）
+version: 1
+# END OF FILE

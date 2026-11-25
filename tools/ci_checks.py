@@ -17,6 +17,10 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import module_lint  # noqa: E402  动手探索模块的静态检查（#140）
+import status_gen  # noqa: E402  状态只写一处（#140 第 5 条）
+
 # fnmatch 的 * 会跨过 /，所以 "prompts/*" 覆盖整个 prompts/ 目录。例外只有两条，见地盘检查：
 # kp/ 分支改自己活动的提示词和任务文件；feat/、fix/、chore/ 分支新增任务文件留档（*.task.md）。
 # relay/ 里 Claude 手算的验收用例、跑用例的脚本和领航员说明也只能在 arch/ 改：实现者不能为了通过去改期望值。
@@ -25,25 +29,38 @@ PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "prompts/*", "AGENTS
              "relay/test/cases.json", "relay/test/cases.test.js", "relay/src/navigator.js",
              # 竖切片 1 的黄金向量和验收测试（规格第 7 节）：同上，实现者不能改期望值
              "kernel/vectors/*", "engine/vectors/*", "kernel/test/vectors.test.js", "engine/test/grading.test.js",
-             "engine/test/quiz.test.js", "engine/test/quiz-1b.test.js", "app/test/commit.test.js", "app/test/resume.test.js", "app/test/fake-store.js"]
+             "engine/test/quiz.test.js", "engine/test/quiz-1b.test.js", "app/test/commit.test.js", "app/test/resume.test.js", "app/test/fake-store.js",
+             # 竖切片 6a 的黄金向量、样例文件和验收测试（docs/specs/backup.md）
+             "app/vectors/*", "tests/fixtures/*", "app/test/backup.test.js", "app/test/restore.test.js", "app/test/fake-backup-store.js"]
 ACT_PROMPT = re.compile(r"^prompts/(act\.[A-Za-z0-9._-]+?)(\.task)?\.md$")
 TASK_ARCHIVE = re.compile(r"^prompts/[A-Za-z0-9][A-Za-z0-9._-]*\.task\.md$")
 # kp/ 分支可以新增、修改本知识点活动的审查记录，以及本知识点自己的审查记录（ADR-009 增补 1）；不能删除
 ACT_REVIEW = re.compile(r"^docs/reviews/(act\.[A-Za-z0-9._-]+?)\.md$")
 NODE_REVIEW = re.compile(r"^docs/reviews/([a-z]+(?:\.[a-z0-9-]+)+)\.md$")
+# 星座进度（#140 第 5 条）：任何分支都能改 status.yaml；index.md 和 handoff.md 只能改被 status:begin/end 包起来的生成段落。
+# 这样做完一步，状态跟着那一步的 PR 一起走，不用另开 arch/ 分支。
+STATUS_YAML = re.compile(r"^docs/constellations/[a-z0-9-]+/status\.yaml$")
+STATUS_DOCS = re.compile(r"^docs/(handoff\.md|constellations/[a-z0-9-]+/index\.md)$")
 BRANCH_KINDS = ["kp/", "arch/", "feat/", "fix/", "chore/"]
 OVERRIDE_LABEL = "越界-已批准"
 KID_FACING_NODE = ["title", "driving_question", "lenses"]
 KID_FACING_ACT = ["title", "predict", "explain"]
 FORBIDDEN_WORD = "学习"
-PUBLISH_REQUIRED_TYPES = ["explain", "quiz"]
+# 动手探索的站完成标记（slice-5a）：observed 的结果是 {station, item: "station-complete"}。
+# 入口 HTML 里写了这个标记，正式外壳才能按站记进度、选站重玩，这个模块才能承担讲解（content.md 第 5 节发布门禁）。
+STATION_COMPLETE_MARK = re.compile(r"""\bitem\s*:\s*["']station-complete["']""")
 PATH_SEGMENT = re.compile(r"^[A-Za-z0-9_-][A-Za-z0-9._-]*$")
+CATALOG_PATH = "content/catalog/points.yaml"
+# 孩子会碰到的外壳页面：样式里要有「长按不选字、不弹菜单」那两条（#156，module_lint.NOSELECT_CSS）。文件不在就不查
+NOSELECT_SHELLS = ["preview/template.html", "app/index.html", "prototype/index.html"]
 
 # 每增加一种能力，就在这里登记它所需的最低引擎等级。
 ENGINE_REQUIREMENTS = {
     "kind": {"explain": 1, "quiz": 1, "reflection": 1},
     "answer": {"choice": 1, "number": 1, "fraction": 1},
     "figure": {"pie": 1, "rect": 1, "rect-unequal": 1, "number-line": 1, "svg": 1},
+    # 发布包里的可选内容：收录了就要这么高的外壳（docs/specs/navigators.md 第 2 节：旧外壳读到 navigators 会判成哈希不对）
+    "content": {"navigators": 2},
 }
 
 SVG_ELEMENTS = {
@@ -60,6 +77,120 @@ SVG_ATTRIBUTES = {
     "gradientUnits", "clip-path", "id", "class", "xmlns", "aria-label", "role",
     "href", "xlink:href",
 }
+
+# 领航员（docs/specs/navigators.md 第 1 节）。目录 content/navigators/<id>/ 里恰好是 navigator.yaml 和六张脸。
+NAVIGATOR_ROOT = "content/navigators"
+NAVIGATOR_FACES = ["curious", "waiting", "surprised", "clap", "think", "wrong"]
+NAVIGATOR_FILES = frozenset(["navigator.yaml"] + [face + ".svg" for face in NAVIGATOR_FACES])
+# 领航员的 SVG 比内容规格 3.6 的白名单更严：去掉 title、desc、id、use、defs、渐变、clipPath、text 和只为它们服务的属性
+NAVIGATOR_DRAWABLE = {"path", "circle", "ellipse", "rect", "line", "polyline", "polygon"}
+NAVIGATOR_ELEMENTS = NAVIGATOR_DRAWABLE | {"svg", "g"}
+NAVIGATOR_ATTRIBUTES = SVG_ATTRIBUTES - {
+    "id", "href", "xlink:href", "clip-path", "offset", "stop-color", "stop-opacity", "gradientUnits",
+    "font-size", "font-weight", "text-anchor", "dominant-baseline",
+}
+NAVIGATOR_CLASSES = {"k", "k1", "f-ink", "f-pane", "f-sky", "f-sage", "f-apricot", "f-paper", "f-muted", "f-accent"}
+NAVIGATOR_MAX_DRAWABLE = 16
+NAVIGATOR_MAX_BYTES = 3072
+
+
+def check_navigator_svg(data):
+    """一张领航员表情 SVG 的严格检查（规格第 1 节「每个 SVG」），data 是原始字节。返回错误文字列表。
+    PR 检查和发布构建共用；外壳读包时按同一份规则再查一遍。"""
+    errors = []
+    if len(data) > NAVIGATOR_MAX_BYTES:
+        errors.append(f"领航员的 SVG 不能超过 {NAVIGATOR_MAX_BYTES} 字节，现在是 {len(data)}")
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return errors + ["领航员的 SVG 不是 UTF-8"]
+    if "<!--" in text:
+        errors.append("领航员的 SVG 不能有注释")
+    if "<![CDATA[" in text.upper():
+        errors.append("领航员的 SVG 不能有 CDATA")
+    if re.search(r"<!\s*(?:DOCTYPE|ENTITY)\b", text, re.I):
+        errors.append("领航员的 SVG 不能有 DOCTYPE 或实体")
+    for match_ in re.finditer(r"<\?([A-Za-z0-9_-]+).*?\?>", text, re.S):
+        if not (match_.group(1).lower() == "xml" and match_.start() == 0):
+            errors.append("领航员的 SVG 只允许第一行的 XML 声明，不允许其他处理指令")
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError as exc:
+        return errors + [f"领航员的 SVG 不是合法的 XML：{exc}"]
+    local = lambda tag: tag.rsplit("}", 1)[-1] if isinstance(tag, str) else ""
+    if root.tag != "{http://www.w3.org/2000/svg}svg":
+        errors.append("领航员的 SVG 最外层必须是 SVG 命名空间的 <svg>")
+    if root.get("viewBox") != "0 0 48 48":
+        errors.append(f"领航员的 SVG 的 viewBox 必须是 0 0 48 48，现在是 {root.get('viewBox')!r}")
+    drawable = accent = 0
+    for element in root.iter():
+        tag = local(element.tag)
+        if tag not in NAVIGATOR_ELEMENTS or (tag == "svg" and element is not root):
+            errors.append(f"领航员的 SVG 不能用元素 {tag or element.tag}" + ("（不能嵌套 <svg>）" if tag == "svg" else ""))
+        if tag in NAVIGATOR_DRAWABLE:
+            drawable += 1
+        if (element.text or "").strip() or (element is not root and (element.tail or "").strip()):
+            errors.append("领航员的 SVG 里不能有文字")
+        for raw_name, value in element.attrib.items():
+            name = "xlink:href" if raw_name == "{http://www.w3.org/1999/xlink}href" else raw_name.rsplit("}", 1)[-1]
+            if name not in NAVIGATOR_ATTRIBUTES:
+                errors.append(f"领航员的 SVG 不能用属性 {name}")
+            if name in ("fill", "stroke") and value != "none":
+                errors.append(f"领航员的 SVG 颜色只能用 class，{name} 只许写 none，现在是 {value!r}")
+            if re.search(r"url\s*\(", value, re.I):
+                errors.append("领航员的 SVG 不能用 url(…)")
+        if "class" in element.attrib:
+            classes = element.get("class").split()
+            if tag in ("g", "svg"):
+                errors.append(f"领航员的 SVG 颜色类不能写在 <{tag}> 上")
+            for name in classes:
+                if name not in NAVIGATOR_CLASSES:
+                    errors.append(f"领航员的 SVG 不认识颜色类 {name}（只许 {'、'.join(sorted(NAVIGATOR_CLASSES))}）")
+            if "f-accent" in classes:
+                accent += 1
+    if drawable > NAVIGATOR_MAX_DRAWABLE:
+        errors.append(f"领航员的 SVG 能画出东西的元素不能超过 {NAVIGATOR_MAX_DRAWABLE} 个，现在是 {drawable}")
+    if accent > 1:
+        errors.append(f"领航员的 SVG 每张最多一个元素用 f-accent，现在是 {accent}")
+    return errors
+
+
+def check_navigator(directory, files, doc, schema):
+    """一位领航员的检查：files 是 {文件名: 字节}，doc 是解析过的 navigator.yaml（解析失败为 None）。
+    返回 [(文件名或 None, 错误文字)]。目录名等于 id、文件恰好七个、yaml 合 schema、每张脸过严格检查。"""
+    from jsonschema import Draft202012Validator
+    errors = []
+    for name in sorted(NAVIGATOR_FILES - set(files)):
+        errors.append((None, f"领航员 {directory} 缺少 {name}"))
+    for name in sorted(set(files) - NAVIGATOR_FILES):
+        errors.append((name, f"领航员目录里只能有 navigator.yaml 和六张脸，不能有 {name}"))
+    if "navigator.yaml" in files:
+        if not isinstance(doc, dict):
+            errors.append(("navigator.yaml", "领航员的 navigator.yaml 必须是一个 YAML 对象"))
+        else:
+            for error in Draft202012Validator(schema).iter_errors(doc):
+                loc = "/".join(str(x) for x in error.absolute_path) or "(根)"
+                errors.append(("navigator.yaml", f"领航员 {loc}：{error.message}"))
+            if doc.get("id") != directory:
+                errors.append(("navigator.yaml", f"领航员的目录名必须等于 id：目录是 {directory}，id 是 {doc.get('id')!r}"))
+            for key in ("title", "intro"):
+                if isinstance(doc.get(key), str) and FORBIDDEN_WORD in doc[key]:
+                    errors.append(("navigator.yaml", f"领航员给孩子看的「{key}」里出现了「{FORBIDDEN_WORD}」"))
+    for face in NAVIGATOR_FACES:
+        name = face + ".svg"
+        if name in files:
+            errors.extend((name, message) for message in check_navigator_svg(files[name]))
+    return errors
+
+
+def navigator_gate_errors(docs):
+    """发布门禁：docs 是 {目录名: 解析过的 navigator.yaml}。有领航员时至少要有一位 approved 且 unlock.start 为 true。"""
+    if not docs:
+        return []
+    for doc in docs.values():
+        if isinstance(doc, dict) and doc.get("review") == "approved" and isinstance(doc.get("unlock"), dict) and doc["unlock"].get("start") is True:
+            return []
+    return ["领航员里至少要有一位 review: approved、unlock: {start: true}，舰长才有人可选"]
 
 
 class Result:
@@ -88,6 +219,55 @@ def match(path, patterns):
 def load_yaml_text(text):
     import yaml
     return yaml.safe_load(text)
+
+
+def check_catalog(doc, nodes, previous=None, schema=None):
+    """CI 和发布构建共用。nodes 含所有状态的卡；CI 还传入主线的上一版目录。"""
+    from jsonschema import Draft202012Validator
+    if schema is None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas/catalog.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    errors = []
+    for error in Draft202012Validator(schema).iter_errors(doc):
+        where = "/".join(str(key) for key in error.absolute_path) or "(根)"
+        errors.append(f"{where}：{error.message}")
+    if errors:
+        return errors
+
+    points = {entry["id"]: entry for entry in doc["points"]}
+    entries = {}
+    for entry in doc["points"] + doc["retired"]:
+        nid = entry["id"]
+        if nid in entries:
+            errors.append(f"知识点目录 ID 重复：{nid}")
+        entries[nid] = entry
+    for point in doc["points"]:
+        for nid in point["prerequisites"]:
+            if nid not in points:
+                errors.append(f"{point['id']} 的前置 {nid} 不在现行目录里")
+    for old in doc["retired"]:
+        target = old["replaced_by"]
+        if target not in points or target not in nodes:
+            errors.append(f"{old['id']} 的接替者 {target} 必须是有课程卡的现行知识点")
+    for nid, (_, card) in nodes.items():
+        if nid not in points:
+            errors.append(f"现行目录里缺少课程卡 {nid}")
+        elif any(points[nid][field] != card.get(field) for field in ("grade", "theme")):
+            errors.append(f"{nid} 的年级、主题必须与课程卡一致")
+
+    if previous is not None and doc != previous:
+        if doc["version"] <= previous["version"]:
+            errors.append("目录有改动，version 必须比主线大")
+        for old in previous["points"] + previous["retired"]:
+            nid = old["id"]
+            if nid not in entries:
+                errors.append(f"已登记的目录 ID 不能消失：{nid}")
+            elif any(entries[nid][field] != old[field] for field in ("grade", "theme")):
+                errors.append(f"已登记的 {nid} 不能改年级或主题")
+        for old in previous["retired"]:
+            if old["id"] in points:
+                errors.append(f"已撤下的 ID 不能重新用作现行知识点：{old['id']}")
+    return errors
 
 
 def activity_items(doc):
@@ -135,10 +315,30 @@ def activity_misconception_refs(doc):
                 yield wrong["misconception"]
 
 
-def check_publish_gate(nodes, acts):
+def explains_node(nid, activity, entry_html):
+    """被收录的动手探索能否承担本星讲解：清单指向本星、activity/1.1、simulation、explain、
+    入口 index.html、声明 observed，并且入口 HTML 用 slice-5a 的站完成标记。entry_html 是入口文件的文字（读不到为 None）。"""
+    return (activity.get("type") == "simulation" and activity.get("pedagogy") == "explain"
+            and activity.get("contract") == "activity/1.1" and activity.get("entry") == "index.html"
+            and nid in activity.get("targets", []) and isinstance(activity.get("emits"), list)
+            and "observed" in activity["emits"]
+            and isinstance(entry_html, str) and STATION_COMPLETE_MARK.search(entry_html) is not None)
+
+
+def read_entry_beside(manifest_path):
+    """默认的入口读取：清单旁边的 index.html。"""
+    entry = Path(manifest_path).with_name("index.html")
+    try:
+        return entry.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def check_publish_gate(nodes, acts, read_entry=read_entry_beside):
     """返回发布门禁错误；nodes/acts 的值均为 (文件路径, 已解析文档)。
 
     构建器和 PR 检查都调用这里，保证收录范围、误区覆盖和引用闭包一致。
+    read_entry(清单路径) 返回动手探索入口 HTML 的文字，读不到返回 None；构建器传自己的字节快照。
     """
     errors = []
     for nid, (node_path, node) in nodes.items():
@@ -152,10 +352,12 @@ def check_publish_gate(nodes, acts):
         for aid in node.get("activities", []):
             if aid in acts and isinstance(acts[aid][1], dict) and acts[aid][1].get("review") == "approved":
                 own.append((aid, acts[aid][1]))
-        kinds = {a.get("kind") if "kind" in a else a.get("type") for _, a in own}
-        for kind in PUBLISH_REQUIRED_TYPES:
-            if kind not in kinds:
-                errors.append((node_path, f"发布前收录的活动中必须至少有一个 {kind} 类活动"))
+        kinds = {activity.get("kind") for _, activity in own}
+        if "explain" not in kinds and not any(
+                "kind" not in activity and explains_node(nid, activity, read_entry(acts[aid][0])) for aid, activity in own):
+            errors.append((node_path, "发布前必须有已批准的 explain 讲解或承担本星讲解的正式动手探索"))
+        if "quiz" not in kinds:
+            errors.append((node_path, "发布前收录的活动中必须至少有一个 quiz 类活动"))
         for aid, activity in own:
             activity_kind = activity.get("kind") if "kind" in activity else activity.get("type")
             activity_path = acts[aid][0]
@@ -325,6 +527,15 @@ def run(repo, base="origin/main", branch="", labels=()):
             return doc.get("targets", []) if isinstance(doc, dict) else None
         return None
 
+    def status_only(p, st):
+        """这个改动是不是只动了星座进度（status.yaml，或 index.md / handoff.md 的生成段落）。"""
+        if STATUS_YAML.match(p):
+            return st != "D"
+        if STATUS_DOCS.match(p) and st == "M":
+            old = base_text(p)
+            return old is not None and status_gen.strip_blocks(old) == status_gen.strip_blocks((repo / p).read_text(encoding="utf-8"))
+        return False
+
     # ---------- 1. 地盘检查 ----------
     prefix = branch.split("/", 1)[0] + "/" if "/" in branch else branch
     if prefix not in BRANCH_KINDS:
@@ -361,6 +572,9 @@ def run(repo, base="origin/main", branch="", labels=()):
                     # 知识点自己的配图放在 content/assets/<知识点 id>/ 下（docs/workflow.md）
                     parts = Path(p).parts
                     ok = len(parts) >= 4 and parts[2] == node_id and p.endswith(".svg")
+                elif ok and p == CATALOG_PATH:
+                    # 目录已有才可随卡登记。下方通过目录校验后，还要逐条核对改动归属。
+                    ok = status_of[p] == "M"
                 elif ok and p.startswith("content/"):
                     ok = False
                 elif ok and act_prompt:
@@ -373,6 +587,8 @@ def run(repo, base="origin/main", branch="", labels=()):
                 ok = not match(p, PROTECTED) and not p.startswith("content/")
                 if not ok and TASK_ARCHIVE.match(p) and status_of.get(p) == "A":
                     ok = True   # 整合时新增任务文件留档；改动或删除已有的提示词仍然只能走 arch/
+            if not ok and status_only(p, status_of.get(p)):
+                ok = True
             if not ok and shared:
                 msg = (f"这是共享活动，同时影响 {'、'.join(shared)}。kp/ 分支只能改只针对 {node_id} 的活动；"
                        f"共享活动要单独开 PR，覆盖所有受影响知识点的审核和试玩，并在征得 Luka 同意后加「{OVERRIDE_LABEL}」标签")
@@ -439,6 +655,31 @@ def run(repo, base="origin/main", branch="", labels=()):
             if doc["id"] in nodes:
                 r.err(f"知识点 ID 重复：{doc['id']}", rel(repo, f))
             nodes[doc["id"]] = (f, doc)
+
+    catalog_path = repo / CATALOG_PATH
+    previous_catalog = base_text(CATALOG_PATH)
+    if catalog_path.is_file():
+        if "catalog.schema.json" not in schemas:
+            r.err("知识点目录缺少可用的 catalog.schema.json", CATALOG_PATH)
+        else:
+            previous = load_yaml_text(previous_catalog) if previous_catalog is not None else None
+            catalog = load(catalog_path)
+            errors = check_catalog(catalog, nodes, previous, schemas["catalog.schema.json"])
+            for message in errors:
+                r.err(message, CATALOG_PATH)
+            if not errors and previous is not None and prefix == "kp/" and CATALOG_PATH in changed:
+                def other_points(doc):
+                    return [point for point in doc["points"] if point["id"] != node_id]
+
+                def own_point(doc):
+                    return next((point for point in doc["points"] if point["id"] == node_id), None)
+
+                if (node_id not in nodes or own_point(previous) == own_point(catalog)
+                        or other_points(previous) != other_points(catalog) or previous["retired"] != catalog["retired"]):
+                    msg = f"{branch} 的目录改动只可包含自己的现行条目和对应版本号"
+                    r.warn(msg + "（已放行）", CATALOG_PATH) if override else r.err(msg, CATALOG_PATH)
+    elif previous_catalog is not None:
+        r.err("不能删除已登记的知识点目录", CATALOG_PATH)
 
     activity_root = repo / "content/activities"
     activity_dirs = sorted(p for p in activity_root.iterdir() if p.is_dir()) if activity_root.exists() else []
@@ -581,6 +822,49 @@ def run(repo, base="origin/main", branch="", labels=()):
         for message in check_svg(svg):
             r.err(message, rel(repo, svg))
 
+    # 领航员（docs/specs/navigators.md 第 1 节）：每位的 yaml 和六张脸，门禁，和主线比 id、unlock。
+    nav_root = repo / NAVIGATOR_ROOT
+    navigator_schema = schemas.get("navigator.schema.json")
+    nav_docs = {}
+    if nav_root.exists():
+        if navigator_schema is None:
+            r.err("缺少可用的 schemas/navigator.schema.json", NAVIGATOR_ROOT)
+        for entry in sorted(nav_root.iterdir()):
+            where = f"{NAVIGATOR_ROOT}/{entry.name}"
+            if not entry.is_dir():
+                r.err("content/navigators/ 下只能放领航员目录", where)
+                continue
+            files = {f.name: f.read_bytes() for f in entry.iterdir() if f.is_file()}
+            for d in sorted(f.name for f in entry.iterdir() if not f.is_file()):
+                r.err(f"领航员目录里不能有子目录 {d}", where)
+            doc = load(entry / "navigator.yaml") if "navigator.yaml" in files else None
+            nav_docs[entry.name] = doc
+            if navigator_schema is not None:
+                for name, message in check_navigator(entry.name, files, doc, navigator_schema):
+                    r.err(message, f"{where}/{name}" if name else where)
+        for message in navigator_gate_errors(nav_docs):
+            r.err(message, NAVIGATOR_ROOT)
+    base_navs = sorted({p.split("/")[2] for p in git(repo, "ls-tree", "-r", "--name-only", base, NAVIGATOR_ROOT).stdout.splitlines()
+                        if p.count("/") == 3 and p.endswith("/navigator.yaml")})
+    for directory in base_navs:
+        where = f"{NAVIGATOR_ROOT}/{directory}/navigator.yaml"
+        try:
+            old = load_yaml_text(base_text(where) or "")
+        except Exception:
+            continue
+        if not isinstance(old, dict):
+            continue
+        current = nav_docs.get(directory)
+        if directory not in nav_docs or not (nav_root / directory / "navigator.yaml").is_file():
+            r.err(f"已进 main 的领航员 {directory} 不能删（id 永不改动；要换就出一位新的）", where)
+        elif not isinstance(current, dict):
+            continue   # 解析失败已经报过
+        else:
+            if current.get("id") != old.get("id"):
+                r.err(f"已进 main 的领航员 id 从 {old.get('id')} 改成了 {current.get('id')}。ID 永不改动", where)
+            if "unlock" not in current or current.get("unlock") != old.get("unlock"):
+                r.err(f"已进 main 的领航员 {directory} 的 unlock 不能改（要换条件就出一位新的）", where)
+
     # 发布门禁只看已发布知识点引用的 approved 活动。
     for f, message in check_publish_gate(nodes, acts):
         r.err(message, rel(repo, f))
@@ -625,6 +909,37 @@ def run(repo, base="origin/main", branch="", labels=()):
             visible = re.sub(r"<[^>]+>", " ", visible)
             if FORBIDDEN_WORD in visible:
                 r.err(f"页面文字里出现了「{FORBIDDEN_WORD}」", rel(repo, html))
+
+    # ---------- 4b. 动手探索模块的静态检查（tools/module_lint.py，#140） ----------
+    starter_path = repo / ".claude/skills/curio-anatomy/references/starter.html"
+    starter = starter_path.read_text(encoding="utf-8") if starter_path.exists() else None
+    for aid, (f, doc) in acts.items():
+        html = f.parent / "index.html"
+        if f.name != "manifest.yaml" or not html.exists():
+            continue
+        targets = doc.get("targets") or []
+        mis = {m["id"] for t in targets if t in nodes for m in nodes[t][1].get("misconceptions", []) if isinstance(m, dict) and "id" in m}
+        errors, warnings = module_lint.lint(html.read_text(encoding="utf-8"), doc, mis if all(t in nodes for t in targets) else None, starter)
+        no_walk = module_lint.missing_walk(html.read_text(encoding="utf-8"), aid, repo)
+        for message in errors + ([no_walk] if no_walk else []):
+            r.err(message, rel(repo, html))
+        # 提醒只对这次改过的模块报，免得每个 PR 都刷同样的提醒
+        if any(p.startswith(rel(repo, f.parent) + "/") for p in changed):
+            for message in warnings:
+                r.warn(message, rel(repo, html))
+
+    # ---------- 4c. 外壳页面长按不选字（#156） ----------
+    for shell in NOSELECT_SHELLS:
+        f = repo / shell
+        if not f.is_file():
+            continue
+        for desc in module_lint.noselect_missing(f.read_text(encoding="utf-8")):
+            r.err(f"样式里少了「{desc}」：iPad 上长按会选中文字、弹出拷贝菜单（#156）。照 tools/module_lint.py 的 NOSELECT_CSS 抄", shell)
+
+    # ---------- 4d. 星座进度：status.yaml 合法，生成段落和它对得上（#140 第 5 条） ----------
+    status_errors, _ = status_gen.sync(repo, write=False)
+    for message in status_errors:
+        r.err(message, "docs/constellations")
 
     # ---------- 5. 署名提醒 ----------
     log = git(repo, "log", f"{base}..HEAD", "--format=%h%x00%s%x00%B%x1e").stdout

@@ -1,0 +1,53 @@
+id: math.number.same-point
+schema: knode/1
+title: 一个点，几个名字
+subjects:
+- math
+theme: num
+grade: G6
+unit: 六上 · 百分数（一）（互化）；五上 · 小数除法（循环小数）；五下 · 分数和小数的互化（人教版旧版册次，新版以实体书为准）
+curriculum:
+- std: 义务教育数学课程标准（2022 年版）
+  ref: 第三学段「数与运算」：会进行小数、分数的转化，进一步发展数感
+- textbook: 人教版小学数学五年级上册、五年级下册、六年级上册（旧版）
+  unit: 小数除法；分数的意义和性质；百分数（一）
+prerequisites:
+- math.fraction.equivalent
+- math.decimal.tenths
+- math.percent.meaning
+- math.fraction.as-division
+related:
+- math.fraction.count-on-line
+driving_question: 1/4、0.25、25%，是三个数，还是一个数？
+objectives:
+- 知道分数、小数、百分数是同一个数的不同写法，在数线上是同一个点。
+- 会互相换：分子除以分母得到小数；小数点向右挪两位、添上百分号得到百分数。
+- 知道有的分数写成小数除得尽（1/4、1/8），有的永远除不尽（1/3），叫循环小数。
+- 知道截掉后面的数字只是「大约」：0.33 比 1/3 小一点点。
+misconceptions:
+- id: three-kinds
+  text: 觉得分数、小数、百分数是三种不同的数，1/4、0.25、25% 是三个点。
+- id: percent-not-number
+  text: 觉得百分数不是数，不能放到数线上。
+- id: truncate-equals
+  text: 觉得 1/3 就等于 0.3 或 0.33，写几位都一样。
+- id: digits-match
+  text: 照着数字的样子换，例如认为 1/5 = 0.5，1/4 = 0.4，1/8 = 8%。
+- id: glue-digits
+  text: 把分子分母连起来当小数或百分数，例如认为 1/5 = 1.5，1/8 = 18%。
+sources:
+- type: textbook
+  ref: 人教版小学数学五年级上册（旧版）第三单元「循环小数」；五年级下册（旧版）第四单元「分数和小数的互化」；六年级上册（旧版）第六单元「百分数和分数、小数的互化」
+lenses:
+- band: G3-4
+  approach: 只认识「一半」的三种说法：1/2、0.5、50%。
+- band: G5-6
+  approach: 一条数线配三把尺子，拖一个点，三个读数一起变；按住除法机，看 1 ÷ 3 的 3 永远流下去；把十一张卡片放到线上，一样大的叠成一颗钉子。
+- band: G7-9
+  approach: 有理数都能写成有限小数或循环小数；写不成的是无理数；0.999… 等于 1 的道理。
+activities:
+- act.simulation.three-rulers-01
+- act.quiz.same-point-01
+status: published  # Luka 2026-11-22 验收（#233）
+version: 1
+# END OF FILE

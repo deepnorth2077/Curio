@@ -1,0 +1,8 @@
+schema: navigator/1
+id: nav.ring
+version: 1
+title: 小环
+intro: 我是一颗带环的小星球。环歪到哪边，就是我的心情。
+unlock: {start: true}
+review: approved  # Luka 2026-11-11 定两位都留下（#112），2026-11-22 第一版（#242）
+author: {model: Claude Opus 5.5 (claude-opus-5-5), prompt_ref: prototype/design/navigator.html}

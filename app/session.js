@@ -3,10 +3,11 @@
 import { createLog } from "../kernel/js/log.js";
 import { projectMastery, groupAttempts } from "../kernel/js/mastery.js";
 import { createCommitter } from "./commit.js";
+import { projectNavigator } from "../kernel/js/navigator.js";
 
 /**
  * @typedef {{learner_id: string, device_id: string}} Identity
- * @typedef {{learner: () => string, device: () => string, event: () => string, attempt?: () => string}} Ids
+ * @typedef {{learner: () => string, device: () => string, event: () => string, attempt?: () => string, caregiver?: () => string}} Ids
  */
 
 /**
@@ -57,6 +58,102 @@ export function assemble(f) {
     content: f.content,
     payload: f.payload,
   });
+}
+
+/**
+ * 组装一条「范围：无」的家长事件（如 profile.set，docs/specs/profile.md 第 1 节）：不带 attempt_id、content，
+ * actor 是 {type: "caregiver", id}。和 assemble 一样只调用一次 JSON.stringify。
+ * @param {{event_id: string, identity: Identity, device_seq: number, occurred_at: string, caregiver_id: string, verb: string, payload: object}} f
+ * @returns {string}
+ */
+export function assembleCaregiver(f) {
+  return JSON.stringify({
+    schema: "event/2",
+    event_id: f.event_id,
+    learner_id: f.identity.learner_id,
+    device_id: f.identity.device_id,
+    device_seq: f.device_seq,
+    occurred_at: f.occurred_at,
+    actor: { type: "caregiver", id: f.caregiver_id },
+    verb: f.verb,
+    payload: f.payload,
+  });
+}
+
+/**
+ * 组装一条「范围：无」的孩子事件（如 navigator.chosen，docs/specs/navigators.md 第 3 节）：不带 attempt_id、content，
+ * actor 是 {type: "learner", id: learner_id}（actor.id 必须等于 learner_id）。和 assemble 一样只调用一次 JSON.stringify。
+ * @param {{event_id: string, identity: Identity, device_seq: number, occurred_at: string, verb: string, payload: object}} f
+ * @returns {string}
+ */
+export function assembleLearner(f) {
+  return JSON.stringify({
+    schema: "event/2",
+    event_id: f.event_id,
+    learner_id: f.identity.learner_id,
+    device_id: f.identity.device_id,
+    device_seq: f.device_seq,
+    occurred_at: f.occurred_at,
+    actor: { type: "learner", id: f.identity.learner_id },
+    verb: f.verb,
+    payload: f.payload,
+  });
+}
+
+/**
+ * 写一条「范围：无」的孩子事件：组装（device_seq 取 committer.nextSeq）→ 交给 committer（同一套摄入校验和串行写入）。
+ * @param {{identity: Identity, committer: ReturnType<typeof createCommitter>}} s
+ * @param {{ids: Ids, now: () => string}} deps
+ * @param {{verb: string, payload: object}} what
+ * @returns {Promise<{raw: string, result: "accepted"|"duplicate"}>}
+ */
+export async function submitLearner(s, { ids, now }, { verb, payload }) {
+  const event_id = ids.event();
+  const raw = assembleLearner({ event_id, identity: s.identity, device_seq: s.committer.nextSeq, occurred_at: now(), verb, payload });
+  const result = await s.committer.submit(raw, localReceipt(event_id, now()));
+  return { raw, result };
+}
+
+/**
+ * 写一条 navigator.chosen：rev 取当前生效的 rev 加 1（第一次是 1）。
+ * @param {{identity: Identity, committer: ReturnType<typeof createCommitter>, log: {events: () => any[]}}} s
+ * @param {{ids: Ids, now: () => string}} deps
+ * @param {string} navigator_id
+ */
+export function submitNavigatorChoice(s, deps, navigator_id) {
+  const rev = projectNavigator(s.log.events()).rev + 1;
+  return submitLearner(s, deps, { verb: "navigator.chosen", payload: { rev, navigator_id } });
+}
+
+/**
+ * 这台设备的家长 ID：meta 里有就用它，没有才生成一个存进去（只生成一次）。
+ * @param {{getCaregiver: () => Promise<{id: string}|null>, ensureCaregiver: (cg: {id: string}) => Promise<{id: string}>}} store
+ * @param {() => string} newId 生成 "cg_<ULID>"
+ * @returns {Promise<string>}
+ */
+export async function caregiverId(store, newId) {
+  const cur = await store.getCaregiver();
+  if (cur) return cur.id;
+  return (await store.ensureCaregiver({ id: newId() })).id;
+}
+
+/**
+ * 写一条家长事件：取家长 ID → 组装（device_seq 取 committer.nextSeq）→ 交给 committer（同一套摄入校验、写锁里的串行写入、
+ * durability: "strict" 的事务）。返回事件原文和 committer 的结果。
+ * @param {{store: any, identity: Identity, committer: ReturnType<typeof createCommitter>}} s
+ * @param {{ids: Ids, now: () => string}} deps
+ * @param {{verb: string, payload: object}} what
+ * @returns {Promise<{raw: string, result: "accepted"|"duplicate"}>}
+ */
+export async function submitCaregiver(s, { ids, now }, { verb, payload }) {
+  if (!ids.caregiver) throw new Error("没有生成家长 ID 的函数");
+  const caregiver_id = await caregiverId(s.store, ids.caregiver);
+  const event_id = ids.event();
+  const raw = assembleCaregiver({
+    event_id, identity: s.identity, device_seq: s.committer.nextSeq, occurred_at: now(), caregiver_id, verb, payload,
+  });
+  const result = await s.committer.submit(raw, localReceipt(event_id, now()));
+  return { raw, result };
 }
 
 /**

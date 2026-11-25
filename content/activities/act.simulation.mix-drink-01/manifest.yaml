@@ -1,0 +1,26 @@
+id: act.simulation.mix-drink-01
+contract: activity/1.1
+type: simulation
+version: 2
+title: 调饮料台
+targets:
+- math.ratio.meaning
+age_band: G5-6
+entry: index.html
+duration_min: 8
+pedagogy: explain
+capabilities:
+- pointer
+- keyboard
+misconceptions:
+- additive-comparison
+- one-quantity-only
+- add-same-keeps-ratio
+emits:
+- predicted
+- observed
+author:
+  model: Codex
+  prompt_ref: docs/constellations/zero-to-one/stars/14-meaning.md
+review: approved  # Luka 2026-11-22 验收（#233）
+# END OF FILE

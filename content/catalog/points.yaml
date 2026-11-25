@@ -1,0 +1,765 @@
+schema: catalog/1
+version: 2
+points:
+- id: m.g1.count
+  title: 数一数
+  grade: G1
+  theme: num
+  unit: 一上 · 准备课
+  prerequisites: []
+- id: m.g1.add20
+  title: 20 以内加减法
+  grade: G1
+  theme: num
+  unit: 一上 · 20 以内加减法
+  prerequisites:
+  - m.g1.count
+- id: m.g1.shapes
+  title: 认识图形
+  grade: G1
+  theme: geo
+  unit: 一上 · 认识图形
+  prerequisites: []
+- id: m.g1.clock
+  title: 认识钟表
+  grade: G1
+  theme: geo
+  unit: 一上 · 认识钟表
+  prerequisites: []
+- id: m.g2.add100
+  title: 100 以内加减法
+  grade: G2
+  theme: num
+  unit: 二上 · 100 以内加减法
+  prerequisites:
+  - m.g1.add20
+- id: m.g2.times
+  title: 表内乘法
+  grade: G2
+  theme: num
+  unit: 二上 · 表内乘法
+  prerequisites:
+  - m.g2.add100
+- id: math.number.division-meaning
+  title: 除法的意义
+  grade: G2
+  theme: num
+  unit: 二下 · 表内除法
+  prerequisites:
+  - m.g2.times
+- id: m.g2.length
+  title: 厘米和米
+  grade: G2
+  theme: geo
+  unit: 二上 · 长度单位
+  prerequisites: []
+- id: m.g2.angle
+  title: 角的初步认识
+  grade: G2
+  theme: geo
+  unit: 二上 · 角的初步认识
+  prerequisites:
+  - m.g1.shapes
+- id: m.g2.data
+  title: 数据收集整理
+  grade: G2
+  theme: stat
+  unit: 二下 · 数据收集整理
+  prerequisites: []
+- id: math.measure.time-units
+  title: 时、分、秒
+  grade: G3
+  theme: geo
+  unit: 三上 · 时、分、秒
+  prerequisites:
+  - m.g1.clock
+- id: m.g3.timecalc
+  title: 经过的时间
+  grade: G3
+  theme: geo
+  unit: 三上 · 时、分、秒
+  prerequisites:
+  - math.measure.time-units
+- id: m.g3.mental
+  title: 两位数加减口算
+  grade: G3
+  theme: num
+  unit: 三上 · 万以内加减法（一）
+  prerequisites:
+  - m.g2.add100
+- id: m.g3.mm
+  title: 毫米和分米
+  grade: G3
+  theme: geo
+  unit: 三上 · 测量
+  prerequisites:
+  - m.g2.length
+- id: m.g3.km
+  title: 千米
+  grade: G3
+  theme: geo
+  unit: 三上 · 测量
+  prerequisites:
+  - m.g3.mm
+- id: m.g3.ton
+  title: 吨
+  grade: G3
+  theme: geo
+  unit: 三上 · 测量
+  prerequisites: []
+- id: m.g3.add3
+  title: 三位数加法
+  grade: G3
+  theme: num
+  unit: 三上 · 万以内加减法（二）
+  prerequisites:
+  - m.g3.mental
+- id: m.g3.sub3
+  title: 三位数减法
+  grade: G3
+  theme: num
+  unit: 三上 · 万以内加减法（二）
+  prerequisites:
+  - m.g3.add3
+- id: m.g3.times-concept
+  title: 倍的认识
+  grade: G3
+  theme: rel
+  unit: 三上 · 倍的认识
+  prerequisites:
+  - m.g2.times
+- id: m.g3.times-find
+  title: 求一个数的几倍
+  grade: G3
+  theme: rel
+  unit: 三上 · 倍的认识
+  prerequisites:
+  - m.g3.times-concept
+- id: m.g3.mul1-oral
+  title: 口算乘法
+  grade: G3
+  theme: num
+  unit: 三上 · 多位数乘一位数
+  prerequisites:
+  - m.g2.times
+- id: m.g3.mul1-written
+  title: 笔算乘法
+  grade: G3
+  theme: num
+  unit: 三上 · 多位数乘一位数
+  prerequisites:
+  - m.g3.mul1-oral
+- id: m.g3.quad
+  title: 四边形
+  grade: G3
+  theme: geo
+  unit: 三上 · 长方形和正方形
+  prerequisites:
+  - m.g2.angle
+- id: math.geometry.perimeter
+  title: 周长
+  grade: G3
+  theme: geo
+  unit: 三上 · 长方形和正方形
+  prerequisites:
+  - m.g3.quad
+- id: m.g3.rect-perim
+  title: 长方形的周长
+  grade: G3
+  theme: geo
+  unit: 三上 · 长方形和正方形
+  prerequisites:
+  - math.geometry.perimeter
+- id: m.g3.sets
+  title: 集合
+  grade: G3
+  theme: stat
+  unit: 三上 · 数学广角
+  prerequisites: []
+- id: m.g3.direction
+  title: 东南西北
+  grade: G3
+  theme: geo
+  unit: 三下 · 位置与方向
+  prerequisites: []
+- id: m.g3.div1
+  title: 除数是一位数的除法
+  grade: G3
+  theme: num
+  unit: 三下 · 除数是一位数的除法
+  prerequisites:
+  - math.number.division-meaning
+- id: m.g3.table2
+  title: 复式统计表
+  grade: G3
+  theme: stat
+  unit: 三下 · 复式统计表
+  prerequisites:
+  - m.g2.data
+- id: m.g3.mul2
+  title: 两位数乘两位数
+  grade: G3
+  theme: num
+  unit: 三下 · 两位数乘两位数
+  prerequisites:
+  - m.g3.mul1-written
+- id: m.g3.area
+  title: 面积
+  grade: G3
+  theme: geo
+  unit: 三下 · 面积
+  prerequisites:
+  - math.geometry.perimeter
+- id: m.g3.area-rect
+  title: 长方形的面积
+  grade: G3
+  theme: geo
+  unit: 三下 · 面积
+  prerequisites:
+  - m.g3.area
+- id: m.g3.calendar
+  title: 年、月、日
+  grade: G3
+  theme: geo
+  unit: 三下 · 年、月、日
+  prerequisites:
+  - math.measure.time-units
+- id: m.g3.combo
+  title: 搭配
+  grade: G3
+  theme: stat
+  unit: 三下 · 数学广角
+  prerequisites: []
+- id: m.g4.big
+  title: 大数的认识
+  grade: G4
+  theme: num
+  unit: 四上
+  prerequisites:
+  - m.g3.add3
+- id: m.g4.laws
+  title: 运算定律
+  grade: G4
+  theme: rel
+  unit: 四下
+  prerequisites:
+  - m.g3.mul2
+- id: m.g4.triangle
+  title: 三角形
+  grade: G4
+  theme: geo
+  unit: 四下
+  prerequisites:
+  - m.g3.quad
+- id: m.g5.line-chart
+  title: 折线统计图
+  grade: G5
+  theme: stat
+  unit: 五下
+  prerequisites:
+  - m.g3.table2
+- id: m.g6.circle
+  title: 圆
+  grade: G6
+  theme: geo
+  unit: 六上
+  prerequisites:
+  - m.g4.triangle
+- id: m.g7.rational
+  title: 有理数
+  grade: G7
+  theme: num
+  unit: 七上
+  prerequisites:
+  - math.percent.meaning
+- id: m.g7.equation
+  title: 一元一次方程
+  grade: G7
+  theme: rel
+  unit: 七上
+  prerequisites:
+  - m.g4.laws
+- id: m.g8.function
+  title: 一次函数
+  grade: G8
+  theme: rel
+  unit: 八下
+  prerequisites:
+  - m.g7.equation
+- id: m.g10.func
+  title: 函数的概念
+  grade: G10
+  theme: rel
+  unit: 必修一
+  prerequisites:
+  - m.g8.function
+- id: science.matter.water-states
+  title: 水的三种样子
+  grade: G3
+  theme: mat
+  unit: 水
+  prerequisites: []
+- id: s.g3.melt
+  title: 冰的融化
+  grade: G3
+  theme: mat
+  unit: 水
+  prerequisites:
+  - science.matter.water-states
+- id: s.g3.evap
+  title: 水的蒸发
+  grade: G3
+  theme: mat
+  unit: 水
+  prerequisites:
+  - science.matter.water-states
+- id: science.matter.air-space
+  title: 空气占据空间
+  grade: G3
+  theme: mat
+  unit: 空气
+  prerequisites: []
+- id: s.g3.air-mass
+  title: 空气有质量吗
+  grade: G3
+  theme: mat
+  unit: 空气
+  prerequisites:
+  - science.matter.air-space
+- id: s.g3.temp
+  title: 测量气温
+  grade: G3
+  theme: earth
+  unit: 天气
+  prerequisites: []
+- id: s.g3.wind
+  title: 风向和风力
+  grade: G3
+  theme: earth
+  unit: 天气
+  prerequisites:
+  - s.g3.temp
+- id: s.g3.seed
+  title: 种子发芽
+  grade: G3
+  theme: life
+  unit: 植物的生长
+  prerequisites: []
+- id: s.g3.plant
+  title: 植物的一生
+  grade: G3
+  theme: life
+  unit: 植物的生长
+  prerequisites:
+  - s.g3.seed
+- id: s.g4.sound
+  title: 声音的产生
+  grade: G4
+  theme: ene
+  unit: 声音
+  prerequisites: []
+- id: s.g4.circuit
+  title: 简单电路
+  grade: G4
+  theme: ene
+  unit: 电
+  prerequisites: []
+- id: s.g4.animal
+  title: 动物的一生
+  grade: G4
+  theme: life
+  unit: 动物
+  prerequisites: []
+- id: science.light.straight-line
+  title: 光沿直线传播
+  grade: G5
+  theme: ene
+  unit: 光
+  prerequisites: []
+- id: science.light.pinhole
+  title: 小孔成像
+  grade: G5
+  theme: ene
+  unit: 光
+  prerequisites:
+  - science.light.straight-line
+- id: s.g5.shadow
+  title: 影子
+  grade: G5
+  theme: ene
+  unit: 光
+  prerequisites:
+  - science.light.straight-line
+- id: s.g5.daynight
+  title: 昼夜交替
+  grade: G5
+  theme: earth
+  unit: 地球的运动
+  prerequisites: []
+- id: s.g6.change
+  title: 物质的变化
+  grade: G6
+  theme: mat
+  unit: 物质的变化
+  prerequisites:
+  - s.g3.melt
+- id: p.g8.reflect
+  title: 光的反射
+  grade: G8
+  theme: ene
+  unit: 物理 · 光现象
+  prerequisites:
+  - science.light.straight-line
+- id: p.g8.force
+  title: 力
+  grade: G8
+  theme: ene
+  unit: 物理 · 力
+  prerequisites: []
+- id: p.g9.current
+  title: 电流和电路
+  grade: G9
+  theme: ene
+  unit: 物理 · 电流
+  prerequisites:
+  - s.g4.circuit
+- id: c.g9.atom
+  title: 分子和原子
+  grade: G9
+  theme: mat
+  unit: 化学 · 物质构成
+  prerequisites:
+  - s.g6.change
+- id: c.g9.equation
+  title: 化学方程式
+  grade: G9
+  theme: mat
+  unit: 化学 · 化学方程式
+  prerequisites:
+  - c.g9.atom
+  - math.ratio.meaning
+- id: biology.cell.cell-intro
+  title: 细胞：生命的小房间
+  grade: G7
+  theme: life
+  unit: 七上 · 第一单元 生物和细胞 · 第二章 认识细胞
+  prerequisites: []
+- id: b.g7.photo
+  title: 光合作用
+  grade: G7
+  theme: life
+  unit: 生物 · 绿色植物
+  prerequisites:
+  - s.g3.plant
+  - biology.cell.cell-intro
+- id: e.g7.earth
+  title: 地球的运动
+  grade: G7
+  theme: earth
+  unit: 地理 · 地球
+  prerequisites:
+  - s.g5.daynight
+- id: p.g10.newton
+  title: 牛顿运动定律
+  grade: G10
+  theme: ene
+  unit: 物理 · 必修一
+  prerequisites:
+  - p.g8.force
+- id: c.g11.equil
+  title: 化学平衡
+  grade: G11
+  theme: mat
+  unit: 化学 · 选择性必修
+  prerequisites:
+  - c.g9.equation
+- id: b.g11.gene
+  title: 遗传与进化
+  grade: G11
+  theme: life
+  unit: 生物 · 必修二
+  prerequisites:
+  - biology.genetics.chromosome-intro
+- id: biology.genetics.dna-intro
+  title: DNA：细胞里的说明书
+  grade: G8
+  theme: life
+  unit: 八下 · 第六单元 生命的延续和发展 · 第二章 生物的遗传与变异
+  prerequisites:
+  - biology.cell.cell-intro
+- id: biology.genetics.chromosome-intro
+  title: 染色体：把说明书卷好收起来
+  grade: G8
+  theme: life
+  unit: 八下 · 第六单元 生命的延续和发展 · 第二章 生物的遗传与变异
+  prerequisites:
+  - biology.genetics.dna-intro
+- id: math.decimal.compare-add
+  title: 小数比大小和加减
+  grade: G4
+  theme: num
+  unit: 四下 · 小数的意义和性质；小数的加法和减法（人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.decimal.tenths
+- id: math.decimal.point-shift
+  title: 小数点搬家
+  grade: G4
+  theme: num
+  unit: 四下 · 小数的意义和性质（小数点移动、单位换算；人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.decimal.tenths
+- id: math.decimal.tenths
+  title: 小数是什么
+  grade: G3
+  theme: num
+  unit: 三下 · 小数的初步认识；四下 · 小数的意义和性质（人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.fraction.unit-fraction
+  - math.fraction.count-on-line
+- id: math.fraction.add-subtract
+  title: 分数加减
+  grade: G5
+  theme: num
+  unit: 五下 · 分数的加法和减法（人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.fraction.compare
+- id: math.fraction.as-division
+  title: 分数和除法
+  grade: G5
+  theme: num
+  unit: 五下 · 分数的意义和性质（分数与除法、真分数和假分数；人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.fraction.count-on-line
+  - math.fraction.the-whole
+- id: math.fraction.compare
+  title: 分数比大小
+  grade: G5
+  theme: num
+  unit: 五下 · 分数的意义和性质（通分；人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.fraction.equivalent
+- id: math.fraction.count-on-line
+  title: 几分之几：分数也能数
+  grade: G3
+  theme: num
+  unit: 三上 · 第六单元 分数的初步认识（人教版 2024 年新教材，2025 年秋起用；以实体书为准）
+  prerequisites:
+  - math.fraction.unit-fraction
+- id: math.fraction.divide
+  title: 除以分数
+  grade: G6
+  theme: num
+  unit: 六上 · 分数除法（人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.fraction.multiply
+  - math.fraction.as-division
+- id: math.fraction.equivalent
+  title: 等值分数：再切一刀
+  grade: G5
+  theme: num
+  unit: 五下 · 分数的意义和性质（分数的基本性质、约分；人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.fraction.unit-fraction
+  - math.fraction.count-on-line
+- id: math.fraction.multiply
+  title: 分数乘分数
+  grade: G6
+  theme: num
+  unit: 六上 · 分数乘法（人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.fraction.equivalent
+  - math.fraction.the-whole
+  - math.operation.multiply-shrinks
+- id: math.fraction.the-whole
+  title: 谁的几分之几
+  grade: G3
+  theme: num
+  unit: 三上 · 第六单元 分数的初步认识（人教版 2024 年新教材，2025 年秋起用）；「把一些物体看作一个整体」在哪一节，待对照实体书（可能在第 3
+    节「进一步认识分数」，只见到标题）
+  prerequisites:
+  - math.fraction.unit-fraction
+- id: math.fraction.unit-fraction
+  title: 几分之一：越分越小
+  grade: G3
+  theme: num
+  unit: 三上 · 第六单元 分数的初步认识（人教版 2024 年新教材，2025 年秋起用；以实体书为准）
+  prerequisites: []
+- id: math.number.same-point
+  title: 一个点，几个名字
+  grade: G6
+  theme: num
+  unit: 六上 · 百分数（一）（互化）；五上 · 小数除法（循环小数）；五下 · 分数和小数的互化（人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.fraction.equivalent
+  - math.decimal.tenths
+  - math.percent.meaning
+  - math.fraction.as-division
+- id: math.operation.distributive-law
+  title: 乘法分配律：掰开来算
+  grade: G4
+  theme: num
+  unit: 四年级 · 运算律（旧版人教版在四下第三单元「运算定律」；2026 年秋起的新版放在哪一册，待对照实体书）
+  prerequisites: []
+- id: math.operation.multiply-shrinks
+  title: 乘了反而变小
+  grade: G5
+  theme: num
+  unit: 五上 · 小数乘法；六上 · 分数乘法（人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.decimal.tenths
+  - math.fraction.unit-fraction
+- id: math.ratio.meaning
+  title: 比：味道一样的秘密
+  grade: G6
+  theme: rel
+  unit: 六上 · 比（人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.fraction.equivalent
+  - math.fraction.as-division
+- id: math.ratio.proportion
+  title: 比例和比例尺
+  grade: G6
+  theme: rel
+  unit: 六下 · 比例（人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.ratio.meaning
+- id: math.ratio.sharing
+  title: 按比分配
+  grade: G6
+  theme: rel
+  unit: 六上 · 比（按比分配；人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.ratio.meaning
+  - math.fraction.the-whole
+- id: math.percent.change
+  title: 涨一半再跌一半
+  grade: G6
+  theme: stat
+  unit: 六下 · 百分数（二）（折扣、利率；人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.percent.meaning
+  - math.operation.multiply-shrinks
+- id: math.percent.meaning
+  title: 百分数：都换成 100 份
+  grade: G6
+  theme: stat
+  unit: 六上 · 百分数（一）（人教版旧版册次，新版以实体书为准）
+  prerequisites:
+  - math.fraction.equivalent
+  - math.fraction.the-whole
+- id: physics.machine.lever
+  title: 杠杆：把支点挪一格
+  grade: G6
+  theme: ene
+  unit: 手里的力
+  prerequisites: []
+- id: physics.machine.pulley
+  title: 滑轮：谁在托箱子
+  grade: G6
+  theme: ene
+  unit: 手里的力
+  prerequisites: []
+- id: physics.machine.ramp
+  title: 斜面：长路怎样省力
+  grade: G6
+  theme: ene
+  unit: 送到同样高
+  prerequisites: []
+- id: physics.energy.work
+  title: 功：力和路程合起来
+  grade: G8
+  theme: ene
+  unit: 送到同样高
+  prerequisites:
+  - physics.machine.ramp
+- id: physics.energy.power
+  title: 功率：一秒能搬多少
+  grade: G8
+  theme: ene
+  unit: 看秒表，追能量
+  prerequisites:
+  - physics.energy.work
+- id: physics.energy.transfer
+  title: 能量：滑停以后去了哪
+  grade: G8
+  theme: ene
+  unit: 看秒表，追能量
+  prerequisites:
+  - physics.energy.work
+- id: physics.motion.inertia
+  title: 牛顿第一定律：松手后还会走吗
+  grade: G8
+  theme: ene
+  unit: 先盯一辆车
+  prerequisites:
+  - p.g8.force
+- id: physics.motion.force-acceleration
+  title: 牛顿第二定律：同一推力推两辆车
+  grade: G10
+  theme: ene
+  unit: 改变运动，再看伙伴
+  prerequisites:
+  - p.g8.force
+  - physics.motion.inertia
+- id: physics.motion.action-reaction
+  title: 牛顿第三定律：两辆车互推
+  grade: G10
+  theme: ene
+  unit: 改变运动，再看伙伴
+  prerequisites:
+  - physics.motion.force-acceleration
+retired:
+- id: math.number.fraction-intro
+  title: 分数的初步认识
+  grade: G3
+  theme: num
+  unit: 三上 · 分数的初步认识
+  replaced_by: math.fraction.unit-fraction
+- id: math.number.fraction-compare
+  title: 同分母分数比大小
+  grade: G3
+  theme: num
+  unit: 三上 · 分数的初步认识
+  replaced_by: math.fraction.count-on-line
+- id: m.g3.frac-calc
+  title: 分数的简单计算
+  grade: G3
+  theme: num
+  unit: 三上 · 分数的初步认识
+  replaced_by: math.fraction.add-subtract
+- id: m.g3.frac-app
+  title: 分数的简单应用
+  grade: G3
+  theme: rel
+  unit: 三上 · 分数的初步认识
+  replaced_by: math.fraction.the-whole
+- id: m.g3.decimal
+  title: 小数的初步认识
+  grade: G3
+  theme: num
+  unit: 三下 · 小数的初步认识
+  replaced_by: math.decimal.tenths
+- id: m.g4.decimal
+  title: 小数的意义
+  grade: G4
+  theme: num
+  unit: 四下
+  replaced_by: math.decimal.tenths
+- id: m.g5.fraction
+  title: 分数的意义
+  grade: G5
+  theme: num
+  unit: 五下
+  replaced_by: math.fraction.the-whole
+- id: m.g6.percent
+  title: 百分数
+  grade: G6
+  theme: num
+  unit: 六上
+  replaced_by: math.percent.meaning
+- id: m.g6.ratio
+  title: 比和比例
+  grade: G6
+  theme: rel
+  unit: 六下
+  replaced_by: math.ratio.meaning

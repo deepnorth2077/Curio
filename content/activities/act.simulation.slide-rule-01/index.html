@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>滑尺</title>
+<style>
+/* kit:base —— 颜色、卡片、气泡、按钮。色值不要改；模块自己的样式写在最后一段 */
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --grip:#2A7F7C; --grip-soft:#D3E8E5;
+  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
+  --dad:#4F7FA8; --mom:#C2603F; --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#E0876A; --accent-soft:#3A2A24;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;
+  --dad:#7FA9CF; --mom:#E0876A; --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:820px;margin:0 auto;padding:12px 14px 28px}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;overflow:hidden}
+.card header,.card footer{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px}
+.card header{border-bottom:1px solid var(--rule)}
+.card footer{border-top:1px solid var(--rule);min-height:52px;align-items:center}
+.station{font-size:13px;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+h1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);margin:0;text-align:right}
+.hint{font-size:14px;color:var(--muted)}
+.readout{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15px;text-align:right}
+.readout b{color:var(--accent);font-weight:600}
+svg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+svg#stage:focus,svg#stage:focus-visible{outline:none}
+svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.t{fill:var(--ink);font-family:var(--f-sans);font-size:15px}
+.tm{fill:var(--muted);font-family:var(--f-sans);font-size:15px}
+.talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
+.ava{flex:none;width:42px;height:42px}
+/* 领航员的脸（docs/specs/navigators.md 第 6 节）：正式外壳在 init.navigator 里给选好的那位，十个类 k、k1、f-* 的颜色在这里 */
+.f-ink{fill:var(--ink)} .f-pane{fill:var(--pane)} .f-sky{fill:var(--sky)} .f-sage{fill:var(--sage)} .f-apricot{fill:var(--apricot)} .f-paper{fill:var(--paper)} .f-muted{fill:var(--muted)} .f-accent{fill:var(--accent)}
+.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
+.bubble.good{background:var(--good-soft);border-color:transparent}
+.bubble.bad{background:var(--bad-soft);border-color:transparent}
+.bubble.hmm{background:var(--paper);border-color:transparent}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:10px 0 0}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:manipulation}
+.btn.ghost{background:var(--pane);color:var(--ink)}
+.btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
+.btn.choice:hover{background:var(--hover)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500} .btn.tight{padding:9px 12px}
+.qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px} .card footer{flex-wrap:wrap;row-gap:2px} .hint{white-space:nowrap} .readout{font-size:14px;flex:1 1 auto} }
+/* kit:grip 2026-11-14 —— 圆钮（「可抓」记号，g1.md A.4 G1～G8）。--grip 只给圆钮、托、按住按钮、焦点框用；--accent 不给任何控件用 */
+.btn.hold{touch-action:none;background:var(--grip);border-color:var(--grip);color:var(--bg);display:inline-flex;align-items:center;gap:10px;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.btn.hold.on{filter:brightness(.82)}
+.btn.hold svg{width:18px;height:18px;flex:none}
+.btn.hold svg path{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.gfill{fill:var(--grip)} .gsoft{fill:var(--grip-soft)}
+.gring{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.gring.on{stroke-width:3.2}
+.gridge{fill:none;stroke:var(--bg);stroke-width:2.2;stroke-linecap:round}
+.garrow{fill:none;stroke:var(--grip);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.gkbd{fill:none;stroke:var(--ink);stroke-width:1.6}
+#cue{fill:none;stroke:var(--grip);stroke-width:2.4;transform-box:fill-box;transform-origin:center;animation:cue 2.4s ease-out infinite}
+@keyframes cue{0%{transform:scale(1);opacity:.95}50%{transform:scale(1.8);opacity:0}100%{transform:scale(1.8);opacity:0}}
+@media (prefers-reduced-motion:reduce){#cue{animation:none;transform:scale(1.3);opacity:.9}}
+/* kit:frac 2026-11-14 —— 分数一律上下结构（A.4 第 2 条）。HTML 里用 .frac，SVG 里用 fracS() */
+.frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.08;font-family:var(--f-mono);font-size:.84em;margin:0 .2em;font-variant-numeric:tabular-nums}
+.frac>span:first-child{border-bottom:1.6px solid currentColor;padding:0 .28em .04em}
+.frac>span:last-child{padding:.04em .28em 0}
+.fl{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round}
+.fs{fill:var(--ink);font-family:var(--f-mono);font-size:16px} .fm{fill:var(--ink);font-family:var(--f-mono);font-size:22px} .fb{fill:var(--ink);font-family:var(--f-mono);font-size:34px}
+body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{font-size:38px}
+/* 模块自己的画面样式写在这里：字号全写在类上，窄屏在 body.narrow 里放大（教训 14、28）。下面几个类可以直接用 */
+.food{fill:var(--apricot)} .lead{fill:var(--accent)} .papr{fill:var(--paper)} .pane{fill:var(--pane)}
+.kacc{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.one{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-dasharray:7 6}
+.faint{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;opacity:.75}
+.lb{fill:var(--ink);font-family:var(--f-sans);font-size:17px}
+.lbg{fill:var(--muted);font-family:var(--f-sans);font-size:16px}
+.lbm{fill:var(--ink);font-family:var(--f-mono);font-size:17px}
+.big{fill:var(--ink);font-family:var(--f-mono);font-size:44px}
+.ttl{fill:var(--ink);font-family:var(--f-serif);font-size:26px}
+.sign{fill:var(--ink);font-family:var(--f-serif);font-size:24px}
+.tk{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round} .tkd{fill:none;stroke:var(--accent);stroke-width:1.1}
+body.narrow .lb{font-size:21px} body.narrow .lbg{font-size:20px} body.narrow .lbm{font-size:20px}
+body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .sign{font-size:28px}
+/* ============ 本活动 ============ */
+#workbench{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;padding:0 12px 12px}
+#workbench:empty{padding:0}
+#workbench button{border-radius:9px;min-width:48px;min-height:48px}
+#workbench .digit{font-family:var(--f-mono);font-size:22px;background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);touch-action:none}
+#workbench .slots{display:flex;align-items:center;gap:3px}
+#workbench .pair{width:100%;display:flex;flex-wrap:wrap;justify-content:center;gap:12px}
+#workbench .slot{font:20px var(--f-mono);background:var(--bg);border:1px solid var(--rule);color:var(--ink)}
+#workbench .slot[aria-pressed="true"]{outline:2px solid var(--ink);outline-offset:-2px;background:var(--paper)}
+#workbench .digits{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:4px}
+#workbench button:focus-visible{outline:3px solid var(--grip)}
+@media(max-width:520px){#workbench .slots{gap:1px}#workbench .pair{gap:6px}#workbench{padding-inline:4px}#workbench .digits{max-width:285px}}
+.water{fill:var(--sky)} .wash{fill:var(--sage)} .paperline{stroke:var(--pane);stroke-width:1}
+.table-line{stroke:var(--rule);stroke-width:2}.unit-label{fill:var(--muted);font:16px var(--f-sans)}
+.digit-face{font:600 30px var(--f-mono);fill:var(--ink)}.inknum{fill:var(--accent);font:600 30px var(--f-mono)}
+#stage .hit{pointer-events:all;touch-action:none;cursor:grab;fill:transparent}
+#stage #touch{pointer-events:none}
+@media(max-width:520px){.unit-label{font-size:20px}}
+@keyframes arrive{from{transform:translateY(-22px);opacity:.35}to{transform:translateY(0);opacity:1}}
+.new-layer{animation:arrive .28s ease-out}
+@media(prefers-reduced-motion:reduce){.new-layer{animation:none}}
+.coin-face{font:13px var(--f-sans);fill:var(--ink)}
+
+#workbench .digit.next-digit{position:relative;padding-right:24px}
+.digit.next-digit svg{position:absolute;right:0;top:-4px;width:23px;height:23px;overflow:visible}
+.fresh .next-digit svg{animation:digitcue 2.4s ease-in-out 1.5s infinite}
+@keyframes digitcue{0%,75%,100%{transform:scale(1)}35%{transform:scale(1.32)}}
+@media(prefers-reduced-motion:reduce){.fresh .next-digit svg{animation:none}}
+
+@keyframes fold-layers{0%,35%{opacity:1}100%{opacity:0}}
+.fold-layers{animation:fold-layers 1.2s both}
+@media(prefers-reduced-motion:reduce){.fold-layers{animation:none;opacity:0}}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <header><span class="station" id="station"></span><h1 id="title"></h1></header>
+    <svg id="stage" viewBox="0 0 800 610" tabindex="0" role="application" aria-label="动手区">
+      <g id="fixed"></g><g id="dyn"></g>
+      <g id="fx"><circle id="cue" cx="0" cy="0" r="10" style="display:none"/></g><!-- 提醒环用 CSS 动画，不跟着每帧重画（教训 23） -->
+      <rect id="touch" x="-400" y="-400" width="1600" height="1410" fill="transparent"/><!-- 永不重画的触摸层（教训 25） -->
+    </svg>
+    <div id="workbench" aria-label="操作台"></div>
+    <footer><span class="hint" id="hint"></span><span class="readout" id="readout"></span></footer>
+  </div>
+  <div class="talk">
+    <svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="27" r="16" fill="var(--sky)"/>
+      <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+      <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+      <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+      <path class="k1" d="M18 32 C21 35 27 35 30 32"/>
+    </svg>
+    <div class="bubble" id="say" aria-live="polite"></div>
+  </div>
+  <div class="actions" id="actions"></div>
+  <div id="qarea"></div>
+</div>
+
+<script>
+"use strict";
+/* ============ 2. 平台契约 activity/1.1（单独打开时也能玩）  kit:host ============ */
+const Host = (() => {
+  const h = {}, inFrame = window.parent !== window;
+  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); else (window.__sent = window.__sent || []).push({ type, payload: payload || {} }); };
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
+    state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
+})();
+// 领航员（docs/specs/navigators.md 第 6 节）：正式外壳在 init.navigator 给选好的那位的六张脸（去掉了最外层 <svg>），
+// .ava 换成它，表情跟着 say() 换。没给（单独打开、试玩页、旧宿主）就留着自带的脸
+let navFaces = null, navNow = "curious";
+function navFace(k){ navNow = k; if (navFaces && typeof navFaces[k] === "string") document.querySelector(".ava").innerHTML = navFaces[k]; }
+Host.on("init", p => {
+  if (p && p.navigator && p.navigator.faces && typeof p.navigator.faces.curious === "string"){ navFaces = p.navigator.faces; navFace(navNow); }
+  if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
+  if (p && p.question_available === false) $("qarea").hidden = true;   // 正式外壳先关提问入口（slice-5a）
+  resumeFrom(p);   // 正式外壳记得做过哪几站：先让孩子选站（kit:shell）
+});
+// 每站的猜测和观察只记一次，complete 只发一次（C.0 第 3 条；教训 15、19）
+const sentPred = new Set(), sentObs = new Set();
+let completed = false;
+// observed 只在一站做完时发一次，带整站完成的标记（slice-5a）；站内中途的操作不发 observed
+function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station, item: "station-complete" }); }
+let lastState = "";
+function sendState(o){ const s = JSON.stringify(o); if (s === lastState) return; lastState = s; Host.state(o); }
+
+/* ============ 3. 手绘线条（平台的 sketchLib）  kit:sketch ============ */
+function sketchLib(){
+  const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
+  const f=n=>Math.round(n*10)/10;
+  function cr(p,closed){ const n=p.length; let d=`M${f(p[0][0])} ${f(p[0][1])}`;
+    for(let i=0;i<(closed?n:n-1);i++){ const p1=p[i],p2=p[(i+1)%n]; const p0=(!closed&&i===0)?p1:p[(i-1+n)%n]; const p3=(!closed&&i+2>=n)?p2:p[(i+2)%n];
+      d+=`C${f(p1[0]+(p2[0]-p0[0])/6)} ${f(p1[1]+(p2[1]-p0[1])/6)} ${f(p2[0]-(p3[0]-p1[0])/6)} ${f(p2[1]-(p3[1]-p1[1])/6)} ${f(p2[0])} ${f(p2[1])}`; }
+    return d; }
+  function line(x1,y1,x2,y2,seed,j){ const r=R(seed); j=j==null?1:j; const L=Math.hypot(x2-x1,y2-y1)||1; const a=Math.min(1.8,.5+L*.008)*j; const o=()=>(r()-.5)*2*a;
+    const nx=-(y2-y1)/L, ny=(x2-x1)/L, bow=(r()-.5)*Math.min(L*.035,6)*j;
+    return `M${f(x1+o())} ${f(y1+o())}Q${f((x1+x2)/2+nx*bow)} ${f((y1+y2)/2+ny*bow)} ${f(x2+o())} ${f(y2+o())}`; }
+  function ellipse(cx,cy,rx,ry,seed,j){ const r=R(seed); j=j==null?1:j; const N=12, a0=r()*Math.PI*2, turn=1.05+r()*.06, p=[];
+    for(let i=0;i<=N;i++){ const t=a0+i/N*Math.PI*2*turn, k=1+(r()-.5)*.07*j; p.push([cx+Math.cos(t)*rx*k, cy+Math.sin(t)*ry*k]); }
+    return cr(p,false); }
+  function curve(pts,seed,j){ const r=R(seed); j=j==null?1:j; return cr(pts.map(q=>[q[0]+(r()-.5)*2*j,q[1]+(r()-.5)*2*j]),false); }
+  return {line,ellipse,curve,cr,R,f};
+}
+const Sk = sketchLib();
+const P = (d, cls, extra) => `<path class="${cls || "k"}" d="${d}"${extra ? " " + extra : ""}/>`;
+const T = (x, y, s, cls, extra) => `<text x="${x}" y="${y}" class="${cls || "t"}"${extra ? " " + extra : ""}>${s}</text>`;
+const TC = (x, y, s, cls, extra) => T(x, y, s, cls, 'text-anchor="middle"' + (extra ? " " + extra : ""));
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const r1 = n => Math.round(n * 10) / 10;
+const box = (x, y, w, h, seed, j) => Sk.line(x, y, x + w, y, seed, j) + Sk.line(x + w, y, x + w, y + h, seed + 1, j) + Sk.line(x + w, y + h, x, y + h, seed + 2, j) + Sk.line(x, y + h, x, y, seed + 3, j);
+// 角度：从正上方起、顺时针，和钟面一样
+const pol = (cx, cy, r, deg) => { const a = deg * Math.PI / 180; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
+function sectorD(cx, cy, r, a0, a1){
+  if (a1 - a0 >= 359.9) return `M${r1(cx - r)} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
+  const p0 = pol(cx, cy, r, a0), p1 = pol(cx, cy, r, a1);
+  return `M${r1(cx)} ${r1(cy)}L${r1(p0[0])} ${r1(p0[1])}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${r1(p1[0])} ${r1(p1[1])}Z`;
+}
+function arcD(cx, cy, r, a0, a1, seed){   // 手绘的一段圆弧
+  const rnd = Sk.R(seed), N = Math.max(2, Math.ceil((a1 - a0) / 14)), pts = [];
+  for (let i = 0; i <= N; i++) pts.push(pol(cx, cy, r * (1 + (rnd() - .5) * .012), a0 + (a1 - a0) * i / N));
+  return Sk.cr(pts, false);
+}
+
+/* ============ 4. 共用零件：分数、「1」记号、圆钮、数线条  kit:parts ============ */
+const narrow = () => document.body.classList.contains("narrow");
+// 4.1 分数：HTML 里的 .frac（带读法）和 SVG 里的 fracS（上下结构，手绘分数线）。任何地方都不用斜杠写法
+const CN1 = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+const cnNum = n => (n = +n, n === 100 ? "百" : n === 1000 ? "千" : !Number.isInteger(n) || n < 1 || n > 99 ? undefined : n <= 10 ? CN1[n] : n < 20 ? "十" + CN1[n - 10] : CN1[Math.floor(n / 10)] + "十" + (n % 10 ? CN1[n % 10] : ""));   // 认 1 到 99、100（百）、1000（千）；别的数（含 0）不认，读出来是 undefined，用到先补这里
+const cnFrac = (a, b) => `${cnNum(b)}分之${cnNum(a)}`;                // 读法：3/4 读作四分之三
+const F = (a, b) => `<span class="frac" role="img" aria-label="${cnFrac(a, b)}"><span aria-hidden="true">${a}</span><span aria-hidden="true">${b}</span></span>`;
+const FSZ = { fs: [16, 20], fm: [22, 26], fb: [34, 38] };
+function fracS(x, y, a, b, cls, seed){   // x 是中线，y 是分数线的高度
+  const sz = FSZ[cls][narrow() ? 1 : 0], w = Math.max(String(a).length, String(b).length) * sz * .62 + sz * .5;
+  return `<g role="img" aria-label="${cnFrac(a, b)}">` + TC(x, r1(y - sz * .3), a, cls) + P(Sk.line(x - w / 2, y, x + w / 2, y, seed || 7, .45), "fl") + TC(x, r1(y + sz * .98), b, cls) + `</g>`;
+}
+// 4.2 「1」记号：整体外面一圈手绘虚线框，左上角挂一块写着 1 的纸色小牌
+function oneMark(x, y, w, h, seed, o){   // o.below：牌子挂在左下角（框上面要留给别的东西时用）
+  const tx = x + 4, ty = o && o.below ? y + h - 15 : y - 15;
+  return P(box(x, y, w, h, seed, .8), "one") +
+    `<g transform="rotate(-5 ${tx + 14} ${ty + 14})"><rect x="${tx}" y="${ty}" width="28" height="30" rx="4" class="papr"/>` + P(box(tx, ty, 28, 30, seed + 9, .4), "k1") + TC(tx + 14, ty + 22, "1", "fm") + `</g>`;
+}
+// 4.3 圆钮：实心圆、墨线外圈、三道防滑纹、两侧箭头（G1）。dir 是能动的方向（单位向量）；arc 给出圆心时箭头沿圆弧
+const vbW = () => svg.viewBox.baseVal.width || 800;
+const pxScale = () => vbW() / (svg.clientWidth || 800);                 // 1 个屏幕像素合多少 viewBox 单位
+const gripR = () => Math.max(17, 15 * pxScale());                       // 画出来直径不小于 28 px（G4）
+const hitR = () => Math.max(30, 26 * pxScale());                        // 能点中的范围不小于 48 px（G4）
+function chevron(px, py, dx, dy, s){ const nx = -dy, ny = dx; return `M${r1(px - dx * s + nx * s)} ${r1(py - dy * s + ny * s)}L${r1(px + dx * s * .7)} ${r1(py + dy * s * .7)}L${r1(px - dx * s - nx * s)} ${r1(py - dy * s - ny * s)}`; }
+function grip(x, y, dir, o){
+  o = o || {}; const g = gripR(), on = !!o.on, k = on ? 1.12 : 1, r = g * k, [dx, dy] = dir, nx = -dy, ny = dx;
+  let s = `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" class="gfill"/>` + P(Sk.ellipse(x, y, r, r, o.seed || 71, .5), "gring" + (on ? " on" : ""));
+  for (const i of [-1, 0, 1]){ const ox = dx * i * r * .36, oy = dy * i * r * .36, L = r * (i ? .36 : .5); s += P(`M${r1(x + ox - nx * L)} ${r1(y + oy - ny * L)}L${r1(x + ox + nx * L)} ${r1(y + oy + ny * L)}`, "gridge"); }
+  const gap = g + 11;
+  if (o.arc){ const [cx, cy] = o.arc, R = Math.hypot(x - cx, y - cy), a0 = Math.atan2(x - cx, cy - y) * 180 / Math.PI, da = gap / R * 180 / Math.PI;
+    for (const sg of [-1, 1]){ const [px, py] = pol(cx, cy, R, a0 + sg * da), a = (a0 + sg * da) * Math.PI / 180; s += P(chevron(px, py, sg * Math.cos(a), sg * Math.sin(a), 6), "garrow"); } }
+  else for (const sg of [-1, 1]) s += P(chevron(x + dx * sg * gap, y + dy * sg * gap, dx * sg, dy * sg, 6), "garrow");
+  if (o.kbd) s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r + 6)}" class="gkbd"/>`;
+  return s;
+}
+// 4.4 数线条：0 和 1 的刻度长，数写在线下面；fracs 是要钉上去的分数 [[分子, 分母], …]，标签太挤时只标一部分
+function lineStrip(lx, ly, lw, fracs, seed){
+  let s = P(Sk.line(lx - 10, ly, lx + lw + 14, ly, seed, .5)) + P(`M${lx} ${ly - 12}v24M${lx + lw} ${ly - 12}v24`) + TC(lx, ly + 38, "0", "lbm") + TC(lx + lw, ly + 38, "1", "lbm"), lastLab = 1e9;
+  for (const [a, b] of fracs.slice().sort((p, q) => q[0] / q[1] - p[0] / p[1])){
+    const x = r1(lx + lw * a / b);
+    s += P(`M${x} ${ly}v-15`, "k1") + `<circle cx="${x}" cy="${ly - 18}" r="5.5" class="lead"/>` + P(Sk.ellipse(x, ly - 18, 5.5, 5.5, seed + a * 13 + b, .3), "k1");
+    if (lastLab - x >= (narrow() ? 44 : 36)){ s += fracS(x, ly - 50, a, b, "fs", seed + b); lastLab = x; }
+  }
+  return s;
+}
+const RIDGES = `<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 3v12M9 3v12M14 3v12"/></svg>`;   // 按住按钮上的防滑纹小图标
+
+/* ============ 5. 页面骨架  kit:shell ============ */
+const $ = id => document.getElementById(id);
+const svg = $("stage"), gDyn = $("dyn"), cueEl = $("cue");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const STATIONS = 3;   // 一共几站
+// t 是孩子操作推到的进度（0～1），p 是画面上缓动跟随的进度；读数和画面都用 p（教训 2）
+const S = { station: 1, mode: "talk", scene: "s1q", hold: false, press: false, kbd: false, dirty: true, t1: 0, p1: 0, t2: 0, p2: 0 };
+let gen = 0;          // 每换一站加一：延时回调先确认还在原来的状态（教训 11）
+const later = (ms, f) => { const g = gen; setTimeout(() => { if (g === gen) f(); }, reduced ? Math.min(ms, 60) : ms); };
+
+function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
+function hint(s){ $("hint").textContent = s || ""; }
+function readout(html){ if ($("readout").innerHTML !== (html || "")) $("readout").innerHTML = html || ""; }
+function say(html, tone){ const b = $("say"); b.innerHTML = html; b.className = "bubble" + (tone ? " " + tone : ""); navFace(tone === "good" ? "clap" : tone === "bad" || tone === "hmm" ? "think" : "curious"); }   // 领航员的表情跟着气泡换
+let fingerDown = false;
+addEventListener("pointerdown", () => { fingerDown = true; }, true);
+for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);
+let keysDown = 0;
+addEventListener("keydown", e => { if (!e.repeat) keysDown++; }, true);
+addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true);
+addEventListener("blur", () => { keysDown = 0; S.hold = false; });
+function actions(list){
+  const boxEl = $("actions"); boxEl.replaceChildren();
+  S.dirty = true;   // 换按钮就是换了状态：一律重画一次，免得圆钮留在锁住的画面上
+  const guard = fingerDown, born = performance.now();
+  let keyGuard = keysDown > 0;
+  if (keyGuard){ const off = () => { if (keysDown === 0){ setTimeout(() => { keyGuard = false; }, 0); removeEventListener("keyup", off, true); } }; addEventListener("keyup", off, true); }
+  for (const a of list || []){
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn " + (a.cls || ""); b.innerHTML = (a.hold ? RIDGES : "") + `<span>${a.label}</span>`;
+    if (a.hold){
+      const on = v => { S.hold = v; b.classList.toggle("on", v); if (v) touched(); };
+      b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); on(true); });
+      for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => on(false));
+      b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(true); } });
+      b.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(false); } });
+      b.addEventListener("blur", () => on(false));
+      b.addEventListener("contextmenu", e => e.preventDefault());
+    } else {
+      b.addEventListener("click", e => { if (performance.now() - born < 400 || (keyGuard && e.detail === 0)) return; a.go(e); });
+      if (guard){ b.disabled = true; const en = () => { setTimeout(() => { b.disabled = false; }, 120); removeEventListener("pointerup", en, true); }; addEventListener("pointerup", en, true); }
+    }
+    boxEl.append(b);
+  }
+  const first = boxEl.querySelector("button");
+  if (first && !/^act/.test(S.mode)) first.focus({ preventScroll: true });
+  return boxEl;
+}
+// 猜测：只记下来，不在这里判对错的颜色。猜错的反馈先接住、再说清，然后一律去动手，让实物来回答
+function ask(question, options, onAnswer){
+  say(question); navFace("waiting");   // 等舰长回答
+  actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
+    if (!sentPred.has(S.station)){ sentPred.add(S.station); Host.event("predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null }); }
+    S.guess = S.guess || {}; S.guess[S.station] = o;
+    say(o.feedback, o.correct ? "good" : "hmm");
+    onAnswer(o);
+  }})));
+}
+function next(label, go, cls){ actions([{ label, go, cls }]); }
+// 星卡上选站重玩（#154）：replay 是正在重玩的站号，0 是从头往下走。重玩一站跳过开场和猜测题，直接进这一站的动手；
+// 揭晓完，原来「去第 k+1 站」「看我的星卡」的按钮换成「回星卡」（用 nextOr）。不出猜测题就不发 predicted；
+// observed 靠 observedOnce、complete 靠 completed，都只记第一次。每站怎么复位、怎么进动手是模块自己的事，写在 REPLAY[站号] 里
+let replay = 0;
+const REPLAY = {};
+function nextOr(label, go, cls){ if (replay && picking) next("回到选站", pickStation); else if (replay) next("回星卡", enterEnd); else next(label, go, cls); }
+function replayAt(k){ replay = k; gen++; S.station = k; hint(""); readout(""); disarmCue(); REPLAY[k](); }
+function restart(){ replay = 0; picking = false; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }   // 从头玩：和以前的「再玩一次」一样
+function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站。enterEnd() 最后调它
+  replay = 0; picking = false;
+  actions([{ label: "从头玩", go: restart, cls: "ghost tight" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1), cls: "tight" }))));   // tight：手机上一行排得下
+}
+// 选站（slice-5a）：正式外壳在 init 里给 completed_stations（做完的站号）和 activity_completed（拿过星卡没有）。
+// 有做完的站，打开时先选：重玩做过的站，或从头玩。重玩完回到这里（nextOr 换成「回到选站」）。
+// 没做完的站不能从中间接着做：星卡要用到前面每一站的结果，所以没拿过星卡时「从头玩」接着往下走。
+// 没有这两个字段（试玩页第一次打开、单独打开）就照旧从第 1 站开始
+let doneStations = 0, picking = false;
+function resumeFrom(p){
+  if (picking || doneStations || !p) return;
+  const saved = new Set(Array.isArray(p.completed_stations) ? p.completed_stations : []);
+  const all = p.activity_completed === true;
+  while (doneStations < STATIONS && (all || saved.has(doneStations + 1))) doneStations++;
+  if (doneStations) pickStation();
+}
+function pickStation(){
+  picking = true; replay = 0; gen++; S.mode = "talk"; hint(""); readout(""); disarmCue();
+  const list = [];
+  for (let k = 1; k <= doneStations; k++) list.push({ label: `重玩第 ${k} 站`, go: () => replayAt(k), cls: "tight" });
+  list.push({ label: "从头玩", go: restart, cls: "ghost tight" });
+  say(doneStations < STATIONS ? `上次做完了 ${doneStations} 站。重玩一站，还是从头玩？` : "这几站你都做完了。想重玩哪一站？");
+  actions(list);
+}
+
+(function(){   // 「我有个问题」：随时可以问，发到信号站
+  const area = $("qarea");
+  const open = document.createElement("button");
+  open.type = "button"; open.className = "btn ghost small"; open.textContent = "我有个问题";
+  open.style.marginTop = "12px";
+  open.addEventListener("click", () => {
+    if (area.querySelector("textarea")) return;
+    const ta = document.createElement("textarea"); ta.maxLength = 120; ta.placeholder = "想问领航员什么？";
+    const send = document.createElement("button"); send.type = "button"; send.className = "btn small"; send.textContent = "发给领航员";
+    const bx = document.createElement("div"); bx.className = "qbox"; bx.append(ta, send);
+    send.addEventListener("click", () => { const q = ta.value.trim(); if (!q) return; Host.noteQuestion(q); bx.remove(); say("好问题，我记下来了。等会儿一起找答案。"); });
+    area.append(bx); ta.focus();
+  });
+  area.append(open);
+})();
+
+// 第一屏的提醒（G6）：进入动手 1.5 秒还没碰，第一个圆钮外面扩出一圈细环；一碰就再也不出现
+let cuePos = null, cueTimer = 0;
+function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; S.dirty = true; } }, 1500); }
+function disarmCue(){ clearTimeout(cueTimer); cuePos = null; cueEl.style.display = "none"; }
+function touched(){ if (cuePos || cueTimer) disarmCue(); cueTimer = 0; }
+function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }   // 第三个数是被提醒的东西的半径（托里的一个）
+
+// 窄屏：viewBox 缩到中间 600 宽的操作区，字号类放大（教训 13、28）。每个场景写明自己用到的高度
+// 排版规矩：要紧的东西都画在 x = 110～690 之间；每个场景在这里写 [起始 y, 高度]
+const VIEW = { bench: [0, 326], end: [0, 430] };
+function fitView(){
+  const nar = (svg.clientWidth || 800) < 600, [y, h] = VIEW[S.scene] || [0, 610];
+  document.body.classList.toggle("narrow", nar);
+  const v = (nar ? [100, y, 600, h] : [0, y, 800, h]).join(" ");
+  if (svg.getAttribute("viewBox") !== v){ svg.setAttribute("viewBox", v); S.dirty = true; }
+}
+addEventListener("resize", fitView);
+function scene(name){ S.scene = name; fitView(); S.dirty = true; }
+
+/* ============ 实物的刻度、操作台和站点切换 ============ */
+const bench = $("workbench");
+const fixed = $("fixed");
+const centers = [170, 250, 330, 423, 503, 583];
+const places = ["百位", "十位", "个位", "十分位", "百分位", "千分位"];
+function placeGrid(y, height){
+  let s = "";
+  centers.forEach((x, i) => {
+    s += TC(x, y - 9, places[i], "unit-label");
+    s += P(box(x - 37, y, 74, height, 15 + i, .35), "k1");
+  });
+  return s + '<circle cx="375" cy="'+(y + height - 8)+'" r="4" fill="var(--ink)"/>';
+}
+function numberAt(value, y, offset = 0, cls = "digit-face"){
+  const [whole, decimals = ""] = value.split(".");
+  return [...whole, ...decimals].map((digit, i) => {
+    const x = centers[i + 3 - whole.length + offset];
+    return x === undefined ? "" : TC(x, y, digit, cls);
+  }).join("");
+}
+function control(label, go, parent = bench, cls = "btn ghost"){
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = label; b.className = cls;
+  b.addEventListener("click", () => { touched(); go(); });
+  parent.append(b); return b;
+}
+function draw(){
+  gDyn.innerHTML = S.mode === "end" ? card() : artwork();
+  placeCue();
+}
+function enterStation(n){
+  gen++; S.station=n; S.mode="talk"; S.press=false; disarmCue(); bench.replaceChildren();
+  scene("bench"); head(n, DATA[n].title); hint(""); readout("");
+  fixed.innerHTML=""; gDyn.innerHTML=DATA[n].cover();
+  say(DATA[n].intro);
+  next("然后呢", () => ask(DATA[n].question, DATA[n].choices, () => next("动手试", () => begin(n))));
+}
+function enter1(){enterStation(1);}
+function begin(n){
+  gen++; S.station=n; S.mode="act"+n; head(n, DATA[n].title); scene("bench"); disarmCue();
+  bench.replaceChildren(); actions([]); reset(n); fixed.innerHTML=backdrop(n);
+  say((n===1 && !replay ? "带圆钮的地方，都能用手抓。" : "")+DATA[n].instruction);
+  hint(DATA[n].hint); mount(); update(); svg.focus({preventScroll:true});
+  const pos=firstKnob(); if(pos){armCue(pos);later(1550,placeCue);}
+}
+function update(){draw(); publish();}
+function canReveal(){
+  if($("actions").querySelector("button")) return;
+  next("看看发现", () => {
+    S.mode="reveal"; disarmCue(); bench.replaceChildren(); observedOnce(S.station);
+    draw(); hint(""); say((!replay && S.guess?.[S.station] ? "你猜的是「"+S.guess[S.station].label+"」。" : "") + revelation(), "good");
+    const n=S.station; nextOr(n===3 ? "看我的星卡" : "去第 "+(n+1)+" 站", () => n===3 ? enterEnd() : enterStation(n+1));
+  });
+}
+function enterEnd(){
+  gen++; disarmCue(); S.mode="end"; S.station=4; head(0, cardName); scene("end");
+  fixed.innerHTML=""; bench.replaceChildren(); draw(); hint(""); readout("");
+  say(cardText, "good"); if(!completed){completed=true; Host.complete({});} endActions();
+}
+for(let n=1;n<=STATIONS;n++) REPLAY[n]=()=>begin(n);
+function labelCover(a,b){
+  return P(box(150,82,500,143,91,.6),"k")+TC(400,143,a,"big")+TC(400,199,b,"lb");
+}
+function svgPoint(e){const p=svg.createSVGPoint(); p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());}
+const MODEL={
+  penTenths:15, cordMm:1350, // 一支笔 1.5 元，跳绳长 1.35 米，本活动的实物尺寸。
+  paperMm:0.1, // 纸的厚度取为本次实验的设定。
+  towerM:632, // 上海中心大厦项目介绍，建筑高度 632 米。
+  units:[["m","米",1000],["dm","分米",100],["cm","厘米",10],["mm","毫米",1]],
+  stacks:["一张纸","一张卡片","指甲盖的宽","一个巴掌","桌面高度","三层楼","一栋高楼","上海中心大厦"]
+};
+const DATA={
+  1:{title:"滑 · 价签上的数字",intro:"一支笔 1.5 元。领航员买了十支，在账上添个 0，写成 1.50 元。",question:"十支笔一共多少钱？",
+    choices:[{label:"1.50 元",mis:"append-zero",feedback:"添了 0，数字搬家了吗？来挪一挪价签。"},
+      {label:"15 元",correct:true,feedback:"拿上十支笔，看看滑条和硬币。"},
+      {label:"10.5 元",mis:"multiply-whole-part-only",feedback:"你算进了十个 1 元。十个 5 角要放在哪儿？"}],
+    cover:()=>labelCover("1.5 元 × 10","一支笔的价钱，十支笔的账单"),instruction:"拖滑条向左一格，再向左一格。最后往右，试着让价钱变成原来的十分之一。",hint:"拖圆钮，或用左右键"},
+  2:{title:"换 · 一根跳绳",intro:"两个标签，一个写 1.35 米，一个写 135 厘米。哪个适合这根绳子？",question:"1.35 米和 135 厘米哪个长？",
+    choices:[{label:"135 厘米，数大",mis:"bigger-number-longer",feedback:"135 是个大数。看看它用多长的一小格来量。"},
+      {label:"1.35 米，米比厘米大",mis:"bigger-unit-longer",feedback:"一米确实长。试着换个单位，看看绳子两头。"},
+      {label:"一样长",correct:true,feedback:"在尺上转动单位盘，看看两头还在不在原处。"}],
+    cover:()=>labelCover("1.35 米　？　135 厘米","一根跳绳的两个标签"),instruction:"摸摸单位盘，依次换到四个单位。盯住绳子的两个头。",hint:"转单位盘或点单位"},
+  3:{title:"叠 · 纸塔长高了",intro:"假设每张纸一样厚，都是 0.1 毫米。把它们平平地叠起来。",question:"1000 张叠起来多厚？",
+    choices:[{label:"100 毫米",correct:true,feedback:"来一层一层地叠，核对你的估计。"},
+      {label:"0.1000 毫米",mis:"append-zero",feedback:"纸越叠越高。看看末尾添零会不会让高度改变。"},
+      {label:"1000.1 毫米",mis:"multiply-whole-part-only",feedback:"你看到了 1000 张，先从十张的厚度试起。"}],
+    cover:()=>labelCover("0.1 毫米 × 1000","每张都一样厚"),instruction:"点一次「乘 10」，纸就变成十摞那么厚。试试七下能叠到哪里。",hint:"回车乘 10，退格除以 10"}
+};
+const cardName="我的滑尺",cardText="你让数字搬过家，也用四种单位量过同一根绳。纸塔最后一格属于你。";
+let shiftCount=0,unit=0,exponent=0,visited=new Set();
+function reset(n){visited=new Set([0]);if(n===1)shiftCount=0;if(n===2)unit=0;if(n===3)exponent=0;}
+function penValue(){return MODEL.penTenths*10**(shiftCount+1)/100;}
+function cordNumber(){return MODEL.cordMm/MODEL.units[unit][2];}
+function sheets(){return 10**exponent;}
+function heightMm(){return sheets()*MODEL.paperMm;}
+function displayCount(n){return n>=10000?n/10000+" 万":String(n);}
+function displayHeight(mm){return mm>=1000?mm/1000+" 米":mm>=10?mm/10+" 厘米":mm+" 毫米";}
+function rope(){
+  return '<g id="cord">'+P("M162 119C223 119 266 115 321 119S466 124 539 120L634 119","kacc")+
+    '<rect x="147" y="108" width="41" height="21" rx="7" class="wash"/><rect x="609" y="108" width="41" height="21" rx="7" class="wash"/>'+
+    P(box(147,108,41,21,23,.6),"k1")+P(box(609,108,41,21,26,.6),"k1")+
+    P("M147 151h503M147 140v26m503 -26v26","k")+"</g>";
+}
+function backdrop(n){
+  if(n===1)return placeGrid(81,65)+oneMark(290,69,80,88,34);
+  if(n===2)return rope()+'<g transform="translate(100 29) scale(.76)">'+placeGrid(16,54)+P(box(51,16,74,54,20,.35),'k1')+TC(88,7,'千位','unit-label')+'</g>';
+  return P("M140 265h522","k")+TC(400,305,"每张按 0.1 毫米算","lb");
+}
+function coin(x,y,value){return '<circle cx="'+x+'" cy="'+y+'" r="10" class="food"/>'+P(Sk.ellipse(x,y,10,10,45,.3),"k1")+TC(x,y+5,value,"coin-face");}
+function pensAndCoins(){
+  let s="";
+  for(let i=0;i<10;i++){
+    const x=180+48*i;
+    s+=`<g transform="translate(${x} 180) rotate(14)"><rect x="-4" width="8" height="38" rx="2" class="wash"/>`+P("M-4 1h8v35l-4 8 -4 -8z","k1")+"</g>";
+    if(shiftCount!==1)s+=coin(x,249,"1")+coin(x,276,"5");
+  }
+  if(shiftCount===1)s+='<g class="new-layer">'+coin(233,254,"元")+TC(300,260,"10 元","sign")+TC(407,261,"＋","ttl")+coin(478,254,"元")+TC(550,260,"5 元","sign")+"</g>";
+  return s+TC(400,309,shiftCount===1?"十支笔的钱　10 元 + 5 元 = 15 元":"每支笔　1 元 + 5 角","lb");
+}
+function unitDial(){
+  let s=P("M205 247Q400 198 595 247","k1");
+  MODEL.units.forEach((u,i)=>{
+    const x=220+i*120,y=i===0||i===3?242:225;
+    s+=`<circle cx="${x}" cy="${y}" r="22" class="gsoft"/>`+P(Sk.ellipse(x,y,22,22,66+i,.4),"gring")+
+      TC(x,293,u[1],"lb")+(i===unit?P(`M${x-7} ${y+3}l7 -12 7 12`,"kacc"):"")+
+      `<rect x="${x-40}" y="${y-37}" width="80" height="82" class="hit"/>`;
+  });
+  return s;
+}
+function stackArt(){
+  // 每一层用不同的尺幅看，最后一层与 632 米大楼用同一比例画。
+  const top=exponent===0?262:exponent===7?38:240-exponent*24;
+  const h=265-top,x=239,w=135;
+  let s=`<rect x="${x}" y="${top}" width="${w}" height="${h}" class="papr"/>`+P(box(x,top,w,h,130,.5),"k1");
+  const lines=Math.min(exponent*3+1,26);
+  for(let i=1;i<lines;i++)s+=P(Sk.line(x+2,top+h*i/lines,x+w-2,top+h*i/lines,91+i,.3),"faint");
+  s+=P(Sk.line(x,top,x+w,top,21,.4),"kacc");
+  let silhouette="";
+  switch(exponent){
+    case 0: silhouette=P("M474 263l82 -2 29 2 -79 2z","k1");break;
+    case 1: silhouette=P("M462 256l86 -2 33 6 -96 4z","k1");break;
+    case 2: silhouette=P("M489 264v-22q19 -19 39 0v22m-32 -13q12 -8 24 0","k1");break;
+    case 3: silhouette=P("M474 263l-14 -29q-3 -7 3 -9l14 14 -1 -32q3 -9 7 -1l4 23 2 -34q4 -7 8 0l1 30 5 -23q6 -6 8 1l-2 28 6 -14q9 -4 8 4l-10 42z","k1");break;
+    case 4: silhouette=P("M456 188h132v8H456zM469 197v66m103 -66v66","k");break;
+    case 5: silhouette=P("M463 264V148h99v116m-99 -40h99m-99 -39h99M456 148l55 -31 57 31","k1");break;
+    case 6: silhouette=P("M480 264V83h64v181","k");for(let j=0;j<13;j++)silhouette+=P(`M487 ${92+j*13}h50`,"faint");break;
+    case 7:{
+      const towerHeight=h*MODEL.towerM/(heightMm()/1000),y=265-towerHeight;
+      silhouette=P(`M479 265q17 -44 9 -71q10 -28 16 ${y-194}l23 2q-6 54 13 ${towerHeight-2}z`,"k")+
+        P(`M493 257q28 -53 21 ${y-249}`,"k1")+TC(578,y+18,"632 米","lb");break;
+    }
+  }
+  return s+silhouette+TC(532,35,MODEL.stacks[exponent],"lb")+TC(307,28,displayHeight(heightMm()),"lbm");
+}
+function artwork(){
+  if(S.station===1){
+    const x=clamp(520-shiftCount*80,360,600);
+    return numberAt(String(penValue()),125,0,"inknum")+P(`M${x-157} 139h157`,"kacc")+
+      (S.mode.startsWith("act")?grip(x,126,[1,0],{})+'<rect x="130" y="73" width="550" height="88" class="hit"/>':"")+pensAndCoins();
+  }
+  if(S.station===2){
+    const grid=cordNumber()<1000?numberAt(String(cordNumber()),52):TC(88,52,"1","digit-face")+numberAt("350",52);
+    return '<g transform="translate(100 29) scale(.76)">'+grid+'</g>'+TC(400,197,cordNumber()+" "+MODEL.units[unit][1],"inknum")+unitDial();
+  }
+  return stackArt();
+}
+function publish(){
+  if(S.station===1){hint("已试 "+[-1,1,2].filter(v=>visited.has(v)).length+" 种挪法，共 3 种");const value=penValue();readout("1.5 "+(shiftCount>=0?"× "+10**shiftCount:"÷ 10")+" = <b>"+value+"</b>");sendState({station:1,shift:shiftCount,value});}
+  if(S.station===2){hint("已换到 "+visited.size+" 种单位，共 4 种");const u=MODEL.units[unit];readout("<b>"+cordNumber()+"</b> "+u[1]);sendState({station:2,unit:u[0],number:cordNumber()});}
+  if(S.station===3){hint("从一张纸起放大 "+exponent+" 次，试满 7 次");const h=heightMm();readout(displayCount(sheets())+" 张 · <b>"+h+" 毫米</b>"+(h>=10?"，就是 "+displayHeight(h):""));sendState({station:3,sheets:sheets(),height_mm:h});}
+}
+function slideTo(value){
+  shiftCount=clamp(value,-1,2);visited.add(shiftCount);update();
+  say(shiftCount===1?"十个 1 元聚成 10 元，十个 5 角聚成 5 元。1 和 5 一起向左搬了一格。":"小数点留在原处。看看两个数字现在分别站在哪一格。");
+  if([-1,1,2].every(n=>visited.has(n)))canReveal();
+}
+function setUnit(n){
+  unit=clamp(n,0,3);visited.add(unit);update();if(visited.size===4)canReveal();
+}
+function stack(d){
+  exponent=clamp(exponent+d,0,7);update();
+  if(exponent===7){say("你的纸塔到了 1000 米。旁边的上海中心大厦高 632 米。");canReveal();}
+}
+function mount(){
+  if(S.station===1){control("向左挪",()=>slideTo(shiftCount+1));control("向右挪",()=>slideTo(shiftCount-1));}
+  if(S.station===2)MODEL.units.forEach((u,i)=>control(u[1],()=>setUnit(i)));
+  if(S.station===3){control("乘 10",()=>stack(1));control("除以 10",()=>stack(-1));}
+}
+function firstKnob(){
+  if(S.station===1)return ()=>[520-shiftCount*80,126];
+  if(S.station===2)return ()=>[220,242];return null;
+}
+function grab(p){
+  if(S.station===1&&p.y>65&&p.y<165)return{x:p.x,start:shiftCount};
+  if(S.station===2&&p.y>=183&&p.y<=296){setUnit(Math.round((p.x-220)/120));return{dial:true};}
+  return null;
+}
+function move(d,p){
+  if(d.dial){const n=clamp(Math.round((p.x-220)/120),0,3);if(unit!==n)setUnit(n);}
+  else{const n=clamp(d.start+Math.round((d.x-p.x)/80),-1,2);if(shiftCount!==n)slideTo(n);}
+}
+function key(k){
+  if(S.station===3){
+    if(k==="Enter"||k===" "){stack(1);return true;}
+    if(k==="Backspace"){stack(-1);return true;}
+  }else if(k==="ArrowLeft"||k==="ArrowRight"){
+    const d=k==="ArrowLeft"?1:-1;if(S.station===1)slideTo(shiftCount+d);else setUnit(unit-d);return true;
+  }
+  return false;
+}
+function revelation(){
+  if(S.station===1)return "数字向左挪一格，数就乘了 10，看起来是小数点向右移了一位。只在末尾添 0，1.50 还是 1.5。";
+  if(S.station===2)return "绳子两头一直在原处。用的单位越小，要数的小格就越多。";
+  return "从一张纸出发，连乘七次 10。要是每张纸都厚 0.1 毫米，这座纸塔就能高过上海中心大厦。";
+}
+function card(){
+  const shifts=["0.15","1.5","15"];
+  let s=TC(400,35,"我的滑尺","ttl");
+  for(const [row,val] of shifts.entries()){
+    const y=63+row*31;
+    s+=TC(181,y+9,["除以 10","原来","乘 10"][row],"lb");
+    s+='<g transform="translate(96 '+(y-17)+') scale(.8)">'+numberAt(val,27)+
+      '<circle cx="375" cy="27" r="4" fill="var(--ink)"/></g>';
+  }
+  for(const x of [303,375,455,524])s+=P(`M${x} 47v94`,"faint");
+  s+=rope().replace('id="cord"','transform="translate(0 75)"')+
+    TC(400,263,"1.35 米 = 13.5 分米 = 135 厘米 = 1350 毫米","lb");
+  for(let i=0;i<8;i++)s+=`<rect x="${153+i*61}" y="${356-i*7}" width="43" height="${10+i*7}" rx="2" class="${i===7?"lead":"wash"}"/>`;
+  return s+TC(400,407,"从 0.1 毫米到 1000 米，连乘七次 10","lb");
+}
+let dragging=null;
+svg.addEventListener("pointerdown",e=>{
+  if(!S.mode.startsWith("act"))return;
+  const p=svgPoint(e), start=grab(p);
+  if(!start)return;
+  touched();dragging={...start,id:e.pointerId};svg.setPointerCapture(e.pointerId);e.preventDefault();
+});
+svg.addEventListener("pointermove",e=>{
+  if(dragging && e.pointerId===dragging.id && S.mode.startsWith("act"))move(dragging,svgPoint(e));
+});
+for(const ev of ["pointerup","pointercancel","lostpointercapture"])svg.addEventListener(ev,e=>{
+  if(dragging && e.pointerId===dragging.id)dragging=null;
+});
+svg.addEventListener("keydown",e=>{
+  if(!S.mode.startsWith("act") || e.ctrlKey||e.metaKey||e.altKey)return;
+  if(key(e.key,e.shiftKey)){e.preventDefault();touched();svg.classList.add("kbd");}
+});
+addEventListener("resize",()=>{if(S.mode.startsWith("act")||S.mode==="end"||S.mode==="reveal") draw();});
+Host.ready();
+fitView();
+enter1();
+
+</script>
+</body>
+</html>

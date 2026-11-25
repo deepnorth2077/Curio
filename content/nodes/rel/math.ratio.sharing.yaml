@@ -1,0 +1,49 @@
+id: math.ratio.sharing
+schema: knode/1
+title: 按比分配
+subjects:
+- math
+theme: rel
+grade: G6
+unit: 六上 · 比（按比分配；人教版旧版册次，新版以实体书为准）
+curriculum:
+- std: 义务教育数学课程标准（2022 年版）
+  ref: 第三学段「数量关系」：在实际情境中理解按比例分配的含义
+- textbook: 人教版小学数学六年级上册（旧版）
+  unit: 第四单元 比
+prerequisites:
+- math.ratio.meaning
+- math.fraction.the-whole
+related: []
+driving_question: '两个人按 2 : 3 分糖，第一个人拿走的是 2/3 吗？'
+objectives:
+- '知道按 2 : 3 分，就是一共 5 份，一个占 2 份，一个占 3 份。'
+- 知道同一个比里有几个不同的分数：占全部的 2/5 和 3/5，一个是另一个的 2/3。
+- 会按比分一个数：先求一份是多少，再求各是多少。
+- 会按三个数的连比来分。
+misconceptions:
+- id: ratio-as-count
+  text: '把比里的数直接当成个数，例如 10 块糖按 2 : 3 分，认为一个人拿 2 块。'
+- id: part-part-as-part-whole
+  text: '把比的两个数直接写成占全部的分数，例如认为 2 : 3 里第一个人占全部的 2/3。'
+- id: equal-share-ignores-ratio
+  text: '不管比，直接平均分，例如 12 块按 1 : 2 : 3 分，认为每人 4 块。'
+sources:
+- type: textbook
+  ref: 人教版小学数学六年级上册（旧版）第四单元「比的应用」
+- type: reference
+  ref: IUPAC Gold Book：干燥空气的体积组成
+  url: https://goldbook.iupac.org/terms/view/C01214
+lenses:
+- band: G3-4
+  approach: 只做「你 2 块我 3 块，一轮一轮发」，发完数一数。
+- band: G5-6
+  approach: 糖沿着 2 条槽和 3 条槽一轮轮滑下去；把四张分数牌挂到对的那句话上；换不同的比去分 12 块糖。
+- band: G7-9
+  approach: 连比、加权平均、溶液配制；概率里的可能性之比。
+activities:
+- act.simulation.ratio-chute-01
+- act.quiz.ratio-sharing-01
+status: published  # Luka 2026-11-22 验收（#233）
+version: 1
+# END OF FILE

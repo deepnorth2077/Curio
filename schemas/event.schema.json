@@ -35,6 +35,7 @@
         "sim.observed",
         "item.answered",
         "hint.used",
+        "answer.revealed",
         "reflection.written",
         "question.asked",
         "question.answered",
@@ -52,7 +53,9 @@
         "reward.revoked",
         "import.voided",
         "attachment.erased",
-        "text.erased"
+        "text.erased",
+        "profile.set",
+        "navigator.chosen"
       ]
     },
     "attempt_id": { "$ref": "#/$defs/attId" },
@@ -71,7 +74,10 @@
             "type": "object",
             "additionalProperties": false,
             "required": ["mode"],
-            "properties": { "mode": { "enum": ["first", "retry", "review"] } }
+            "properties": {
+              "mode": { "enum": ["first", "retry", "review"] },
+              "grader": { "type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[a-z][a-z0-9-]*/[1-9][0-9]*$" }
+            }
           }
         }
       }
@@ -117,7 +123,9 @@
             "additionalProperties": false,
             "properties": {
               "choice": { "type": "string", "maxLength": 32 },
-              "text_id": { "$ref": "#/$defs/txtId" }
+              "text_id": { "$ref": "#/$defs/txtId" },
+              "step": { "type": "string", "minLength": 1, "maxLength": 32 },
+              "misconception": { "type": "string" }
             },
             "anyOf": [
               { "required": ["choice"] },
@@ -219,6 +227,23 @@
             "properties": {
               "item_id": { "type": "string" },
               "level": { "type": "integer", "minimum": 1, "maximum": 3 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "answer.revealed" } } },
+      "then": {
+        "required": ["attempt_id", "content"],
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["item_id"],
+            "properties": {
+              "item_id": { "type": "string" }
             }
           }
         }
@@ -605,6 +630,51 @@
             "properties": {
               "text_id": { "$ref": "#/$defs/txtId" },
               "reason": { "enum": ["requested", "mistake", "other", "orphan", "lost"] }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "verb": { "const": "profile.set" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "caregiver" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rev", "entry_year", "textbooks"],
+            "properties": {
+              "rev": { "type": "integer", "minimum": 1 },
+              "entry_year": { "type": "integer", "minimum": 2010, "maximum": 2040 },
+              "textbooks": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "math": { "enum": ["renjiao"] },
+                  "science": { "enum": ["jiaoke"] }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "$comment": "navigator.chosen（docs/specs/navigators.md 第 3 节）。actor.id 必须等于 learner_id，schema 表达不了，由 kernel/js/validate.js 和 tools/backup_ref.py 查；navigator_id 的 pattern 在 Python 里「$」会放过末尾换行，那两处另用整串匹配再查。",
+      "if": { "properties": { "verb": { "const": "navigator.chosen" } } },
+      "then": {
+        "not": { "anyOf": [{ "required": ["attempt_id"] }, { "required": ["content"] }] },
+        "properties": {
+          "actor": { "properties": { "type": { "const": "learner" }, "id": { "$ref": "#/$defs/lrnId" } } },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rev", "navigator_id"],
+            "properties": {
+              "rev": { "type": "integer", "minimum": 1 },
+              "navigator_id": { "type": "string", "pattern": "^nav\\.[a-z0-9-]+$", "maxLength": 40 }
             }
           }
         }

@@ -15,6 +15,8 @@ content/
   activities/<活动 id>/manifest.yaml          自定义实验的描述（activity/1.1 契约）
   activities/<活动 id>/index.html             自定义实验的实现
   assets/<子目录>/<文件名>.svg                  配图等静态文件
+  navigators/<领航员 id>/navigator.yaml        领航员（navigator/1，docs/specs/navigators.md 第 1 节）
+  navigators/<领航员 id>/<表情>.svg             六张脸：curious、waiting、surprised、clap、think、wrong
 ```
 
 - 一个活动目录里，**要么**只有 `activity.yaml`（结构化活动），**要么**是 `manifest.yaml` + `index.html`（自定义实验），不能混用。
@@ -205,6 +207,9 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 | 等级 | 支持 |
 | --- | --- |
 | 1 | `kind`：`explain`、`quiz`、`reflection`；答案：`choice`、`number`、`fraction`；配图：`pie`、`rect`、`rect-unequal`、`number-line`、`svg` |
+| 2 | 发布清单的可选键 `navigators`（领航员，`docs/specs/navigators.md` 第 2 节）。收录了领航员的发布包，`engine_min` 至少是 2：只认 1 级的外壳重算 `content_hash` 时不算 `navigators`，会判成哈希不对，所以先用引擎等级挡下，显示「需要更新」 |
+
+`engine_min` 取收录的活动里最大的 `engine`，和收录的可选内容所需的等级（上表；`tools/ci_checks.py` 的 `ENGINE_REQUIREMENTS`）里最大的那个。
 
 自定义实验不需要 `engine`，它们运行在沙箱里，只依赖契约版本（manifest 的 `contract`，例如 `activity/1.1`）。发布清单的 `contracts` 列出收录的实验用到的全部契约版本；设备的宿主不支持其中任何一个时，同样**不切换**到这个发布，并提示「需要更新」。
 
@@ -229,7 +234,7 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 | 路径 | 第 1 节的路径规则，含大小写冲突 |
 | 引擎 | `engine` 不低于这个活动用到的能力所需的等级（按 3.8 的表） |
 | 误区覆盖 | **从数据计算**：结构化活动里，被错误选项或 `common_wrong` 引用过的误区，算作已覆盖；自定义实验以 manifest 声明为准 |
-| 发布门禁 | 只看**会被收录**的活动，也就是 `approved` 的那些；`pending`、`claude-reviewed` 的活动不收录，也不阻断发布。知识点 `published` 时，它被收录的活动里：至少一个 `explain` 和一个 `quiz`；每个 `quiz` 至少 5 道题；每个误区都被覆盖。另外**引用闭包**（6.1）要成立 |
+| 发布门禁 | 只看**会被收录**的活动，也就是 `approved` 的那些；`pending`、`claude-reviewed` 的活动不收录，也不阻断发布。知识点 `published` 时，它被收录的活动里：必须有讲解和至少一个 `quiz`，每个 `quiz` 至少 5 道题，每个误区都要被覆盖。结构化 `explain` 提供讲解。任何知识点的讲解也可以由一个被收录的动手探索承担：清单须指向本星，使用 `activity/1.1`、`type: simulation`、`pedagogy: explain`、`entry: index.html`，并声明 `observed`；入口 HTML 还要用 [slice-5a](slice-5a.md) 的站完成标记（`observed` 的结果为 `{station, item: "station-complete"}`），正式外壳才能按站记进度、选站重玩。另外**引用闭包**（6.1）要成立 |
 
 ## 6. 不可变发布（release/1）
 
@@ -252,18 +257,20 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 ```
 
 - **收录范围**：只收 `published` 的知识点、它们引用的活动里 `approved` 的那些，以及这些活动引用的配图文件。草稿知识点、没批准的活动都不进发布，也不影响其他内容的发布。所以给已发布的知识点新加一个还在审核的活动，不会卡住整个发布。
+- 如果有 `content/catalog/points.yaml`，清单用可选字段 `catalog` 登记它及其 JSON 副本。目录中的每个点都有 ID，有已发布课程的点还会出现在 `nodes` 中。[知识点目录规格](catalog.md)
 - **引用闭包**：发布包里不能有指向包外的硬引用。下面任何一条不满足，构建失败（CI 的发布门禁也检查同样的规则）：
   - 已发布知识点的每个 `prerequisites` 都必须已发布；
   - 收录的每个活动，它的**全部** `targets` 都必须已发布。共享活动的某个目标还是草稿时，要么等它发布，要么把活动拆开。
 - `related` 是软引用：允许指向未发布的知识点。外壳只显示发布包里有的那些，其余的不显示。
 - `engine_min`、`contracts`：见 3.8。`contracts` 按字符串排序、不重复；没有收录自定义实验时是空列表。
 - 自定义实验的 `kind` 写成它的 `type`（`experiment` 或 `simulation`）。
+- **领航员**（`docs/specs/navigators.md`）：有 `content/navigators/` 时，清单用可选键 `navigators` 登记 `review: approved` 的领航员，每位一项 `{id, version, files}`，按 `id` 排序；`files` 是这位的 `navigator.yaml`（带 `json`）和六张 SVG。领航员目录里至少要有一位 `approved` 且 `unlock: {start: true}`，否则构建失败。收录的每位都要过 CI 同一套检查（schema、目录名等于 id、恰好七个文件、SVG 严格规则），否则构建失败。没有领航员目录时不写这个键，`engine_min` 照旧，旧发布包的 `release_id` 一个字不变。外壳读包时只取每位的 `navigator.yaml.json`；SVG 要显示时才取，照样核对。
 
 ### 6.2 哈希怎么算
 
 1. 每个文件：对仓库里的原始字节算 SHA-256（文件已保证是 LF）。每个 `.yaml` 条目带一个 `json` 对象，是 6.3 那份 `.json` 的路径、SHA-256、字节数；它在条目里，所以也参与下一步的哈希。
-2. 三个列表各自排序：`nodes`、`activities` 按 `id`，`files`、`assets` 按 `path`。
-3. 把 `{"engine_min": …, "contracts": …, "nodes": …, "activities": …, "assets": …}` 转成**规范 JSON**：键按字母排序，不留空白（分隔符为 `,` 和 `:`），不转义非 ASCII 字符，编码为 UTF-8。用 Python 写就是 `json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`。
+2. 列表各自排序：`nodes`、`activities`、`navigators` 按 `id`，`files`、`assets` 按 `path`。
+3. 取清单的 `engine_min`、`contracts`、`nodes`、`activities` 和 `assets` 五项。清单含 `catalog` 时，把完整的 `catalog` 条目加入同一对象；含 `navigators` 时，把完整的 `navigators` 列表也加入（领航员 id 是 `nav.` 加小写字母、数字、连字符，也是 ASCII）。把这个对象转成**规范 JSON**，键按字母排序，不留空白（分隔符为 `,` 和 `:`），不转义非 ASCII 字符，编码为 UTF-8。用 Python 写就是 `json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`。
    - 这样写之所以跨语言可复现，是因为清单的取值受到严格限制：只有字符串和非负整数（不超过 2^53−1；构建器把 `version: 1.0` 这类整数值的小数写法统一转成整数，否则 Python 写成 `1.0`、JavaScript 写成 `1`，哈希会不同），没有小数、布尔值和 null；所有键名、id、路径都是 ASCII，所以「按字母排序」在任何语言里都是同一个顺序（id 是 ASCII 由 schema 的正则保证：知识点 id 只有小写字母、数字、点、连字符，活动 id 同理；路径由第 1 节的规则保证）；哈希是十六进制小写。在这些限制下，结果和 JSON 规范化方案 RFC 8785 一致。
    - 发布哈希只由 Python 构建器计算。其他语言要验证时，按 RFC 8785 实现即可。
 4. `content_hash` = 上一步字节的 SHA-256；`release_id` = `rel_` + `content_hash`。

@@ -1,0 +1,34 @@
+id: physics.energy.transfer
+schema: knode/1
+title: 能量：滑停以后去了哪
+subjects:
+- physics
+theme: ene
+grade: G8
+unit: 看秒表，追能量
+prerequisites:
+- physics.energy.work
+driving_question: 小车停住了，原来那份能量去哪儿了？
+objectives:
+- 以车、轨道和地球为系统，忽略空气阻力和转动。光滑下坡重力势能减少12 J、动能增加12 J。粗糙水平段动能每少一份，系统内能增加同量（理想化均不传给外界）。
+- 保存坡顶、坡底、停稳三个时刻的同一本能量账。
+misconceptions:
+- id: stopped-is-gone
+  text: 停下来能量消失
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 7.6
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42151/index.cnxml
+lenses:
+- band: G3-4
+  approach: 先在不同高度停看势能和动能，再把垫铺在水平轨上；观察滑块停住与仍能数全的十二格。
+- band: G7-9
+  approach: 以车、轨道和地球为系统，忽略空气阻力和转动。光滑下坡重力势能减少12 J、动能增加12 J。粗糙水平段动能每少一份，系统内能增加同量（理想化均不传给外界）。
+activities:
+- act.simulation.energy-dock-01
+- act.quiz.energy-dock-01
+status: draft
+version: 2
+curriculum:
+- std: 义务教育物理课程标准（2022年版）
+  ref: 机械运动和力、机械能

@@ -1,0 +1,88 @@
+# 「0 和 1 之间」星座的进度，只在这里写。
+# 改完跑：python tools/status_gen.py --write（会重新生成 index.md 和 handoff.md 里的状态段落）。
+# 没列在 stars 里的星都算「草案」。状态：草案 / 在做 / 等验收 / 完成。
+# prs 写主要的几个 PR，不用写全；waiting 只有「在做」「等验收」才写，写在等谁、等什么。
+constellation: zero-to-one
+title: 0 和 1 之间
+updated: 2026-11-22
+issue: 127
+total: 19
+preview: https://deepnorth2077.github.io/Curio/preview/zero-to-one/
+now: 19 颗已由 Luka 验收，进入正式外壳。
+stars:
+  - n: 1
+    title: 几分之一：越分越小
+    state: 完成
+    prs: [136, 138]
+  - n: 2
+    title: 几分之几：分数也能数
+    state: 完成
+    prs: [151, 159]
+  - n: 3
+    title: 谁的几分之几
+    state: 完成
+    prs: [163, 164, 165, 166]
+  - n: 4
+    title: 小数是什么
+    state: 完成
+    prs: [167, 168]
+  - n: 5
+    title: 小数比大小和加减
+    state: 完成
+    prs: [169, 171]
+  - n: 6
+    title: 小数点搬家
+    state: 完成
+    prs: [169]
+  - n: 7
+    title: 等值分数：再切一刀
+    state: 完成
+    prs: [169]
+  - n: 8
+    title: 分数和除法
+    state: 完成
+    prs: [169]
+  - n: 9
+    title: 分数比大小
+    state: 完成
+    prs: [169]
+  - n: 10
+    title: 分数加减
+    state: 完成
+    prs: [169]
+  - n: 11
+    title: 乘了反而变小
+    state: 完成
+    prs: [169]
+  - n: 12
+    title: 分数乘分数
+    state: 完成
+    prs: [169]
+  - n: 13
+    title: 除以分数
+    state: 完成
+    prs: [169]
+  - n: 14
+    title: 比：味道一样的秘密
+    state: 完成
+    prs: [169, 171]
+  - n: 15
+    title: 按比分配
+    state: 完成
+    prs: [169]
+  - n: 16
+    title: 比例和比例尺
+    state: 完成
+    prs: [169, 171]
+  - n: 17
+    title: 百分数：都换成 100 份
+    state: 完成
+    prs: [169, 171]
+  - n: 18
+    title: 一个点，几个名字
+    state: 完成
+    prs: [169]
+  - n: 19
+    title: 涨一半再跌一半
+    state: 完成
+    prs: [169]

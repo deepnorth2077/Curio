@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>杠杆 · 让粉笔印见光</title>
+<style>
+/* kit:base —— 颜色、卡片、气泡、按钮。色值不要改；模块自己的样式写在最后一段 */
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+:root{
+  --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
+  --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --grip:#2A7F7C; --grip-soft:#D3E8E5;
+  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
+  --dad:#4F7FA8; --mom:#C2603F; --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
+  --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#E0876A; --accent-soft:#3A2A24;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;
+  --dad:#7FA9CF; --mom:#E0876A; --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:820px;margin:0 auto;padding:12px 14px 28px}
+.card{background:var(--pane);border:1px solid var(--rule);border-radius:18px;overflow:hidden}
+.card header,.card footer{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:10px 16px}
+.card header{border-bottom:1px solid var(--rule)}
+.card footer{border-top:1px solid var(--rule);min-height:52px;align-items:center}
+.station{font-size:13px;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+h1{font-family:var(--f-serif);font-size:20px;font-weight:600;color:var(--ink);margin:0;text-align:right}
+.hint{font-size:14px;color:var(--muted)}
+.readout{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15px;text-align:right}
+.readout b{color:var(--accent);font-weight:600}
+svg#stage{display:block;width:100%;height:auto;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+svg#stage:focus,svg#stage:focus-visible{outline:none}
+svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
+.k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}
+.kf{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round;stroke-dasharray:3 6}
+.t{fill:var(--ink);font-family:var(--f-sans);font-size:15px}
+.tm{fill:var(--muted);font-family:var(--f-sans);font-size:15px}
+.talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
+.ava{flex:none;width:42px;height:42px}
+.bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
+.bubble.good{background:var(--good-soft);border-color:transparent}
+.bubble.bad{background:var(--bad-soft);border-color:transparent}
+.bubble.hmm{background:var(--paper);border-color:transparent}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin:10px 0 0}
+.btn{border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:9px 18px;min-height:48px;font-size:17px;font-weight:600;touch-action:manipulation}
+.btn.ghost{background:var(--pane);color:var(--ink)}
+.btn.choice{background:var(--bg);color:var(--ink);font-weight:500;text-align:left;flex:1 1 220px}
+.btn.choice:hover{background:var(--hover)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:40px;font-size:15px;padding:6px 14px;font-weight:500} .btn.tight{padding:9px 12px}
+.qbox{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+.qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px} .card footer{flex-wrap:wrap;row-gap:2px} .hint{white-space:nowrap} .readout{font-size:14px;flex:1 1 auto} }
+/* kit:grip 2026-11-14 —— 圆钮（「可抓」记号，g1.md A.4 G1～G8）。--grip 只给圆钮、托、按住按钮、焦点框用；--accent 不给任何控件用 */
+.btn.hold{touch-action:none;background:var(--grip);border-color:var(--grip);color:var(--bg);display:inline-flex;align-items:center;gap:10px;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.btn.hold.on{filter:brightness(.82)}
+.btn.hold svg{width:18px;height:18px;flex:none}
+.btn.hold svg path{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
+.gfill{fill:var(--grip)} .gsoft{fill:var(--grip-soft)}
+.gring{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round}
+.gring.on{stroke-width:3.2}
+.gridge{fill:none;stroke:var(--bg);stroke-width:2.2;stroke-linecap:round}
+.garrow{fill:none;stroke:var(--grip);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.gkbd{fill:none;stroke:var(--ink);stroke-width:1.6}
+#cue{fill:none;stroke:var(--grip);stroke-width:2.4;transform-box:fill-box;transform-origin:center;animation:cue 2.4s ease-out infinite}
+@keyframes cue{0%{transform:scale(1);opacity:.95}50%{transform:scale(1.8);opacity:0}100%{transform:scale(1.8);opacity:0}}
+@media (prefers-reduced-motion:reduce){#cue{animation:none;transform:scale(1.3);opacity:.9}}
+
+/* kit:lever —— 木杆、墨印与拓印纸 */
+:root{--beam:#E7CAA4;--grain:#96774E;--frame:#858473;--chalk:#E8E4C4;--board:#525C55;--cargo:#81958F;--cargo-edge:#536E67;--seal:#D4B665;--iron:#AA583C}
+@media(prefers-color-scheme:dark){:root{--beam:#68533E;--grain:#AA8B6B;--frame:#A8AC98;--chalk:#D6D6B6;--board:#3A443C;--cargo:#586D67;--cargo-edge:#93ABA1;--seal:#9F915B;--iron:#DF9876}}
+.wrap{max-width:810px}.card{box-shadow:0 1px 4px #0001}
+.wood,.cargo,.board,.skirt,.iron,.metal,.seal,.inkdot,.edge,.chalk,.thread,.pin,.mesh,.sealLine,.printBorder{stroke-linecap:round;stroke-linejoin:round}
+.wood{fill:var(--beam);stroke:var(--ink);stroke-width:2}
+.grain{fill:none;stroke:var(--grain);stroke-width:1.4;stroke-linecap:round}
+.board{fill:var(--board);stroke:var(--ink);stroke-width:1.6}
+.chalk{fill:var(--chalk);stroke:none}
+.cargo{fill:var(--cargo);stroke:var(--ink);stroke-width:2}
+.seal{fill:var(--seal);stroke:var(--ink);stroke-width:1}
+.sealLine{fill:none;stroke:var(--grain);stroke-width:1}
+.inkdot{fill:var(--ink);stroke:none}
+.iron{fill:none;stroke:var(--iron);stroke-width:6}
+.metal{fill:var(--sky);stroke:var(--ink);stroke-width:1.5}
+.pin{fill:var(--ink);stroke:var(--pane);stroke-width:1.1}
+.skirt{fill:var(--paper);stroke:var(--frame);stroke-width:1}
+.mesh{fill:none;stroke:var(--frame);stroke-width:1.25}
+.thread{fill:none;stroke:var(--ink);stroke-width:2}
+.edge{fill:none;stroke:var(--ink);stroke-width:2}
+.smallLetter,.inscription,.fine{fill:var(--text);font-family:var(--f-sans);font-size:15px}
+.inscription{font-weight:650}.fine{fill:var(--muted);font-size:14px}
+.imprint{stroke:var(--frame);stroke-width:.8}.imprint.left{fill:var(--apricot)}.imprint.right{fill:var(--sage)}
+.armBand{fill:var(--pane);opacity:.86}.armMark{stroke:var(--ink);stroke-width:1;fill:var(--apricot)}.armMark.right{fill:var(--sage)}
+.printBorder{fill:var(--paper);stroke:var(--rule);stroke-width:1.5}
+#printFormula{margin:0 16px 10px;padding:8px 12px;border-left:3px solid var(--frame);font:600 16px var(--f-mono);color:var(--ink)}
+#touch{touch-action:none;cursor:grab}#touch:active{cursor:grabbing}
+.actions{justify-content:flex-start}.actions .btn[hidden]{display:none}
+.card footer{flex-wrap:wrap;align-items:center}.hint{white-space:normal}
+.readout{font-family:var(--f-sans)}.readout b{color:var(--ink)}
+@media(max-width:520px){.wrap{padding:6px 6px 18px}.smallLetter,.inscription,.fine{font-size:18px}
+.card footer{display:grid;gap:0}.readout{text-align:left}.actions{gap:6px}.actions .btn{font-size:15px;padding:8px 11px}.actions .choice{flex:1 1 auto}}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <header><span class="station" id="station"></span><h1 id="title"></h1></header>
+    <svg id="stage" viewBox="0 0 560 338" tabindex="0" role="application" aria-label="动手区">
+      <defs><clipPath id="cut-window"><rect x="8" y="29" width="109" height="69"/></clipPath></defs>
+      <g id="bench"></g>
+      <g id="dyn"></g>
+      <g id="fx"><circle id="cue" cx="0" cy="0" r="10" style="display:none"/></g><!-- 提醒环用 CSS 动画，不跟着每帧重画（教训 23） -->
+      <rect id="touch" x="0" y="0" width="0" height="0" fill="transparent"/><!-- 永不重画的触摸层（教训 25） -->
+    </svg>
+    <div id="printFormula" hidden></div>
+    <footer><span class="hint" id="hint"></span><span class="readout" id="readout"></span></footer>
+  </div>
+  <div class="talk">
+    <svg class="ava" viewBox="0 0 48 48" aria-hidden="true">
+      <circle cx="24" cy="27" r="16" fill="var(--sky)"/>
+      <path class="k" d="M9 27 C9 18 15 11 24 11 C33 11 39 18 39 27 C39 36 33 43 24 43 C15 43 9 36 9 27 Z"/>
+      <path class="k1" d="M24 11 L24 5 M21 4.5 C22 3.5 26 3.5 27 4.5"/>
+      <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
+      <path class="k1" d="M18 32 C21 35 27 35 30 32"/>
+    </svg>
+    <div class="bubble" id="say" aria-live="polite"></div>
+  </div>
+  <div class="actions" id="actions"></div>
+  <div id="qarea"></div>
+</div>
+
+<script>
+"use strict";
+/* ============ 2. 平台契约 activity/1.1（单独打开时也能玩）  kit:host ============ */
+const Host = (() => {
+  const h = {}, inFrame = window.parent !== window;
+  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
+  const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); else (window.__sent = window.__sent || []).push({ type, payload: payload || {} }); };
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
+    state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
+})();
+Host.on("init", p => {
+  if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
+});
+// 每站的猜测和观察只记一次，complete 只发一次（C.0 第 3 条；教训 15、19）
+const sentPred = new Set(), sentObs = new Set();
+let completed = false;
+function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station }); }
+let lastState = "";
+function sendState(o){ const s = JSON.stringify(o); if (s === lastState) return; lastState = s; Host.state(o); }
+
+/* ============ 木工台 ============ */
+// 忽略轻杆自重和支点摩擦，竖直载荷、等距孔。从水平松手后先向哪边转见 OpenStax 9.5。
+// 画出的倾角只表示初始转向，不把微小位移标成实测高度。
+const MODEL = {
+  box: 6, last: 7, sealedSpan: 6, middle: 3, near: 4, tilt: 7,
+  read(s) {
+    const first = s.station === 1;
+    const leftArm = first ? s.hole : s.pivot;
+    const rightArm = first ? 1 : this.sealedSpan - s.pivot;
+    const leftWeight = first ? s.rings : s.weight;
+    const leftMoment = leftArm * leftWeight, rightMoment = rightArm * this.box;
+    return {station:s.station, leftArm,rightArm,leftWeight,rightWeight:this.box,leftMoment,rightMoment,
+      direction:Math.sign(rightMoment-leftMoment)};
+  }
+};
+const $ = id => document.getElementById(id);
+const svg = $("stage");
+const initial = () => ({station:1,hole:1,rings:1,pivot:MODEL.middle,weight:MODEL.box});
+let state = initial(), phase = "guess", sawLevel = false, sawLift = false, formula = false;
+let proofs = new Map(), prints = [], replay = false, drag = null, artGrip = null;
+let delayedLine = 0, dwellTimer = 0;
+const motionReduced = window.matchMedia("(prefers-reduced-motion:reduce)");
+const clamp = (v,min,max) => Math.min(max,Math.max(min,v));
+const path = (d,cls,attr="") => `<path d="${d}" class="${cls}" ${attr}/>`;
+const rect = (x,y,w,h,cls,extra="") => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.2" class="${cls}" ${extra}/>`;
+const circle = (x,y,r,cls,extra="") => `<circle cx="${x}" cy="${y}" r="${r}" class="${cls}" ${extra}/>`;
+const text = (x,y,words,cls="smallLetter",anchor="middle") => `<text x="${x}" y="${y}" class="${cls}" text-anchor="${anchor}">${words}</text>`;
+const group = (art,attr="") => `<g ${attr}>${art}</g>`;
+const move = (x,y) => `transform="translate(${x} ${y})"`;
+function geometry(s,locked=false) {
+  const first = s.station === 1, read = MODEL.read(s);
+  const pitch = first ? 54 : 65;
+  const start = first ? 36 : 82;
+  const pin = first ? MODEL.last : s.pivot;
+  const x = start + pin*pitch, y=163;
+  const degrees = locked ? 0 : read.direction*MODEL.tilt;
+  const a = degrees*Math.PI/180;
+  const point = i => [x+(i-pin)*pitch*Math.cos(a),y+(i-pin)*pitch*Math.sin(a)];
+  return {pitch,start,pin,x,y,degrees,point, last:first?MODEL.last+1:MODEL.sealedSpan,
+    left: first?MODEL.last-s.hole:0, right:first?MODEL.last+1:MODEL.sealedSpan};
+}
+function crate(x,y,weight) {
+  const width=49,h=44;
+  let art=rect(-width/2,0,width,h,"cargo",'data-part="crate"');
+  art+=path("M-24 6L24 5.8M-24 36.7L24 36.5M-17 6.5V36M17 6V36M-17 35L15 7M-12 36L17 11","edge");
+  for(let i=0;i<weight;i++) art+=circle(-17+(i%3)*17,3+Math.floor(i/3)*37,1.35,"inkdot");
+  return group(art,move(x,y));
+}
+function cargo(read,point) {
+  const [x,y]=point;
+  return path(`M${x} ${y}v19l-23 20M${x} ${y+19}l23 20`,"thread")+crate(x,y+39,read.rightWeight);
+}
+function hangingLeft(s, point) {
+  const [x,y]=point;
+  let art=path("M0 0q3 14 0 23","thread");
+  if(s.station===1) {
+    for(let i=0;i<s.rings;i++){
+      const dx=s.rings===1?0:(i===0?-7:7);
+      art+=circle(dx,35,11,"iron",'data-part="ring"')+circle(dx-5,26,1.5,"inkdot");
+    }
+  } else {
+    art+=path("M0 10L-30 63Q0 72 30 63L0 10","thread");
+    for(let i=0;i<s.weight;i++) {
+      const xx=-21+(i%3)*14, yy=57-Math.floor(i/3)*10;
+      art+=rect(xx,yy,13,9,"metal",'data-part="weight"')+circle(xx+6,yy+3,1,"inkdot");
+    }
+  }
+  return group(art,move(x,y));
+}
+function fixedSeals(geo) {
+  let seals="";
+  for(const i of [geo.left,geo.right]) {
+    const xx=geo.start+i*geo.pitch;
+    seals+=rect(xx-10,geo.y-11,20,19,"seal")+path(`M${xx-8} ${geo.y+6}l9 -16m-1 16l9 -16`,"sealLine");
+  }
+  return seals;
+}
+function armPrints(g, s) {
+  // 每跨一格，左环就在那段杆面上留下自己的墨印；右箱独占一格，留下六印。
+  function press(first,last,weight,side) {
+    let art="";
+    for(let i=first;i<last;i++){
+      const center=g.start+(i+.5)*g.pitch;
+      const spacing=6.4, width=weight*spacing;
+      let marks=rect(center-width/2-2,g.y-10.5,width+4,8.8,"armBand");
+      for(let n=0;n<weight;n++)
+        marks+=rect(center-width/2+n*spacing+.5,g.y-10,5.3,6.8,"armMark "+side,'data-beam-stamp=""');
+      art+=group(marks,`data-beam-segment="${side}"`);
+    }
+    return art;
+  }
+  return press(g.left,g.pin,s.rings,"left")+press(g.pin,g.right,MODEL.box,"right");
+}
+function apparatus(s, kind, locked=false) {
+  const first=s.station===1, g=geometry(s,locked), read=MODEL.read(s);
+  const [lx,ly]=g.point(g.left),[rx,ry]=g.point(g.right);
+  const firstX=g.start-18, lastX=g.start+g.last*g.pitch+19;
+  let beam=path(`M${firstX} ${g.y-10} Q${g.x} ${g.y-13} ${lastX} ${g.y-10}l2 15Q${g.x} ${g.y+8} ${firstX-1} ${g.y+6}Z`,"wood");
+  beam+=path(`M${firstX+8} ${g.y-5}q34 -2 66 -1m32 0q18 -2 37 -1M${lastX-78} ${g.y-5}q28 -2 62 -1`,"grain");
+  for(let i=0;i<=g.last;i++){
+    const hx=g.start+i*g.pitch;
+    beam+=circle(hx,g.y,2.8,"inkdot");
+    if(first&&i<MODEL.last&&kind==="live"&&!locked){
+      beam+=rect(hx-g.pitch/2,g.y-13,g.pitch,27,"",'fill="transparent" data-hole="'+(MODEL.last-i)+'"');
+    }
+  }
+  if(first&&!locked)beam+=armPrints(g,s);
+  if(!first) beam+=fixedSeals(g);
+  const base=g.y+79;
+  let frame=path(`M${g.x} ${g.y+2}L${g.x+13} ${base-4}l-26 1Z`,"wood")
+    +path(`M${g.x-9} ${base-10}l9 -41m2 36l5 -15`,"grain")
+    +rect(g.x-17,base-4,34,9,"wood");
+  frame+=group(beam,`transform="rotate(${g.degrees} ${g.x} ${g.y})"`);
+  frame+=circle(g.x,g.y,4.8,"pin",'data-part="pivot"');
+  frame+=cargo(read,[rx,ry])+hangingLeft(s,[lx,ly]);
+  frame+=circle(lx,ly,4.5,"pin",'data-part="left-hook"')+circle(rx,ry,4.5,"pin",'data-part="right-hook"');
+  if(kind==="live"){
+    frame+=text(lx-(first&&s.hole===1?13:0),ly+(first?65:94),read.leftWeight+" 牛","inscription");
+    frame+=text(rx+37,ry+66,read.rightWeight+" 牛","inscription","start");
+    if(locked) frame+=path(`M${g.x-18} ${g.y+16}v-26h7v25z`,"metal");
+  }
+  return group(frame,`data-lever="${kind}"`);
+}
+function stamps(read) {
+  // 同一站的墨印共用一把尺，换孔后，六枚仍占原来的宽度。
+  const step=read.station===1?18:10, size=Math.min(step-1.5,15);
+  function row(y,side,n,perHole) {
+    let art=text(20,y+size*.8,side==="left"?"左":"右","inscription","start");
+    for(let i=0;i<n;i++){
+      const x=49+i*step;
+      art+=rect(x,y,size,size,"imprint "+side,`data-stamp="${side}"`);
+      if(i%perHole===0) {
+        const last=x+(perHole-1)*step+size;
+        art+=path(`M${x} ${y+size+2}v2H${last}v-2`,"mesh");
+      }
+    }
+    return art;
+  }
+  return text(20,22,"两边的方印","fine","start")
+    +row(32,"left",read.leftMoment,read.leftWeight)+row(63,"right",read.rightMoment,read.rightWeight);
+}
+function chalkMark(x,y,w,h,attr){
+  // 纸上的缺口和断开的粉笔屑，在放大窗里也认得出来。
+  const start=x-w/2;
+  return group(path(`M0 0l${w*.55} .2l${w*.07} ${h*.45}l${w*.06} ${-h*.45}l${w*.22} .1l${-w*.015} ${h*.7}l${-w*.86} ${h*.2}Z`,"chalk")
+    +circle(w*.97,h*.48,h*.42,"chalk"),attr+" "+move(start,y));
+}
+function floorPaper() {
+  const g=geometry(initial(),true), [x,y]=g.point(g.right);
+  const bottom=y+83;
+  return rect(x-29,bottom-45,58,61,"board")
+    +chalkMark(x,bottom-3.2,36,2.8,'data-part="footprint"');
+}
+function blowup(s,locked) {
+  const g=geometry(s,locked), [rx,ry]=g.point(g.right);
+  const gap=(g.y-ry)*5, baseline=84, boxY=baseline-gap;
+  // 纸框固定，木箱边缘相对粉笔印上下移动。
+  const art=rect(0,0,125,111,"skirt")+text(62,20,"箱底放大","inscription")
+    +rect(8,29,109,69,"board")+chalkMark(62,baseline-5,88,4.5,'data-detail="footprint"')
+    +group(rect(18,boxY-66,90,66,"cargo",'data-detail="crate"')+
+      path(`M22 ${boxY-8}h82M31 ${boxY-8}l28 -18M48 ${boxY-8}l28 -18`,"edge"),
+      'clip-path="url(#cut-window)"');
+  return path(`M${rx+30} ${ry+72}L532 170V110`,"mesh")+group(art,move(409,9));
+}
+function seesaw() {
+  const points=[[24,43],[131,26]], [left,right]=points;
+  let art=path("M97 32L106 54H89Z","wood")+path("M12 45L143 24l1 5L13 50Z","wood");
+  art+=circle(...left,3,"pin",'data-part="left-hook"')+circle(...right,3,"pin",'data-part="right-hook"');
+  // 公园座椅的远端和近端，跟此时的挂环和重箱同向。
+  art+=path("M12 44q10 -5 22 -2l1 3q-12 0 -22 3zM119 27q10 -5 21 -3l1 3l-22 4z","metal");
+  art+=path("M35 41l-3 -10q-1 -5 6 -6q4 0 4 4M117 27l-3 -10q-1 -5 -6 -4q-4 0 -3 4","edge");
+  art+=circle(21,21,4.8,"wood")+path("M21 27l3 11l8 1l3 11M24 30l11 -3","edge");
+  art+=circle(132,0,6.4,"wood")+path("M131 8l-5 13l-10 1l-1 12M129 11l-18 4","edge");
+  return group(art,'data-lever="seesaw" transform="translate(263 260) scale(1.18)"');
+}
+function markPrint(p) {
+  const shift=(p.pivot-MODEL.middle)*14;
+  return group(path(`M4 9h44M${23+shift} 9l-4 9h8z`,"edge")
+    +text(55,16,p.weight+" 牛","inscription","start"),'data-proof="" transform="translate('+ (p.pivot===MODEL.middle?32:171)+' 327)"');
+}
+function visualGrip(s) {
+  const first=s.station===1,g=geometry(s);
+  const [lx,ly]=g.point(g.left);
+  const x=first?lx:g.x,y=first?ly+90:g.y+111;
+  const r=Math.max(13,15*560/svg.clientWidth);
+  const nub=group(circle(0,0,r,"gfill")+circle(0,0,r,"gring")
+     +path(`M-4 ${-r*.38}v${r*.76}m4 ${-r*.76}v${r*.76}m4 ${-r*.76}v${r*.76}`,"gridge"),
+     `data-grip="${first?"ring":"pivot"}" ${move(x,y)}`);
+  artGrip={x,y,pitch:g.pitch};
+  return path(first?`M${x} ${ly+48}q8 7 13 19t-9 17`:`M${x} ${g.y+83}v23`,"mesh")+nub;
+}
+function setTarget() {
+  const touch=$("touch");
+  const r=24*560/Math.max(svg.clientWidth,1);
+  if(!artGrip){touch.setAttribute("width",0);return;}
+  for(const [key,val] of Object.entries({x:artGrip.x-r,y:artGrip.y-r,width:2*r,height:2*r})) touch.setAttribute(key,val);
+}
+function printCard() {
+  let paper="";
+  prints.forEach((s,i)=>{
+    const top=i*193;
+    const title=i===0?"我的挂法":"我的支点";
+    const r=MODEL.read(s);
+    paper+=group(rect(11,6,538,183,"printBorder")+text(29,34,title,"inscription","start")
+      +text(531,34,`左 ${r.leftWeight} 牛　右 ${r.rightWeight} 牛`,"fine","end")
+      +group(apparatus(s,"print-"+(i+1)), 'transform="translate(6 -64) scale(.97 .92)"'),move(0,top));
+  });
+  return paper;
+}
+function paint() {
+  artGrip=null;
+  const end=phase==="card", first=state.station===1, locked=phase==="guess"||phase==="unlatch";
+  svg.setAttribute("aria-label",end?"我的两张杠杆拓印":first?"杠杆台，左右方向键移动铁环":"杠杆台，左右方向键移动支点");
+  svg.setAttribute("viewBox",end?"0 0 560 392":first?"0 0 560 338":"0 0 560 358");
+  if(end){$("dyn").innerHTML=printCard();setTarget();return;}
+  const r=MODEL.read(state);
+  let art=first?floorPaper():"";
+  if(!locked) art+=stamps(r);
+  art+=apparatus(state,"live",locked);
+  if(first) {
+    art+=blowup(state,locked);
+    if(!locked&&r.direction<0&&state.hole===MODEL.last&&state.rings===1) art+=seesaw();
+  } else {
+    art+=text(325,44,"钩上的封条","fine","start");
+    art+=path("M418 48q41 6 49 48l3 40","mesh");
+    art+=path("M20 316H540","mesh");
+    proofs.forEach(p=>{art+=markPrint(p);});
+  }
+  if(!locked) art+=visualGrip(state);
+  $("dyn").innerHTML=art;
+  setTarget();
+  sendState(r);
+}
+
+function say(words,tone=""){
+  clearTimeout(delayedLine);
+  $("say").textContent=words;
+  $("say").className="bubble"+(tone?" "+tone:"");
+}
+function header() {
+  const titles=["让粉笔印见光","这次，挪下面"];
+  $("station").textContent=phase==="card"?"星卡":`第 ${state.station} 站 · 共 2 站`;
+  $("title").textContent=phase==="card"?"我的两根杠杆":titles[state.station-1];
+}
+function footer() {
+  const locked=phase==="guess"||phase==="unlatch", first=state.station===1;
+  $("printFormula").hidden=!(formula&&phase==="play"&&first);
+  if(!$("printFormula").hidden){
+    const r=MODEL.read(state);
+    const relation=r.leftMoment===r.rightMoment?"=":(r.leftMoment>r.rightMoment?"＞":"＜");
+    $("printFormula").textContent=`左 ${r.leftWeight} × ${r.leftArm} ${relation} ${r.rightWeight} × ${r.rightArm} 右（牛·格）`;
+  }
+  if(phase==="card"){
+    $("hint").textContent="两张都是你亲手拓的";
+    $("readout").textContent="";
+  } else if(locked){
+    $("hint").textContent="牛是力的单位";
+    $("readout").textContent="木杆扣住了";
+  } else if(first) {
+    $("hint").textContent="拖铁环的尾带，也可以点孔";
+    $("readout").textContent=`左第 ${state.hole} 格 · ${state.rings} 牛　右第 1 格 · ${MODEL.box} 牛`;
+  } else {
+    $("hint").textContent="拨三角木，再给左钩配重";
+    $("readout").textContent=`左 ${state.pivot} 格 · ${state.weight} 牛　右 ${MODEL.sealedSpan-state.pivot} 格 · ${MODEL.box} 牛`;
+  }
+}
+const buttons=new Map();
+function showButtons(names) {
+  const box=$("actions");
+  for(const [name,el] of buttons){ if(!names.includes(name)) el.hidden=true; }
+  for(const name of names){
+    let el=buttons.get(name);
+    if(!el){
+      el=document.createElement("button");el.type="button";el.className="btn";
+      el.textContent=name;
+      el.addEventListener("click",()=>command(name));
+      box.append(el);buttons.set(name,el);
+    }
+    el.hidden=false;
+    el.classList.toggle("choice",phase==="guess");
+    el.classList.toggle("ghost",!["松开木杆","拓下这根杆","收进星卡"].includes(name));
+  }
+}
+const guesses=[{label:"能，得挑个孔",correct:true},{label:"不能，箱子重",mis:"heavy-wins"},{label:"最多让杆停平",mis:"balance-ceiling"}];
+function draw() {
+  header();paint();footer();
+  if(phase==="guess")return showButtons(guesses.map(g=>g.label));
+  if(phase==="unlatch")return showButtons(["松开木杆"]);
+  if(phase==="card")return showButtons(["再玩第一站","再玩第二站","再玩一次"]);
+  let controls=[];
+  if(state.station===1){
+    if(sawLevel)controls.push(formula?"合上算式":"翻看算式");
+    if(sawLevel&&sawLift)controls.push(state.rings===1?"加一枚环":"取下一枚环","拓下这根杆");
+  } else {
+    controls.push("取下 1 牛","加上 1 牛");
+    if(MODEL.read(state).direction)controls.push("给我一点线索");
+    else if(proofs.size===2)controls.push("收进星卡");
+  }
+  showButtons(controls);
+  if(state.station===2){
+    buttons.get("取下 1 牛").disabled=state.weight<=1;
+    buttons.get("加上 1 牛").disabled=state.weight>=MODEL.box;
+  }
+}
+function ringInstructions(){
+  if(sawLevel&&sawLift) return "桌边还有一枚环。挑一种挂法，拓在纸上带走。";
+  return "拖铁环换个孔，看箱底。";
+}
+function noticePose() {
+  const r=MODEL.read(state);
+  if(state.station===1){
+    if(state.rings===1&&!r.direction)sawLevel=true;
+    const lifted=state.rings===1&&state.hole===MODEL.last;
+    if(lifted)sawLift=true;
+    if(lifted){
+      say("看箱底和那张粉笔纸。");
+      delayedLine=setTimeout(()=>{
+        say(sawLevel?"箱子没瘦。它把脚印留下了。喜欢这一摆，就把它拓下来。":"箱子没瘦。它把脚印留下了。回头找找杆停平的是哪一孔。");
+      },motionReduced.matches?80:360);
+    } else if(!r.direction) say(sawLift?"两排方印对齐。现在你可以换另一枚环，挑自己的拓印。":"两排方印对齐了。箱底碰着哪道记号？");
+    else say(ringInstructions());
+  } else {
+    if(!r.direction){
+      proofs.set(state.pivot,{...state});
+      say(proofs.size===2?"三角木靠近箱子，三牛就能托平。两枚钉子全程站岗，一步没挪。挑一档拓下来。":"这一档留下了平衡印。另一档也能让木杆停平吗？");
+    } else say("哪头先低了？");
+  }
+  draw();
+}
+function change(key,value) {
+  if(phase!=="play"||state[key]===value)return;
+  state[key]=value;
+  clearTimeout(dwellTimer);
+  if(drag){
+    // 每一孔都实时显示；只有停看或明确落定才收进发现。
+    drag.moved=true;
+    say(state.station===1?"看看杆两头。":"两枚封钉还在。");
+    draw();
+    dwellTimer=setTimeout(()=>{if(drag&&drag.moved)noticePose();},500);
+  }else noticePose();
+}
+function enter1() {
+  state=initial();phase="guess";sawLevel=false;sawLift=false;formula=false;
+  proofs.clear();prints=[];replay=false;drag=null;
+  say("只有这枚小铁环。换个孔，能把箱子抬起来吗？");draw();
+}
+function openFirst() {
+  phase="play";state=initial();formula=false;sawLevel=false;sawLift=false;
+  say(ringInstructions());draw();
+}
+function openSecond() {
+  state={...initial(),station:2};phase="play";formula=false;proofs.clear();
+  say("我把两头封上了。还剩哪块木头能搬？");draw();
+}
+function showCard(){
+  phase="card";replay=false;
+  if(!completed){completed=true;Host.complete({});}
+  say("封钉还在杆上。你搬过的铁环和三角木，都留在这两张拓印里了。");
+  draw();
+}
+function command(name){
+  if(phase==="guess"){
+    const guess=guesses.find(g=>g.label===name);
+    if(!guess)return;
+    if(!sentPred.has(1)){
+      sentPred.add(1);Host.event("predicted",{station:1,choice:guesses.indexOf(guess),correct:!!guess.correct,misconception:guess.mis||null});
+    }
+    phase="unlatch";say("我在箱底描了个印。待会儿盯着那儿。","hmm");draw();
+  }else if(phase==="unlatch"&&name==="松开木杆"){openFirst();}
+  else if(phase==="card"){
+    if(name==="再玩一次"){sentPred.clear();sentObs.clear();lastState="";enter1();}
+    if(name==="再玩第一站"){replay=true;openFirst();}
+    if(name==="再玩第二站"){replay=true;openSecond();}
+  }else if(phase==="play"&&state.station===1){
+    if((name==="翻看算式"||name==="合上算式")&&sawLevel){formula=!formula;draw();}
+    if(sawLevel&&sawLift){
+      if(name==="加一枚环")change("rings",2);
+      if(name==="取下一枚环")change("rings",1);
+      if(name==="拓下这根杆"){
+        prints[0]={...state};observedOnce(1);
+        if(replay)showCard();else openSecond();
+      }
+    }
+  }else if(phase==="play"&&state.station===2){
+    if(name==="给我一点线索"){
+      const direction=MODEL.read(state).direction;
+      if(direction)say(direction<0?"试着从左盘取下一牛，再看哪头动。":"试着给左盘添一牛，再看。");
+    }
+    if(name==="取下 1 牛")change("weight",Math.max(1,state.weight-1));
+    if(name==="加上 1 牛")change("weight",Math.min(MODEL.box,state.weight+1));
+    if(name==="收进星卡"&&proofs.size===2&&MODEL.read(state).direction===0){
+      prints[1]={...state};observedOnce(2);showCard();
+    }
+  }
+}
+function step(dx){
+  if(phase!=="play")return;
+  if(state.station===1) change("hole",clamp(state.hole-dx,1,MODEL.last));
+  else change("pivot",clamp(state.pivot+dx,MODEL.middle,MODEL.near));
+}
+svg.addEventListener("keydown",e=>{
+  if(phase!=="play"||!["ArrowLeft","ArrowRight"].includes(e.key))return;
+  e.preventDefault();svg.classList.add("kbd");step(e.key==="ArrowLeft"?-1:1);
+});
+const touch=$("touch");
+touch.addEventListener("pointerdown",e=>{
+  if(phase!=="play"||drag)return;
+  svg.classList.remove("kbd");svg.focus({preventScroll:true});
+  const ctm=svg.getScreenCTM();
+  drag={id:e.pointerId,x:e.clientX,scale:Math.hypot(ctm.a,ctm.b),pitch:artGrip.pitch,
+    value:state.station===1?state.hole:state.pivot};
+  touch.setPointerCapture(e.pointerId);e.preventDefault();
+});
+touch.addEventListener("pointermove",e=>{
+  if(!drag||drag.id!==e.pointerId)return;
+  const steps=Math.round((e.clientX-drag.x)/(drag.pitch*drag.scale));
+  if(state.station===1)change("hole",clamp(drag.value-steps,1,MODEL.last));
+  else change("pivot",clamp(drag.value+steps,MODEL.middle,MODEL.near));
+});
+function release(e){
+  if(!drag||e.pointerId!==drag.id)return;
+  const selected=drag.moved&&e.type==="pointerup";
+  drag=null;
+  clearTimeout(dwellTimer);
+  if(selected)noticePose();
+}
+for(const event of ["pointerup","pointercancel","lostpointercapture"])touch.addEventListener(event,release);
+svg.addEventListener("click",e=>{
+  if(phase!=="play"||drag)return;
+  const hole=e.target.closest("[data-hole]");
+  if(hole&&state.station===1)change("hole",Number(hole.dataset.hole));
+});
+new ResizeObserver(()=>{if(phase==="play")paint();}).observe(svg);
+
+// 直接把舰长的原话交给宿主的信号站。
+const questionArea=$("qarea");
+const question=document.createElement("button");
+question.type="button";question.className="btn ghost small";question.textContent="我有个问题";
+question.style.marginTop="12px";questionArea.append(question);
+question.onclick=()=>{
+  if(questionArea.querySelector("textarea"))return;
+  const field=document.createElement("textarea");field.maxLength=120;field.placeholder="想问领航员什么？";
+  const send=document.createElement("button");send.type="button";send.className="btn small";send.textContent="发给领航员";
+  const row=document.createElement("div");row.className="qbox";row.append(field,send);questionArea.append(row);field.focus();
+  send.onclick=()=>{if(field.value.trim()){Host.noteQuestion(field.value.trim());row.remove();say("好问题，我记下来了。");}};
+};
+Host.ready();
+enter1();
+</script></body></html>

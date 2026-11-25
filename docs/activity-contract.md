@@ -20,7 +20,7 @@
 | 方向 | type | payload | 说明 |
 | --- | --- | --- | --- |
 | 模块 → 平台 | `ready` | — | 模块加载完成。平台 3 秒内没收到 `ready`，会记一条契约警告。 |
-| 平台 → 模块 | `init` | `{age_band, lang, phase, palette, mastery}` | `palette` 是当前主题的颜色表，模块据此设置自己的 CSS 变量，保证和平台的明暗主题一致。 |
+| 平台 → 模块 | `init` | `{age_band, lang, phase, palette, mastery}`，可选 `navigator` | `palette` 是当前主题的颜色表，模块据此设置自己的 CSS 变量，保证和平台的明暗主题一致。可选的 `navigator: {id, faces: {curious, waiting, surprised, clap, think, wrong}}` 是舰长选的领航员，每个值是那张脸的 SVG 去掉最外层 `<svg>` 以后的内容（宿主核对过哈希、按白名单查过，只用 `k`、`k1`、`f-*` 十个类，颜色由模块的样式给）；模块拿它换掉自带的那张脸，表情跟着场合换（`docs/specs/navigators.md` 第 6 节）。缺了不算契约警告；契约版本仍是 1.1，不认识它的模块忽略。 |
 | 平台 → 模块 | `phase` | `{phase}` | 实验类的阶段：`predict`（锁定操作）、`observe`（解锁）。 |
 | 模块 → 平台 | `event` | `{verb, result}` | 一条学习事件。`verb` 必须在 manifest 的 `emits` 里声明过，否则平台会记一条契约警告。 |
 | 模块 → 平台 | `state` | 可观测量的当前值 | 实验类在每次变化时发送，平台用它生成「解释」一步里的对比，例如亮度从「很暗」变成「较亮」。 |
@@ -30,6 +30,18 @@
 | 模块 → 平台 | `complete` | `{score, total}` 或 `{}` | 模块结束。`score`、`total` 只用于诊断，宿主不把它们记进事件：分数一律由平台从作答事件算出（`docs/specs/events.md` 第 3.1 节）。 |
 | 模块 → 平台 | `resize` | `{h}` | 内容高度变化时发送，平台据此调整 iframe 高度。 |
 | 模块 → 平台 | `ai_request` | `{capability, input}` | **计划中**：申请调用 AI 能力，必须先在 manifest 的 `capabilities` 里声明 `ai:<能力名>`。 |
+
+## 「生命的说明书」正式入口
+
+正式宿主核对发布清单里的模块清单和 HTML，再创建独立的沙箱窗口。它等到文档加载且收到一次 `ready` 后发送 `init`。三份模块都支持以下可选字段：
+
+| 字段 | 含义 |
+| --- | --- |
+| `completed_stations` | 已完成站号的数组。宿主按当前孩子、活动 ID 和活动版本从有效尝试重建。空数组从头开始。 |
+| `activity_completed` | 已经领过本活动的星卡。最后一站完成和领星卡可以分两次访问。 |
+| `question_available` | 能否接收提问。正式入口给 `false`，模块隐藏提问按钮。 |
+
+正式宿主只接受来自当前沙箱窗口、匹配 `activity/1.1` 和运行阶段的消息。三个四站活动各自完成一站时发 `event`，载荷为 `{verb:"observed",result:{station:1,item:"station-complete"}}`，其中站号按顺序从 1 到 4。每个新完成的站只记录一次。站齐后领星卡的 `complete` 结束尝试。已领星卡的重玩全程保留在模块内。频繁变化的读数和画面高度都不产生站点记录。
 
 ## 「预测 → 观察 → 解释」由谁做
 

@@ -1,0 +1,26 @@
+id: act.simulation.ratio-chute-01
+contract: activity/1.1
+type: simulation
+version: 2
+title: 分配槽
+targets:
+- math.ratio.sharing
+age_band: G5-6
+entry: index.html
+duration_min: 8
+pedagogy: explain
+capabilities:
+- pointer
+- keyboard
+misconceptions:
+- ratio-as-count
+- part-part-as-part-whole
+- equal-share-ignores-ratio
+emits:
+- predicted
+- observed
+author:
+  model: Codex
+  prompt_ref: docs/constellations/zero-to-one/stars/15-sharing.md
+review: approved  # Luka 2026-11-22 验收（#233）
+# END OF FILE

@@ -1,0 +1,40 @@
+constellation: energy-dock
+title: 省力的机器和能量账本
+updated: '2026-11-20'
+issue: 193
+total: 6
+preview: https://deepnorth2077.github.io/Curio/preview/lever/
+now: 只交杠杆新版给 Luka 和舰长试玩。其余五颗保留为退回的草稿，待这颗通过家庭验收再重新设计。
+stars:
+- n: 1
+  title: 杠杆：把支点挪一格
+  state: 等验收
+  prs:
+  - 218
+  - 222
+  waiting: 等舰长试玩，观察他是否主动把环拖回第六孔、再试第七孔
+- n: 2
+  title: 滑轮：谁在托箱子
+  state: 草案
+  prs:
+  - 207
+- n: 3
+  title: 斜面：长路怎样省力
+  state: 草案
+  prs:
+  - 208
+- n: 4
+  title: 功：力和路程合起来
+  state: 草案
+  prs:
+  - 209
+- n: 5
+  title: 功率：一秒能搬多少
+  state: 草案
+  prs:
+  - 210
+- n: 6
+  title: 能量：滑停以后去了哪
+  state: 草案
+  prs:
+  - 211

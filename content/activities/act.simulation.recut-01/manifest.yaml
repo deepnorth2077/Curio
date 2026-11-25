@@ -1,0 +1,26 @@
+id: act.simulation.recut-01
+contract: activity/1.1
+type: simulation
+version: 2
+title: 再切刀
+targets:
+- math.fraction.equivalent
+age_band: G5-6
+entry: index.html
+duration_min: 8
+pedagogy: explain
+capabilities:
+- pointer
+- keyboard
+misconceptions:
+- bigger-numbers-bigger
+- bigger-piece-bigger
+- one-name-only
+- add-same
+emits:
+- predicted
+- observed
+author:
+  model: Codex
+  prompt_ref: docs/constellations/zero-to-one/stars/07-equivalent.md
+review: approved  # Luka 2026-11-22 验收（#233）

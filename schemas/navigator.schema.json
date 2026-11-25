@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/deepnorth2077/curio/schemas/navigator.schema.json",
+  "title": "navigator/1 · 领航员",
+  "$comment": "docs/specs/navigators.md 第 1 节。目录名必须等于 id、六张脸都要有、SVG 的规则由 tools/ci_checks.py 查。已进 main 的 id、unlock 永远不能改。",
+  "type": "object",
+  "required": ["schema", "id", "version", "title", "intro", "unlock", "review", "author"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "navigator/1" },
+    "id": { "type": "string", "pattern": "^nav\\.[a-z0-9-]+$", "maxLength": 40 },
+    "version": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 6 },
+    "intro": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "unlock": {
+      "$comment": "第一版只许 {start: true}。「点亮星座认识新的一位」另出规格、扩 schema，按先读后写上线。",
+      "type": "object",
+      "required": ["start"],
+      "additionalProperties": false,
+      "properties": { "start": { "const": true } }
+    },
+    "review": { "enum": ["pending", "claude-reviewed", "approved"] },
+    "author": {
+      "type": "object",
+      "required": ["model", "prompt_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string", "minLength": 1 },
+        "prompt_ref": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

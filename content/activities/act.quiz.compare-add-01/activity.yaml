@@ -1,0 +1,122 @@
+id: act.quiz.compare-add-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 位值格大挑战
+targets:
+  - math.decimal.compare-add
+age_band: G3-4
+duration_min: 5
+review: approved  # Luka 2026-11-22 验收（#233）
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版小学数学四年级下册（旧版）第四单元、第六单元
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: 两个一样大的量筒，分别装到 0.8 和 0.75。哪边水多？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 0.75 那边
+            feedback: 你看到了两位数字。把两边都换成百分之一，再数数。
+            misconception: longer-is-larger
+          - id: b
+            text: 0.8 那边
+            correct: true
+          - id: c
+            text: 位数不同，没法比
+            feedback: 量筒一样大。两边都可以先数十分之一块。
+            misconception: longer-is-larger
+      feedback:
+        correct: 0.8 有 8 块。0.75 有 7 块和 5 片，5 片还凑不成一块。
+        wrong: 看两根水柱，先数整块。
+      hints:
+        - 十分之一块和百分之一片，哪种大？
+        - 把 0.8 也改写成两位小数。
+    - id: q2
+      stem: 两杯果汁分别装到 0.60 和 0.6。杯子相同，哪杯多？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 0.60 那杯
+            feedback: 写法变长了。看看新写的 0 表示多加了几片。
+            misconception: trailing-zero-changes
+          - id: b
+            text: 0.6 那杯
+            feedback: 数字少了一位。看看 6 还在不在原来的格子里。
+            misconception: trailing-zero-changes
+          - id: c
+            text: 一样多
+            correct: true
+      feedback:
+        correct: 6 块也能切成 60 片。切完水面还在同一个地方。
+        wrong: 两杯都先数十分之一块。
+      hints:
+        - 看看两个数里，6 都在哪一格？
+        - 想想点「末尾添 0」时的水面。
+    - id: q3
+      stem: 把 0.4 筒水和 0.35 筒水倒在一起，有多少筒？
+      answer:
+        type: number
+        value: 0.75
+        tolerance: 0
+        common_wrong:
+          - value: 0.39
+            feedback: 你把 4 和 5 放进了同一格。4 数的是块，5 数的是片。
+            misconception: align-right
+      feedback:
+        correct: 4 块加 3 块是 7 块，另有 5 片，一共 0.75 筒。
+        wrong: 把两个小数点排齐，再一格一格加。
+      hints:
+        - 把 0.4 想成 0.40。
+        - 先数合在一起有几块，再数有几片。
+    - id: q4
+      stem: 大壶里有 2.5 升水，倒出 0.25 升。还剩多少升？
+      answer:
+        type: number
+        value: 2.25
+        tolerance: 0
+        common_wrong:
+          - value: 0
+            feedback: 你把两个 25 摆在了一起。看看两个小数点的位置一样吗？
+            misconception: align-right
+      feedback:
+        correct: 把 2.5 写成 2.50，从 50 个百分之一中取走 25 个，剩 2.25 升。
+        wrong: 取走的水还不到半升。先估一估壶里该剩多少。
+      hints:
+        - 把两个小数点对齐。
+        - 把半升换成百分之一升的小份，再取走 25 份。
+    - id: q5
+      stem: 在 0.3□ 的方框里填一个数字。填好后要比 0.35 大，比 0.4 小。有几种填法？
+      answer:
+        type: number
+        value: 4
+        tolerance: 0
+        common_wrong:
+          - value: 5
+            feedback: 填 5 就和 0.35 一样大了，题目要更大一点。
+          - value: 9
+            feedback: 从 0 到 9 都试试，先划掉不比 0.35 大的数。
+      feedback:
+        correct: 可以填 6、7、8、9。最小是 0.36，最大是 0.39，共 4 种。
+        wrong: 对着百分位，把可能的数字挨个试一试。
+      hints:
+        - 两边的十分位都是 3，接着该比哪一格？
+        - 先试边上的 5 和 9，看看它们能不能留下。
+      figure:
+        type: number-line
+        from: 0.3
+        to: 0.4
+        step: 0.01
+        marks:
+          - at: 0.3
+            label: '0.30'
+          - at: 0.35
+            label: '0.35'
+          - at: 0.4
+            label: '0.40'

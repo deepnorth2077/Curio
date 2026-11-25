@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>掰巧克力</title>
 <style>
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 :root{
   --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
   --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
@@ -77,6 +80,8 @@ body.narrow .dialn{font-size:29px} body.narrow .ttl{font-size:30px}
 @media (prefers-reduced-motion:reduce){.cue{animation:none;opacity:.5}}
 .talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
 .ava{flex:none;width:42px;height:42px}
+/* 领航员的脸（docs/specs/navigators.md 第 6 节）：正式外壳在 init.navigator 里给选好的那位，十个类 k、k1、f-* 的颜色在这里 */
+.f-ink{fill:var(--ink)} .f-pane{fill:var(--pane)} .f-sky{fill:var(--sky)} .f-sage{fill:var(--sage)} .f-apricot{fill:var(--apricot)} .f-paper{fill:var(--paper)} .f-muted{fill:var(--muted)} .f-accent{fill:var(--accent)}
 .bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
 .bubble.good{background:var(--good-soft);border-color:transparent}
 .bubble.bad{background:var(--bad-soft);border-color:transparent}
@@ -165,13 +170,21 @@ const Host = (() => {
   return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
     state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
 })();
+// 领航员（docs/specs/navigators.md 第 6 节）：正式外壳在 init.navigator 给选好的那位的六张脸（去掉了最外层 <svg>），
+// .ava 换成它，表情跟着 say() 换。没给（单独打开、试玩页、旧宿主）就留着自带的脸
+let navFaces = null, navNow = "curious";
+function navFace(k){ navNow = k; if (navFaces && typeof navFaces[k] === "string") document.querySelector(".ava").innerHTML = navFaces[k]; }
 Host.on("init", p => {
+  if (p && p.navigator && p.navigator.faces && typeof p.navigator.faces.curious === "string"){ navFaces = p.navigator.faces; navFace(navNow); }
   if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
+  if (p && p.question_available === false) $("qarea").hidden = true;   // 正式外壳先关提问入口（slice-5a）
+  resumeFrom(p);   // 正式外壳记得做过哪几站：先让孩子选站（slice-5a）
 });
 // 同一道题只记一次、每站的 observed 只发一次（教训 15、19）；「再玩一次」也不重发
 const sentPred = new Set(), sentObs = new Set();
 let completed = false;
-function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station }); }
+// observed 只在一站做完时发一次，带整站完成的标记（slice-5a）；站内中途的操作不发 observed
+function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station, item: "station-complete" }); }
 
 /* ============ 3. 手绘线条（平台的 sketchLib） ============ */
 function sketchLib(){
@@ -255,7 +268,7 @@ let gen = 0;          // 每换一站加一：延时回调先确认还在原来�
 function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
 function hint(s){ $("hint").textContent = s || ""; }
 function readout(html){ $("readout").innerHTML = html || ""; }
-function say(text, tone){ const b = $("say"); b.textContent = text; b.className = "bubble" + (tone ? " " + tone : ""); }
+function say(text, tone){ const b = $("say"); b.textContent = text; b.className = "bubble" + (tone ? " " + tone : ""); navFace(tone === "good" ? "clap" : tone === "bad" || tone === "hmm" ? "think" : "curious"); }   // 领航员的表情跟着气泡换
 // 手指还按着时换出来的新按钮，先禁用到手指抬起，免得松手时误点（按住类操作刚完成时最常见）
 let fingerDown = false;
 // 焦点框只给键盘用户看（教训 27）：程序把焦点移到 svg 时，触摸后的 Chrome 也会算 focus-visible
@@ -294,7 +307,7 @@ function actions(list){
   return box;
 }
 function ask(question, options, onAnswer){
-  say(question);
+  say(question); navFace("waiting");   // 等舰长回答
   actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
     if (!sentPred.has(S.station)){ sentPred.add(S.station); Host.event("predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null }); }
     say(o.feedback, o.correct ? "good" : "bad");
@@ -302,6 +315,27 @@ function ask(question, options, onAnswer){
   }})));
 }
 function next(label, go, cls){ actions([{ label, go, cls }]); }
+// 选站（slice-5a）：正式外壳在 init 里给 completed_stations（做完的站号）和 activity_completed（拿过星卡没有）。
+// 有做完的站，打开时先选：重玩做过的站，或从头玩。重玩完回到这里（每站最后的按钮换成「回到选站」）。
+// 没做完的站不能从中间接着做：星卡要用到前面每一站的结果，所以没拿过星卡时「从头玩」接着往下走。
+// 没有这两个字段（试玩页、单独打开）就照旧从第 1 站开始
+let doneStations = 0, picking = false, replaying = false;
+function nextOr(label, go, cls){ if (picking && replaying) next("回到选站", pickStation); else next(label, go, cls); }
+function resumeFrom(p){
+  if (picking || doneStations || !p) return;
+  const saved = new Set(Array.isArray(p.completed_stations) ? p.completed_stations : []);
+  const all = p.activity_completed === true;
+  while (doneStations < STATIONS && (all || saved.has(doneStations + 1))) doneStations++;
+  if (doneStations) pickStation();
+}
+function pickStation(){
+  picking = true; replaying = false; gen++; S.mode = "talk"; hint(""); readout(""); hideCue();
+  const list = [];
+  for (let k = 1; k <= doneStations; k++) list.push({ label: `重玩第 ${k} 站`, go: () => { replaying = true; [enter1, enter2, enter3][k - 1](); } });
+  list.push({ label: "从头玩", go: () => { picking = false; replaying = false; enter1(); }, cls: "ghost" });
+  say(doneStations < STATIONS ? `上次做完了 ${doneStations} 站。重玩一站，还是从头玩？` : "这几站你都做完了。想重玩哪一站？");
+  actions(list);
+}
 // 一直闪的提示圈：CSS 动画，只改位置，不重建（教训 23）
 function cueAt(x, y, r){ cueEl.setAttribute("cx", x); cueEl.setAttribute("cy", y); cueEl.setAttribute("r", r); cueEl.style.display = ""; }
 function hideCue(){ cueEl.style.display = "none"; }
@@ -467,7 +501,7 @@ function done1(){
   next("还有呢", () => {
     say(`口算 ${m.whole}×${m.times} 时，可以先算 ${m.tens}×${m.times}，再算 ${rest}×${m.times}，也是这样掰的。`, "good");
     readout(`${m.tens}×${m.times} = ${m.tens * m.times} · ${rest}×${m.times} = ${rest * m.times} · 一共 <b>${m.tens * m.times + rest * m.times}</b>`);
-    next("去第 2 站", enter2);
+    nextOr("去第 2 站", enter2);
   });
 }
 
@@ -571,7 +605,7 @@ function done2(){
   say(`排数一样，才拼得成一整块。两个乘法里都有一个 ${A.rows}，才能合起来。`, "good");
   next("还有呢", () => {
     say(`${A.perRow}×${A.rows} + ${B.perRow}×${B.rows} = (${A.perRow}+${B.perRow})×${A.rows}。乘法分配律反过来也对。`, "good");
-    next("去第 3 站", enter3);
+    nextOr("去第 3 站", enter3);
   });
 }
 
@@ -661,7 +695,7 @@ function done3(){
     const b = MODEL.bigN;
     say(`三位数就不灵了：${b}×${MODEL.hundred + MODEL.one} = ${times101(b)}。`, "good");
     readout(`${b}×${MODEL.hundred} = ${b * MODEL.hundred} · ${b}×${MODEL.one} = ${b * MODEL.one} · 一共 <b>${times101(b)}</b>`);
-    next("看我的星卡", enterEnd);
+    nextOr("看我的星卡", enterEnd);
   });
 }
 
@@ -781,8 +815,8 @@ function tick(now){
   requestAnimationFrame(tick);
 }
 fitView();
+Host.ready();   // 必须先于任何 state、event（教训 31）
 enter1();
-Host.ready();
 requestAnimationFrame(tick);
 </script>
 </body>

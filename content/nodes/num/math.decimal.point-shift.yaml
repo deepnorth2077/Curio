@@ -1,0 +1,49 @@
+id: math.decimal.point-shift
+schema: knode/1
+title: 小数点搬家
+subjects:
+  - math
+theme: num
+grade: G4
+unit: 四下 · 小数的意义和性质（小数点移动、单位换算；人教版旧版册次，新版以实体书为准）
+curriculum:
+  - std: 义务教育数学课程标准（2022 年版）
+    ref: 第三学段「数与运算」：理解小数的意义，感悟计数单位
+  - textbook: 人教版小学数学四年级下册（旧版）
+    unit: 第四单元 小数的意义和性质
+prerequisites:
+  - math.decimal.tenths
+related:
+  - math.decimal.compare-add
+driving_question: 小数点只挪了一格，1.5 元怎么就成了 15 元？
+objectives:
+  - 知道一个数乘 10，每个数字都向左挪一格，看起来是小数点向右移了一位；除以 10 正好相反。
+  - 知道乘 10 不是在末尾添 0：1.5 乘 10 是 15，不是 1.50。
+  - 会用它做单位换算：1.35 米是 135 厘米；单位变小，数变大，东西没变。
+misconceptions:
+  - id: append-zero
+    text: 把整数「乘 10 末尾添 0」搬到小数上，例如认为 1.5 × 10 = 1.50。
+  - id: multiply-whole-part-only
+    text: 只把整数部分乘 10，例如认为 1.5 × 10 = 10.5。
+  - id: bigger-number-longer
+    text: 换单位以后只看数的大小，例如认为 135 厘米比 1.35 米长。
+  - id: bigger-unit-longer
+    text: 只看单位的大小，例如认为 1.35 米比 135 厘米长，因为米比厘米大。
+sources:
+  - type: textbook
+    ref: 人教版小学数学四年级下册（旧版）第四单元「小数点移动引起小数大小的变化」「小数与单位换算」
+  - type: reference
+    ref: 上海中心大厦，项目介绍：建筑高度 632 米
+    url: https://www.shanghaitower.com/ProjectIntroduction.html
+lenses:
+  - band: G3-4
+    approach: 位值格不动，拖着写数字的滑条左右挪：挪一格就是乘 10 或除以 10。转单位盘，绳子不变，数在变。一张纸一次次乘 10，叠成一座塔。
+  - band: G5-6
+    approach: 小数乘除法里用小数点移动的规律确定积和商的小数点位置。
+  - band: G7-9
+    approach: 科学记数法：乘 10 的整数次幂就是小数点移动。
+activities:
+  - act.simulation.slide-rule-01
+  - act.quiz.point-shift-01
+status: published  # Luka 2026-11-22 验收（#233）
+version: 1

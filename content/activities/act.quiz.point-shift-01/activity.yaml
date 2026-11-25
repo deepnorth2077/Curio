@@ -1,0 +1,113 @@
+id: act.quiz.point-shift-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 滑尺大挑战
+targets:
+  - math.decimal.point-shift
+age_band: G3-4
+duration_min: 5
+review: approved  # Luka 2026-11-22 验收（#233）
+engine: 1
+sources:
+  - type: textbook
+    ref: 人教版小学数学四年级下册（旧版）第四单元「小数点移动引起小数大小的变化」「小数与单位换算」
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: 一支彩笔 2.4 元。买 10 支，要付多少元？
+      answer:
+        type: number
+        value: 24
+        tolerance: 0
+        common_wrong:
+          - value: 2.4
+            feedback: 末尾添 0，价格还和一支一样。十个 4 角能换成几元？
+            misconception: append-zero
+          - value: 20.4
+            feedback: 你已经算好了十个 2 元。十个 4 角也要一起数。
+            misconception: multiply-whole-part-only
+      feedback:
+        correct: 十个 2 元和十个 4 角合起来，20 元加 4 元是 24 元。
+        wrong: 把彩笔价签放上滑尺。
+      hints:
+        - 把每个数字都向大一格的位置挪。
+        - 十支笔都要付角钱，不能只算一支的角钱。
+    - id: q2
+      stem: 一根短绳长 0.36 米。100 根首尾相接有多少米？
+      answer:
+        type: number
+        value: 36
+        tolerance: 0
+        common_wrong:
+          - value: 0.36
+            feedback: 末尾添 0，绳子并没有变长。试着让 3 和 6 都搬家。
+            misconception: append-zero
+          - value: 3.6
+            feedback: 你算好了 10 根。100 根里有几组这样的 10 根？
+      feedback:
+        correct: 0.36 连乘两次 10，先到 3.6，再到 36 米。
+        wrong: 把 100 拆成两个连续的乘 10。
+      hints:
+        - 乘一次 10，每个数字去了哪一格？
+        - 再乘一次，两个数字还要一起搬一次。
+    - id: q3
+      stem: 5.2 米的彩带平均分成 10 段。每段长多少米？
+      answer:
+        type: number
+        value: 0.52
+        tolerance: 0
+        common_wrong:
+          - value: 52
+            feedback: 这变得比整条还长了。分成 10 段，每段应更短。
+      feedback:
+        correct: 5 个一变成 5 个十分之一，2 个十分之一变成 2 个百分之一，共 0.52 米。
+        wrong: 先估一估，一小段比整条长还是短？
+      hints:
+        - 想象滑尺往数变小的方向挪。
+        - 把答案乘 10，看看能不能拼回原长。
+      figure:
+        type: rect
+        parts: 10
+        shaded: 1
+        direction: v
+    - id: q4
+      stem: 米袋的两个标签分别写着 3.5 千克和 3500 克。哪个标签表示的米更重？
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: 3500 克
+            feedback: 3500 确实大，可每个单位只有 1 克。先把两边换成同一单位。
+            misconception: bigger-number-longer
+          - id: b
+            text: 一样重
+            correct: true
+          - id: c
+            text: 3.5 千克
+            feedback: 千克确实大，可两个标签上的份数也不同。
+            misconception: bigger-unit-longer
+      feedback:
+        correct: 每千克有 1000 克。3 千克是 3000 克，半千克再加 500 克。
+        wrong: 想想换单位时，那根绳子有没有变长。
+      hints:
+        - 一千克里有多少克？
+        - 先换算 3 千克，再换算半千克。
+    - id: q5
+      stem: 滑尺上的数先乘 100，再除以 1000，最后是 0.45。开始是多少？
+      answer:
+        type: number
+        value: 4.5
+        tolerance: 0
+        common_wrong:
+          - value: 0.045
+            feedback: 从结果倒着走，要把每个动作都反过来。
+          - value: 45
+            feedback: 先数向左几格，再数向右几格，两趟合起来移动了几格？
+      feedback:
+        correct: 先向左 2 格再向右 3 格，合起来向右 1 格。从 0.45 向左退回 1 格，就是 4.5。
+        wrong: 画两个往左的箭头，再画三个往右的箭头。
+      hints:
+        - 一个往左和一个往右正好抵消。
+        - 从终点往回走，要把剩下的箭头反过来。

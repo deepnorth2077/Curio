@@ -1,0 +1,24 @@
+id: act.simulation.lever-dock-01
+contract: activity/1.1
+type: simulation
+version: 3
+title: 让粉笔印见光
+targets:
+- physics.machine.lever
+age_band: G3-4
+entry: index.html
+duration_min: 7
+pedagogy: explain
+capabilities:
+- pointer
+- keyboard
+misconceptions:
+- heavy-wins
+- balance-ceiling
+emits:
+- predicted
+- observed
+author:
+  model: Codex  # 实现会话 lever_craft，独立审查由 design_jury 留证
+  prompt_ref: prompts/act.simulation.lever-dock-01.md
+review: pending

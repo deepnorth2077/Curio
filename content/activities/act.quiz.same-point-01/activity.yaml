@@ -1,0 +1,117 @@
+id: act.quiz.same-point-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 三把尺子大挑战
+targets:
+- math.number.same-point
+age_band: G5-6
+duration_min: 5
+review: approved  # Luka 2026-11-22 验收（#233）
+engine: 1
+sources:
+- type: textbook
+  ref: 人教版小学数学五年级上册（旧版）第三单元「循环小数」；五年级下册（旧版）第四单元「分数和小数的互化」；六年级上册（旧版）第六单元「百分数和分数、小数的互化」
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 把五分之一写成小数是多少？
+    answer:
+      type: number
+      value: 0.2
+      tolerance: 0
+      common_wrong:
+      - value: 0.5
+        feedback: 5 表示把 1 分成几份。试试把 0.5 连起来放 5 次，会到 1 吗？
+        misconception: digits-match
+      - value: 1.5
+        feedback: 这份比整个 1 小。你的数在 1 的左边还是右边？
+        misconception: glue-digits
+    feedback:
+      correct: 五份拼成 1，每一份长 0.2。
+      wrong: "还不对。五分之一是把 1 平均分成 5 份中的一份。"
+    hints:
+    - 把 0 到 1 的数线平均分成 5 格。
+    - 从 0 走 5 步到 1，每步有多长？
+  - id: q2
+    stem: 0.75 换成百分数，是百分之几？
+    answer:
+      type: number
+      value: 75
+      tolerance: 0
+      unit: '%'
+      common_wrong:
+      - value: 0.75
+        feedback: 你保留了小数的数值。现在要数的是几个百分之一。
+      - value: 7.5
+        feedback: 你已经挪了一位。每一整份有多少个百分之一？
+    feedback:
+      correct: 0.75 有 75 个百分之一，和 75% 钉在同一点。
+      wrong: "还不对。0.75 有几个百分之一，就是百分之几。"
+    hints:
+    - 小数点后第二位是百分位。
+    - 用一百小格量这个小数，钉子落在第几格？
+  - id: q3
+    stem: 把 40% 写成最简分数。
+    answer:
+      type: fraction
+      numerator: 2
+      denominator: 5
+      accept_equivalent: false
+      common_wrong:
+      - numerator: 40
+        denominator: 100
+        feedback: 这个位置正确。分子和分母还可以同时除以同一个大于 1 的数。
+      - numerator: 4
+        denominator: 10
+        feedback: 这个位置正确。分子和分母还可以同时除以同一个大于 1 的数。
+    feedback:
+      correct: 40 格是 100 格的五分之二。分子 2 和分母 5 已经没有大于 1 的公因数。
+      wrong: "还不对。40% 是 100 份里的 40 份，再约到不能再约。"
+    hints:
+    - 先写出百分号原来的分母。
+    - 分子分母能同时缩小几倍？再看看能不能继续约。
+  - id: q4
+    stem: 把三分之一和 0.33 钉在数线上。哪一个更大？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 一样大
+        misconception: truncate-equals
+        feedback: 前两位确实都相同。再让除法机多除一位，会看到什么？
+      - id: b
+        text: 三分之一
+        correct: true
+      - id: c
+        text: '0.33'
+        misconception: truncate-equals
+        feedback: 把 0.33 后面补零，和除法机继续吐出的数字比一比。
+    feedback:
+      correct: 三分之一是 0.333…，第三个小数位上比 0.330 多了 3。
+      wrong: "还不对。三分之一除不尽，比到小数点后第三位再看。"
+    hints:
+    - 先对齐小数点，比较前两位。
+    - 再看小数点后第三位；0.33 可以在末尾添 0。
+  - id: q5
+    stem: 把八分之一换成百分数，是百分之几？
+    answer:
+      type: number
+      value: 12.5
+      tolerance: 0
+      unit: '%'
+      common_wrong:
+      - value: 8
+        feedback: 8 数的是满格被分成几份。这一份占 100 格里的多少？
+        misconception: digits-match
+      - value: 18
+        feedback: 你找到了 1 和 8。先做一遍分子除以分母。
+        misconception: glue-digits
+    feedback:
+      correct: 1 ÷ 8 = 0.125。它占 100 格里的 12 格半，就是 12.5%。
+      wrong: "还不对。八分之一是把 100% 平均分成 8 份中的一份。"
+    hints:
+    - 先用除法机把这个分数换成小数。
+    - 一整份对应 100%，把一整份平均分成 8 份。
+# END OF FILE

@@ -1,7 +1,7 @@
 id: act.simulation.dna-book-01
 contract: activity/1.1
 type: simulation
-version: 1
+version: 2
 title: 翻开细胞里的说明书
 targets: [biology.genetics.dna-intro]
 age_band: G3-4

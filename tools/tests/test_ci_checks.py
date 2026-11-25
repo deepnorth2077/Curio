@@ -160,6 +160,7 @@ class Repo:
 N1, N2 = "math.number.division-meaning", "math.number.fraction-intro"
 SVG_OK = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><circle cx="5" cy="5" r="4" fill="#CCD6C0"/></svg>\n'
 NODE_DIR = "content/nodes/num"
+NOSELECT = ci_checks.module_lint.NOSELECT_CSS   # 长按不选字（#156），样例页面都带上
 
 
 class Base(unittest.TestCase):
@@ -181,7 +182,7 @@ class Base(unittest.TestCase):
         return sorted(f for f, message in result.errors if "不能改这个文件" in message)
 
     def add_html(self, aid, body="<p>分蛋糕</p>"):
-        self.r.write(f"content/activities/{aid}/index.html", f"<!doctype html><html><body>{body}</body></html>\n")
+        self.r.write(f"content/activities/{aid}/index.html", f"<!doctype html><html><head><style>{NOSELECT}</style></head><body>{body}</body></html>\n")
 
     def add_structured(self, doc, nid=N2, status="draft", mis=("denominator-bigger",)):
         aid = doc["id"]
@@ -278,7 +279,7 @@ class TestBranches(Base):
         self.assertEqual(ci_checks.ACT_PROMPT.match("prompts/act.quiz.frac.task.md").group(1), "act.quiz.frac")
 
     def test_feat_may_touch_prototype(self):
-        self.r.baseline(); self.r.branch("feat/x"); self.r.write("prototype/index.html", "<html></html>"); self.r.commit()
+        self.r.baseline(); self.r.branch("feat/x"); self.r.write("prototype/index.html", f"<html><style>{NOSELECT}</style></html>"); self.r.commit()
         self.ok(self.r.check())
 
     def test_override_label_turns_error_into_warning(self):
@@ -719,6 +720,130 @@ class TestSvgWhitelist(Base):
                 self.assertTrue(self.r.check().errors, f"本应拦截：{name}")
 
 
+class TestStatusSingleSource(Base):
+    """星座进度只写一处（#140 第 5 条）：任何分支都能改 status.yaml 和 index.md、handoff.md 的生成段落，别处不行。"""
+    MD = "# 标题\n\n前文\n\n<!-- status:begin demo -->\n<!-- status:end demo -->\n\n后文\n"
+    YAML = ("constellation: demo\ntitle: 示例\nupdated: 2026-11-16\nissue: 7\ntotal: 5\nnow: 现在做第 3 颗。\n"
+            "stars:\n  - {n: 1, title: 甲, state: 完成, prs: [1]}\n")
+
+    def setUp(self):
+        super().setUp()
+        self.r.write("docs/constellations/demo/status.yaml", self.YAML)
+        self.r.write("docs/constellations/demo/index.md", self.MD)
+        self.r.write("docs/handoff.md", self.MD)
+        ci_checks.status_gen.sync(self.r.dir, write=True)
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2)); self.r.baseline()
+
+    def regenerate(self):
+        ci_checks.status_gen.sync(self.r.dir, write=True)
+
+    def test_kp_branch_updating_status_and_generated_blocks_passes(self):
+        self.r.branch(f"kp/{N2}")
+        self.r.write("docs/constellations/demo/status.yaml", self.YAML.replace("现在做第 3 颗", "现在做第 4 颗")); self.regenerate(); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_chore_branch_may_update_status_too(self):
+        self.r.branch("chore/status")
+        self.r.write("docs/constellations/demo/status.yaml", self.YAML.replace("现在做第 3 颗", "现在做第 4 颗")); self.regenerate(); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_status_yaml_changed_without_regenerating_fails(self):
+        self.r.branch(f"kp/{N2}")
+        self.r.write("docs/constellations/demo/status.yaml", self.YAML.replace("现在做第 3 颗", "现在做第 4 颗")); self.r.commit()
+        self.fails(self.r.check(), "对不上")
+
+    def test_hand_edited_generated_block_fails(self):
+        self.r.branch(f"kp/{N2}")
+        p = self.r.dir / "docs/handoff.md"
+        self.r.write("docs/handoff.md", p.read_text(encoding="utf-8").replace("完成 1", "完成 4")); self.r.commit()
+        self.fails(self.r.check(), "对不上")
+
+    def test_kp_branch_may_not_edit_prose_outside_generated_block(self):
+        self.r.branch(f"kp/{N2}")
+        p = self.r.dir / "docs/handoff.md"
+        self.r.write("docs/handoff.md", p.read_text(encoding="utf-8").replace("后文", "偷偷改的后文")); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), ["docs/handoff.md"])
+
+    def test_kp_branch_may_still_not_edit_other_docs(self):
+        self.r.branch(f"kp/{N2}")
+        self.r.write("docs/constellations/demo/g1.md", "# 任务说明\n"); self.r.commit()
+        self.assertEqual(self.blocked(self.r.check()), ["docs/constellations/demo/g1.md"])
+
+    def test_kp_branch_may_not_delete_status_yaml(self):
+        self.r.branch(f"kp/{N2}")
+        self.r.delete("docs/constellations/demo/status.yaml"); self.r.commit()
+        self.assertIn("docs/constellations/demo/status.yaml", self.blocked(self.r.check()))
+
+    def test_invalid_status_yaml_fails_on_arch_branch(self):
+        self.r.branch("arch/status")
+        self.r.write("docs/constellations/demo/status.yaml", self.YAML.replace("state: 完成", "state: 差不多")); self.r.commit()
+        self.fails(self.r.check(), "state 要是")
+
+
+class TestModuleLint(Base):
+    """动手探索模块的静态检查接进了 ci_checks（tools/module_lint.py 自己的规则测试在 test_module_lint.py）。"""
+    AID = "act.simulation.frac-cut"
+
+    def module(self, script):
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=[self.AID], mis=("denominator-bigger",)))
+        self.r.write(f"content/activities/{self.AID}/manifest.yaml", activity(self.AID, [N2], type_="simulation", mis=("denominator-bigger",)))
+        self.r.write(f"content/activities/{self.AID}/index.html", f"<!doctype html><html><head><style>{NOSELECT}</style></head><body><script>\nconst Host={{ready(){{}}}};\nfunction enter1(){{}}\n{script}</script></body></html>\n")
+
+    def test_errors_are_reported(self):
+        self.module("Host.ready();\nenter1();\n"); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.module("enter1();\nHost.ready();\n"); self.r.commit()
+        self.fails(self.r.check(), "Host.ready() 必须先于第一站")
+
+    def test_warnings_only_for_changed_modules(self):
+        self.module("Host.ready();\nenter1();\n"); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=[self.AID], mis=("denominator-bigger",), dq="一块饼平均分给 4 个人，每人分到多少？")); self.r.commit()
+        quiet = self.r.check()
+        self.ok(quiet)
+        self.assertFalse(any("宿主不认" in m for _, m in quiet.warnings), quiet.warnings)
+        self.module("Host.ready();\nenter1();\n// 改一下\n"); self.r.commit()
+        self.assertTrue(any("宿主不认" in m for _, m in self.r.check().warnings))
+
+    def test_new_generation_needs_walk(self):
+        self.module("Host.ready();\nenter1();\n"); self.r.baseline()
+        self.r.branch("arch/walk")
+        html = f"content/activities/{self.AID}/index.html"
+        self.r.write(html, (self.r.dir / html).read_text(encoding="utf-8").replace("<body>", "<style>:root{--grip:#2A7F7C}</style><body>")); self.r.commit()
+        self.fails(self.r.check(), f"tools/walks/{self.AID}.py")
+        self.r.write(f"tools/walks/{self.AID}.py", "# 走查\n"); self.r.commit()
+        self.ok(self.r.check())
+
+    def test_module_without_noselect_fails(self):
+        self.module("Host.ready();\nenter1();\n"); self.r.baseline()
+        self.r.branch(f"kp/{N2}")
+        html = f"content/activities/{self.AID}/index.html"
+        self.r.write(html, (self.r.dir / html).read_text(encoding="utf-8").replace(f"<style>{NOSELECT}</style>", "")); self.r.commit()
+        self.fails(self.r.check(), "长按会选中文字")
+
+
+class TestNoselectShells(Base):
+    """三个外壳页面要有「长按不选字、不弹菜单」那两条（#156）。"""
+
+    def test_shells_with_rules_pass(self):
+        self.r.baseline(); self.r.branch("arch/shell")
+        for shell in ci_checks.NOSELECT_SHELLS:
+            self.r.write(shell, f"<!doctype html><html><head><style>\n{NOSELECT}:root{{--bg:#F5F4EE}}\n</style></head><body></body></html>\n")
+        self.r.commit()
+        self.ok(self.r.check())
+
+    def test_shell_missing_rules_fails(self):
+        html_rule, input_rule = NOSELECT.splitlines()
+        for shell in ci_checks.NOSELECT_SHELLS:
+            for css, which in [("", "html 上的"), (input_rule, "html 上的"), (html_rule, "input,textarea,select,[contenteditable] 上的")]:
+                with self.subTest(shell=shell, css=css):
+                    self.r.close(); self.r = Repo(); self.r.baseline(); self.r.branch("arch/shell")   # 每个组合一个干净的仓库
+                    self.r.write(shell, f"<!doctype html><html><head><style>{css}</style></head><body></body></html>\n"); self.r.commit()
+                    result = self.r.check()
+                    self.fails(result, which)
+                    self.assertTrue(any(f == shell and "#156" in m for f, m in result.errors), result.errors)
+
+
 class TestPathsAndEngine(Base):
     def setUp(self):
         super().setUp(); self.r.baseline(); self.r.branch("arch/paths")
@@ -773,6 +898,53 @@ class TestPublishGate(Base):
     def test_complete_published_node_with_structured_activities_passes(self):
         self.published_set(); self.r.commit()
         self.ok(self.r.check())
+
+    def test_any_approved_exploration_with_station_marks_can_supply_the_explanation(self):
+        # content.md 第 5 节发布门禁：按规则判断，不再按星名单（#233）
+        nid = "math.fraction.unit-fraction"
+        aid = "act.simulation.fair-cut-01"
+        quiz = yaml.safe_load(structured("act.quiz.unit", [nid]))
+        manifest = {"id": aid, "type": "simulation", "contract": "activity/1.1",
+                    "entry": "index.html", "pedagogy": "explain", "targets": [nid],
+                    "emits": ["predicted", "observed"], "review": "approved", "misconceptions": ["visible"]}
+        marked = 'Host.event("observed", { station, item: "station-complete" });'
+
+        def check(module, html=marked):
+            node = {"status": "published", "activities": [module["id"], quiz["id"]],
+                    "misconceptions": [{"id": "visible"}]}
+            activities = {module["id"]: ("manifest.yaml", module), quiz["id"]: ("activity.yaml", quiz)}
+            return [message for _, message in ci_checks.check_publish_gate(
+                {nid: ("node.yaml", node)}, activities, lambda path: html)]
+
+        self.assertEqual(check(manifest), [])
+        self.assertEqual(check({**manifest, "id": "act.simulation.any-other-01"}), [])
+        self.assertEqual(check(manifest, "Host.event('observed', {station: S.station, item: 'station-complete'})"), [])
+        for field, value in (("type", "experiment"), ("pedagogy", "POE"), ("review", "pending"),
+                             ("review", "claude-reviewed"), ("contract", "activity/1.0"),
+                             ("entry", "other.html"), ("targets", ["math.fraction.equivalent"]),
+                             ("emits", ["predicted"])):
+            with self.subTest(field=field, value=value):
+                self.assertTrue(any("讲解" in message for message in check({**manifest, field: value})))
+        for html in ('Host.event("observed", { station });', "", None):
+            with self.subTest(html=html):
+                self.assertTrue(any("讲解" in message for message in check(manifest, html)))
+        self.assertTrue(any("visible" in message for message in check({**manifest, "misconceptions": []})))
+
+    def test_default_entry_reader_reads_the_html_beside_the_manifest(self):
+        folder = self.r.dir / "content/activities/act.simulation.beside-01"
+        folder.mkdir(parents=True)
+        self.assertIsNone(ci_checks.read_entry_beside(folder / "manifest.yaml"))
+        (folder / "index.html").write_text('item: "station-complete"', encoding="utf-8")
+        self.assertEqual(ci_checks.read_entry_beside(folder / "manifest.yaml"), 'item: "station-complete"')
+
+    def test_life_explorations_still_supply_their_explanations(self):
+        for nid, aid in (("biology.cell.cell-intro", "act.simulation.cell-zoom-01"),
+                         ("biology.genetics.dna-intro", "act.simulation.dna-book-01"),
+                         ("biology.genetics.chromosome-intro", "act.simulation.chromosome-pack-01")):
+            manifest_file = REPO / "content/activities" / aid / "manifest.yaml"
+            with self.subTest(aid=aid):
+                manifest = yaml.safe_load(manifest_file.read_text(encoding="utf-8"))
+                self.assertTrue(ci_checks.explains_node(nid, manifest, ci_checks.read_entry_beside(manifest_file)))
 
     def test_pending_extra_activity_is_not_included_and_does_not_block(self):
         acts = self.published_set()

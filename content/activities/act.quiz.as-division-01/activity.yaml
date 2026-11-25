@@ -1,0 +1,125 @@
+id: act.quiz.as-division-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 分饼台大挑战
+targets:
+- math.fraction.as-division
+age_band: G5-6
+duration_min: 5
+review: approved  # Luka 2026-11-22 验收（#233）
+engine: 1
+sources:
+- type: textbook
+  ref: 人教版小学数学五年级下册（旧版）第四单元「分数与除法」「真分数和假分数」
+body:
+  shuffle: false
+  items:
+  - stem: 把算式 2 ÷ 5 的结果写成一个分数。
+    answer:
+      type: fraction
+      numerator: 2
+      denominator: 5
+      accept_equivalent: true
+      common_wrong:
+      - numerator: 5
+        denominator: 2
+        feedback: 两个数都找到了。分母要写的是平均分给几个人。
+        misconception: divide-reversed
+    feedback:
+      correct: 两张饼各分成五份，每人拿两小份，就是五分之二张。
+      wrong: 想象两张饼分给五个人。
+    hints:
+    - 每张饼要平均切成几块？
+    - 每个人能从几张饼上各拿一块？
+    id: q1
+  - stem: 7 张饼平均分给 4 个人，每人得到的饼和 1 张比，怎么样？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 比 1 张少
+        feedback: 分数有大有小。让每人先领 1 张，看看还有没有饼。
+        misconception: fractions-below-one
+      - id: b
+        text: 分不了
+        feedback: 整张分完有剩余时，还可以把剩余的切开。
+        misconception: small-cant-divide-big
+      - id: c
+        text: 比 1 张多
+        correct: true
+    feedback:
+      correct: 分完 4 张，每人都有 1 张了。剩下 3 张还要继续分。
+      wrong: 先把整张的分掉，再看桌面。
+    hints:
+    - 先给每人 1 张，需要几张？
+    - 桌上剩下的能切开继续分吗？
+    id: q2
+  - stem: 四分之九在数线上的哪两个整数之间？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 2 和 3
+        correct: true
+      - id: b
+        text: 0 和 1
+        feedback: 每四小格就走完整整一个单位。这里有九小格。
+        misconception: fractions-below-one
+      - id: c
+        text: 9 和 10
+        feedback: 9 数的是小格。一小格有四分之一长。
+        misconception: numerator-as-whole
+    feedback:
+      correct: 从 0 走九个四分之一，走满两个整段以后，还多一小格。
+      wrong: 数数能凑成几组四小格。
+    hints:
+    - 每个整数之间平均分成四格。
+    - 先标出两个相邻整数各相当于几个四分之一。
+    id: q3
+    figure:
+      type: svg
+      src: content/assets/math.fraction.as-division/instrument.svg
+  - stem: 盘里有一整张饼，还有三分之二张。合起来是多少张？把一又三分之二写成假分数。
+    answer:
+      type: fraction
+      numerator: 5
+      denominator: 3
+      accept_equivalent: true
+      common_wrong:
+      - numerator: 3
+        denominator: 5
+        feedback: 你数到了所有小块。再看每一小块是一张的几分之一。
+        misconception: divide-reversed
+      - numerator: 12
+        denominator: 3
+        feedback: 一整张也要换成小块才能数。整数和分子不能连着写。
+    feedback:
+      correct: 一整张是三小块，再加两小块，就是三个一组里的五小块。
+      wrong: 先把整张切成和旁边两块一样大的小块。
+    hints:
+    - 一张完整的饼里有几个三分之一？
+    - 把切好的小块和原有的两块放在一起。
+    id: q4
+  - stem: 3 米长的绳子平均剪成 8 段。每一段长几分之几米？
+    answer:
+      type: fraction
+      numerator: 3
+      denominator: 8
+      accept_equivalent: true
+      common_wrong:
+      - numerator: 8
+        denominator: 3
+        feedback: 每段会比整米还长吗？先估一估，再看看谁除以谁。
+        misconception: divide-reversed
+      - numerator: 1
+        denominator: 8
+        feedback: 每段确实是整条的八分之一。整条有 3 米，单位是米时要换一下。
+    feedback:
+      correct: 每米分八小份，三米里各取一小份，一段合起来就是八分之三米。
+      wrong: 先用除法表示每段的米数，再写成分数。
+    hints:
+    - 把长度和段数写在除号的两边。
+    - 可以把每一米都分成八份，再从三米里各取一份。
+    id: q5
+# END OF FILE

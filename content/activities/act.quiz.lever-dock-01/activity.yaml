@@ -1,0 +1,115 @@
+# author: Codex / lever_quiz
+# prompt_ref: prompts/act.simulation.lever-dock-01.md
+id: act.quiz.lever-dock-01
+schema: activity-def/1
+kind: quiz
+version: 3
+title: 杠杆配平挑战
+targets:
+- physics.machine.lever
+age_band: G3-4
+duration_min: 7
+review: pending
+engine: 1
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 9.5
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42174/index.cnxml
+body:
+  shuffle: false
+  items:
+  - id: q1
+    stem: 牛是力的单位。木杆两头各挂 2 牛。左钩离三角木 1 格，右钩 3 格。把杆放平再松手，会怎样？
+    figure:
+      type: svg
+      src: content/assets/physics.machine.lever/before-release.svg
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 右头先低
+        correct: true
+      - id: b
+        text: 两头一样高
+        misconception: equal-loads
+        feedback: 两边确实各两牛。右边的两牛，挂在了第三孔。
+    feedback:
+      correct: 两边挂得一样重，你还看了孔。右钩离木尖更远，右头先低。
+      wrong: 要让一样重的两端停平，两钩还得离木尖一样远。
+    hints:
+    - 用手指从三角木分别走到两个钩。
+  - id: q2
+    stem: 这回左钩挂 5 牛，离木尖 1 格。右钩挂 2 牛，离木尖 3 格。杆放平再松手，哪头先低？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 左边先低
+        misconception: heavy-wins
+        feedback: 左钩挂着五牛。右钩虽只有两牛，每牛却能盖三枚印。
+      - id: b
+        text: 右边先低
+        correct: true
+    feedback:
+      correct: 左钩盖了五枚印，右钩盖了六枚。右头先低。
+      wrong: 左钩离木尖只有一格。右钩的两牛各盖三枚印，得把它们合在一块儿数。
+    hints:
+    - 给左边的每牛盖一枚印，再给右边的每牛盖三枚。
+  - id: q3
+    stem: 左钩在第 2 格，挂 5 牛。右钩在第 3 格，挂 2 牛。小伙伴说离木尖远的那头总会低。松开水平的杆，你押哪头？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 更远的右头
+        misconception: far-wins
+        feedback: 右钩确实远。它的两排只有六枚印，左边的五排一共有十枚。
+      - id: b
+        text: 更近的左头
+        correct: true
+    feedback:
+      correct: 左钩离木尖近一格，可五排两枚凑成十枚，压过了右边的六枚。
+      wrong: 右边的钩走得远，却只有两个环在那儿挂着。
+    hints:
+    - 给每一牛画一排，把经过的格数点进去。
+  - id: q4
+    stem: 两个挂钩钉死在杆上，相隔 6 格。两头各挂 6 牛，三角木撑在正中间。把三角木朝右箱挪 1 格。左钩现在离木尖几格？
+    answer:
+      type: number
+      value: 4
+      tolerance: 0
+      unit: 格
+      common_wrong:
+      - value: 3
+        misconception: pivot-carries-hooks
+        feedback: 左钩的封条还在原孔，木尖已经走开一步。
+      - value: 2
+        misconception: wrong-side
+        feedback: 两格是木尖到右箱的路，你找到了另一头。
+    feedback:
+      correct: 原先左边留了三格。木尖朝右箱挪一步，左边那段路就多了一格。
+      wrong: 从左钩起，一格一格往右数。走到新的木尖就停。
+    hints:
+    - 手指按住左钩，把另一根手指放在新的木尖上。
+  - id: q5
+    stem: 修船棚的两钩相隔 5 格。右箱 4 牛，左钩只能挂 1 牛或 2 牛。从左钩到木尖，可以留 3 格或 4 格。左边留几格、挂几牛，能让杆停平？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 左边留 3 格，挂 2 牛
+        feedback: 左边留三格，挂两牛，有六枚印。右边还剩两格，四牛盖出八枚，右箱先沉。
+      - id: b
+        text: 左边留 4 格，挂 2 牛
+        misconception: overbalances
+        feedback: 左边留四格，挂两牛，盖出八枚印。右边只有四枚。箱子抬起来了，木杆还在转。
+      - id: c
+        text: 左边留 4 格，挂 1 牛
+        correct: true
+    feedback:
+      correct: 你给小砝码留了四格，也给箱子留了一格。两边各四枚，木杆正好停住。
+      wrong: 刚好停平的时候，两排印要一样长。
+    hints:
+    - 先在五格木条上点出三角木，再往左右各数一遍。
+    - 两钩之间总共只有五格。木尖给左钩留了几格，右边还剩几格？
+# END OF FILE

@@ -1,0 +1,29 @@
+id: act.simulation.stretch-frame-01
+contract: activity/1.1
+type: simulation
+version: 3
+title: 拉伸相框
+targets:
+- math.ratio.proportion
+age_band: G5-6
+entry: index.html
+duration_min: 8
+pedagogy: explain
+capabilities:
+- pointer
+- keyboard
+misconceptions:
+- add-same-keeps-ratio
+- bigger-is-similar
+- curve-growth
+- no-pattern
+- scale-as-distance
+- unit-slip
+emits:
+- predicted
+- observed
+author:
+  model: Codex
+  prompt_ref: docs/constellations/zero-to-one/stars/16-proportion.md
+review: approved  # Luka 2026-11-22 验收（#233）
+# END OF FILE

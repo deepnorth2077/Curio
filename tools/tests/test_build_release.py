@@ -213,6 +213,31 @@ class TestImmutableRelease(BuildCase):
         ])
         self.assertEqual(manifest["contracts"], ["activity/1.1"])
 
+    def exploration_explains(self, html):
+        # 讲解换成动手探索：按发布门禁的规则判断，入口 HTML 要有站完成标记（content.md 第 5 节，#233）
+        activity_id = "act.simulation.fraction-cut-01"
+        node = self.load(NODE_PATH)
+        node["activities"] = [a for a in node["activities"] if not a.startswith("act.explain.")] + [activity_id]
+        self.save(NODE_PATH, node)
+        shutil.rmtree((self.content / EXPLAIN_PATH).parent)
+        self.save(f"activities/{activity_id}/manifest.yaml", {
+            "id": activity_id, "contract": "activity/1.1", "type": "simulation", "version": 1, "title": "切分机",
+            "targets": [NODE_ID], "age_band": "G3-4", "entry": "index.html", "pedagogy": "explain",
+            "emits": ["predicted", "observed"], "review": "approved", "misconceptions": [],
+        })
+        (self.content / f"activities/{activity_id}/index.html").write_text(html, encoding="utf-8", newline="\n")
+        return activity_id
+
+    def test_exploration_with_station_marks_supplies_the_explanation(self):
+        activity_id = self.exploration_explains('<!doctype html><script>Host.event("observed", { station, item: "station-complete" });</script>\n')
+        manifest = self.build()
+        self.assertIn(activity_id, [activity["id"] for activity in manifest["activities"]])
+        self.assertNotIn("act.explain.fraction-intro-01", [activity["id"] for activity in manifest["activities"]])
+
+    def test_exploration_without_station_marks_cannot_supply_the_explanation(self):
+        self.exploration_explains('<!doctype html><script>Host.event("observed", { station });</script>\n')
+        self.assertBuildFails("讲解")
+
     def test_write_release_copies_exact_bytes_and_manifest(self):
         manifest, files = build_release.build_package(self.content, COMMIT)
         out = self.temp / "out"

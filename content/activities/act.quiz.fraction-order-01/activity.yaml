@@ -1,0 +1,123 @@
+id: act.quiz.fraction-order-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: 对刀口大挑战
+targets:
+- math.fraction.compare
+age_band: G5-6
+duration_min: 5
+review: approved  # Luka 2026-11-22 验收（#233）
+engine: 1
+sources:
+- type: textbook
+  ref: 人教版小学数学五年级下册（旧版）第四单元「通分」
+body:
+  shuffle: false
+  items:
+  - stem: 同一块蛋糕的八分之五和六分之五，哪一份更大？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 八分之五
+        feedback: 8 比 6 大。把同一整块切得更细，每份会怎样？
+        misconception: bigger-denominator-bigger
+      - id: b
+        text: 六分之五
+        correct: true
+      - id: c
+        text: 一样大
+        feedback: 取的份数一样，再看每一份是不是一样大。
+        misconception: numerator-only
+    feedback:
+      correct: 切成六份时每份较大，同样取五份，六分之五较大。
+      wrong: 想想同样多的小块，每块分别有多大。
+    hints:
+    - 把两个相同的整条左端对齐。
+    - 一个切八等份，一个切六等份，分别取五份。
+    id: q1
+    figure:
+      type: svg
+      src: content/assets/math.fraction.compare/instrument.svg
+  - stem: 两根同样长的彩带，剪下四分之三和五分之四。哪一段长？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 一样长
+        feedback: 都是差一份。那两份的长度一样吗？
+        misconception: gap-thinking
+      - id: b
+        text: 四分之三长
+        feedback: 每个四分之一确实更长，但取了多少份也要算进去。
+        misconception: piece-size-only
+      - id: c
+        text: 五分之四长
+        correct: true
+    feedback:
+      correct: 五分之四差五分之一才满，四分之三差四分之一才满。差得少的更长。
+      wrong: 两条都只剩一份，先比剩下的部分。
+    hints:
+    - 把两根彩带左端叠在一起。
+    - 剩下的那一份分别有多宽？
+    id: q2
+  - stem: 把四分之三换成分母是 20 的名字。请用分数框写出来。
+    answer:
+      type: fraction
+      numerator: 15
+      denominator: 20
+      accept_equivalent: false
+      common_wrong:
+      - numerator: 3
+        denominator: 20
+        feedback: 只把分母换成 20，涂色的区域会缩短。看看每一大份里有几小份。
+        misconception: change-denominator-only
+    feedback:
+      correct: 每一份再切成 5 份，原来涂的 3 份变成 15 小份。
+      wrong: 每份再切几刀时，涂色和没涂色的份都要切。
+    hints:
+    - 先看从 4 等分变成 20 等分，每份多细。
+    - 涂色部分由 3 大份组成。
+    id: q3
+  - stem: 把十二分之五插在数线上，它比二分之一大还是小？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 小
+        correct: true
+      - id: b
+        text: 大
+        feedback: 刻度越细，每一小格反而越短。先找到一半的刻度。
+        misconception: bigger-denominator-bigger
+    feedback:
+      correct: 把整条十二等分，一半在第 6 格。第 5 格还在它左边。
+      wrong: 把一半也换成分母为 12 的名字。
+    hints:
+    - 数线的两端是 0 和 1。
+    - 一半的位置会把十二格分成相同的两组。
+    id: q4
+  - stem: 把这三个数从小到大排，哪种排法对？
+    answer:
+      type: choice
+      choices:
+      - id: a
+        text: 三分之二、五分之三、十分之七
+        feedback: 分子从小到大排，还得看看每一份有多大。
+        misconception: numerator-only
+      - id: b
+        text: 五分之三、三分之二、十分之七
+        correct: true
+      - id: c
+        text: 十分之七、五分之三、三分之二
+        feedback: 每一小份的大小还不够，每种取的份数也要算进去。
+        misconception: piece-size-only
+    feedback:
+      correct: 都换成三十分之几，三段分别占 18、20、21 格，格数越多越大。
+      wrong: 给三条彩带换上相同的刻度再比。
+    hints:
+    - 找一个数，能被 3、5、10 都整除。
+    - 按相同刻度数三段各占多少格。
+    id: q5
+# END OF FILE

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 116" role="img" aria-label="松手前，木杆水平。两只砝码各重 2 牛。左钩离木尖一格，右钩离木尖三格。">
+  <title>松手前的木杆</title>
+  <desc>三角木撑在中间的孔下。沿着等距孔数，左边的砝码挂在一格外，右边的砝码挂在三格外。</desc>
+  <g stroke="#1F1E1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path fill="#EFE4D6" d="M161 40 Q169 62 182 98 Q162 100 138 98 Q149 67 159 40 Z"/>
+    <path fill="none" stroke-width="1.2" d="M153 83 Q154 77 160 67 M161 85 L166 74"/>
+    <path fill="#ECCDB6" d="M24 23 Q71 22 111 23 L296 23 Q300 23 300 27 L299 37 Q299 41 296 41 L24 41 Q20 40 20 36 L20 28 Q20 24 24 23 Z"/>
+    <g fill="#EFE4D6" stroke-width="1.5">
+      <circle cx="46" cy="32" r="3.5"/>
+      <circle cx="84" cy="32" r="3.5"/>
+      <circle cx="122" cy="32" r="3.5"/>
+      <circle cx="160" cy="32" r="3.5"/>
+      <circle cx="198" cy="32" r="3.5"/>
+      <circle cx="236" cy="32" r="3.5"/>
+      <circle cx="274" cy="32" r="3.5"/>
+    </g>
+    <g id="left-weight">
+      <path fill="none" d="M122 32 L122 54 Q122 60 116 61 Q111 61 111 56"/>
+      <path fill="none" d="M111 68 Q110 58 116 58 Q122 57 122 68"/>
+      <path fill="var(--c-sky, #CFDCE6)" d="M100 68 Q113 67 131 68 L135 87 Q135 90 132 90 L99 90 Q96 90 97 87 Z"/>
+      <text x="116" y="84" font-size="14" font-weight="600" text-anchor="middle" fill="var(--ink, #1F1E1C)" stroke="none">2 牛</text>
+    </g>
+    <use href="#left-weight" transform="translate(152 0)"/>
+  </g>
+</svg>

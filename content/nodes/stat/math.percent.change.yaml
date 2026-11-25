@@ -1,0 +1,49 @@
+id: math.percent.change
+schema: knode/1
+title: 涨一半再跌一半
+subjects:
+- math
+theme: stat
+grade: G6
+unit: 六下 · 百分数（二）（折扣、利率；人教版旧版册次，新版以实体书为准）
+curriculum:
+- std: 义务教育数学课程标准（2022 年版）
+  ref: 第三学段「统计与概率」：能解决与百分数有关的简单实际问题
+- textbook: 人教版小学数学六年级下册（旧版）
+  unit: 第二单元 百分数（二）
+prerequisites:
+- math.percent.meaning
+- math.operation.multiply-shrinks
+related:
+- math.fraction.the-whole
+driving_question: 先涨 50%，再降 50%，为什么回不到原来？
+objectives:
+- 知道「涨百分之几」「降百分之几」都是拿变之前的数当 1，两次的 1 不一样。
+- 知道先涨 50% 再降 50% 是原来的 75%，顺序换过来也是 75%。
+- 会求原价的百分之几：打八折是原价的 80%，八折再八折是 64%。
+- 知道每年涨同样的百分数，比每年加同样多的钱长得快，时间越长差得越多。
+misconceptions:
+- id: percent-adds
+  text: 把几次变化的百分数直接加减，例如认为涨 50% 再降 50% 回到原来，八折再八折是六折，每年 10% 十年正好翻倍。
+- id: last-step-only
+  text: 只算最后一步，例如认为 100 元先涨 50% 再降 50% 是 50 元。
+- id: half-of-change
+  text: 找回原价时把涨的百分数减半，例如认为涨了 50% 以后降 25% 就回去了。
+- id: linear-growth
+  text: 觉得每年涨 10% 就是每年多一样多的钱，例如认为 100 元 2 年后是 120 元。
+sources:
+- type: textbook
+  ref: 人教版小学数学六年级下册（旧版）第二单元「百分数（二）」
+lenses:
+- band: G3-4
+  approach: 只做「涨一半、再砍一半」：10 块积木加 5 块是 15 块，15 块砍一半剩 7 块半。
+- band: G5-6
+  approach: 点按钮让柱子涨 50%、降 50%，看「1」的记号每次跳到现在的柱子上；转盘找出涨了以后要降多少才回去；按住看 100 元每年涨 10% 长成什么样。
+- band: G7-9
+  approach: 增长率和连续变化；指数函数；等比数列。
+activities:
+- act.simulation.grow-shrink-01
+- act.quiz.percent-change-01
+status: published  # Luka 2026-11-22 验收（#233）
+version: 1
+# END OF FILE

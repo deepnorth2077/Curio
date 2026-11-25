@@ -9,6 +9,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@500;600&family=ZCOOL+KuaiLe&display=swap">
 <style>
+/* 长按不选字、不弹菜单（#156）。输入框照常能选能改；指挥中心（#groundPage）照常能选字 */
+html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+#groundPage{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 /* Layout: one navigation only — ribbon (tablet/desktop) or bottom bar (phone). Explorer = knowledge index. Centre = star chart / metro / tools. Note pane = the planet.
    Light = warm paper with ink drawings; dark = Obsidian night. */
 :root{
@@ -174,6 +178,33 @@ button.sitem:hover{background:var(--hover);color:var(--ink)}
 .sel-ring{fill:none;stroke:var(--accent);stroke-width:2.2}
 @media (prefers-reduced-motion:no-preference){.ping{animation:ping 2.6s ease-out infinite}@keyframes ping{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.9);opacity:0}}}
 
+/* Constellation preview shares the chart, its rings and the original navigation. */
+.shape-stroke{fill:none;stroke:var(--ink);stroke-width:1.1;stroke-opacity:.76;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.shape-face{fill:var(--bg)}
+.shape-mark.lit .shape-face{fill:var(--l2)}
+.shape-outline,.star-rays{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.shape-mark.untouched .shape-outline{stroke:var(--muted)}
+
+.shape-overview .shape-stroke{stroke-width:1.4;stroke-opacity:.94}
+.shape-overview .shape-point .shape-outline{stroke-width:.9;vector-effect:non-scaling-stroke}
+.shape-overview #gsvg>path.kq{stroke-width:.8;stroke-opacity:.48}
+.shape-overview .cname,.shape-overview .ring-lbl,.shape-overview .ccount,.shape-overview .anno{paint-order:stroke;stroke:var(--pane);stroke-width:2px;stroke-linejoin:round}
+
+/* The series index and textbook diagram share node IDs with the metro. */
+.series-nav{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;margin:4px 18px 8px}
+.series-nav>span{font-size:13px;color:var(--muted);margin-right:2px}
+.series-nav button{font:inherit;font-size:14px;color:var(--text);padding:8px 12px;border:1px solid var(--rule);border-radius:9px}
+.series-nav button[data-course-jump]{min-height:44px}
+.series-nav button[aria-pressed="true"]{color:var(--pane);background:var(--ink);border-color:var(--ink)}
+.series-groups{flex:1;min-height:0;overflow:auto;padding:4px 18px 30px}
+.series-groups section{margin-bottom:18px}
+.series-groups h2{font-size:16px;font-family:var(--f-serif);margin:4px 0 8px}
+.series-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(165px,100%),1fr));gap:6px}
+.series-star{display:flex;gap:9px;align-items:center;text-align:left;background:var(--pane);color:var(--ink);border:1px solid var(--rule);border-radius:10px;padding:9px 10px;min-height:55px}
+.series-star svg{width:30px;height:30px;flex:none}.series-star b,.series-star small{display:block}
+.series-star b{font-size:15px;font-weight:500;line-height:1.35}.series-star small{font-size:13px;color:var(--muted);margin-top:3px}
+.series-star[aria-pressed="true"]{border-color:var(--accent);background:var(--wash)}
+@media(max-width:520px){.series-nav{margin-inline:12px}.series-nav button{padding:8px}.series-groups{padding-inline:12px}}
 /* ---------- metro ---------- */
 .metro{position:absolute;inset:0;display:flex;flex-direction:column}
 .mscroll{flex:1;min-height:0;overflow:auto;position:relative}
@@ -387,6 +418,9 @@ textarea{min-height:84px;resize:vertical}
 .pl-fig{background:var(--bg);border-radius:12px;padding:6px}
 .pl-fig svg{display:block;width:100%;height:auto;max-height:52vh}
 .pl-fig .k,.pl-fig .k1{vector-effect:none}
+.pl-qfig{width:min(100%,320px);margin:8px auto}
+.pl-qfig .fig-shade{fill:var(--c-math)}
+.pl-qfig .fig-txt{font-size:12px}
 .pl-fig [fill="#CCD6C0" i]{fill:var(--c-sci)} .pl-fig [fill="#CFDCE6" i]{fill:var(--c-sky)}
 .pl-fig [fill="#ECCDB6" i]{fill:var(--c-math)} .pl-fig [fill="#EFE4D6" i]{fill:var(--wash)}
 .pl-fig [fill="#4F7FA8" i]{fill:var(--dad)} .pl-fig [fill="#C2603F" i]{fill:var(--mom)}
@@ -477,6 +511,8 @@ textarea{min-height:84px;resize:vertical}
 
 <!-- 内容包：python preview/build.py --root . --bundle prototype/content.js 生成；没有它原型照常打开 -->
 <script src="content.js"></script>
+<script src="trial-content.js"></script>
+<script src="design/constellation-shapes.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -594,19 +630,70 @@ const DETAIL={
   "science.light.pinhole":{icon:"pinhole",dq:"为什么墙上会出现一幅倒过来的窗外风景？",objectives:["观察到小孔成倒立的像","知道孔越大越亮但越模糊"],misconceptions:["像只是上下颠倒","孔越大像越清楚"],lenses:[["G3-4","更亮/更暗、清楚/模糊"],["G8","像高 = 物高 × 像距 ÷ 物距"]],acts:["act.experiment.pinhole-g3"]}
 };
 // 内容包里已发布的知识点：覆盖 RAW 里同 id 的占位（原型里的 RAW、DETAIL 只是示例），RAW 里没有的追加在末尾
-const CONTENT=window.CURIO_CONTENT||{nodes:[],activities:{},figures:{}};
+const published=window.CURIO_CONTENT||{nodes:[],activities:{},figures:{}};
+const trial=window.CURIO_TRIAL||{nodes:[],activities:{},figures:{},catalog:{}};
+const publishedIds=new Set(published.nodes.map(n=>n.id));
+const CONTENT={
+  nodes:[...published.nodes,...trial.nodes.filter(n=>!publishedIds.has(n.id))],
+  activities:{...trial.activities,...published.activities},
+  figures:{...trial.figures,...published.figures}
+};
+const CATALOG=trial.catalog;
 CONTENT.nodes.forEach(c=>{ if(!THEMES[c.theme]) return; const row=[c.id,c.title,c.grade,c.theme,c.unit,c.prerequisites], i=RAW.findIndex(r=>r[0]===c.id);
   if(i>=0) RAW[i]=row; else RAW.push(row);
   DETAIL[c.id]=Object.assign({},DETAIL[c.id],{dq:c.driving_question||null,objectives:c.objectives||[],misconceptions:(c.misconceptions||[]).map(m=>m.text),lenses:(c.lenses||[]).map(l=>[l.band,l.approach]),acts:c.activities}); });
+// A retired sample has one current entry point. Scores and events still belong to their original IDs.
+const cardIds=new Set(CONTENT.nodes.filter(n=>THEMES[n.theme]).map(n=>n.id));
+const replacements=[
+  {old:"math.number.fraction-intro",to:"math.fraction.unit-fraction"},
+  {old:"math.number.fraction-compare",to:"math.fraction.count-on-line"},
+  {old:"m.g3.frac-calc",to:"math.fraction.add-subtract"},
+  {old:"m.g3.frac-app",to:"math.fraction.the-whole"},
+  {old:"m.g5.fraction",to:"math.fraction.the-whole"},
+  {old:"m.g3.decimal",to:"math.decimal.tenths"},
+  {old:"m.g4.decimal",to:"math.decimal.tenths"},
+  {old:"m.g6.percent",to:"math.percent.meaning"},
+  {old:"m.g6.ratio",to:"math.ratio.meaning"}
+];
+const retired=new Map();
+for(const entry of replacements){
+  if(!cardIds.has(entry.to)||cardIds.has(entry.old)) continue;
+  const row=RAW.find(([id])=>id===entry.old);
+  if(row) retired.set(entry.old,{...entry,title:row[1]});
+}
+const currentId=id=>retired.get(id)?.to??id;
 const RAW_IDS=new Set(RAW.map(r=>r[0]));
+const rowGrades=new Map(RAW.map(([id,,grade])=>[id,Number(grade.slice(1))]));
 const GRADES=["G1","G2","G3","G4","G5","G6","G7","G8","G9","G10","G11","G12"];
 const GRADE={G1:"一年级",G2:"二年级",G3:"三年级",G4:"四年级",G5:"五年级",G6:"六年级",G7:"初一",G8:"初二",G9:"初三",G10:"高一",G11:"高二",G12:"高三"};
 const BAND_OF=g=>({G1:0,G2:0,G3:1,G4:1,G5:2,G6:2,G7:3,G8:3,G9:3})[g]??4;
 const BAND_NAME=["一二年级","三四年级","五六年级","初中","高中"];
 let CURRENT_BAND=1, CURRENT_GRADE="G3";   // 由「设置」里的年级算出来，见 applyProfile()
-const NODES=RAW.map(([id,title,grade,theme,unit,prereq],i)=>{ const t=THEMES[theme], d=DETAIL[id]||{};
-  return {id,title,short:title.split("：")[0],grade,theme,unit,prereq:(prereq||[]).filter(p=>RAW_IDS.has(p)),galaxy:t.g,band:BAND_OF(grade),icon:d.icon||t.icon,dq:d.dq||null,objectives:d.objectives||[],misconceptions:d.misconceptions||[],lenses:d.lenses||[],acts:d.acts||[],seed:11+i*7,no:i+1}; });
+const NODES=RAW.flatMap(([id,title,grade,theme,unit,prereq],i)=>{
+  if(retired.has(id)) return [];
+  const t=THEMES[theme], d=DETAIL[id]||{};
+  const predecessors=new Set();
+  for(const old of prereq||[]){
+    const target=currentId(old);
+    if(target===id||!RAW_IDS.has(target)) continue;
+    // A G3 sample should not acquire a G5 prerequisite when its old neighbor is retired.
+    if(target!==old&&rowGrades.get(target)>rowGrades.get(id)) continue;
+    predecessors.add(target);
+  }
+  const aliases=[...retired.values()].filter(entry=>entry.to===id);
+  const activities=[...new Set([...(d.acts||[]),...aliases.flatMap(entry=>DETAIL[entry.old]?.acts||[])])];
+  const searchNames=aliases.map(entry=>entry.title);
+  return [{id,title,short:title.split("：")[0],grade,theme,unit,prereq:[...predecessors],galaxy:t.g,band:BAND_OF(grade),icon:d.icon||t.icon,dq:d.dq||null,objectives:d.objectives||[],misconceptions:d.misconceptions||[],lenses:d.lenses||[],acts:activities,aliases,searchNames,seed:11+i*7,no:i+1}];
+});
 const NODE=Object.fromEntries(NODES.map(n=>[n.id,n]));
+// A series follows the story's order. Its stars keep the single canonical grade and metro line on their cards.
+const SERIES=new Map();
+for(const [id,entry] of Object.entries(CATALOG)){
+  if(!NODE[id]) continue;
+  if(!SERIES.has(entry.series)) SERIES.set(entry.series,{id:entry.series,title:entry.series_title,theme:entry.chart_theme,nodes:[]});
+  SERIES.get(entry.series).nodes.push(NODE[id]);
+}
+for(const series of SERIES.values()) series.nodes.sort((a,b)=>CATALOG[a.id].star-CATALOG[b.id].star);
 const GALAXY={math:"数学",science:"科学"};
 const consId=n=>n.theme+"|"+n.band;
 const CONS={}; NODES.forEach(n=>{ const k=consId(n); (CONS[k]=CONS[k]||{id:k,theme:n.theme,band:n.band,nodes:[]}).nodes.push(n); });
@@ -622,7 +709,11 @@ const ACTIVITIES={
 Object.values(CONTENT.activities).forEach(a=>{ ACTIVITIES[a.id]=Object.assign({},a,{type:a.kind,content:true}); });
 const PLAYED=new Set();   // 这次打开页面以后玩完的内容活动，只在内存里，刷新就没了（这一版先不记进度）
 const ACT_KIND={experiment:"实验",quiz:"挑战",simulation:"动手探索",explain:"讲解",reflection:"反思"};
-const actKind=(a,n)=>a.type==="explain"&&n.acts.some(x=>ACTIVITIES[x]&&ACTIVITIES[x].type==="simulation")?"旧版讲解":(ACT_KIND[a.type]||"任务");
+function actKind(a,n){
+  const original=retired.get(a.targets?.[0]);
+  if(a.type==="quiz"&&original?.to===n.id) return `原星挑战 · 成绩记在「${original.title}」`;
+  return ACT_KIND[a.type]||"任务";
+}
 const TASK_LIB_DEFAULT=["数学","科学","阅读","运动","下棋","弹琴"];
 
 /* ============================================================
@@ -672,10 +763,10 @@ function computeMastery(){ const m={}; for(const e of S.events){ if(!e.node) con
   if(e.verb==="diagnosed") v=Math.max(0,v-.15);
   m[e.node]=v; } return m; }
 function mastery(id){ if(!MCACHE) MCACHE=computeMastery(); return MCACHE[id]||0; }
-const visited=id=>S.events.some(e=>e.node===id);
+const visited=id=>S.events.some(e=>currentId(e.node)===currentId(id));
 function nodeState(n){ const m=mastery(n.id); if(m>=.8) return "lit"; if(visited(n.id)) return "landed"; return n.band>CURRENT_BAND?"ahead":"new"; }
 const STATE_WORD={lit:"已点亮",landed:"登陆过",new:"还没去过",ahead:"超前探险"};
-const repairsFor=id=>S.repairs.filter(r=>r.node===id&&r.status!=="archived");
+const repairsFor=id=>S.repairs.filter(r=>currentId(r.node)===currentId(id)&&r.status!=="archived");
 const dueRepairs=()=>S.repairs.filter(r=>r.status==="practice"&&(!r.nextReview||r.nextReview<=todayStr()));
 function recommend(){ const ok=n=>n.prereq.every(p=>mastery(p)>=.8); return NODES.find(n=>nodeState(n)!=="lit"&&ok(n)&&n.acts.length&&n.band<=CURRENT_BAND)||NODES.find(n=>nodeState(n)!=="lit"&&n.acts.length)||NODES[0]; }
 /* ============================================================
@@ -689,8 +780,8 @@ const MOCK={
   "vision.capture_question"(i){ if(i.sample) return {stem:"圆被平均分成 4 份，涂色部分是这个圆的几分之几？",childAnswer:"1/3",rightAnswer:"1/4"}; return {stem:"",childAnswer:"",rightAnswer:"",needsEdit:true}; },
   "tutor.diagnose"(i){ const t=i.stem+" "+i.childAnswer; let node="math.number.fraction-intro";
     if(/周长|一圈|长方形/.test(t)) node="math.geometry.perimeter"; else if(/时|分钟|秒/.test(t)&&!/几分之/.test(t)) node="math.measure.time-units"; else if(/比大小|哪个大/.test(t)) node="math.number.fraction-compare";
-    let mis=NODE[node].misconceptions[0]; if(node==="math.number.fraction-intro"&&/1\/3/.test(i.childAnswer)&&/4/.test(i.stem)) mis="把涂色的份数和没涂色的份数相比（1 比 3）";
-    return {node,misconception:mis}; },
+    let mis=NODE[currentId(node)].misconceptions[0]; if(node==="math.number.fraction-intro"&&/1\/3/.test(i.childAnswer)&&/4/.test(i.stem)) mis="把涂色的份数和没涂色的份数相比（1 比 3）";
+    return {node:currentId(node),misconception:mis}; },
   "gen.variants"(i){ return {variants:makeVariants(i.node)}; },
   "tutor.ask"(i){ const q=i.text;
     if(/天/.test(q)&&/蓝/.test(q)) return {answer:"阳光里藏着很多颜色。它穿过空气时，蓝光最容易被空气里的小颗粒弹来弹去，满天都是被弹散的蓝光，所以天看起来是蓝的。",followUp:"那傍晚的天空为什么会变红？"};
@@ -699,8 +790,8 @@ const MOCK={
 };
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 function makeVariants(node){ const o=[];
-  if(node==="math.number.fraction-intro"){ for(let i=0;i<3;i++){ const n=rnd(3,8),k=rnd(1,n-1),t=["饼","比萨","西瓜","巧克力板"][rnd(0,3)]; o.push({q:`把一块${t}平均分成 ${n} 份，吃了 ${k} 份，吃了这块${t}的几分之几？`,a:`${k}/${n}`,kind:"fraction"}); } }
-  else if(node==="math.number.fraction-compare"){ for(let i=0;i<3;i++){ const n=rnd(5,10); let a=rnd(1,n-1),b=rnd(1,n-1); while(b===a) b=rnd(1,n-1); o.push({q:`${a}/${n} 和 ${b}/${n}，哪个大？（写出较大的那个）`,a:`${Math.max(a,b)}/${n}`,kind:"fraction"}); } }
+  if(currentId(node)===currentId("math.number.fraction-intro")){ for(let i=0;i<3;i++){ const n=rnd(3,8),k=rnd(1,n-1),t=["饼","比萨","西瓜","巧克力板"][rnd(0,3)]; o.push({q:`把一块${t}平均分成 ${n} 份，吃了 ${k} 份，吃了这块${t}的几分之几？`,a:`${k}/${n}`,kind:"fraction"}); } }
+  else if(currentId(node)===currentId("math.number.fraction-compare")){ for(let i=0;i<3;i++){ const n=rnd(5,10); let a=rnd(1,n-1),b=rnd(1,n-1); while(b===a) b=rnd(1,n-1); o.push({q:`${a}/${n} 和 ${b}/${n}，哪个大？（写出较大的那个）`,a:`${Math.max(a,b)}/${n}`,kind:"fraction"}); } }
   else if(node==="math.geometry.perimeter"){ for(let i=0;i<3;i++){ const l=rnd(4,12),w=rnd(2,l-1); o.push({q:`长方形长 ${l} 厘米、宽 ${w} 厘米，周长是多少厘米？`,a:String(2*(l+w)),kind:"number"}); } }
   else o.push({q:"1 分 = 多少秒？",a:"60",kind:"number"},{q:"2 分 = 多少秒？",a:"120",kind:"number"},{q:"1 时 = 多少分？",a:"60",kind:"number"});
   return o; }
@@ -748,7 +839,7 @@ function renderNav(){
    ROUTER
    ============================================================ */
 const VIEWS=["chart","metro","repair","signal","ground"];
-let current="chart", selected=null, chartZoom=null, metroMode="lines", noteOpen=false;
+let current="chart", selected=null, chartZoom=null, chartSeries=null, metroMode="lines", noteOpen=false;
 // 右栏（星球笔记）一开始不显示；点了星图上的星球、地铁站或索引里的知识点才弹出。只在星图和地铁页显示。
 function applyNote(){ $("#app").classList.toggle("note-open",noteOpen&&(current==="chart"||current==="metro")); }
 function closeNote(){ if(!noteOpen) return; noteOpen=false; applyNote(); if(current==="chart") renderChart(); }
@@ -759,6 +850,7 @@ function route(){
   closePops();
   applyNote();
   rerender();
+  if(current==="chart") revealSelected();
 }
 function rerender(){ ({chart:renderChart,metro:renderMetro,repair:renderRepair,signal:renderSignal,ground:renderGround})[current](); renderNav();
  }
@@ -771,11 +863,15 @@ document.addEventListener("click",e=>{ const b=e.target.closest("[data-act]"); i
    EXPLORER — the knowledge index (subject → constellation → planet), searchable
    ============================================================ */
 const openCons={}; let treeQuery="";
+function matchesNode(n,query){
+  return [n.title,...n.searchNames,n.unit,GALAXY[n.galaxy],THEMES[n.theme].name,CATALOG[n.id]?.series_title,CATALOG[n.id]?.group_title,
+    ...n.acts.map(id=>ACTIVITIES[id]?.title)].some(text=>text?.includes(query));
+}
 function treeHTML(inDrawer){
   const rec=recommend(); if(!(consId(rec) in openCons)) openCons[consId(rec)]=true;
   const q=treeQuery.trim();
   let body="";
-  if(q){ const hits=NODES.filter(n=>n.title.includes(q)||n.unit.includes(q)||THEMES[n.theme].name.includes(q));
+  if(q){ const hits=NODES.filter(n=>matchesNode(n,q));
     body=`<div class="sec">找到 ${hits.length} 颗星球</div>`+hits.map(n=>leaf(n,true)).join(""); }
   else for(const g of ["math","science"]){
     const all=NODES.filter(n=>n.galaxy===g);
@@ -803,11 +899,159 @@ function openTree(){ closePops(); const sc=document.createElement("div"); sc.cla
 /* ============================================================
    STAR CHART — overview of constellations (theme × school band), zoom into one constellation
    ============================================================ */
-const BANDS=[[40,84],[84,216],[216,264],[264,310],[310,350]];   // fisheye: the current band gets the room
+const shapePreview = new URLSearchParams(location.search).get("shapes") === "1";
+const themeShapes = {num:"stairs", rel:"scale", geo:"kite", stat:"bars", mat:"icecream", ene:"plane", life:"fish", earth:"moon"};
+
+// Each marker belongs to a node in this theme and school band. The unmarked bends
+// keep the same silhouette on a ring with fewer nodes.
+function chartShape(c){
+  const shape=SHAPES[themeShapes[c.theme]];
+  const strokes=shape.strokes.map(stroke=>stroke.map(p=>Array.isArray(p)?p:shape.stars[p]));
+  const count=c.nodes.length, anchors=shape.stars;
+  const pts=c.nodes.slice(0,anchors.length).map((_,i)=>anchors[Math.floor(i*anchors.length/Math.min(count,anchors.length))]);
+  // Additional nodes occupy the largest unused stretches of the original lines.
+  if(count>pts.length){
+    const candidates=[];
+    for(const stroke of strokes) for(let i=1;i<stroke.length;i++){
+      const [ax,ay]=stroke[i-1], [bx,by]=stroke[i];
+      const steps=Math.ceil(Math.hypot(bx-ax,by-ay)/3);
+      for(let j=0;j<steps;j++) candidates.push([ax+(bx-ax)*j/steps,ay+(by-ay)*j/steps]);
+    }
+    while(pts.length<count){
+      let best, gap=-1;
+      for(const point of candidates){
+        const distance=Math.min(...pts.map(([x,y])=>Math.hypot(x-point[0],y-point[1])));
+        if(distance>gap){best=point;gap=distance;}
+      }
+      pts.push(best);
+    }
+  }
+  return {strokes,pts};
+}
+
+const chartStarPoints=Array.from({length:10},(_,i)=>{
+  const a=-Math.PI/2+i*Math.PI/5, radius=i%2?.49:1;
+  return [radius*Math.cos(a)*10,radius*Math.sin(a)*10];
+});
+const starOutline=Sk.area(chartStarPoints);
+const starHalf=Sk.area([0,9,8,7,6,5].map(i=>chartStarPoints[i]));
+function chartStar(state,r){
+  const lit=state==="lit", explored=state==="landed";
+  let mark='<path d="'+starOutline+'" class="shape-face"/>';
+  if(explored) mark+='<path d="'+starHalf+'" fill="var(--l2)"/>';
+  mark+='<path d="'+starOutline+'" class="shape-outline"/>';
+  if(lit) mark+='<path d="M0 -12v-2.4 M9 -9l1.8 -1.8 M12 0h2.4 M9 9l1.8 1.8 M0 12v2.4 M-9 9l-1.8 1.8 M-12 0h-2.4 M-9 -9l-1.8 -1.8" class="star-rays"/>';
+  return '<g class="shape-mark '+(lit?'lit':explored?'explored':'untouched')+'" transform="scale('+r/10+')">'+mark+'</g>';
+}
+function chartShapeFigure(c,radius){
+  const scale=radius/55;
+  const {strokes,pts}=chartShape(c);
+  const point=([x,y])=>[x*scale,y*scale];
+  let fig=strokes.map((stroke,i)=>`<path class="shape-stroke" d="${Sk.poly(stroke.map(point),340+i*80,false,.18)}"/>`).join("");
+  c.nodes.forEach((node,i)=>{
+    const [x,y]=point(pts[i]), state=nodeState(node), at=`translate(${x} ${y})`;
+    const nearest=Math.min(...pts.filter((_,j)=>j!==i).map(([px,py])=>Math.hypot(pts[i][0]-px,pts[i][1]-py)));
+    const r=Math.min(7.2,nearest*.42)*scale;
+    let mark=chartStar(state,r);
+    if(node.acts.length){
+      // Keep the activity sparkle outside the star's rays.
+      const offset=r*1.22+1, arm=Math.max(1.2,r*.43);
+      mark+=`<g class="activity-spark" transform="translate(${-offset} ${-offset})"><title>有活动</title><path class="k1" style="stroke:var(--accent)" d="${Sk.line(-arm,arm,arm,-arm,node.seed,.1)+Sk.line(-arm,-arm,arm,arm,node.seed+1,.1)}"/></g>`;
+    }
+    fig+=`<g class="shape-point" data-node-id="${esc(node.id)}" transform="${at}">${mark}</g>`;
+  });
+  return fig;
+}
+function shapeLegend(){
+  return [["lit","点亮"],["landed","探过"],["new","未探"]].map(([state,word])=>
+    `<span><svg aria-hidden="true" width="16" height="16" viewBox="-16 -16 32 32">${chartStar(state,10)}</svg>${word}</span>`).join("");
+}
+const BANDS=[[40,84],[84,216],[216,264],[264,310],[310,350]];   // The original chart gives grades 3–4 the widest ring.
 const C=380, polar=(th,r)=>[C+r*Math.cos(th*Math.PI/180), C-r*Math.sin(th*Math.PI/180)];
 let floatRaf=0;
-function consGeom(c){ const t=THEMES[c.theme], [a,b]=BANDS[c.band], th=(t.sec[0]+t.sec[1])/2, cur=c.band===CURRENT_BAND;
-  const r=(a+b)/2 + (cur? (THEME_ORDER.indexOf(c.theme)%2? 18:-14) : 0); const [x,y]=polar(th,r); const rr=cur?Math.min(44,14+c.nodes.length*2.4):Math.min(14,6+c.nodes.length*1.5);
+// Swap the original wide ring with the captain's band, keeping all five rings
+// in grade order and the outside of the chart at the same radius.
+function overviewBands(){
+  if(!shapePreview) return BANDS;
+  const widths=BANDS.map(([a,b])=>b-a);
+  [widths[1],widths[CURRENT_BAND]]=[widths[CURRENT_BAND],widths[1]];
+  let inner=BANDS[0][0];
+  return widths.map(width=>{const band=[inner,inner+width]; inner+=width; return band;});
+}
+
+// Keep text legible when the wide band moves. Measure the actual SVG text,
+// including the progress line, and give priority to the five grade labels.
+function placeChartLabels(svg,geometry){
+  const view=svg.viewBox.baseVal;
+  const occupied=[{x:C-23,y:C-27,w:46,h:54}];
+  const box=(el,x=0,y=0)=>{
+    const b=el.getBBox();
+    return {x:x+b.x,y:y+b.y,w:b.width,h:b.height};
+  };
+  const overlaps=(a,b,pad)=>a.x<b.x+b.w+pad && a.x+a.w>b.x-pad && a.y<b.y+b.h+pad && a.y+a.h>b.y-pad;
+  for(const group of svg.querySelectorAll(".cons")){
+    const {x,y,rr}=geometry[group.dataset.id], figure=group.querySelector(".theme-figure");
+    occupied.push(figure?box(figure,x,y):{x:x-rr,y:y-rr,w:rr*2,h:rr*2});
+  }
+  for(const el of svg.querySelectorAll(".sector-lbl")) occupied.push(box(el));
+
+  const labels=[...svg.querySelectorAll(".grade-caption, .subject-caption"),
+    ...svg.querySelectorAll(".current-caption"),...svg.querySelectorAll(".other-caption")];
+  for(const el of labels){
+    const group=el.closest(".cons"), geo=group?geometry[group.dataset.id]:null;
+    el.removeAttribute("transform");
+    const base=box(el,geo?.x,geo?.y);
+    // Prefer the original baseline, then the nearest free position. A group
+    // caption may go above its own drawing when there is no room below it.
+    let candidates;
+    if(geo){
+      // Start at the four edges of this particular drawing. Trying its top
+      // directly avoids sliding a caption under the next constellation.
+      const figure=group.querySelector(".theme-figure");
+      const rim=figure?box(figure,geo.x,geo.y):{x:geo.x-geo.rr,y:geo.y-geo.rr,w:geo.rr*2,h:geo.rr*2};
+      const midX=rim.x+rim.w/2, midY=rim.y+rim.h/2;
+      candidates=[];
+      for(let gap=8;gap<=80;gap+=8) for(let slide=-72;slide<=72;slide+=8){
+        const below=rim.y+rim.h+gap, above=rim.y-gap-base.h;
+        const left=rim.x-gap-base.w, right=rim.x+rim.w+gap;
+        const append=(x,y,preference)=>candidates.push({dx:x-base.x,dy:y-base.y,distance:Math.abs(slide)+preference+(gap-8)*2});
+        append(midX-base.w/2+slide,below,0);
+        append(midX-base.w/2+slide,above,8);
+        append(left,midY-base.h/2+slide,12);
+        append(right,midY-base.h/2+slide,12);
+      }
+    }else{
+      candidates=[];
+      const maxY=el.classList.contains("anno")?48:el.classList.contains("grade-caption")?8:40;
+      for(let dy=-maxY;dy<=maxY;dy+=8) for(let dx=-80;dx<=80;dx+=8){
+        candidates.push({dx,dy,distance:Math.hypot(dx*1.2,dy)});
+      }
+    }
+    candidates.sort((a,b)=>a.distance-b.distance);
+    let best=null, fewest=Infinity;
+    for(const move of candidates){
+      const pos={...base,x:base.x+move.dx,y:base.y+move.dy};
+      if(pos.x<view.x+3 || pos.x+pos.w>view.x+view.width-3 ||
+         pos.y<view.y+3 || pos.y+pos.h>view.y+view.height-3) continue;
+      const hits=occupied.reduce((sum,b)=>sum+Number(overlaps(pos,b,5)),0);
+      if(hits<fewest){best={...move,pos};fewest=hits;}
+      if(hits===0) break;
+    }
+    if(best){
+      el.setAttribute("transform",`translate(${best.dx} ${best.dy})`);
+      occupied.push(best.pos);
+    }
+  }
+}
+
+function consGeom(c,bands=overviewBands()){ const t=THEMES[c.theme], [a,b]=bands[c.band], th=(t.sec[0]+t.sec[1])/2, cur=c.band===CURRENT_BAND;
+  const stagger=cur?(THEME_ORDER.indexOf(c.theme)%2?18:-14):0;
+  if(shapePreview&&cur){
+    const rr=39, [x,y]=polar(th,(a+b)/2+stagger);
+    return {x,y,rr,cur};
+  }
+  const [x,y]=polar(th,(a+b)/2+stagger);
+  const rr=cur?Math.min(44,14+c.nodes.length*2.4):Math.min(14,6+c.nodes.length*1.5);
   const pts=c.nodes.map((n,i)=>{ const ang=i*2.39996+c.band, rad=rr*Math.sqrt((i+.6)/c.nodes.length); return [Math.cos(ang)*rad, Math.sin(ang)*rad]; });
   return {x,y,rr,pts,cur}; }
 function renderChart(){ cancelAnimationFrame(floatRaf); if(chartZoom&&CONS[chartZoom]) renderConstellation(CONS[chartZoom]); else { chartZoom=null; renderOverview(); } }
@@ -815,43 +1059,55 @@ function renderOverview(){
   const wrap=$("#chartWrap"), rec=recommend(), recC=consId(rec);
   const lit=NODES.filter(n=>nodeState(n)==="lit").length;
   wrap.innerHTML=`<div class="vhead"><div><h1>星图</h1><p class="sub">从里到外是年级，扇区是学科大概念。点一个星座飞进去。</p></div>
-    <div class="legend" aria-hidden="true"><span><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="var(--ink)"/></svg>点亮</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="none" stroke="var(--muted)" stroke-width="1.3"/></svg>未点亮</span><span class="mono">${lit}/${NODES.length}</span></div></div>
+    <div class="legend" aria-hidden="true">${shapePreview?shapeLegend():'<span><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="var(--ink)"/></svg>点亮</span><span><svg width="12" height="12"><circle cx="6" cy="6" r="4.5" fill="none" stroke="var(--muted)" stroke-width="1.3"/></svg>未点亮</span>'}<span class="mono">${lit}/${NODES.length}</span></div></div>
     <div class="graph" id="graph"><svg id="gsvg" role="img" aria-label="Curio 星图：年级环与学科扇区"></svg></div>`;
   const g=$("#graph"), svg=$("#gsvg"), narrow=g.clientWidth<620; g.classList.toggle("narrow",narrow);
-  svg.setAttribute("viewBox",narrow?"6 40 748 690":"0 0 760 760");
-  let h=`<circle class="band-now" cx="${C}" cy="${C}" r="${(BANDS[1][0]+BANDS[1][1])/2}" stroke-width="${BANDS[1][1]-BANDS[1][0]}"/>`;
-  BANDS.forEach(([a,b],i)=>{ h+=`<path class="kq" d="${Sk.ellipse(C,C,b,b,200+i,.6)}" ${i>=3?'stroke-dasharray="3 6"':""}/>`; });
+  g.classList.toggle("shape-overview",shapePreview);
+  svg.setAttribute("viewBox",shapePreview?"0 0 760 760":narrow?"6 40 748 690":"0 0 760 760");
+  const bands=overviewBands(), [bandStart,bandEnd]=bands[shapePreview?CURRENT_BAND:1];
+  let h=`<circle class="band-now" cx="${C}" cy="${C}" r="${(bandStart+bandEnd)/2}" stroke-width="${bandEnd-bandStart}"/>`;
+  bands.forEach(([a,b],i)=>{ h+=`<path class="kq" d="${Sk.ellipse(C,C,b,b,200+i,.6)}" ${i>=3?'stroke-dasharray="3 6"':""}/>`; });
   h+=`<path class="kq" d="${Sk.ellipse(C,C,40,40,190,.6)}"/>`;
-  BANDS.forEach(([a,b],i)=>{ h+=`<text class="${i===CURRENT_BAND?"anno":"ring-lbl"}" x="${C}" y="${C+(a+b)/2+6}" text-anchor="middle">${i===CURRENT_BAND?"你在这一圈":BAND_NAME[i]}</text>`; });
+  bands.forEach(([a,b],i)=>{ h+=`<text class="${i===CURRENT_BAND?"anno":"ring-lbl"}${shapePreview?" grade-caption":""}" x="${C}" y="${C+(a+b)/2+6}" text-anchor="middle">${i===CURRENT_BAND?"你在这一圈":BAND_NAME[i]}</text>`; });
   // sector dividers (between themes) and the math | science split
   THEME_ORDER.forEach((k,i)=>{ const a0=THEMES[k].sec[0]; const p=polar(a0,44), q=polar(a0,350); h+=`<path class="kq" stroke-dasharray="1 7" d="${Sk.line(p[0],p[1],q[0],q[1],330+i,.3)}" opacity=".7"/>`; });
   h+=`<path class="kq" stroke-dasharray="2 6" d="${Sk.line(C,C-44,C,C-352,301,.4)}"/><path class="kq" stroke-dasharray="2 6" d="${Sk.line(C,C+44,C,C+352,302,.4)}"/>`;
   const SL=(t,th,r,cls,anc)=>{ const p=polar(th,r); return `<text class="${cls}" x="${p[0].toFixed(1)}" y="${p[1].toFixed(1)}" text-anchor="${anc||"middle"}">${t}</text>`; };
   h+=`<text class="sector-lbl" x="40" y="44">数学</text><text class="sector-lbl" x="720" y="44" text-anchor="end">科学</text>`;
-  ["mat","ene","life","earth"].forEach(k=>{ const t=THEMES[k], th=(t.sec[0]+t.sec[1])/2, p=polar(th,364); h+=`<text class="ring-lbl" x="${p[0].toFixed(1)}" y="${(p[1]+5).toFixed(1)}" text-anchor="middle" style="fill:var(${t.c})">${t.later}</text>`; });
-  { const p=polar(60,286); h+=`<text class="ring-lbl" x="${p[0]+8}" y="${p[1]}" text-anchor="start">初中起分科</text>`; }
+  ["mat","ene","life","earth"].forEach(k=>{ const t=THEMES[k], th=(t.sec[0]+t.sec[1])/2, p=polar(th,364); h+=`<text class="ring-lbl${shapePreview?" subject-caption":""}" x="${p[0].toFixed(1)}" y="${(p[1]+5).toFixed(1)}" text-anchor="middle" style="fill:var(${t.c})">${t.later}</text>`; });
+  { const [a,b]=bands[3], p=shapePreview?polar(86,(a+b)/2):polar(60,286);
+    h+=`<text class="ring-lbl${shapePreview?" subject-caption":""}" x="${p[0]+(shapePreview?0:8)}" y="${p[1]}" text-anchor="${shapePreview?"middle":"start"}">初中起分科</text>`; }
   // annotation
   h+=`<g transform="translate(${C-22} ${C-26}) scale(.44)">${ICONS.ship(9)}</g>`;
   // links between constellations (any prerequisite across them)
   const links=new Set(); NODES.forEach(n=>n.prereq.forEach(p=>{ const a=consId(NODE[p]), b=consId(n); if(a!==b) links.add(a+">"+b); }));
-  const G={}; Object.values(CONS).forEach(c=>G[c.id]=consGeom(c));
+  const G={}; Object.values(CONS).forEach(c=>G[c.id]=consGeom(c,bands));
   [...links].forEach((l,i)=>{ const [a,b]=l.split(">"); h+=`<path class="clink kq" data-a="${a}" data-b="${b}" stroke-dasharray="2 5" d="" opacity=".8"/>`; });
   // constellations
   Object.values(CONS).forEach((c,ci)=>{ const geo=G[c.id], t=THEMES[c.theme], litN=c.nodes.filter(n=>nodeState(n)==="lit").length;
-    let fig=""; const idx=Object.fromEntries(c.nodes.map((n,i)=>[n.id,i]));
-    c.nodes.forEach((n,i)=>n.prereq.forEach(p=>{ if(p in idx){ const A=geo.pts[idx[p]], B=geo.pts[i]; fig+=`<path class="${geo.cur?"k1":"kq"}" d="${Sk.line(A[0],A[1],B[0],B[1],ci*31+i,.25)}" opacity="${geo.cur?.55:.6}"/>`; } }));
-    c.nodes.forEach((n,i)=>{ const st=nodeState(n), [x,y]=geo.pts[i], r=geo.cur?4.4:2.6;
-      fig+= st==="lit"?`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="var(--ink)"/>`:`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="var(--pane)" stroke="${st==="landed"?"var(--ink)":"var(--muted)"}" stroke-width="1.2" ${st==="ahead"?'stroke-dasharray="1.5 1.5"':""}/>`;
-      if(n.acts.length) fig+=geo.cur?`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(x+4,y-4,x+9,y-9,n.seed)+Sk.line(x+5,y-10,x+9,y-4,n.seed+1)}"/>`:`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(x+3,y-3,x+7,y-7,n.seed)+Sk.line(x+3,y-7,x+7,y-3,n.seed+1)}"/>`; });
+    let fig="";
+    if(shapePreview&&geo.cur) fig=`<g class="theme-figure">${chartShapeFigure(c,geo.rr)}</g>`;
+    else {
+      const idx=Object.fromEntries(c.nodes.map((n,i)=>[n.id,i]));
+      c.nodes.forEach((n,i)=>n.prereq.forEach(p=>{ if(p in idx){ const A=geo.pts[idx[p]], B=geo.pts[i]; fig+=`<path class="${geo.cur?"k1":"kq"}" d="${Sk.line(A[0],A[1],B[0],B[1],ci*31+i,.25)}" opacity="${geo.cur?.55:.6}"/>`; } }));
+      c.nodes.forEach((n,i)=>{ const st=nodeState(n), [x,y]=geo.pts[i], r=geo.cur?4.4:2.6;
+        fig+= st==="lit"?`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="var(--ink)"/>`:`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="var(--pane)" stroke="${st==="landed"?"var(--ink)":"var(--muted)"}" stroke-width="1.2" ${st==="ahead"?'stroke-dasharray="1.5 1.5"':""}/>`;
+        if(n.acts.length) fig+=geo.cur?`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(x+4,y-4,x+9,y-9,n.seed)+Sk.line(x+5,y-10,x+9,y-4,n.seed+1)}"/>`:`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(x+3,y-3,x+7,y-7,n.seed)+Sk.line(x+3,y-7,x+7,y-3,n.seed+1)}"/>`; });
+    }
     const hasRep=c.nodes.some(n=>repairsFor(n.id).length);
     // 一二年级、初中、高中这几圈一般不写名字；有能玩的任务的星座例外，免得找不到
     const playable=c.band!==1&&c.band!==2&&c.nodes.some(n=>n.acts.length);
-    const label = playable ? `<text class="cname small" x="0" y="${geo.rr+15}" text-anchor="middle">${esc(consName(c))}</text>` : (c.band===1||c.band===2) ? `<text class="cname ${geo.cur?"":"small"}" x="0" y="${geo.rr+(geo.cur?20:15)}" text-anchor="middle">${esc(t.name)}</text>${geo.cur?`<text class="ccount" x="0" y="${geo.rr+36}" text-anchor="middle">${litN}/${c.nodes.length}</text>`:""}` : "";
+    const currentCaption=shapePreview&&geo.cur;
+    const label = !currentCaption&&playable ? `<text class="cname small" x="0" y="${geo.rr+15}" text-anchor="middle">${esc(consName(c))}</text>` : (currentCaption||c.band===1||c.band===2) ? `<text class="cname ${geo.cur?"":"small"}" x="0" y="${geo.rr+(geo.cur?20:15)}" text-anchor="middle">${esc(t.name)}</text>${geo.cur?`<text class="ccount" x="0" y="${geo.rr+(currentCaption?44:36)}" text-anchor="middle">${litN}/${c.nodes.length}</text>`:""}` : "";
     h+=`<g class="cons" data-id="${c.id}" tabindex="0" role="button" aria-label="${esc(consName(c))}，${BAND_NAME[c.band]}，${c.nodes.length} 颗星球，点亮 ${litN}" transform="translate(${geo.x.toFixed(1)} ${geo.y.toFixed(1)})">
       <circle class="hit" r="${geo.rr+(geo.cur?16:10)}"/>${c.id===recC?`<circle class="ping" r="${geo.rr+6}"/>`:""}
-      ${geo.cur?`<path d="${Sk.blob(0,0,geo.rr+8,geo.rr+8,ci+3)}" style="fill:var(${t.c})" opacity=".1"/>`:""}${fig}${hasRep?`<circle cx="${geo.rr*.8}" cy="${-geo.rr*.8}" r="4" fill="var(--bad)"/>`:""}${label}</g>`;
+      ${geo.cur?`<path d="${Sk.blob(0,0,geo.rr+8,geo.rr+8,ci+3)}" style="fill:var(${t.c})" opacity=".1"/>`:""}${fig}${hasRep?`<circle cx="${geo.rr*.8}" cy="${-geo.rr*.8}" r="4" fill="var(--bad)"/>`:""}${shapePreview&&label?`<g class="${geo.cur?"current-caption":"other-caption"}">${label}</g>`:label}</g>`;
   });
   svg.innerHTML=h;
+  if(shapePreview){
+    placeChartLabels(svg,G);
+    if(document.fonts?.status==="loading") document.fonts.ready.then(()=>{if(svg.isConnected) placeChartLabels(svg,G);});
+  }
   const cons=[...svg.querySelectorAll(".cons")], clinks=[...svg.querySelectorAll(".clink")];
   const neighbors=id=>{ const s=new Set([id]); clinks.forEach(l=>{ if(l.dataset.a===id) s.add(l.dataset.b); if(l.dataset.b===id) s.add(l.dataset.a); }); return s; };
   const focus=id=>{ g.classList.toggle("focusing",!!id); if(!id) return; const nb=neighbors(id); cons.forEach(el=>el.classList.toggle("nb",nb.has(el.dataset.id))); clinks.forEach(l=>l.classList.toggle("nb",l.dataset.a===id||l.dataset.b===id)); };
@@ -865,46 +1121,161 @@ function renderOverview(){
   if(!reduce){ const loop=t=>{ if(current==="chart"&&!chartZoom&&!document.hidden) place(t); floatRaf=requestAnimationFrame(loop); }; floatRaf=requestAnimationFrame(loop); }
   if(!selected) select(rec.id,false);
 }
-function zoomTo(id,el){ const svg=$("#gsvg"); const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function zoomTo(id,el){ chartSeries=null; const svg=$("#gsvg"); const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(reduce||!svg||!el||!svg.animate){ chartZoom=id; renderChart(); return; }
   const r=el.getBoundingClientRect(), s=svg.getBoundingClientRect(); const ox=r.left+r.width/2-s.left, oy=r.top+r.height/2-s.top;
   svg.style.transformOrigin=`${ox}px ${oy}px`;
   svg.animate([{transform:"scale(1)",opacity:1},{transform:"scale(2.4)",opacity:0}],{duration:320,easing:"ease-in"}).onfinish=()=>{ chartZoom=id; renderChart(); const ns=$("#gsvg"); if(ns&&ns.animate) ns.animate([{transform:"scale(.92)",opacity:0},{transform:"scale(1)",opacity:1}],{duration:260,easing:"ease-out"}); }; }
-function zoomOut(){ const svg=$("#gsvg"); const go=()=>{ chartZoom=null; renderChart(); const ns=$("#gsvg"); if(ns&&ns.animate&&!matchMedia("(prefers-reduced-motion: reduce)").matches) ns.animate([{transform:"scale(1.25)",opacity:0},{transform:"scale(1)",opacity:1}],{duration:300,easing:"ease-out"}); };
+function zoomOut(){ const svg=$("#gsvg"); const go=()=>{ chartZoom=null; chartSeries=null; renderChart(); const ns=$("#gsvg"); if(ns&&ns.animate&&!matchMedia("(prefers-reduced-motion: reduce)").matches) ns.animate([{transform:"scale(1.25)",opacity:0},{transform:"scale(1)",opacity:1}],{duration:300,easing:"ease-out"}); };
   if(svg&&svg.animate&&!matchMedia("(prefers-reduced-motion: reduce)").matches) svg.animate([{opacity:1,transform:"scale(1)"},{opacity:0,transform:"scale(.85)"}],{duration:200}).onfinish=go; else go(); }
 
+// 试玩课程和当前圈的教材单元画在同一张图，各星保留自己卡片的年级和 ID。
+function seriesInDiagram(c){
+  return (trial.diagram_series||[]).map(id=>SERIES.get(id)).filter(series=>series&&series.theme===c?.theme);
+}
+function seriesNav(c){
+  const inline=seriesInDiagram(c);
+  const choices=[...SERIES.values()].filter(series=>series.theme===c.theme&&!inline.includes(series));
+  if(inline.length>1){
+    return `<nav class="series-nav" aria-label="跳到课程"><span>跳到</span>${inline.map(series=>`<button type="button" data-course-jump="${esc(series.id)}">${esc(series.title)}</button>`).join("")}</nav>`;
+  }
+  if(!choices.length) return "";
+  const tab=(id,name)=>`<button type="button" data-series="${esc(id)}" aria-pressed="${(chartSeries||"")===id}">${esc(name)}</button>`;
+  return `<nav class="series-nav" aria-label="星座目录"><span>星座试玩</span>${choices.map(series=>tab(series.id,series.title)).join("")}${tab("","本圈星球")}</nav>`;
+}
+function bindConstellation(wrap,c){
+  wrap.querySelector("[data-zout]").onclick=zoomOut;
+  wrap.querySelectorAll("[data-series]").forEach(button=>button.onclick=()=>{
+    chartSeries=button.dataset.series||null;
+    renderConstellation(c);
+    wrap.querySelector('[data-series][aria-pressed="true"]')?.focus({preventScroll:true});
+  });
+  wrap.querySelectorAll("[data-course-jump]").forEach(button=>button.onclick=()=>{
+    const heading=wrap.querySelector(`[data-course-heading="${CSS.escape(button.dataset.courseJump)}"]`);
+    const graph=wrap.querySelector(".graph.scroll");
+    if(heading&&graph){
+      graph.scrollTop+=heading.getBoundingClientRect().top-graph.getBoundingClientRect().top-10;
+      const first=SERIES.get(button.dataset.courseJump).nodes[0];
+      graph.querySelector(`.node[data-id="${CSS.escape(first.id)}"]`)?.focus({preventScroll:true});
+    }
+  });
+  const link=wrap.querySelector("[data-metroline]");
+  if(link) link.onclick=e=>{e.preventDefault(); metroMode="lines"; metroFocusLine=c.theme; location.hash="#metro";};
+}
+function renderSeries(wrap,c,series){
+  const groups=new Map();
+  for(const node of series.nodes){
+    const entry=CATALOG[node.id];
+    if(!groups.has(entry.group)) groups.set(entry.group,{title:entry.group_title,nodes:[]});
+    groups.get(entry.group).nodes.push(node);
+  }
+  const sections=[...groups].map(([number,group])=>{
+    const stars=group.nodes.map(n=>{
+      const st=nodeState(n);
+      return `<button type="button" class="series-star node" data-id="${esc(n.id)}" aria-pressed="${selected===n.id}" aria-label="${esc(n.title)}，${STATE_WORD[st]}">
+        <svg viewBox="-16 -16 32 32" aria-hidden="true">${chartStar(st,10)}</svg><span><b>${esc(n.title)}</b><small>第 ${CATALOG[n.id].star} 颗 · ${GRADE[n.grade]}</small></span></button>`;
+    }).join("");
+    return `<section data-series-group="${number}">${groups.size>1?`<h2>第 ${number} 组 · ${esc(group.title)}</h2>`:""}<div class="series-grid">${stars}</div></section>`;
+  }).join("");
+  wrap.innerHTML=`<div class="vhead"><div><div class="crumb"><button data-zout>← 星图</button><span>/</span><span>${esc(THEMES[c.theme].name)}</span></div>
+    <h1>${esc(series.title)}</h1><p class="sub">${groups.size>1?groups.size+" 组 · ":""}${series.nodes.length} 颗星 · 已点亮 ${series.nodes.filter(n=>nodeState(n)==="lit").length}</p></div></div>
+    ${seriesNav(c)}<div class="series-groups">${sections}</div>`;
+  bindConstellation(wrap,c);
+  wrap.querySelectorAll(".series-star").forEach(button=>button.onclick=()=>select(button.dataset.id,true));
+}
 function renderConstellation(c){
-  const wrap=$("#chartWrap"), t=THEMES[c.theme], litN=c.nodes.filter(n=>nodeState(n)==="lit").length, rec=recommend();
-  const units=[]; c.nodes.forEach(n=>{ let u=units.find(x=>x.name===n.unit); if(!u){ u={name:n.unit,nodes:[]}; units.push(u); } u.nodes.push(n); });
-  // rows: one per unit, wrapping after 4 planets
-  const rows=[]; units.forEach(u=>{ for(let i=0;i<u.nodes.length;i+=4) rows.push({name:i?"":u.name,nodes:u.nodes.slice(i,i+4)}); });
-  const RH=100, W=760, H=60+rows.length*RH, X0=292, DX=130, pos={};
-  rows.forEach((r,ri)=>r.nodes.forEach((n,j)=>pos[n.id]=[X0+j*DX, 70+ri*RH]));
-  wrap.innerHTML=`<div class="vhead"><div><div class="crumb"><button data-zout>← 星图</button><span>/</span><span>${BAND_NAME[c.band]}</span></div><h1>${esc(consName(c))}座</h1><p class="sub">${c.nodes.length} 颗星球 · 已点亮 ${litN} · 属于「${esc(t.line)}」</p></div>
+  const wrap=$("#chartWrap"), t=THEMES[c.theme], rec=recommend();
+  const series=SERIES.get(chartSeries);
+  if(series&&series.theme===c.theme){renderSeries(wrap,c,series); return;}
+  // The diagram groups stars by their primary textbook unit. Edition notes and other volumes stay on the full card.
+  const inline=seriesInDiagram(c);
+  const units=[];
+  for(const course of inline){
+    let unit;
+    for(const node of course.nodes){
+      const entry=CATALOG[node.id];
+      if(!unit||unit.group!==entry.group){
+        unit={group:entry.group,name:entry.group_title,nodes:[],course:course.id};
+        if(inline.length>1&&entry.group===1) unit.heading=course.title;
+        units.push(unit);
+      }
+      unit.nodes.push(node);
+    }
+  }
+  for(const n of c.nodes){
+    if(inline.some(s=>s.id===CATALOG[n.id]?.series)) continue;
+    const name=n.unit.split(/；|（(?![一二三四五六七八九十0-9]+）)/)[0].trim();
+    let unit=units.find(u=>!u.course&&u.name===name);
+    if(!unit){unit={name,nodes:[]};units.push(unit);}
+    unit.nodes.push(n);
+  }
+  const nodes=units.flatMap(unit=>unit.nodes), litN=nodes.filter(n=>nodeState(n)==="lit").length;
+  const W=Math.min(860,Math.max(220,wrap.clientWidth)), colLeft=Math.min(232,Math.max(98,W*.3));
+  const columns=Math.min(4,Math.max(1,Math.floor((W-colLeft)/114))), cell=(W-colLeft)/columns;
+  const rows=[],pos={},labels={},RH=100;
+  const ctx=document.createElement("canvas").getContext("2d");
+  const css=getComputedStyle(wrap);
+  function lines(text,width,font){
+    ctx.font=font;
+    const result=[]; let current="";
+    for(const char of text){
+      if(current&&ctx.measureText(current+char).width>width){result.push(current);current="";}
+      current+=char;
+    }
+    if(current) result.push(current);
+    return result;
+  }
+  const courseHeadings=[];
+  let H=14;
+  for(const unit of units){
+    if(unit.heading){
+      courseHeadings.push({id:unit.course,title:unit.heading,y:H+24});
+      H+=46;
+    }
+    for(let start=0;start<unit.nodes.length;start+=columns){
+      const list=unit.nodes.slice(start,start+columns);
+      const heading=start?[]:lines(unit.name,colLeft-22,"16px "+css.getPropertyValue("--f-hand"));
+      const height=Math.max(RH,heading.length*22+18);
+      const y=H+height/2-10;
+      rows.push({heading,y});
+      list.forEach((n,i)=>{
+        pos[n.id]=[colLeft+(i+.5)*cell,y];
+        labels[n.id]=lines(n.short,cell-12,"14px "+css.getPropertyValue("--f-sans"));
+      });
+      H+=height;
+    }
+  }
+  H+=16;
+  wrap.innerHTML=`<div class="vhead"><div><div class="crumb"><button data-zout>← 星图</button><span>/</span><span>${BAND_NAME[c.band]}</span></div><h1>${esc(consName(c))}座</h1><p class="sub">${nodes.length} 颗星球 · 已点亮 ${litN} · 属于「${esc(t.line)}」</p></div>
     <div class="legend"><a class="wikilink" href="#metro" data-metroline="${c.theme}">在地铁上看这条线</a></div></div>
-    <div class="graph scroll" id="graph"><svg id="gsvg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(consName(c))}座的星球"></svg></div>`;
+    ${seriesNav(c)}<div class="graph scroll" id="graph"><svg id="gsvg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(consName(c))}座的星球"></svg></div>`;
   let h=`<path d="${Sk.blob(W/2,H/2,W/2-20,H/2-10,c.band+7)}" style="fill:var(${t.c})" opacity=".05"/>`;
-  rows.forEach((r,ri)=>{ const y=70+ri*RH; if(r.name) h+=`<text class="unit-lbl" x="28" y="${y+6}">${esc(r.name.split(" · ").slice(0,2).join(" · "))}</text>`; });
+  for(const course of courseHeadings){
+    h+=`<text class="unit-lbl" style="font-weight:700" x="12" y="${course.y}" data-course-heading="${esc(course.id)}">${esc(course.title)}</text>`;
+  }
+  for(const {heading,y} of rows){
+    if(!heading.length) continue;
+    const first=y+6-(heading.length-1)*11;
+    h+=`<text class="unit-lbl" x="12" y="${first}">${heading.map((line,i)=>`<tspan x="12" dy="${i?22:0}">${esc(line)}</tspan>`).join("")}</text>`;
+  }
   // edges inside the constellation
-  let ei=0; c.nodes.forEach(n=>n.prereq.forEach(p=>{ if(!pos[p]) return; const [ax,ay]=pos[p], [bx,by]=pos[n.id]; const lit=mastery(p)>=.8;
+  let ei=0; nodes.forEach(n=>n.prereq.forEach(p=>{ if(!pos[p]) return; const [ax,ay]=pos[p], [bx,by]=pos[n.id]; const lit=mastery(p)>=.8;
     if(ay===by){ h+=`<path class="${lit?"k1":"kq"}" ${lit?"":'stroke-dasharray="4 5"'} d="${Sk.line(ax+20,ay,bx-22,by,700+ei)+Sk.line(bx-22,by,bx-29,by-5,720+ei,.3)+Sk.line(bx-22,by,bx-29,by+5,740+ei,.3)}"/>`; }
     else { const span=Math.round(Math.abs(by-ay)/RH), bulge=Math.min(62,22+span*12); h+=`<path class="${lit?"k1":"kq"}" ${lit?"":'stroke-dasharray="4 5"'} opacity=".7" d="${Sk.curve([[ax+8,ay+44],[Math.max(ax,bx)+bulge,(ay+by)/2],[bx+10,by-20]],760+ei,.6)}"/>`; }
     ei++; }));
-  c.nodes.forEach(n=>{ const [x,y]=pos[n.id], st=nodeState(n), m=mastery(n.id), r=n.acts.length?14:12, fill=n.galaxy==="math"?"var(--c-math-2)":"var(--c-sci-2)";
+  nodes.forEach(n=>{ const [x,y]=pos[n.id], st=nodeState(n), m=mastery(n.id), r=n.acts.length?14:12, fill=n.galaxy==="math"?"var(--c-math-2)":"var(--c-sci-2)";
     let body="";
     if(st==="lit") body=`<path d="${Sk.blob(2,2,r,r,n.seed)}" style="fill:${fill}"/><path class="k" d="${Sk.ellipse(0,0,r,r,n.seed+1)}"/><path class="k1" d="${Sk.line(-4,0,-1,4,n.seed+2)+Sk.line(-1,4,5,-4,n.seed+3)}"/>`;
     else if(st==="landed") body=`<path class="k" d="${Sk.ellipse(0,0,r,r,n.seed+1)}"/><path d="M0 ${-r-5}A${r+5} ${r+5} 0 ${m>.5?1:0} 1 ${((r+5)*Math.sin(m*2*Math.PI)).toFixed(1)} ${(-(r+5)*Math.cos(m*2*Math.PI)).toFixed(1)}" fill="none" style="stroke:${fill}" stroke-width="4" stroke-linecap="round"/>`;
     else body=`<path class="kq" d="${Sk.ellipse(0,0,r,r,n.seed+1)}" ${st==="ahead"?'stroke-dasharray="3 4"':""} style="stroke-width:1.5"/>`;
     const task=n.acts.length?`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(r*.7+2,-r*.7-2,r*.7+8,-r*.7-8,n.seed+5)+Sk.line(r*.7+4,-r*.7-9,r*.7+9,-r*.7-2,n.seed+6)}"/>`:"";
     const rep=repairsFor(n.id).length?`<circle cx="${-r*.75}" cy="${-r*.75}" r="4" fill="var(--bad)"/>`:"";
-    const ext=n.prereq.filter(p=>!pos[p]).length;
     h+=`<g class="node" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.title)}，${STATE_WORD[st]}" transform="translate(${x} ${y})"><circle class="hit" r="30"/>
       ${n.id===rec.id?`<circle class="ping" r="${r+6}"/>`:""}${n.id===selected?`<path class="sel-ring" d="${Sk.ellipse(0,0,r+9,r+9,n.seed+9,.8)}"/>`:""}${body}${task}${rep}
-      <text class="lbl" y="${r+22}" text-anchor="middle">${esc(n.short)}</text></g>`; });
+      <text class="lbl" y="${r+22}" text-anchor="middle">${labels[n.id].map((line,i)=>`<tspan x="0" dy="${i?18:0}">${esc(line)}</tspan>`).join("")}</text></g>`; });
   const svg=$("#gsvg"); svg.innerHTML=h;
   svg.querySelectorAll(".node").forEach(el=>{ el.onclick=()=>select(el.dataset.id,true); el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); select(el.dataset.id,true);} }; });
-  wrap.querySelector("[data-zout]").onclick=zoomOut;
-  const ml=wrap.querySelector("[data-metroline]"); if(ml) ml.onclick=e=>{ e.preventDefault(); metroMode="lines"; metroFocusLine=c.theme; location.hash="#metro"; };
+  bindConstellation(wrap,c);
 }
 
 /* ============================================================
@@ -915,7 +1286,12 @@ function metroLayout(){
   const by={}; THEME_ORDER.forEach(k=>{ by[k]={}; GRADES.forEach(g=>by[k][g]=[]); }); NODES.forEach(n=>by[n.theme][n.grade].push(n));
   const LBLW=150, colW={}, zoneX={}; let x=LBLW;
   GRADES.forEach(g=>{ const mx=Math.max(...THEME_ORDER.map(k=>by[k][g].length)); colW[g]=Math.max(g===CURRENT_GRADE?140:104, mx*60+36); zoneX[g]=x; x+=colW[g]; });
-  const W=x+60, rowY=k=>{ const i=THEME_ORDER.indexOf(k); return 156+i*80+(i>=4?34:0); }, H=rowY("earth")+90, pos={};
+  const rowCenters={}; let y=156;
+  THEME_ORDER.forEach((key,i)=>{
+    if(i) y+=80+(i===4?34:0)+(NODES.some(n=>n.theme===key&&CATALOG[n.id])?24:0);
+    rowCenters[key]=y;
+  });
+  const W=x+60, rowY=k=>rowCenters[k], H=rowY("earth")+90, pos={};
   THEME_ORDER.forEach(k=>GRADES.forEach(g=>{ const list=by[k][g]; list.forEach((n,i)=>pos[n.id]=[zoneX[g]+18+(i+.5)*(colW[g]-36)/list.length, rowY(k)]); }));
   return {by,colW,zoneX,W,H,rowY,pos,LBLW};
 }
@@ -951,10 +1327,15 @@ function renderMetro(){
   NODES.forEach(n=>{ const [x,y]=pos[n.id], st=nodeState(n), col=`var(${THEMES[n.theme].c})`, dim=metroFocusLine&&metroFocusLine!==n.theme;
     const ring = inter.has(n.id) ? `<rect x="-11" y="-9" width="22" height="18" rx="9" fill="var(--pane)" stroke="var(--ink)" stroke-width="2"/>` : "";
     const core = st==="lit" ? `<circle r="6.5" style="fill:${col}" stroke="var(--ink)" stroke-width="1.6"/>` : st==="landed" ? `<circle r="6.5" fill="var(--pane)" style="stroke:${col}" stroke-width="3"/><circle r="2.6" style="fill:${col}"/>` : `<circle r="6" fill="var(--pane)" style="stroke:${col}" stroke-width="2.4" ${st==="ahead"?'stroke-dasharray="2.5 2"':""}/>`;
+    let stationLabel=esc(n.short)+(n.id===rec.id?" · 你在这里":"");
+    if(CATALOG[n.id]){
+      const split=n.title.indexOf("：");
+      stationLabel=split<0?esc(n.title):`<tspan x="0" y="-14">${esc(n.title.slice(0,split+1))}</tspan><tspan x="0" y="0">${esc(n.title.slice(split+1))}</tspan>`;
+    }
     h+=`<g class="station" data-id="${n.id}" tabindex="0" role="button" aria-label="${esc(n.title)} · ${GRADE[n.grade]} · ${STATE_WORD[st]}" transform="translate(${x.toFixed(1)} ${y})" opacity="${dim?.3:1}"><circle class="hit" r="16"/>
       ${n.id===selected?`<circle r="13" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`:""}${ring}${core}
       ${n.acts.length?`<path class="k1" style="stroke:var(--accent)" d="${Sk.line(7,-8,12,-13,n.seed)+Sk.line(8,-14,12,-8,n.seed+1)}"/>`:""}${repairsFor(n.id).length?`<circle cx="-8" cy="-8" r="3.5" fill="var(--bad)"/>`:""}
-      <text class="slbl ${st==="lit"||st==="landed"||n.id===rec.id?"":"dim"}" transform="translate(6 -14) rotate(-36)" ${n.id===rec.id?'style="fill:var(--accent);font-weight:700"':""}>${esc(n.short)}${n.id===rec.id?" · 你在这里":""}</text></g>`; });
+      <text class="slbl ${st==="lit"||st==="landed"||n.id===rec.id?"":"dim"}" transform="translate(6 -14) rotate(-36)" ${n.id===rec.id?'style="fill:var(--accent);font-weight:700"':""}>${stationLabel}</text></g>`; });
   // you are here
   // sticky line labels
   let lbl=`<rect x="0" y="0" width="${LBLW}" height="${H}" style="fill:var(--pane)"/><path class="kq" d="M${LBLW} 0V${H}"/>`;
@@ -966,6 +1347,7 @@ function renderMetro(){
   // 默认停在「你在这里」；选中的站在视野外时（比如刚从初中的活动回来），停到那一站
   const home=Math.max(0,zoneX[CURRENT_GRADE]-LBLW-80), sp=selected&&pos[selected];
   sc.scrollLeft=sp&&(sp[0]<home+LBLW+20||sp[0]>home+sc.clientWidth-40)?Math.max(0,sp[0]-LBLW-(sc.clientWidth-LBLW)/2):home;
+  if(sp) sc.scrollTop=Math.max(0,sp[1]-sc.clientHeight/2);
   sc.querySelectorAll(".station").forEach(el=>{ el.onclick=()=>select(el.dataset.id,true); el.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); select(el.dataset.id,true);} }; });
   sc.querySelectorAll(".lline").forEach(el=>el.onclick=()=>{ metroFocusLine=metroFocusLine===el.dataset.line?null:el.dataset.line; const keep=sc.scrollLeft; renderMetro(); $("#mscroll").scrollLeft=keep; });
 }
@@ -981,12 +1363,31 @@ function renderCards(){
 /* ============================================================
    NOTE PANE — the planet as a note
    ============================================================ */
+function revealSelected(){
+  const box=current==="chart"?document.querySelector("#chartWrap .series-groups,#chartWrap .graph.scroll"):null;
+  const node=box&&selected&&box.querySelector(`.node[data-id="${CSS.escape(selected)}"]`);
+  if(!node) return;
+  const viewport=box.getBoundingClientRect(), rect=node.getBoundingClientRect();
+  if(rect.top<viewport.top+6) box.scrollTop+=rect.top-viewport.top-6;
+  else if(rect.bottom>viewport.bottom-6) box.scrollTop+=rect.bottom-viewport.bottom+6;
+}
 function select(id,user){
+  id=currentId(id);
   const n=NODE[id]; if(!n) return; selected=id;
-  if(user&&innerWidth>=760&&!noteOpen){ noteOpen=true; applyNote(); if(current==="chart"&&chartZoom===consId(n)) renderChart(); }
-  if(current==="chart"&&user&&chartZoom!==consId(n)){ chartZoom=consId(n); openCons[consId(n)]=true; renderChart(); }
+  const inSeries=chartSeries&&CATALOG[id]?.series===chartSeries;
+  const opened=user&&innerWidth>=760&&!noteOpen;
+  if(opened){noteOpen=true; applyNote();}
+  const inDiagram=current==="chart"&&!chartSeries&&seriesInDiagram(CONS[chartZoom]).some(s=>s.id===CATALOG[id]?.series);
+  if(user&&!inSeries&&!inDiagram&&(chartZoom!==consId(n)||chartSeries)){
+    chartSeries=null; chartZoom=consId(n); openCons[chartZoom]=true;
+    if(current==="chart") renderChart();
+  }else if(current==="chart"&&opened) renderChart();
+  if(current==="chart"&&inSeries){
+    document.querySelectorAll(".series-star").forEach(el=>el.setAttribute("aria-pressed",String(el.dataset.id===id)));
+  }
   else if(current==="chart"&&chartZoom){ const svg=$("#gsvg"); svg&&svg.querySelectorAll(".sel-ring").forEach(e=>e.remove()); const el=svg&&svg.querySelector(`.node[data-id="${CSS.escape(id)}"]`); if(el){ const r=n.acts.length?14:12; el.insertAdjacentHTML("afterbegin",`<path class="sel-ring" d="${Sk.ellipse(0,0,r+9,r+9,n.seed+9,.8)}"/>`); } }
   if(current==="metro"&&metroMode==="lines"){ const sc=$("#mscroll"); if(sc){ sc.querySelectorAll(".station .selr").forEach(e=>e.remove()); const el=sc.querySelector(`.station[data-id="${CSS.escape(id)}"]`); if(el) el.insertAdjacentHTML("afterbegin",`<circle class="selr" r="13" fill="none" stroke="var(--accent)" stroke-width="2.2"/>`); } }
+  if(user) revealSelected();
   renderExplorer();
   const html=noteHTML(n,user); const pane=$("#notepane"); pane.innerHTML=`<button class="close note-x" aria-label="收起">${X_ICON}</button>`+html; bindNote(pane); pane.querySelector(".note-x").onclick=closeNote; if(user) pane.scrollTop=0;
   if(user&&innerWidth<760){ closePops(); const sh=document.createElement("div"); sh.className="sheet-note"; sh.innerHTML=`<div class="grab"></div><div style="display:flex;justify-content:flex-end;padding:0 10px"><button class="close" aria-label="关闭">${X_ICON}</button></div>`+html; document.body.appendChild(sh); sh.querySelector(".close").onclick=closePops; bindNote(sh); }
@@ -994,6 +1395,15 @@ function select(id,user){
 function noteHTML(n,animate){
   const st=nodeState(n), m=mastery(n.id), rec=recommend(), isRec=rec.id===n.id, t=THEMES[n.theme], c=CONS[consId(n)];
   const nextOnes=NODES.filter(x=>x.prereq.includes(n.id)), acts=n.acts.map(a=>ACTIVITIES[a]).filter(Boolean), lit=st==="lit";
+  const previous=n.aliases.flatMap(entry=>{
+    const events=S.events.filter(e=>e.node===entry.old);
+    if(!events.length) return [];
+    const scores=events.filter(e=>e.verb==="completed"&&Number.isFinite(e.result?.score)).map(e=>Math.round(e.result.score*100)+"%");
+    return [`<li>${esc(entry.title)} · 原点亮进度 ${Math.round(mastery(entry.old)*100)}%${scores.length?" · 原成绩："+scores.join("、"):""}</li>`];
+  });
+  const history=previous.length?`<details class="parent"><summary>旧星记录</summary><p>这些记录算作来过这颗星。</p><ul>${previous.join("")}</ul></details>`:"";
+  const overview=trial.overviews?.[n.id];
+  const children=(overview?.children||[]).filter(id=>cardIds.has(id)&&NODE[id]);
   const cardBg=n.galaxy==="math"?"var(--c-math-bg)":"var(--c-sci-bg)";
   return `<div class="note">
     <div class="crumbs"><span>${GALAXY[n.galaxy]}</span><span>${esc(consName(c))}座</span><span>${GRADE[n.grade]}</span></div>
@@ -1001,16 +1411,18 @@ function noteHTML(n,animate){
     <dl class="props">
       <dt>状态</dt><dd><span class="pill ${lit?"lit":""}">${STATE_WORD[st]}</span>${isRec?` <span class="pill acc">今日信号</span>`:""}</dd>
       <dt>点亮</dt><dd><span class="mono">${Math.round(m*100)}%</span><div class="meter"><i style="width:${m*100}%"></i></div></dd>
+      ${CATALOG[n.id]?`<dt>星座</dt><dd><a class="wikilink" href="#chart" data-in-series="${esc(n.id)}">${esc(CATALOG[n.id].series_title)}</a>${CATALOG[n.id].group_title&&SERIES.get(CATALOG[n.id].series)?.nodes.some(x=>CATALOG[x.id].group>1)?` · 第 ${CATALOG[n.id].group} 组 · ${esc(CATALOG[n.id].group_title)}`:""} · 第 ${CATALOG[n.id].star} 颗</dd>`:""}
       <dt>单元</dt><dd>${esc(n.unit)}</dd>
       <dt>线路</dt><dd><a class="wikilink" href="#metro" data-line="${n.theme}"><span style="display:inline-block;width:14px;height:5px;border-radius:9px;background:var(${t.c});vertical-align:middle;margin-right:4px"></span>${t.line}</a></dd>
       ${n.prereq.length?`<dt>先去</dt><dd class="links">${n.prereq.map(p=>`<a class="wikilink" href="#" data-goto="${p}">${esc(NODE[p].title)}</a>`).join("")}</dd>`:""}
     </dl>
-    ${n.dq?`<div class="signal-card" style="--card-bg:${cardBg}"><div><div class="eyebrow">${isRec?"今日信号":"来自这颗星球的信号"}</div><p class="q">${esc(n.dq)}</p></div>${icon(n.icon,n.galaxy,100,n.seed,animate?"drawin":"")}</div>`
+    ${children.length?`<div class="callout"><p>${esc(overview.text)}</p><div class="links">${children.map(id=>`<a class="wikilink" href="#chart" data-goto="${esc(id)}">${esc(NODE[id].title)}</a>`).join("")}</div></div>`:n.dq?`<div class="signal-card" style="--card-bg:${cardBg}"><div><div class="eyebrow">${isRec?"今日信号":"来自这颗星球的信号"}</div><p class="q">${esc(n.dq)}</p></div>${icon(n.icon,n.galaxy,100,n.seed,animate?"drawin":"")}</div>`
       :`<div class="callout"><span class="ct">这颗星球的信号还在路上</span><span class="muted" style="font-size:13px">它的讲解、实验和挑战还没造好。示例数据里只有少数星球是完整的。</span></div>`}
     <h2>任务</h2>
     <div class="tasklist">${acts.length?acts.map(a=>{ const done=PLAYED.has(a.id); return `<div class="taskrow">${a.content?icon(n.icon,n.galaxy,48,n.seed+a.id.length):icon(a.type==="experiment"?"pinhole":"cake",n.galaxy,48,a.id.length)}<div><b>${done?`<span class="tick" aria-label="玩过了">✓</span> `:""}${esc(a.title)}</b><small>${actKind(a,n)}${a.duration_min?` · 约 ${a.duration_min} 分钟`:""}</small></div><button class="btn ink" data-start="${a.id}">${done?"再玩":"开始"}</button></div>`; }).join("")
       :`<p class="muted" style="font-size:13px">还没有任务。</p>`}</div>
     <div class="minispec ${lit?"":"locked"}">${icon(n.icon,n.galaxy,40,n.seed)}<div><b style="font-size:13px;color:var(--ink)">图鉴 No.${String(n.no).padStart(3,"0")}</b><div class="muted" style="font-size:12px">${lit?"已收集，可以在地铁的「图鉴」里翻到它":"点亮之后，这张标本卡会收进图鉴"}</div></div></div>
+    ${history}
     ${repairsFor(n.id).length?`<div class="callout q"><span class="ct">维修舱里有 ${repairsFor(n.id).length} 道这颗星球的题</span><a class="wikilink" href="#repair">去修一修</a></div>`:""}
     ${n.lenses.length?`<h2>不同年龄看到的样子</h2><div class="lenses">${n.lenses.map(([b,a])=>`<div class="${b===ageBand()?"on":""}"><span class="b">${b}</span><span>${esc(a)}</span></div>`).join("")}</div>`:""}
     ${nextOnes.length?`<h2>反向链接</h2><p class="muted" style="font-size:13px">点亮这里之后可以去：</p><div class="links">${nextOnes.map(x=>`<a class="wikilink" href="#" data-goto="${x.id}">${esc(x.title)}</a>`).join("")}</div>`:""}
@@ -1019,6 +1431,13 @@ function noteHTML(n,animate){
   </div>`;
 }
 function bindNote(root){
+  root.querySelectorAll("[data-in-series]").forEach(link=>link.onclick=e=>{
+    e.preventDefault(); closePops();
+    const entry=CATALOG[link.dataset.inSeries], host=CONS[chartZoom];
+    const target=host?.theme===entry.chart_theme?host:CONS[entry.chart_theme+"|"+CURRENT_BAND]||Object.values(CONS).find(c=>c.theme===entry.chart_theme);
+    chartZoom=target.id; chartSeries=seriesInDiagram(target).some(s=>s.id===entry.series)?null:entry.series;
+    if(current==="chart"){renderChart();revealSelected();} else location.hash="#chart";
+  });
   root.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>{ closePops(); const A=ACTIVITIES[b.dataset.start]; if(A&&A.content) Player.open(A.id,selected); else openLab(b.dataset.start); });
   root.querySelectorAll("[data-goto]").forEach(a=>a.onclick=e=>{ e.preventDefault(); closePops(); if(current!=="chart"&&current!=="metro") location.hash="#chart"; setTimeout(()=>select(a.dataset.goto,true),0); });
   root.querySelectorAll("[data-line]").forEach(a=>a.onclick=e=>{ e.preventDefault(); closePops(); metroMode="lines"; metroFocusLine=a.dataset.line; if(current==="metro") renderMetro(); else location.hash="#metro"; });
@@ -1070,7 +1489,12 @@ function completeTask(t,via){ const k=todayStr(); S.done[k]=S.done[k]||[]; if(S.
   if(via==="manual") toast(`「${t}」完成，能量 +1`,{label:"撤销",fn:()=>{ S.done[k]=S.done[k].filter(x=>x!==t); S.energy--; S.rewardPoints--; logEvent({verb:"task_undone",result:{task:t}}); save(); renderStatus(); }});
   else toast(`「${t}」自动打勾，能量 +1`); }
 function autoTask(g){ const plan=S.plans[todayStr()]; if(!plan) return; const t=g==="math"?"数学":"科学"; if([...plan.main,plan.free].includes(t)) completeTask(t,"auto"); }
-window.addEventListener("resize",()=>{ if(current==="chart"&&!chartZoom) renderChart(); });
+let chartWidth=0;
+new ResizeObserver(()=>{
+  const width=$("#chartWrap").clientWidth;
+  if(!width||current!=="chart"||width===chartWidth) return;
+  chartWidth=width; renderChart(); revealSelected();
+}).observe($("#chartWrap"));
 /* ============================================================
    QUICK SWITCHER + ASK
    ============================================================ */
@@ -1078,7 +1502,7 @@ document.addEventListener("keydown",e=>{ if((e.ctrlKey||e.metaKey)&&e.key.toLowe
 function openSwitcher(){
   const m=modal(`<div class="switcher"><input type="text" id="swq" placeholder="想去哪颗星球？" aria-label="搜索星球" autocomplete="off"><ul id="swl"></ul></div>`);
   const q=m.el.querySelector("#swq"), ul=m.el.querySelector("#swl"); let idx=0, list=[];
-  const draw=()=>{ const t=q.value.trim(); list=NODES.filter(n=>!t||n.title.includes(t)||GALAXY[n.galaxy].includes(t)); idx=Math.min(idx,Math.max(0,list.length-1));
+  const draw=()=>{ const t=q.value.trim(); list=NODES.filter(n=>!t||matchesNode(n,t)); idx=Math.min(idx,Math.max(0,list.length-1));
     ul.innerHTML=list.map((n,i)=>`<li><button class="${i===idx?"on":""}" data-i="${i}"><span class="dot ${nodeState(n)}"></span>${esc(n.title)}<span class="g">${GALAXY[n.galaxy]} · ${n.grade}</span></button></li>`).join("")||`<li class="muted" style="padding:8px">没有找到</li>`;
     ul.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>go(+b.dataset.i)); };
   const go=i=>{ const n=list[i]; if(!n) return; m.close(); if(current!=="chart") location.hash="#chart"; setTimeout(()=>select(n.id,true),0); };
@@ -1102,13 +1526,13 @@ const FONT_LINK=`<link rel="stylesheet" href="https://fonts.googleapis.com/css2?
 function srcdoc(mod){ return `<!doctype html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${FONT_LINK}<style>${MOD_BASE_CSS}${mod.css}</style></head><body>${mod.body}<script>${SDK}\nconst Sk=(${sketchLib.toString()})();\n(${mod.fn.toString()})();<\/script></body></html>`; }
 
 function openLab(actId){
-  const A=ACTIVITIES[actId], node=NODE[A.targets[0]], poe=A.pedagogy==="POE";
+  const A=ACTIVITIES[actId], original=A.targets[0], node=NODE[currentId(original)], poe=A.pedagogy==="POE";
   const run={phase:poe?"predict":"run",prediction:null,first:null,big:null,last:null,hints:0,wrong:[]};
   const lab=document.createElement("div"); lab.className="lab"; lab.setAttribute("role","dialog"); lab.setAttribute("aria-label",A.title);
   lab.innerHTML=`<div class="labhead">${icon(node.icon,node.galaxy,40,node.seed)}<div class="t"><small>${esc(node.title)} · ${A.type==="experiment"?"实验":"挑战"} · <span class="mono">${A.contract}</span></small><h2>${esc(A.title)}</h2></div><button class="close" aria-label="关闭">${X_ICON}</button></div>
     <div class="labbody ${poe?"poe":""}">${poe?`<div class="poe-col" id="poe"></div>`:""}<div><div class="frame"><iframe title="${esc(A.title)}" sandbox="allow-scripts"></iframe></div><div id="after"></div></div></div>`;
   document.body.appendChild(lab);
-  const frame=lab.querySelector("iframe"), send=(type,payload)=>frame.contentWindow&&frame.contentWindow.postMessage({contract:"activity/1.1",type,payload},"*"), base={node:node.id,activity:A.id};
+  const frame=lab.querySelector("iframe"), send=(type,payload)=>frame.contentWindow&&frame.contentWindow.postMessage({contract:"activity/1.1",type,payload},"*"), base={node:original,activity:A.id};
   const readyTimer=setTimeout(()=>logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"模块 3 秒内没有发出 ready"}},base)),3000);
   const close=()=>{ window.removeEventListener("message",onMsg); clearTimeout(readyTimer); lab.remove(); rerender(); select(node.id,false); };
   lab.querySelector(".close").onclick=close;
@@ -1116,14 +1540,14 @@ function openLab(actId){
     if(!m||m.contract!==A.contract){ logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"契约版本不符"}},base)); return; }
     const p=m.payload||{};
     switch(m.type){
-      case "ready": clearTimeout(readyTimer); send("init",{age_band:ageBand(),lang:"zh",phase:run.phase,palette:palette(),mastery:mastery(node.id)}); logEvent(Object.assign({verb:"started"},base)); break;
+      case "ready": clearTimeout(readyTimer); send("init",{age_band:ageBand(),lang:"zh",phase:run.phase,palette:palette(),mastery:mastery(original)}); logEvent(Object.assign({verb:"started"},base)); break;
       case "event": if(!A.emits.includes(p.verb)){ logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"未在 manifest.emits 声明",verb:p.verb}},base)); break; }
         if(p.verb==="started") break; logEvent(Object.assign({verb:p.verb,result:p.result},base));
         if(p.verb==="answered"&&p.result&&p.result.correct===false) run.wrong.push(p.result);
         if(p.verb==="observed"&&poe){ run.phase="explain"; drawPOE(); } break;
       case "state": if(!run.first) run.first=p; run.last=p; if(p.hole==="大") run.big=p; break;
       case "request_hint": run.hints++; send("hint",{level:run.hints}); logEvent(Object.assign({verb:"hint_used",result:{level:run.hints}},base)); break;
-      case "note_question": addQuestion(p.text,node.id); toast("问题已发到信号站"); break;
+      case "note_question": addQuestion(p.text,original); toast("问题已发到信号站"); break;
       case "complete": finish(p); break;
       case "resize": frame.style.height=Math.max(420,Math.min(2400,+p.h||0))+"px"; frame.style.minHeight="0"; break;
       default: logEvent(Object.assign({verb:"contract_warning",kind:"warn",result:{reason:"未知消息",type:m.type}},base)); } }
@@ -1151,7 +1575,7 @@ function openLab(actId){
     if(poe){ drawPOE(); return; }
     const wrong=run.wrong.filter(w=>w.misconception);
     lab.querySelector("#after").innerHTML=`<div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><div style="display:flex;gap:10px;align-items:center"><svg class="drawn-check" width="28" height="28" viewBox="0 0 28 28" style="color:var(--good)"><path d="M5 15l6 6L23 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><div><b style="color:var(--ink)">挑战完成 · ${r.score} / ${r.total}</b><p class="muted" style="font-size:13px">能量 +1${wrong.length?`；${wrong.length} 道题掉进了常见陷阱`:""}</p></div></div>${wrong.length?`<button class="btn ink" id="toRep">送进维修舱</button>`:""}</div></div>`;
-    const tr=lab.querySelector("#toRep"); if(tr) tr.onclick=()=>{ wrong.forEach(w=>createRepair({source:"quiz",stem:w.stem,childAnswer:w.response,rightAnswer:w.right,node:node.id,misconception:w.misconceptionText})); close(); location.hash="#repair"; toast(`${wrong.length} 道题已送进维修舱`); }; }
+    const tr=lab.querySelector("#toRep"); if(tr) tr.onclick=()=>{ wrong.forEach(w=>createRepair({source:"quiz",stem:w.stem,childAnswer:w.response,rightAnswer:w.right,node:original,misconception:w.misconceptionText})); close(); location.hash="#repair"; toast(`${wrong.length} 道题已送进维修舱`); }; }
 }
 
 /* ============================================================
@@ -1178,9 +1602,48 @@ const Player=(()=>{
     <circle cx="18.5" cy="25" r="2.2" fill="var(--ink)"/><circle cx="29.5" cy="25" r="2.2" fill="var(--ink)"/>
     <path class="k1" d="M18 32 C21 35 27 35 30 32"/></svg>`;
   const scrollEnd=n=>n.scrollIntoView({block:"end",behavior:reduced()?"auto":"smooth"});
+  const FIG_TYPES = ["pie", "rect", "rect-unequal", "number-line"];
+  /** 题目配图（内容规格 3.6），只画 FIG_TYPES 里的四种。 */
+  function figureSvg(fig, seed = 7) {
+    let inner = "", vb = "0 0 200 120", label = "配图";
+    if (fig.type === "pie") {
+      const n = fig.parts, k = fig.shaded, cx = 100, cy = 60, r = 48;
+      for (let i = 0; i < k; i++) inner += `<path class="fig-shade" d="${wedge(cx, cy, r, -Math.PI / 2 + i / n * 2 * Math.PI, -Math.PI / 2 + (i + 1) / n * 2 * Math.PI)}"/>`;
+      inner += `<path class="k" d="${Sk.ellipse(cx, cy, r, r, seed, .5)}"/>`;
+      for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i / n * 2 * Math.PI; inner += `<path class="k1" d="${Sk.line(cx, cy, cx + Math.cos(a) * r, cy + Math.sin(a) * r, seed + 3 + i, .4)}"/>`; }
+      label = `一个圆，分成 ${n} 份，涂色 ${k} 份`; // 只描述形状：「平均」「不一样大」可能就是题目要问的
+    } else if (fig.type === "rect" || fig.type === "rect-unequal") {
+      const widths = fig.type === "rect" ? Array(fig.parts).fill(1) : fig.widths;
+      const shaded = fig.type === "rect" ? [...Array(fig.shaded).keys()] : fig.shaded;
+      const vertical = fig.type === "rect" && fig.direction === "v";
+      const X = 20, Y = 20, W = 160, H = 80, sum = widths.reduce((a, b) => a + b, 0);
+      let at = 0;
+      widths.forEach((w, i) => {
+        const a = at / sum, b = (at + w) / sum; at += w;
+        const box = vertical ? [X, Y + a * H, W, (b - a) * H] : [X + a * W, Y, (b - a) * W, H];
+        if (shaded.includes(i)) inner += `<path class="fig-shade" d="${Sk.area([[box[0], box[1]], [box[0] + box[2], box[1]], [box[0] + box[2], box[1] + box[3]], [box[0], box[1] + box[3]]])}"/>`;
+        if (i > 0) inner += `<path class="k1" d="${vertical ? Sk.line(X, box[1], X + W, box[1], seed + 10 + i, .4) : Sk.line(box[0], Y, box[0], Y + H, seed + 10 + i, .4)}"/>`;
+      });
+      inner += `<path class="k" d="${Sk.rect(X, Y, W, H, seed, .5)}"/>`;
+      label = `一个长方形，分成 ${widths.length} 份，涂色 ${shaded.length} 份`;
+    } else if (fig.type === "number-line") {
+      const from = Number(fig.from), to = Number(fig.to), stp = Number(fig.step) || 1;
+      const x = (v) => 20 + (v - from) / ((to - from) || 1) * 160;
+      vb = "0 0 200 70";
+      inner += `<path class="k" d="${Sk.line(14, 34, 196, 34, seed, .4)}"/><path class="k1" d="${Sk.line(196, 34, 190, 30, seed + 1, .3) + Sk.line(196, 34, 190, 38, seed + 2, .3)}"/>`;   // 箭头在最后一个刻度（x=180）右边，不挨着
+      const n = Math.min(60, Math.round((to - from) / stp));
+      for (let i = 0; i <= n; i++) inner += `<path class="k1" d="${Sk.line(x(from + i * stp), 29, x(from + i * stp), 39, seed + 5 + i, .3)}"/>`;
+      for (const m of fig.marks || []) inner += `<text x="${x(Number(m.at)).toFixed(1)}" y="58" text-anchor="middle" class="fig-txt">${esc(m.label ?? m.at)}</text>`;
+      label = "一条数轴";
+    }
+    return `<svg class="fig" viewBox="${vb}" role="img" aria-label="${esc(label)}">${inner}</svg>`;
+  }
   function figureNode(fig){
     const box=el("div",{class:"pl-fig"});
-    if(fig&&fig.type==="svg"&&CONTENT.figures[fig.src]){
+    if(fig&&FIG_TYPES.includes(fig.type)){
+      box.classList.add("pl-qfig");
+      box.append(svgEl(figureSvg(fig,9)));
+    } else if(fig&&fig.type==="svg"&&CONTENT.figures[fig.src]){
       const s=svgEl(CONTENT.figures[fig.src]); s.removeAttribute("width"); s.removeAttribute("height");
       if(!reduced()){ s.querySelectorAll(".k,.k1").forEach(p=>{ if(!p.hasAttribute("stroke-dasharray")) p.setAttribute("pathLength","1"); else p.classList.remove("k","k1"); }); s.classList.add("pl-draw"); }
       box.append(s);
@@ -1237,11 +1700,11 @@ const Player=(()=>{
     function submit(value,btn){
       if(finished) return;
       const g=grade(ans,value);
-      if(!g){ say("nav","写一个数字试试，比如 12。"); return; }
+      if(!g){ say("nav",ans.type==="fraction"?"分子写在前面，分母写在后面，比如 1/4。":"写一个数字试试，比如 12。"); return; }
       rec.tries.push({ok:g.ok});
       say("me",g.shown+(ans.type!=="choice"&&ans.unit?" "+ans.unit:""));
-      if(g.ok){ if(btn) btn.classList.add("right"); say("good",g.feedback?"对了。"+g.feedback:"对了。"); finish(rec.tries.length===1&&used===0?"first":"later"); }
-      else { if(btn){ btn.classList.add("wrong"); btn.disabled=true; } say("bad",g.feedback||"这个想法很多人都有。再想想看，也可以要个提示。"); if(numInput) numInput.select(); }
+      if(g.ok){ if(btn) btn.classList.add("right"); say("good",g.feedback?"对了。"+g.feedback:(item.feedback?.correct||"对了。")); finish(rec.tries.length===1&&used===0?"first":"later"); }
+      else { if(btn){ btn.classList.add("wrong"); btn.disabled=true; } say("bad",g.feedback||item.feedback?.wrong||"这个想法很多人都有。再想想看，也可以要个提示。"); if(numInput) numInput.select(); }
     }
     if(ans.type==="choice"){
       const box=el("div",{class:"pl-choices"});
@@ -1264,7 +1727,8 @@ const Player=(()=>{
   let openNow=null;   // 同一时间只开一个
   function open(actId,nodeId){
     const A=ACTIVITIES[actId]; if(!A) return;
-    const node=NODE[nodeId]&&NODE[nodeId].acts.includes(actId)?NODE[nodeId]:NODE[(A.targets||[])[0]]; if(!node) return;
+    const requested=NODE[currentId(nodeId)];
+    const node=requested?.acts.includes(actId)?requested:NODE[currentId((A.targets||[])[0])]; if(!node) return;
     if(openNow) openNow.teardown();
     const list=node.acts.filter(id=>ACTIVITIES[id]&&ACTIVITIES[id].content), idx=list.indexOf(actId);
     const lab=document.createElement("div"); lab.className="lab pl"; lab.setAttribute("role","dialog"); lab.setAttribute("aria-label",A.title);
@@ -1309,7 +1773,8 @@ const Player=(()=>{
         // 其他消息（event、state）这一版不记
       };
       addEventListener("message",onMsg); offs.push(()=>removeEventListener("message",onMsg));
-      frame.srcdoc=A.html;
+      if(A.src) frame.src=A.src;
+      else frame.srcdoc=A.html;
       $main.replaceChildren(el("div",{class:"frame"},frame),end);
     }
 
@@ -1399,7 +1864,7 @@ const Player=(()=>{
 })();
 
 /* ---------- modules (each runs isolated in its own sandbox) ---------- */
-const MOD_BASE_CSS=`*{box-sizing:border-box}:root{--bg:#F5F4EE;--pane:#FBFAF6;--hover:#E7E4D9;--rule:#E0DCD0;--ink:#1F1E1C;--text:#3B3833;--muted:#7A766D;--accent:#C2603F;--accentSoft:#F3E0D6;--sci:#CCD6C0;--sci2:#93A982;--sciBg:#DCE3D2;--math:#ECCDB6;--math2:#D59E7A;--mathBg:#F2E1D3;--good:#3B7A56;--bad:#B4432E}
+const MOD_BASE_CSS=`*{box-sizing:border-box}html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}:root{--bg:#F5F4EE;--pane:#FBFAF6;--hover:#E7E4D9;--rule:#E0DCD0;--ink:#1F1E1C;--text:#3B3833;--muted:#7A766D;--accent:#C2603F;--accentSoft:#F3E0D6;--sci:#CCD6C0;--sci2:#93A982;--sciBg:#DCE3D2;--math:#ECCDB6;--math2:#D59E7A;--mathBg:#F2E1D3;--good:#3B7A56;--bad:#B4432E}
   body{margin:0;background:var(--pane);color:var(--text);font:15px/1.6 "Noto Sans SC","PingFang SC",system-ui,sans-serif}
   .k{fill:none;stroke:var(--ink);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}.k1{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round}.kq{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-linecap:round}
   .hand{font-family:"ZCOOL KuaiLe","Noto Sans SC",sans-serif}.mono{font-family:"JetBrains Mono",ui-monospace,monospace}
@@ -1529,9 +1994,9 @@ function renderRepair(){
   $("#newRep").onclick=intake;
   const tk=$("#tk");
   if(!S.repairs.length){ tk.innerHTML=`<div class="empty">维修舱是空的。可以拍照录入做错的题，挑战里掉进陷阱的题也能一键送进来。</div>`; return; }
-  tk.innerHTML=S.repairs.map(r=>{ const n=NODE[r.node]; const st=r.status==="archived"?`<span class="pill lit">已修好</span>`:r.nextReview>todayStr()?`<span class="pill">明天再练</span>`:`<span class="pill acc">待修</span>`;
+  tk.innerHTML=S.repairs.map(r=>{ const n=NODE[currentId(r.node)], old=retired.get(r.node); const st=r.status==="archived"?`<span class="pill lit">已修好</span>`:r.nextReview>todayStr()?`<span class="pill">明天再练</span>`:`<span class="pill acc">待修</span>`;
     return `<div class="ticket"><div class="th">${r.crop?`<img src="${r.crop}" alt="题目裁剪图">`:icon(n?n.icon:"cake",n?n.galaxy:"math",56,3)}</div><div style="display:grid;gap:6px;min-width:0">
-      <div class="meta">${st}<a class="wikilink" href="#chart" data-goto="${r.node}">${esc(n?n.title:"")}</a></div><div class="stem">${esc(r.stem)}</div>
+      <div class="meta">${st}${old?`<span>原星 · ${esc(old.title)}</span>`:""}${n?`<a class="wikilink" href="#chart" data-goto="${esc(n.id)}">${esc(n.title)}</a>`:""}</div><div class="stem">${esc(r.stem)}</div>
       <div class="sub">我的答案 ${esc(r.childAnswer||"—")} · 正确 ${esc(r.rightAnswer||"—")}${r.misconception?` · 陷阱：${esc(r.misconception)}`:""}</div>
       ${r.status!=="archived"?`<div><button class="btn" data-pr="${r.id}">举一反三</button></div>`:""}</div></div>`; }).join("");
   tk.querySelectorAll("[data-pr]").forEach(b=>b.onclick=()=>practice(b.dataset.pr));
@@ -1612,7 +2077,8 @@ function renderSignal(){
   $("#sf").onsubmit=e=>{ e.preventDefault(); const t=$("#si").value.trim(); if(!t) return; addQuestion(t,null); };
   const L=$("#ql"); if(!S.questions.length){ L.innerHTML=`<div class="empty">还没有发出过信号。</div>`; return; }
   L.innerHTML=S.questions.map(q=>`<div class="callout q qitem"><div class="ct" style="justify-content:space-between;width:100%"><span style="color:var(--ink);font-size:16px">${esc(q.text)}</span><span class="mono" style="font-size:11px;color:var(--muted);font-weight:400">${q.at.slice(5,10)}</span></div>
-    ${q.node?`<a class="wikilink" href="#chart" data-goto="${q.node}">来自「${esc(NODE[q.node].title)}」</a>`:""}
+    ${retired.has(q.node)?`<span class="muted">原星 · ${esc(retired.get(q.node).title)}</span>`:""}
+    ${NODE[currentId(q.node)]?`<a class="wikilink" href="#chart" data-goto="${esc(currentId(q.node))}">来自「${esc(NODE[currentId(q.node)].title)}」</a>`:""}
     ${q.answer?`<div style="background:var(--pane);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text)"><p>${esc(q.answer.answer)}</p><p style="margin-top:6px;color:var(--ink)">想一想：${esc(q.answer.followUp)}</p><p class="muted" style="font-size:11px;margin-top:6px">模拟回答 · tutor.ask</p></div>`:`<div><button class="btn" data-ans="${q.id}">请 AI 回个信号</button></div>`}</div>`).join("");
   L.querySelectorAll("[data-ans]").forEach(b=>b.onclick=async()=>{ const q=S.questions.find(x=>x.id===b.dataset.ans); b.disabled=true; b.textContent="等回信……"; try{ q.answer=await AI.call("tutor.ask",{text:q.text,age_band:ageBand()}); save(); }catch(err){ toast(err.message); } renderSignal(); });
   L.querySelectorAll("[data-goto]").forEach(a=>a.onclick=e=>{ e.preventDefault(); location.hash="#chart"; setTimeout(()=>select(a.dataset.goto,true),0); });

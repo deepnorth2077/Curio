@@ -1,0 +1,126 @@
+id: act.quiz.count-on-line-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: "数线跳跳大挑战"
+targets: [math.fraction.count-on-line]
+age_band: G3-4
+duration_min: 5
+review: approved  # Luka 2026-11-22 验收（#233）
+engine: 1
+sources:
+  - type: textbook
+    ref: "人教版小学数学三年级上册（2024 年新教材，2025 年秋起用）第六单元「分数的初步认识」"
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: "小火箭每步跳五分之一。从 0 出发，正好跳到 1，要跳几步？"
+      answer:
+        type: number
+        value: 5
+        tolerance: 0
+        unit: 步
+        common_wrong:
+          - value: 4
+            misconception: count-ticks-not-steps
+            feedback: "你数的是 0 和 1 中间的刻度线。可火箭跳的是一段一段，不是一条一条。"
+          - value: 6
+            misconception: count-ticks-not-steps
+            feedback: "你把 0 和 1 那两条线也数进去了。火箭跳的是线和线中间的段。"
+      feedback:
+        correct: "对。5 个五分之一，正好跳到 1。"
+        wrong: "别数线，数段。0 到 1 平均分成了几段，就要跳几步。"
+      hints:
+        - "想想第 1 站：每步四分之一的时候，跳了几步到 1？"
+        - "一步就是一段。0 到 1 平均分成了几段？"
+    - id: q2
+      stem: "小火箭每步跳六分之一。从 0 出发，跳了 4 步。它停在哪个数？"
+      answer:
+        type: fraction
+        numerator: 4
+        denominator: 6
+        accept_equivalent: true
+        common_wrong:
+          - numerator: 1
+            denominator: 6
+            feedback: "六分之一是跳 1 步停的地方。火箭跳了好几步，要把步数数进去。"
+          - numerator: 6
+            denominator: 4
+            feedback: "两个数都找对了，位置反了。上面写跳了几步，下面写每步是几分之一。"
+      feedback:
+        correct: "对。4 个六分之一合起来，就是六分之四。"
+        wrong: "跳了几步，上面就写几。每步是几分之一，下面就写几。"
+      hints:
+        - "想想第 1 站：每步四分之一，跳 3 步，停在哪个数？"
+        - "一步是六分之一。几个六分之一，就是六分之几？"
+    - id: q3
+      stem: "这条数线从 0 画到 2，线下标着甲、乙、丙三个位置。四分之三在哪个位置？"
+      figure:
+        type: number-line
+        from: 0
+        to: 2
+        step: 0.25
+        marks:
+          - {at: 0, label: "0"}
+          - {at: 1, label: "1"}
+          - {at: 2, label: "2"}
+          - {at: 0.75, label: "甲"}
+          - {at: 0.5, label: "乙"}
+          - {at: 1.5, label: "丙"}
+      answer:
+        type: choice
+        choices:
+          - id: a
+            text: "乙"
+            misconception: count-ticks-not-steps
+            feedback: "你从 0 那条线数起，数到了第 3 条线。要数的是段：从 0 跳 3 段。"
+          - id: b
+            text: "甲"
+            correct: true
+          - id: c
+            text: "丙"
+            misconception: whole-line-as-one
+            feedback: "丙是整条线的四分之三。可 1 在中间，四分之三要在 0 到 1 里找。"
+      feedback:
+        correct: "对。0 到 1 平均分成 4 段，从 0 跳 3 段，就停在甲。"
+        wrong: "先找到 1 在哪儿。四分之三在 0 和 1 中间。"
+      hints:
+        - "想想插旗：插旗之前，要先找到哪个数？"
+        - "从 0 出发，一段一段地跳。每段是四分之一。"
+    - id: q4
+      stem: "小火箭每步跳五分之一。它先跳 2 步，歇一下，再跳 1 步。现在停在哪个数？"
+      answer:
+        type: fraction
+        numerator: 3
+        denominator: 5
+        accept_equivalent: true
+        common_wrong:
+          - numerator: 3
+            denominator: 10
+            misconception: two-numbers
+            feedback: "上面的步数可以加。可每步还是五分之一那么大，下面不跟着加。"
+      feedback:
+        correct: "对。2 步再加 1 步是 3 步。3 个五分之一，就是五分之三。"
+        wrong: "歇一下，步子没变大。数数一共跳了几步，每步还是多大。"
+      hints:
+        - "想想火箭：歇一下再跳，步子会变大吗？"
+        - "一共跳了几步？每一步是几分之一？"
+    - id: q5
+      stem: "数线上有四分之一和四分之三两个点。它们正中间的那个点，是哪个数？"
+      answer:
+        type: fraction
+        numerator: 2
+        denominator: 4
+        accept_equivalent: true
+        common_wrong:
+          - numerator: 4
+            denominator: 4
+            feedback: "四分之一和四分之三合起来是 1。可要找的是两点中间，不是合起来。"
+      feedback:
+        correct: "对。从四分之一跳 1 步就到中间。它和二分之一是同一个点。"
+        wrong: "两个点中间隔着几段？走到一半就停下，看停在哪个数。"
+      hints:
+        - "想象把 0 到 1 平均分成 4 段，像插旗时刻度显形那样。四分之一和四分之三各在哪儿？"
+        - "从四分之一跳到四分之三，要跳几步？中间那步停在哪儿？"
+# END OF FILE

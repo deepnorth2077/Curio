@@ -1,0 +1,114 @@
+id: act.quiz.tenths-01
+schema: activity-def/1
+kind: quiz
+version: 1
+title: "数线放大镜大挑战"
+targets: [math.decimal.tenths]
+age_band: G3-4
+duration_min: 5
+review: approved  # Luka 2026-11-22 验收（#233）
+engine: 1
+sources:
+  - type: textbook
+    ref: "人教版小学数学三年级下册（旧版）第七单元「小数的初步认识」"
+  - type: textbook
+    ref: "人教版小学数学四年级下册（旧版）第四单元「小数的意义和性质」"
+body:
+  shuffle: false
+  items:
+    - id: q1
+      stem: "身高尺上写着 1.3 米。这是多少厘米？"
+      answer:
+        type: number
+        value: 130
+        tolerance: 0
+        unit: 厘米
+        common_wrong:
+          - value: 103
+            misconception: tail-as-small-unit
+            feedback: "你已经算进了 1 米。再看小数点右边第一格，它数的是哪种小棒？"
+          - value: 13
+            misconception: glue-digits
+            feedback: "你看到了 1 和 3。先看看点左边的 1，它是 1 米，换成厘米有多长？"
+      feedback:
+        correct: "1 米再加 3 分米，就是 100 厘米再加 30 厘米。一共 130 厘米。"
+        wrong: "想想尺子上的小棒。先看点左边有几根米棒，再看右边有几根分米棒。"
+      hints:
+        - "想想身高尺。从 1 米到 2 米平均分成 10 格，每格是什么单位？"
+        - "把 1 根米棒和 3 根分米棒分别换成厘米，再加起来。"
+    - id: q2
+      stem: "一根绳子长 1.03 米。换成厘米是多少？"
+      answer:
+        type: number
+        value: 103
+        tolerance: 0
+        unit: 厘米
+        common_wrong:
+          - value: 130
+            misconception: ignore-place
+            feedback: "你摆出了 1 米和 3 分米。再看看 0 占着哪一格，3 又在哪一格？"
+          - value: 13
+            misconception: glue-digits
+            feedback: "你找到了 1 和 3。想想点左边那根米棒，光它就有多少厘米？"
+      feedback:
+        correct: "十分位是 0，分米棒一根也不用摆。1 米加 3 厘米，就是 103 厘米。"
+        wrong: "想想位值格。看清 3 站在哪一格，再挑那一格的小棒。"
+      hints:
+        - "回想你摆过的两排小棒。3 往右挪了一格，小棒的长短会变吗？"
+        - "点右边第一格是 0，第二格是 3。这两格分别数哪种小棒？"
+    - id: q3
+      stem: "数线上标了 0.7。把这个数写成分数，怎么写？"
+      answer:
+        type: fraction
+        numerator: 7
+        denominator: 10
+        accept_equivalent: true
+        common_wrong:
+          - numerator: 7
+            denominator: 100
+            misconception: ignore-place
+            feedback: "你找对了 7 份。再看 7 站在哪一格，这一格数的是多大的一份？"
+      feedback:
+        correct: "0.7 在十分位上有 7。从 0 走 7 个十分之一，就是十分之七。"
+        wrong: "先看 7 在小数点右边第几格。想一想，0 到 1 要平均分成几份。"
+      hints:
+        - "想想数线刚出现时，0 到 1 被平均分成了几格？"
+        - "数线上的 7 数的是从 0 走了几格。分数上面和下面各数什么？"
+    - id: q4
+      stem: "把 1 平均分成 10 份。每份再平均分成 10 小份，一共有多少小份？"
+      answer:
+        type: number
+        value: 100
+        tolerance: 0
+        unit: 份
+        common_wrong:
+          - value: 20
+            misconception: ten-plus-ten
+            feedback: "两个 10 都有用。先圈一大格里的小份，再看看这样的圈有几个。"
+          - value: 10
+            misconception: still-tenths
+            feedback: "10 是第一次分出来的份数。现在每一份里还有小份，数数一共有多少。"
+      feedback:
+        correct: "每大格有 10 小份。10 大格里有 10 组这样的小份，一共 100 小份。"
+        wrong: "先数一大格里有几小份，再想有几大格要这样数。"
+      hints:
+        - "想想数线放大镜。一大格撑满画面后，里面有几小格？"
+        - "数完一大格，还要数其他大格。每大格的小份一样多。"
+    - id: q5
+      stem: "数线上有 0.3 和 0.4 两个点。它们正中间是哪个数？"
+      answer:
+        type: number
+        value: 0.35
+        tolerance: 0
+        common_wrong:
+          - value: 0.7
+            feedback: "你把两个数加起来了。把这个点放回数线，它落在 0.3 和 0.4 之间吗？"
+          - value: 3.5
+            feedback: "你找到了 3 和 4 的中点。再找找，0.3 和 0.4 在 0 到 1 的哪一段？"
+      feedback:
+        correct: "把这一大格分成 10 小格。从 0.3 走 5 小格到 0.35，两边一样远。"
+        wrong: "把两个点画在数线上。找一个点，看看它离两边是不是一样远。"
+      hints:
+        - "想想你钉小数的那一站。把 0.3 到 0.4 这一格放大，会看见什么？"
+        - "把这一大格平均分成 10 小格。从 0.3 走一半，想想该停在哪条刻度。"
+# END OF FILE

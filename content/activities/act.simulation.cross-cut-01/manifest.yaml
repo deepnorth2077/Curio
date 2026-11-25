@@ -1,0 +1,28 @@
+id: act.simulation.cross-cut-01
+contract: activity/1.1
+type: simulation
+version: 2
+title: 横切再竖切
+targets:
+  - math.fraction.multiply
+age_band: G5-6
+entry: index.html
+duration_min: 8
+pedagogy: explain
+capabilities:
+  - pointer
+  - keyboard
+misconceptions:
+  - add-instead-of-of
+  - add-denominators
+  - multiply-both
+  - multiply-bottom-only
+  - multiply-always-bigger
+emits:
+  - predicted
+  - observed
+author:
+  model: Codex
+  prompt_ref: docs/constellations/zero-to-one/stars/12-multiply.md
+review: approved  # Luka 2026-11-22 验收（#233）
+# END OF FILE

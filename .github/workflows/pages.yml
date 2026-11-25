@@ -1,12 +1,12 @@
 # 把 prototype/ 发布到 GitHub Pages，同时把中转服务打成 zip 放在 relay/ 下（部署手册第 7 步下载它）。
-# 竖切片 1 的演示页：app/、kernel/、engine/ 原样发布，release/ 是从 1b 夹具构建的发布包（切片规格第 8 节）。
+# 竖切片 1 的演示页：app/、kernel/、engine/ 原样发布，release/ 是从真实内容 content/ 构建的发布包（切片规格第 8 节）。
 # main 分支上这些目录一变化就自动发布，也可以在 Actions 页面手动运行。
 name: 发布原型到 GitHub Pages
 
 on:
   push:
     branches: [main]
-    paths: ["prototype/**", "relay/**", "app/**", "kernel/**", "engine/**", "tools/build_release.py", "tools/tests/fixtures/slice-1b/**", ".github/workflows/pages.yml"]
+    paths: ["prototype/**", "preview/build.py", "preview/template.html", "preview/courses.yaml", "relay/**", "app/**", "kernel/**", "engine/**", "tools/build_release.py", "content/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -19,18 +19,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: read
+    env:
+      PAGES_ARTIFACT: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+    outputs:
+      artifact_name: ${{ env.PAGES_ARTIFACT }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
       - name: 组装网站，打包中转服务
         run: |
-          mkdir -p _site/relay
-          cp -r prototype/. _site/
+          mkdir -p _site/relay _site/prototype
+          # 首页根地址打开正式外壳（#233，Luka 2026-11-22）；原型挪到 /prototype/ 继续可用，试玩页不动
+          cp -r prototype/. _site/prototype/
+          mv _site/prototype/preview _site/preview   # 试玩页地址照旧是 /preview/...（页面自带数据，不引用原型的文件）
+          printf '%s\n' '<!doctype html><html lang="zh"><head><meta charset="utf-8"><title>Curio</title>' \
+            '<meta name="viewport" content="width=device-width,initial-scale=1">' \
+            '<meta http-equiv="refresh" content="0; url=app/">' \
+            '<script>location.replace("app/" + location.hash)</script></head>' \
+            '<body><p><a href="app/">打开 Curio</a></p></body></html>' > _site/index.html
           # 在 Linux 上打包，scf_bootstrap 的可执行位（755）会保存在 zip 里；Windows 上重新压缩会丢掉它
           if [ -f relay/scf_bootstrap ]; then
             test -x relay/scf_bootstrap
@@ -41,11 +52,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: 构建首页的正式内容包和试玩包
+        run: |
+          pip install --quiet -r tools/requirements.txt
+          python preview/build.py --root . --bundle _site/prototype/content.js --trial-bundle _site/prototype/trial-content.js --copy-trial-modules
+          for course in energy-dock newton-track; do
+            python preview/build.py --root . --constellation "$course" --out "_site/preview/$course/index.html"
+          done
+          python preview/build.py --root . --constellation energy-dock --star physics.machine.lever --out _site/preview/lever/index.html
       - name: 竖切片 1 演示页（https://deepnorth2077.github.io/Curio/app/）
         run: |
           if [ -f app/index.html ]; then
-            pip install --quiet -r tools/requirements.txt
-            python tools/build_release.py --content tools/tests/fixtures/slice-1b/content --out _site/release
+            python tools/build_release.py --content content --out _site/release
             mkdir -p _site/app _site/kernel _site/engine
             cp -r kernel/js _site/kernel/js
             cp -r engine/js _site/engine/js
@@ -55,5 +73,16 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+          name: ${{ env.PAGES_ARTIFACT }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: ${{ needs.build.outputs.artifact_name }}

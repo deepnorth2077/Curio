@@ -1,16 +1,32 @@
 // Curio · 竖切片 1 的外壳（规格第 2 节、6.3、6.4）：读发布包 → 拿写锁 → 恢复 → 画星图 → 挑战（选择题、数字题、分数题，
-// 提示和看答案）→ 点亮（带动效，尊重 reduced-motion）。
+// 提示和看答案，都是先存好事件再显示）→ 点亮（带动效，尊重 reduced-motion）。
+// 竖切片 6b（docs/specs/backup.md）：存发布包、「上次恢复没做完」、家长页入口（家长页本身在 parent.js）。
 // 读写 IndexedDB、取当前时间、生成 ULID、洗牌都在这里做，结果作为参数交给内核和引擎。
 import { createLog } from "../kernel/js/log.js";
-import { projectMastery, groupAttempts } from "../kernel/js/mastery.js";
+import { projectMastery, groupAttempts, attemptRule } from "../kernel/js/mastery.js";
 import { createUlid } from "../kernel/js/ulid.js";
 import { startQuiz, step, DEFAULT_FEEDBACK } from "../engine/js/quiz.js";
 import { openStore } from "./store.js";
-import { openSession, localReceipt, assemble, guardDeps, LockLostError } from "./session.js";
+import { openSession, localReceipt, assemble, guardDeps, LockLostError, submitNavigatorChoice } from "./session.js";
+import { projectNavigator } from "../kernel/js/navigator.js";
+import { NAVIGATOR_FACES, checkNavigatorSvg, innerSvg, shownNavigator } from "./navigator.js";
 import { FrozenError } from "./commit.js";
+import { mountExploration, supportedExploration, stationCount } from "./exploration.js";
+import { Sk } from "./sketch.js";
+import { buildChart, nodeProgress, overviewSvg, placeChartLabels, animateOverview, nearestCons, constellationLayout, constellationSvg,
+  legendHtml, consName, consId, BAND_NAME } from "./starchart.js";
+import { metroLayout, metroSvg, metroScroll, LINE_NAME } from "./metro.js";
+import { aliasIndex, treeHtml, searchPoints, noteHtml } from "./explorer.js";
+import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT,
+  refreshProfile, currentGradeOf, needsProfileHint, PROFILE_TEXT } from "./parent.js";
 
-/** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。 */
-export const ENGINE_LEVEL = 1;
+/** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。
+ * 2：认得发布包里的 navigators（docs/specs/navigators.md 第 2 节）。 */
+export const ENGINE_LEVEL = 2;
+/** 每位领航员的六张脸（docs/specs/navigators.md 第 1 节，定义在 navigator.js）。读包时只核对清单里列全了，SVG 要显示时才取。 */
+export { NAVIGATOR_FACES };
+/** 这个外壳认得的活动契约版本（内容规格 3.8）。清单的 contracts 里有别的版本时，提示「需要更新」。 */
+export const KNOWN_CONTRACTS = ["activity/1.1"];
 /** 发布包的位置：部署时 release/ 和 app/ 同级（规格第 2、8 节）。 */
 const RELEASE_URL = new URL("../release/release.json", import.meta.url);
 
@@ -69,27 +85,44 @@ export async function verifyManifest(rel) {
   if (rel.engine_min > ENGINE_LEVEL) throw new ReleaseError("update", `需要 ${rel.engine_min} 级引擎`);
   let text;
   try {
-    text = canonicalJson({ engine_min: rel.engine_min, contracts: rel.contracts, nodes: rel.nodes, activities: rel.activities, assets: rel.assets });
+    const fields = { engine_min: rel.engine_min, contracts: rel.contracts, nodes: rel.nodes, activities: rel.activities, assets: rel.assets };
+    if ("catalog" in rel) fields.catalog = rel.catalog;
+    if ("navigators" in rel) fields.navigators = rel.navigators;
+    text = canonicalJson(fields);
   } catch (e) { throw new ReleaseError("broken", String(e && e.message)); }
   const h = await sha256Hex(new TextEncoder().encode(text));
   if (h !== rel.content_hash) throw new ReleaseError("broken", "content_hash 对不上");
   if (rel.release_id !== "rel_" + rel.content_hash) throw new ReleaseError("broken", "release_id 对不上");
+  if (!Array.isArray(rel.contracts) || !rel.contracts.every((c) => typeof c === "string")) throw new ReleaseError("broken", "contracts 不是字符串列表");
+  const unknown = rel.contracts.filter((c) => !KNOWN_CONTRACTS.includes(c));
+  if (unknown.length) throw new ReleaseError("update", `不认得的契约：${unknown.join("、")}`);
 }
 
 /**
- * 读一份 .yaml.json，核对字节数和 SHA-256 以后才解析。
+ * 读发布清单中列出的文件；HTML 和 JSON 都先逐字节核对，再解码。
  * @param {URL} base release.json 的地址
  * @param {{path: string, bytes: number, sha256: string}} j
  * @param {typeof fetch} fetchFn
  */
-async function fetchVerifiedJson(base, j, fetchFn) {
-  if (!j || typeof j.path !== "string") throw new ReleaseError("broken", "清单条目没有 json");
+async function fetchVerifiedBytes(base, j, fetchFn) {
+  if (!j || typeof j.path !== "string") throw new ReleaseError("broken", "清单里缺少文件路径");
   const res = await fetchFn(new URL(j.path, base), { cache: "no-cache" });
   if (!res.ok) throw new ReleaseError("broken", `读不到 ${j.path}`);
   const buf = new Uint8Array(await res.arrayBuffer());
   if (buf.byteLength !== j.bytes) throw new ReleaseError("broken", `${j.path} 的字节数对不上`);
   if ((await sha256Hex(buf)) !== j.sha256) throw new ReleaseError("broken", `${j.path} 的哈希对不上`);
-  try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(buf)); }
+  return buf;
+}
+
+async function fetchVerifiedText(base, j, fetchFn) {
+  const buf = await fetchVerifiedBytes(base, j, fetchFn);
+  try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); }
+  catch { throw new ReleaseError("broken", `${j.path} 不是 UTF-8 文件`); }
+}
+
+async function fetchVerifiedJson(base, j, fetchFn) {
+  const text = await fetchVerifiedText(base, j, fetchFn);
+  try { return JSON.parse(text); }
   catch { throw new ReleaseError("broken", `${j.path} 不是合法的 JSON`); }
 }
 
@@ -97,69 +130,129 @@ async function fetchVerifiedJson(base, j, fetchFn) {
  * 读发布包并逐个核对。任何一处对不上都抛 ReleaseError。
  * @param {URL} [url]
  * @param {typeof fetch} [fetchFn]
- * @returns {Promise<{release: any, nodes: any[], activities: Map<string, {entry: any, def: any|null}>}>}
+ * 领航员只取每位的 navigator.yaml.json（核对过才用）；SVG 不在这里取。没有 navigators 的旧发布包，navigators 是空的 Map。
+ * @returns {Promise<{release: any, raw: string, nodes: any[], catalog?: any, navigators: Map<string, {entry: any, def: any}>, activities: Map<string, {entry: any, def: any|null, module?: {manifest:any, loadHtml: () => Promise<string>}}>}>}
  */
 export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
-  let rel;
+  let rel, raw;
   try {
     const res = await fetchFn(url, { cache: "no-cache" });
     if (!res.ok) throw new Error(String(res.status));
-    rel = await res.json();
+    // 留着原文：拿着写锁时原样存进 releases（backup.md 5.1）
+    raw = new TextDecoder("utf-8", { fatal: true }).decode(await res.arrayBuffer());
+    rel = JSON.parse(raw);
   } catch { throw new ReleaseError("broken", "读不到 release.json"); }
   await verifyManifest(rel);
-  // TODO：以后按内容规格 3.8 检查 contracts（宿主不支持其中任何一个契约时不切换发布，提示「需要更新」）。1a 不承载自定义实验，先不处理。
-  const nodes = [];
-  for (const n of rel.nodes) {
+  // 同时去拿，不一个等一个：网络慢时几十个文件排队会让首屏等很久
+  const navLoading = loadNavigators(rel, url, fetchFn);
+  navLoading.catch(() => {}); // 先挂上，免得知识点先出错时它的错误没人接；下面照样 await
+  const nodes = await Promise.all(rel.nodes.map(async (n) => {
     const def = await fetchVerifiedJson(url, n.json, fetchFn);
     if (!def || def.id !== n.id) throw new ReleaseError("broken", `知识点 ${n.id} 对不上`);
-    nodes.push(def);
-  }
-  /** @type {Map<string, {entry: any, def: any|null}>} */
+    return def;
+  }));
+  /** @type {Map<string, {entry: any, def: any|null, module?: {manifest:any, loadHtml: () => Promise<string>}}>} */
   const activities = new Map();
-  for (const a of rel.activities) {
+  const loaded = await Promise.all(rel.activities.map(async (a) => {
+    if (supportedExploration(a.id)) {
+      const dir = "content/activities/" + a.id + "/";
+      const manifestFile = a.files.find((f) => f.path === dir + "manifest.yaml");
+      const htmlFile = a.files.find((f) => f.path === dir + "index.html");
+      if (a.kind !== "simulation" || !manifestFile || manifestFile.json?.path !== manifestFile.path + ".json" || !htmlFile) {
+        throw new ReleaseError("broken", `探索 ${a.id} 的文件不完整`);
+      }
+      const manifest = await fetchVerifiedJson(url, manifestFile.json, fetchFn);
+      const targets = nodes.filter((n) => n.activities?.includes(a.id));
+      if (manifest?.id !== a.id || manifest.version !== a.version || manifest.type !== a.kind ||
+          manifest.contract !== "activity/1.1" || manifest.entry !== "index.html" || manifest.pedagogy !== "explain" ||
+          !Array.isArray(manifest.emits) || !Array.isArray(manifest.targets) ||
+          !targets.length || !targets.every((n) => manifest.targets.includes(n.id))) {
+        throw new ReleaseError("broken", `探索 ${a.id} 和发布清单或所属星对不上`);
+      }
+      // 模块的 HTML 最大，等孩子真的打开这个探索时才去拿，照样核对字节数和哈希；拿到一次就记住
+      let html = null;
+      const loadHtml = () => (html ||= fetchVerifiedText(url, htmlFile, fetchFn).catch((e) => { html = null; throw e; }));
+      return [a.id, { entry: a, def: null, module: { manifest, loadHtml } }];
+    }
     let def = null;
-    for (const f of a.files) {
-      if (!f.json) continue;
-      const v = await fetchVerifiedJson(url, f.json, fetchFn);
-      if (/\/activity\.yaml$/.test(f.path)) def = v;
+    for (const v of await Promise.all(a.files.filter((f) => f.json).map(async (f) => [f, await fetchVerifiedJson(url, f.json, fetchFn)]))) {
+      if (/\/activity\.yaml$/.test(v[0].path)) def = v[1];
     }
     if (def && def.id !== a.id) throw new ReleaseError("broken", `活动 ${a.id} 对不上`);
-    activities.set(a.id, { entry: a, def });
+    return [a.id, { entry: a, def }];
+  }));
+  for (const [id, v] of loaded) activities.set(id, v);
+  const navigators = await navLoading;
+  const result = { release: rel, raw, nodes, activities, navigators };
+  if ("catalog" in rel) {
+    const entry = rel.catalog;
+    if (entry?.path !== "content/catalog/points.yaml" || entry.json?.path !== entry.path + ".json") {
+      throw new ReleaseError("broken", "知识点目录的文件不完整");
+    }
+    result.catalog = await fetchVerifiedJson(url, entry.json, fetchFn);
   }
-  return { release: rel, nodes, activities };
+  return result;
 }
 
-/* ============================================================
-   手绘线稿（从 prototype/index.html 的 sketchLib 拷来，确定性、带种子）
-   ============================================================ */
-function sketchLib() {
-  const R = (seed) => { let s = ((seed | 0) * 2654435761) >>> 0 || 7; return () => { s ^= s << 13; s >>>= 0; s ^= s >>> 17; s ^= s << 5; s >>>= 0; return s / 4294967296; }; };
-  const f = (n) => Math.round(n * 10) / 10;
-  function cr(p, closed) {
-    const n = p.length; let d = `M${f(p[0][0])} ${f(p[0][1])}`;
-    for (let i = 0; i < (closed ? n : n - 1); i++) {
-      const p1 = p[i], p2 = p[(i + 1) % n]; const p0 = (!closed && i === 0) ? p1 : p[(i - 1 + n) % n]; const p3 = (!closed && i + 2 >= n) ? p2 : p[(i + 2) % n];
-      d += `C${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(p1[1] + (p2[1] - p0[1]) / 6)} ${f(p2[0] - (p3[0] - p1[0]) / 6)} ${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])} ${f(p2[1])}`;
+/**
+ * 读清单里的领航员：每位核对文件齐全（yaml 带 .json、六张脸），并行取 navigator.yaml.json，核对哈希和 id。
+ * @param {any} rel 已核对过的清单
+ * @param {URL} url
+ * @param {typeof fetch} fetchFn
+ * @returns {Promise<Map<string, {entry: any, def: any}>>}
+ */
+async function loadNavigators(rel, url, fetchFn) {
+  /** @type {Map<string, {entry: any, def: any}>} */
+  const out = new Map();
+  if (!("navigators" in rel)) return out;
+  if (!Array.isArray(rel.navigators)) throw new ReleaseError("broken", "navigators 不是列表");
+  const loaded = await Promise.all(rel.navigators.map(async (n) => {
+    if (!n || typeof n.id !== "string" || !/^nav\.[a-z0-9-]+$/.test(n.id) || !Array.isArray(n.files)) {
+      throw new ReleaseError("broken", "领航员的清单条目不对");
     }
-    return d;
+    const dir = "content/navigators/" + n.id + "/";
+    const yamlFile = n.files.find((f) => f && f.path === dir + "navigator.yaml");
+    if (!yamlFile || yamlFile.json?.path !== yamlFile.path + ".json" ||
+        !NAVIGATOR_FACES.every((face) => n.files.some((f) => f && f.path === dir + face + ".svg"))) {
+      throw new ReleaseError("broken", `领航员 ${n.id} 的文件不完整`);
+    }
+    const def = await fetchVerifiedJson(url, yamlFile.json, fetchFn);
+    if (!def || def.schema !== "navigator/1" || def.id !== n.id || def.version !== n.version) {
+      throw new ReleaseError("broken", `领航员 ${n.id} 和发布清单对不上`);
+    }
+    return [n.id, { entry: n, def }];
+  }));
+  for (const [id, v] of loaded) {
+    if (out.has(id)) throw new ReleaseError("broken", `领航员 ${id} 重复`);
+    out.set(id, v);
   }
-  function line(x1, y1, x2, y2, seed, j) {
-    const r = R(seed); j = j == null ? 1 : j; const L = Math.hypot(x2 - x1, y2 - y1) || 1; const a = Math.min(1.8, .5 + L * .008) * j; const o = () => (r() - .5) * 2 * a;
-    const nx = -(y2 - y1) / L, ny = (x2 - x1) / L, bow = (r() - .5) * Math.min(L * .035, 6) * j;
-    return `M${f(x1 + o())} ${f(y1 + o())}Q${f((x1 + x2) / 2 + nx * bow)} ${f((y1 + y2) / 2 + ny * bow)} ${f(x2 + o())} ${f(y2 + o())}`;
-  }
-  function ellipse(cx, cy, rx, ry, seed, j) {
-    const r = R(seed); j = j == null ? 1 : j; const N = 12, a0 = r() * Math.PI * 2, turn = 1.05 + r() * .06, p = [];
-    for (let i = 0; i <= N; i++) { const t = a0 + i / N * Math.PI * 2 * turn, k = 1 + (r() - .5) * .07 * j; p.push([cx + Math.cos(t) * rx * k, cy + Math.sin(t) * ry * k]); }
-    return cr(p, false);
-  }
-  function blob(cx, cy, rx, ry, seed) { const r = R(seed), N = 9, p = []; for (let i = 0; i < N; i++) { const t = i / N * Math.PI * 2, k = 1 + (r() - .5) * .1; p.push([cx + Math.cos(t) * rx * k, cy + Math.sin(t) * ry * k]); } return cr(p, true) + "Z"; }
-  function rect(x, y, w, h, seed, j) { return line(x, y, x + w, y, seed, j) + line(x + w, y, x + w, y + h, seed + 1, j) + line(x + w, y + h, x, y + h, seed + 2, j) + line(x, y + h, x, y, seed + 3, j); }
-  function poly(pts, seed, closed, j) { let d = ""; const n = pts.length; for (let i = 0; i < (closed ? n : n - 1); i++) { const a = pts[i], b = pts[(i + 1) % n]; d += line(a[0], a[1], b[0], b[1], seed + i * 3, j); } return d; }
-  function area(pts) { return "M" + pts.map((q) => f(q[0]) + " " + f(q[1])).join("L") + "Z"; }
-  return { line, ellipse, blob, rect, poly, area, R };
+  return out;
 }
-const Sk = sketchLib();
+
+
+/**
+ * 取一位领航员的六张脸（规格第 2 节：要显示时才取）：每张核对字节数和 SHA-256，再按白名单查一遍（checkNavigatorSvg），
+ * 通过了才去掉最外层 <svg>（innerSvg）。任何一张不对都抛 ReleaseError，这位领航员就不显示。
+ * @param {any} entry 发布清单里这位的条目（loadRelease 结果 navigators 里的 entry）
+ * @param {URL} [url] release.json 的地址
+ * @param {typeof fetch} [fetchFn]
+ * @returns {Promise<Readonly<Record<string, string>>>} 脸 → 去掉最外层 <svg> 的内容
+ */
+export async function loadNavigatorFaces(entry, url = RELEASE_URL, fetchFn = fetch) {
+  const dir = "content/navigators/" + entry.id + "/";
+  /** @type {Record<string, string>} */
+  const faces = {};
+  await Promise.all(NAVIGATOR_FACES.map(async (face) => {
+    const f = entry.files.find((x) => x && x.path === dir + face + ".svg");
+    if (!f) throw new ReleaseError("broken", `领航员 ${entry.id} 缺少 ${face}.svg`);
+    const bytes = await fetchVerifiedBytes(url, f, fetchFn);
+    const errors = checkNavigatorSvg(bytes);
+    if (errors.length) throw new ReleaseError("broken", `${f.path}：${errors[0]}`);
+    try { faces[face] = innerSvg(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
+    catch { throw new ReleaseError("broken", `${f.path} 去不掉最外层 <svg>`); }
+  }));
+  return Object.freeze(Object.fromEntries(NAVIGATOR_FACES.map((k) => [k, faces[k]])));
+}
 
 /* ============================================================
    小工具
@@ -177,6 +270,7 @@ const ids = {
   device: () => "dev_" + ulid(Date.now(), rand10()),
   event: () => "evt_" + ulid(Date.now(), rand10()),
   attempt: () => "att_" + ulid(Date.now(), rand10()),
+  caregiver: () => "cg_" + ulid(Date.now(), rand10()),
 };
 const now = () => new Date().toISOString();
 /** 洗牌（活动的 shuffle 为真时）。 */
@@ -210,7 +304,7 @@ function starSvg(state, seed, size) {
       body += `<path class="k1 ray" d="${Sk.line(50 + Math.cos(a) * 44, 52 + Math.sin(a) * 44, 50 + Math.cos(a) * 49, 52 + Math.sin(a) * 49, seed + 20 + i, .4)}"/>`;
     }
   } else if (state === "explored") {
-    body += `<path class="star-half" d="${Sk.area(starPoints(50, 52, 38, 16).filter((p) => p[0] <= 50.5).concat([[50, 90], [50, 14]]))}" opacity=".7"/>`;
+    body += `<path class="star-half" d="${Sk.area([0, 9, 8, 7, 6, 5].map((i) => pts[i]))}" opacity=".7"/>`;
     body += `<path class="k" d="${Sk.poly(pts, seed, true, .8)}"/>`;
   } else {
     body += `<path class="fp" d="${Sk.area(pts)}"/>`;
@@ -250,7 +344,7 @@ function figureSvg(fig, seed = 7) {
     const from = Number(fig.from), to = Number(fig.to), stp = Number(fig.step) || 1;
     const x = (v) => 20 + (v - from) / ((to - from) || 1) * 160;
     vb = "0 0 200 70";
-    inner += `<path class="k" d="${Sk.line(14, 34, 188, 34, seed, .4)}"/><path class="k1" d="${Sk.line(188, 34, 181, 30, seed + 1, .3) + Sk.line(188, 34, 181, 38, seed + 2, .3)}"/>`;
+    inner += `<path class="k" d="${Sk.line(14, 34, 196, 34, seed, .4)}"/><path class="k1" d="${Sk.line(196, 34, 190, 30, seed + 1, .3) + Sk.line(196, 34, 190, 38, seed + 2, .3)}"/>`;   // 箭头在最后一个刻度（x=180）右边，不挨着
     const n = Math.min(60, Math.round((to - from) / stp));
     for (let i = 0; i <= n; i++) inner += `<path class="k1" d="${Sk.line(x(from + i * stp), 29, x(from + i * stp), 39, seed + 5 + i, .3)}"/>`;
     for (const m of fig.marks || []) inner += `<text x="${x(Number(m.at)).toFixed(1)}" y="58" text-anchor="middle" class="fig-txt">${esc(m.label ?? m.at)}</text>`;
@@ -264,9 +358,8 @@ function figureSvg(fig, seed = 7) {
 /* ============================================================
    外壳状态
    ============================================================ */
-const STATE_WORD = { untouched: "还没点亮", explored: "探索过", lit: "已点亮" };
 const app = {
-  /** @type {"loading"|"readonly"|"recovering"|"writable"|"stopped"} */ mode: "loading",
+  /** @type {"loading"|"readonly"|"recovering"|"writable"|"unfinished"|"stopped"} */ mode: "loading",
   /** @type {null|"busy"|"nolock"|"lost"|"nostore"} */ why: null,
   /** @type {Awaited<ReturnType<typeof loadRelease>>|null} */ pack: null,
   /** @type {Awaited<ReturnType<typeof openStore>>|null} */ store: null,
@@ -277,12 +370,63 @@ const app = {
   /** 「再试一次」正在进行 */ relocking: false,
   /** @type {any} */ mastery: null,
   /** 正在做的挑战 */ quiz: /** @type {null|{q: any, def: any, node: any, content: any, attempt_id: string, startedMs: number, cur: null|{id: number, raw: string, receipt: object}, busy: boolean, error: any, solved: string|null, wrongBy: Record<string, string[]>, litBefore: boolean}} */ (null),
-  view: /** @type {"chart"|"quiz"} */ ("chart"),
+  /** 星球笔记打开着的那颗星（#233）：星图、地铁、索引里同步高亮；null 是没打开 */ note: /** @type {string|null} */ (null),
+  /** 星图正在看的星座（详情视图），null 是总览 */ chartZoom: /** @type {string|null} */ (null),
+  /** 首页是星图还是知识地铁（#233）：URL 的 #metro 记住它；从星、站进去的活动退出来回到这里 */ home: /** @type {"chart"|"metro"} */ ("chart"),
+  /** 地铁上只看哪一条线（点左边的线名），null 是全部 */ metroLine: /** @type {string|null} */ (null),
+  exploration: /** @type {null|{host: ReturnType<typeof mountExploration>|null, leaving: Promise<boolean>|null, failed:boolean}} */ (null),
+  view: /** @type {"chart"|"quiz"|"exploration"|"parent"|"pick"} */ ("chart"),
+  /** 领航员（docs/specs/navigators.md 第 3～5 节）：生效的选择（投影 navigator/1，还没选是 null）和显示的那位（发布包里没有领航员时是 null） */
+  navChosen: /** @type {string|null} */ (null),
+  navShown: /** @type {string|null} */ (null),
+  /** 挑选页上点了谁（还没点「出发」）；pickStart：干净设备第一次点「开始」时，挑完要进的活动 */
+  pickSel: /** @type {string|null} */ (null),
+  pickStart: /** @type {null|{node: any, a: any}} */ (null),
   notice: /** @type {string|null} */ (null),
+  /** 打开时读到的：干净的设备（backup.md 6.1）、上次备份、最早一条记录的时间（家长入口的小圆点） */
+  clean: false,
+  /** @type {{at: string, file_name: string}|null} */ lastBackup: null,
+  /** @type {string|null} */ firstEventAt: null,
+  /** 舰长资料的投影 profile/1（docs/specs/profile.md 第 3、5 节）：启动时和每次摄入以后重算。还没有日志时是 null。 */
+  /** @type {ReturnType<typeof import("../kernel/js/profile.js").projectProfile>|null} */ profile: null,
+  /** 当前年级 1～12，或 null（没填、还没上小学、已经毕业）。第 2 步画星图时用。 @param {number} [nowMs] */
+  currentGrade: (nowMs = Date.now()) => currentGrade(nowMs),
 };
+
+/**
+ * 当前年级（docs/specs/profile.md 第 5 节）：app.profile 里没有资料，或者算出的年级不在 1～12 时是 null。
+ * @param {number} nowMs 时间戳（毫秒）
+ * @returns {number|null}
+ */
+export function currentGrade(nowMs) {
+  return currentGradeOf(app.profile ? app.profile.profile : null, nowMs);
+}
+
+/** 拿着写锁、可以写存储（「上次恢复没做完」时也拿着锁，只是不能开始挑战）。 */
+const holdsLock = () => (app.mode === "writable" || app.mode === "unfinished") && !app.lockLost;
+
+/** 给家长页的外壳接口。 */
+const parentEnv = () => ({
+  app, main: $("#main"), esc, now, holdsLock,
+  ids: guardDeps({ ids, now }, () => app.lockLost).ids,
+  newBatchId: () => "imp_" + ulid(Date.now(), rand10()),
+  reload: (toParent) => { if (toParent) location.hash = "#parent"; location.reload(); },
+});
+
+/** 按当前的 view 重画。 */
+function renderCurrent() {
+  if (app.view === "quiz" && app.quiz) renderQuiz();
+  else if (app.view === "pick") renderPick();
+  else if (app.view === "exploration" && app.exploration) return; // 保留已装入的实物和当前手势。
+  else if (app.view === "parent") { syncNav(); renderExplorer(); renderParent(parentEnv()); }
+  else renderChart();
+}
 
 function recompute() {
   app.mastery = app.log ? projectMastery(app.log.events()) : null;
+  if (app.log) refreshProfile(app); else app.profile = null;
+  app.navChosen = app.log ? projectNavigator(app.log.events()).navigator_id : null;
+  app.navShown = shownNavigator(app.navChosen, app.pack ? app.pack.navigators : new Map());
 }
 const nodeState = (id) => (app.mastery && app.mastery.nodes[id] ? app.mastery.nodes[id].state : "untouched");
 
@@ -297,6 +441,9 @@ function renderBanner() {
     else if (app.why === "nolock") html = `<p><b>这个浏览器不能记录。</b>这里只能看，换一个新一点的浏览器试试。</p>`;
     else if (app.why === "nostore") html = `<p><b>这个浏览器不能记录。</b>可能开着无痕模式，请家长看一看。</p>`;
     else if (app.why === "lost") html = `<p><b>请刷新页面。</b>刚才离开了一会儿，刷新以后接着玩，星星不会变。</p><button class="btn ink" data-act="reload" type="button">刷新</button>`;
+  } else if (app.mode === "unfinished") {
+    // backup.md 6.3：上次恢复没做完，不进「可以写」
+    html = `<p><b>${PTEXT.unfinished}。</b>请家长选一个：</p><span class="banner-btns"><button class="btn ink" data-act="reRestore" type="button">再恢复一次</button><button class="btn" data-act="abandon" type="button">不恢复了，就用现在这些</button></span><p id="bannerMsg" class="small" role="alert" hidden></p>`;
   }
   b.innerHTML = html;
   b.hidden = !html;
@@ -304,6 +451,14 @@ function renderBanner() {
   if (r) r.addEventListener("click", relock);
   const l = b.querySelector('[data-act="reload"]');
   if (l) l.addEventListener("click", () => location.reload());
+  const rr = b.querySelector('[data-act="reRestore"]');
+  if (rr) rr.addEventListener("click", () => {
+    resetParent({ restoreOpen: true });
+    app.view = "parent"; // 先设好：hashchange 看到已经在家长页，就不再把表单收起来
+    if (location.hash === "#parent") renderCurrent(); else location.hash = "#parent";
+  });
+  const ab = b.querySelector('[data-act="abandon"]');
+  if (ab) ab.addEventListener("click", () => abandonUnfinished(parentEnv(), (m) => { const e = document.getElementById("bannerMsg"); if (e) { e.textContent = m; e.hidden = false; } }));
 }
 
 /** 整页的提示（内容包坏了、需要更新、出错）。 */
@@ -314,47 +469,701 @@ function renderStop(title, text) {
 }
 
 /* ============================================================
-   星图
+   星图（#230）：画法在 starchart.js，这里只接数据和点选
    ============================================================ */
-function skySvg() {
-  const r = Sk.R(42);
-  let dots = "";
-  for (let i = 0; i < 46; i++) {
-    const x = r() * 1000, y = r() * 600, s = .8 + r() * 1.6;
-    dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(1)}" class="sky-dot"/>`;
-  }
-  let lines = "";
-  for (let i = 0; i < 5; i++) {
-    const y = 80 + i * 110 + r() * 20;
-    lines += `<path class="kq sky-line" d="${Sk.line(-20, y, 1020, y + (r() - .5) * 60, 300 + i, 1)}"/>`;
-  }
-  return `<svg class="sky" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${lines}${dots}</svg>`;
+/** 星图的数据：目录 + 已发布卡 + 掌握度投影 + 当前年级。 */
+function chartModel() {
+  const progress = app.log ? nodeProgress(app.log.events(), app.mastery, stationCount) : null;
+  return buildChart({ catalog: app.pack ? app.pack.catalog : null, nodes: app.pack ? app.pack.nodes : [], mastery: app.mastery, grade: app.currentGrade(Date.now()), progress });
 }
+let stopFloat = () => {};
+let chartWidth = 0;
 
 function renderChart() {
   app.view = "chart";
+  stopFloat();
+  syncNav();
   const main = $("#main");
-  if (app.mode === "readonly" && !app.hasIdentity) { main.innerHTML = ""; return; }
-  const nodes = app.pack ? app.pack.nodes : [];
-  const lit = nodes.filter((n) => nodeState(n.id) === "lit").length;
-  const stars = nodes.map((n, i) => {
-    const st = nodeState(n.id);
-    const going = app.quiz && app.quiz.node.id === n.id && pendingQuiz(app.quiz);
-    return `<li><button class="star" type="button" data-node="${esc(n.id)}" data-state="${st}" aria-label="${esc(n.title)}，${STATE_WORD[st]}${going ? "，正在挑战" : ""}">
-      ${starSvg(st, 11 + i * 7, 132)}
-      <span class="star-name">${esc(n.title)}</span>
-      <span class="pill ${st === "lit" ? "lit" : ""}">${going ? (app.quiz.q.phase === "done" ? "看结果" : "接着做") : STATE_WORD[st]}</span>
-    </button></li>`;
-  }).join("");
-  main.innerHTML = `<section class="chart" aria-labelledby="chartTitle">
-    ${skySvg()}
-    <div class="chart-head"><h1 id="chartTitle">星图</h1><p class="sub">点亮了 ${lit} 颗，一共 ${nodes.length} 颗</p></div>
-    <ul class="stars">${stars}</ul>
-    <p class="chart-tip muted">${app.mode === "writable" ? "点一颗星，开始挑战。" : app.mode === "recovering" ? "正在准备……" : ""}</p>
-    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
-  </section>`;
-  main.querySelectorAll("[data-node]").forEach((b) => b.addEventListener("click", () => openNode(/** @type {HTMLElement} */ (b).dataset.node || "")));
+  renderExplorer();
+  if (app.mode === "readonly" && !app.hasIdentity) { main.innerHTML = ""; renderNote(); return; }
+  // 已经有记录、还没选过领航员：打开就先挑（规格第 5 节）。导航照常在，家长入口不挡
+  if (needsPick()) { app.pickStart = null; renderPick(); return; }
+  const model = chartModel();
+  // 笔记先放好：宽屏上它占右边一栏，星图要按剩下的宽度排
+  renderNote(model);
+  if (app.home === "metro") { renderMetro(main, model); return; }
+  const c = app.chartZoom ? model.consById.get(app.chartZoom) : null;
+  if (c) renderConstellation(main, model, c);
+  else { app.chartZoom = null; renderOverview(main, model); }
 }
+
+/** URL 的 hash → 首页是哪一个（#metro 是地铁，其余是星图）。 @param {string} hash */
+export const homeOfHash = (hash) => (hash === "#metro" ? "metro" : "chart");
+/** 返回按钮上的字。 */
+const homeName = () => (app.home === "metro" ? "地铁" : "星图");
+/**
+ * 导航上标出当前页（星图、地铁，或家长页的锁）；家长入口的两个提醒挂在锁上：
+ * 30 天没备份是一个小圆点，「还没填舰长资料」在工具条上是锁旁的小字（手机上是小圆点），读屏读出原话（profile.md 第 4 节：和备份提醒放在同一处）。
+ */
+function syncNav() {
+  const cur = app.view === "parent" ? "parent" : app.home;
+  for (const a of document.querySelectorAll(".ribbon [data-view], .bottomnav [data-view]")) {
+    a.setAttribute("aria-current", /** @type {HTMLElement} */ (a).dataset.view === cur ? "page" : "false");
+  }
+  const show = !!(app.store && app.hasIdentity);
+  const old = show && needsDot({ clean: app.clean, lastBackup: app.lastBackup, firstEventAt: app.firstEventAt }, Date.now());
+  const noProfile = show && !!app.profile && needsProfileHint({ clean: showCleanHint(), profile: app.profile.profile });
+  const words = ["家长", ...(old ? ["很久没备份了"] : []), ...(noProfile ? [PROFILE_TEXT.missing] : [])].join("，");
+  for (const a of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('[data-view="parent"]'))) {
+    a.hidden = !show;
+    a.setAttribute("aria-label", words);
+    if (a.classList.contains("ibtn")) a.title = words;
+    const dot = /** @type {HTMLElement|null} */ (a.querySelector(".ndot"));
+    const hint = /** @type {HTMLElement|null} */ (a.querySelector(".lock-hint"));
+    if (hint) { hint.textContent = PROFILE_TEXT.missing; hint.hidden = !noProfile; }
+    if (dot) dot.hidden = !(old || (noProfile && !hint));
+  }
+}
+
+/** 底部：干净设备的提示、小字。总览和详情视图共用（家长入口在导航的锁上）。 */
+function chartFoot() {
+  return `${showCleanHint() ? `<p class="clean-hint"><a href="#parent">${esc(PTEXT.cleanHint)}</a></p>` : ""}
+    <div class="chart-foot">
+      <p class="chart-note muted">记录存在这台设备上，记得在「家长」里备份</p>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>`;
+}
+
+function renderOverview(main, model) {
+  const tip = app.mode === "recovering" ? "正在准备……" : "从里到外是年级。点一个星座，飞进去看看。";
+  main.innerHTML = `<section class="chart" aria-labelledby="chartTitle">
+    <div class="vhead"><div class="vtitle">${avatarButton()}<div><h1 id="chartTitle">星图</h1><p class="sub">${tip}</p></div></div>
+      <div class="legend" aria-hidden="true">${legendHtml()}<span class="mono">${model.lit}/${model.points.length}</span></div></div>
+    <p class="sr">点亮了 ${model.lit} 颗，一共 ${model.points.length} 颗。</p>
+    <div class="graph shape-overview" id="graph">
+      <svg id="gsvg" viewBox="0 0 760 760" role="group" aria-label="星图：从里到外是年级圈，一圈分成八个主题"></svg>
+    </div>
+    ${model.currentBand == null ? `<p class="grade-hint">在「家长」里填年级，你那一圈会变大</p>` : ""}
+    ${chartFoot()}
+  </section>`;
+  const g = /** @type {HTMLElement} */ (main.querySelector("#graph"));
+  const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ (main.querySelector("#gsvg")));
+  chartWidth = g.clientWidth;
+  g.classList.toggle("narrow", g.clientWidth < 620);
+  const { svg: inner, geometry } = overviewSvg(model);
+  svg.innerHTML = inner;
+  placeChartLabels(svg, geometry);
+  if (document.fonts && document.fonts.status === "loading") document.fonts.ready.then(() => { if (svg.isConnected) placeChartLabels(svg, geometry); });
+  const cons = [...svg.querySelectorAll(".cons")], clinks = [...svg.querySelectorAll(".clink")];
+  const neighbors = (id) => { const s = new Set([id]); clinks.forEach((l) => { if (l.dataset.a === id) s.add(l.dataset.b); if (l.dataset.b === id) s.add(l.dataset.a); }); return s; };
+  const focus = (id) => {
+    g.classList.toggle("focusing", !!id);
+    if (!id) return;
+    const nb = neighbors(id);
+    cons.forEach((el) => el.classList.toggle("nb", nb.has(el.dataset.id)));
+    clinks.forEach((l) => l.classList.toggle("nb", l.dataset.a === id || l.dataset.b === id));
+  };
+  for (const el of cons) {
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); zoomTo(el.dataset.id, el); } });
+    el.addEventListener("pointerenter", () => focus(el.dataset.id));
+    el.addEventListener("pointerleave", () => focus(null));
+    el.addEventListener("focus", () => focus(el.dataset.id));
+    el.addEventListener("blur", () => focus(null));
+  }
+  // 点在哪个星座上：点击圈有重叠时取最近的
+  svg.addEventListener("click", (e) => {
+    const m = svg.getScreenCTM();
+    if (!m) return;
+    const pt = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+    const id = nearestCons(geometry, pt.x, pt.y);
+    if (id) zoomTo(id, svg.querySelector(`.cons[data-id="${CSS.escape(id)}"]`));
+  });
+  stopFloat = animateOverview(svg, geometry, reducedMotion());
+  bindAvatar(main);
+}
+
+function zoomTo(id, el) {
+  const svg = /** @type {SVGSVGElement|null} */ (/** @type {unknown} */ (document.getElementById("gsvg")));
+  const go = () => { app.chartZoom = id; renderChart(); $("#consTitle")?.focus({ preventScroll: true }); };
+  if (reducedMotion() || !svg || !el || !svg.animate) { go(); return; }
+  stopFloat();
+  const r = el.getBoundingClientRect(), s = svg.getBoundingClientRect();
+  svg.style.transformOrigin = `${r.left + r.width / 2 - s.left}px ${r.top + r.height / 2 - s.top}px`;
+  svg.animate([{ transform: "scale(1)", opacity: 1 }, { transform: "scale(2.4)", opacity: 0 }], { duration: 320, easing: "ease-in" }).onfinish = () => {
+    go();
+    const ns = document.getElementById("gsvg");
+    if (ns && ns.animate) ns.animate([{ transform: "scale(.92)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 260, easing: "ease-out" });
+  };
+}
+
+function zoomOut() {
+  const from = app.chartZoom;
+  const go = () => {
+    app.chartZoom = null;
+    renderChart();
+    const back = from && document.querySelector(`#gsvg .cons[data-id="${CSS.escape(from)}"]`);
+    if (back) /** @type {HTMLElement} */ (back).focus({ preventScroll: true });
+    const ns = document.getElementById("gsvg");
+    if (ns && ns.animate && !reducedMotion()) ns.animate([{ transform: "scale(1.25)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 300, easing: "ease-out" });
+  };
+  const svg = document.getElementById("gsvg");
+  if (svg && svg.animate && !reducedMotion()) svg.animate([{ opacity: 1, transform: "scale(1)" }, { opacity: 0, transform: "scale(.85)" }], { duration: 200 }).onfinish = go;
+  else go();
+}
+
+/* ============================================================
+   知识地铁（#233）：画法在 metro.js，数据和星图同一份（chartModel）
+   ============================================================ */
+function renderMetro(main, model) {
+  const tip = app.mode === "recovering" ? "正在准备……" : "每条线是一个大概念，从一年级开到高中。换乘站是两条线相遇的地方。";
+  main.innerHTML = `<section class="chart metro" aria-labelledby="metroTitle">
+    <div class="vhead"><div><h1 id="metroTitle" tabindex="-1">知识地铁</h1><p class="sub">${tip}</p></div>
+      <div class="legend" aria-hidden="true">${legendHtml()}<span class="mono">${model.lit}/${model.points.length}</span></div></div>
+    <p class="sr">点亮了 ${model.lit} 站，一共 ${model.points.length} 站。</p>
+    ${model.currentBand == null ? `<p class="grade-hint">在「家长」里填年级，地铁会标出你在哪一段</p>` : ""}
+    <div class="mscroll" id="mscroll"></div>
+    ${chartFoot()}
+  </section>`;
+  const L = metroLayout(model);
+  const sel = app.note && model.byId.has(app.note) ? app.note : null;
+  const { map, labels } = metroSvg(model, L, { focusLine: app.metroLine, selected: sel });
+  const sc = /** @type {HTMLElement} */ (main.querySelector("#mscroll"));
+  sc.innerHTML = `<svg width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" role="group" aria-label="知识地铁线路图">${map}<g id="mlabels">${labels}</g></svg>`;
+  const ml = sc.querySelector("#mlabels");
+  const pin = () => ml.setAttribute("transform", `translate(${sc.scrollLeft} 0)`);
+  sc.addEventListener("scroll", pin, { passive: true });
+  const { left, top } = metroScroll(L, sc.clientWidth, sc.clientHeight, sel);
+  sc.scrollLeft = left; sc.scrollTop = top;
+  pin();
+  for (const el of sc.querySelectorAll(".station")) {
+    const open = () => openPoint(model, /** @type {HTMLElement} */ (el).dataset.id || "", /** @type {HTMLElement} */ (el));
+    el.addEventListener("click", open);
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+    // 键盘移到被左边线名栏挡住的站时，把它滚出来
+    el.addEventListener("focus", () => {
+      const p = L.pos[/** @type {HTMLElement} */ (el).dataset.id || ""];
+      if (p && p[0] - 24 < sc.scrollLeft + 150) sc.scrollLeft = Math.max(0, p[0] - 150 - 60);
+    });
+  }
+  for (const el of sc.querySelectorAll(".lline")) {
+    const toggle = () => {
+      const k = /** @type {HTMLElement} */ (el).dataset.line || null;
+      app.metroLine = app.metroLine === k ? null : k;
+      const keepL = sc.scrollLeft, keepT = sc.scrollTop;
+      renderChart();
+      const ns = /** @type {HTMLElement|null} */ (document.getElementById("mscroll"));
+      if (ns) { ns.scrollLeft = keepL; ns.scrollTop = keepT; /** @type {HTMLElement|null} */ (ns.querySelector(`.lline[data-line="${k}"]`))?.focus({ preventScroll: true }); }
+    };
+    el.addEventListener("click", toggle);
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } });
+  }
+}
+
+let measureCtx = null;
+function renderConstellation(main, model, c) {
+  const litN = c.points.filter((p) => p.state === "lit").length, openN = c.points.filter((p) => p.open).length;
+  main.innerHTML = `<section class="chart detail" aria-labelledby="consTitle">
+    <div class="vhead"><div>
+      <div class="crumb"><button type="button" class="back" data-zout>${backIcon()} 星图</button><span>/</span><span>${BAND_NAME[c.band]}</span></div>
+      <div class="vtitle">${avatarButton()}<h1 id="consTitle" tabindex="-1">${esc(consName(c))}座</h1></div>
+      <p class="sub">${c.points.length} 颗星 · 开放 ${openN} 颗 · 点亮 ${litN} 颗 · 属于「${esc(LINE_NAME[c.theme])}」</p></div>
+      <div class="legend"><a class="wikilink" href="#metro" data-metroline="${c.theme}">在地铁上看这条线</a></div></div>
+    <div class="graph scroll" id="graph"><svg id="gsvg" role="group" aria-label="${esc(consName(c))}座的星"></svg></div>
+    ${chartFoot()}
+  </section>`;
+  const wrap = /** @type {HTMLElement} */ (main.querySelector("#graph"));
+  chartWidth = wrap.clientWidth;
+  if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+  const css = getComputedStyle(wrap);
+  const fonts = { hand: css.getPropertyValue("--f-hand") || "sans-serif", sans: css.getPropertyValue("--f-sans") || "sans-serif" };
+  const measure = (text, font) => { measureCtx.font = font; return measureCtx.measureText(text).width; };
+  const L = constellationLayout(c, wrap.clientWidth, measure, fonts);
+  const busy = new Set(app.quiz && pendingQuiz(app.quiz) ? [app.quiz.node.id] : []);
+  const svg = main.querySelector("#gsvg");
+  svg.setAttribute("viewBox", `0 0 ${L.W} ${L.H}`);
+  svg.setAttribute("width", String(L.W));
+  svg.innerHTML = constellationSvg(c, L, busy);
+  // 笔记打开着的那颗星：画一个选中圈（照原型 select）
+  const pick = app.note ? model.byId.get(app.note) : null;
+  const pickEl = pick && svg.querySelector(`.node[data-id="${CSS.escape(pick.id)}"]`);
+  if (pickEl && !busy.has(pick.id)) { const r = pick.acts ? 14 : 12; pickEl.insertAdjacentHTML("afterbegin", `<path class="sel-ring" d="${Sk.ellipse(0, 0, r + 9, r + 9, pick.seed + 9, .8)}"/>`); }
+  main.querySelector("[data-zout]").addEventListener("click", zoomOut);
+  bindAvatar(main);
+  main.querySelector("[data-metroline]").addEventListener("click", (e) => { e.preventDefault(); showLine(c.theme); });
+  for (const el of svg.querySelectorAll(".node")) {
+    const open = () => openPoint(model, /** @type {HTMLElement} */ (el).dataset.id || "", /** @type {HTMLElement} */ (el));
+    el.addEventListener("click", open);
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+  }
+}
+
+/** 切到地铁并只看这一条线（照原型 data-metroline、data-line）：笔记照旧开着。 @param {string} theme */
+function showLine(theme) {
+  app.metroLine = theme;
+  if (app.home === "metro") { renderChart(); document.getElementById("metroTitle")?.focus({ preventScroll: true }); return; }
+  location.hash = "#metro"; // hashchange 换首页、重画
+}
+
+/** 点了星图详情里的一颗星、地铁站：打开这颗星的笔记（照原型 select）。 */
+function openPoint(_model, id, el) { selectPoint(id, { from: el, reveal: false }); }
+
+/* ============================================================
+   星球笔记（#233，照原型 select、noteHTML、bindNote、closeNote）：只在星图和地铁页
+   ============================================================ */
+/** 笔记收起时焦点回到哪里（点开笔记的那颗星、那个站或索引里的叶子）。 */
+let noteFrom = /** @type {string|null} */ (null);
+const X_ICON = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+
+/** 一个元素 → 重画以后还能找回它的选择器。 @param {Element|null} el */
+function focusKey(el) {
+  if (!el || !(el instanceof Element)) return null;
+  const d = /** @type {HTMLElement} */ (el).dataset || {};
+  if (el.closest("#drawer")) return '.bottomnav [data-act="drawer"]';
+  if (d.node) return `#explorer [data-node="${CSS.escape(d.node)}"]`;
+  if (el.classList.contains("node") && d.id) return `#gsvg .node[data-id="${CSS.escape(d.id)}"]`;
+  if (el.classList.contains("station") && d.id) return `#mscroll .station[data-id="${CSS.escape(d.id)}"]`;
+  if (d.goto) return null;
+  return el.id ? "#" + CSS.escape(el.id) : null;
+}
+
+/**
+ * 选中一颗星，打开它的笔记。reveal：从索引、笔记里的链接来的，星图飞进这颗星的星座、地铁滚到这一站；
+ * 从星图、地铁上点的，画面不动，只换选中圈。
+ * @param {string} id @param {{from?: Element|null, reveal?: boolean}} [o]
+ */
+function selectPoint(id, { from = null, reveal = false } = {}) {
+  const model = chartModel();
+  const p = model.byId.get(id);
+  if (!p) return;
+  app.note = id;
+  tree.sel = id;
+  tree.open[consId(p)] = true;
+  const key = focusKey(from);
+  if (key) noteFrom = key;
+  if (reveal && app.home === "chart") app.chartZoom = consId(p);
+  redrawChart(!reveal);
+  /** @type {HTMLElement|null} */ (document.getElementById("noteTitle"))?.focus({ preventScroll: true });
+}
+
+/** 收起笔记（× 或 Esc），焦点回到点开它的地方。 */
+function closeNote() {
+  if (!app.note) return;
+  app.note = null;
+  tree.sel = null;
+  redrawChart(true);
+  const back = noteFrom && /** @type {HTMLElement|null} */ (document.querySelector(noteFrom));
+  noteFrom = null;
+  if (back) back.focus({ preventScroll: true });
+}
+
+/** 重画星图或地铁；keep 为真时留住滚动位置（笔记开合会改变宽度，详情视图要按新宽度重新排）。 @param {boolean} keep */
+function redrawChart(keep) {
+  const main = $("#main");
+  const sc = document.getElementById("mscroll"), gr = document.getElementById("graph");
+  const saved = { top: main.scrollTop, sl: sc ? sc.scrollLeft : 0, st: sc ? sc.scrollTop : 0, gt: gr ? gr.scrollTop : 0, metro: !!sc };
+  renderChart();
+  if (!keep) return;
+  main.scrollTop = saved.top;
+  const ns = document.getElementById("mscroll");
+  if (ns && saved.metro) { ns.scrollLeft = saved.sl; ns.scrollTop = saved.st; ns.dispatchEvent(new Event("scroll")); }
+}
+
+/** 这颗星能进的活动（动手探索、挑战）。 @param {any} node */
+function activityChoices(node) {
+  return nodeActivities(node).filter((a) => a.module || (a.entry.kind === "quiz" && a.def));
+}
+
+/** 现在不能开始活动时的一句话。 */
+function whyCantStart() {
+  return app.mode === "recovering" ? "正在准备，等一下再点。" : app.mode === "unfinished" ? "请家长先看一看上面的提示。" : app.why === "lost" ? "请刷新页面。" : "这里只能看，不能开始挑战。";
+}
+
+/** 画笔记（星图、地铁页）。 @param {ReturnType<typeof chartModel>} [model] */
+function renderNote(model) {
+  const pane = $("#notepane"), shell = $(".app");
+  const p = model && app.note ? model.byId.get(app.note) : null;
+  if (!p) { if (app.note && model) app.note = null; shell.classList.remove("note-open"); pane.innerHTML = ""; delete pane.dataset.for; return; }
+  const card = app.pack.nodes.find((n) => n.id === p.id) || null;
+  const choices = card ? activityChoices(card) : [];
+  const tasks = choices.map((a) => {
+    const def = a.module?.manifest || a.def;
+    const isQuiz = a.entry.kind === "quiz";
+    const resume = isQuiz && app.quiz?.def.id === def.id && pendingQuiz(app.quiz);
+    return { id: a.entry.id, title: def.title, meta: `${isQuiz ? "挑战" : "动手探索"} · ${isQuiz ? `${def.body.items.length} 道题` : `${stationCount(def.id)} 站`}`, go: resume ? "接着做" : "开始" };
+  });
+  const canStart = app.mode === "writable" && !!app.session;
+  const same = pane.dataset.for === p.id;
+  const top = same ? pane.scrollTop : 0;
+  pane.innerHTML = `<div class="grab" aria-hidden="true"></div><button class="close note-x" type="button" aria-label="收起笔记" title="收起">${X_ICON}</button>` +
+    noteHtml(p, { card, model, tasks, canStart, why: whyCantStart(), animate: !same });
+  pane.dataset.for = p.id;
+  pane.scrollTop = top;
+  shell.classList.add("note-open");
+  pane.querySelector(".note-x").addEventListener("click", closeNote);
+  for (const b of pane.querySelectorAll("[data-start]")) {
+    b.addEventListener("click", () => {
+      if (app.mode !== "writable" || !app.session || !card) return;
+      const a = choices.find((x) => x.entry.id === /** @type {HTMLElement} */ (b).dataset.start);
+      if (!a) return;
+      // 干净的设备第一次点「开始」：先挑领航员，挑完再进活动（规格第 5 节）
+      if (pickFirst() && !(a.entry.kind === "quiz" && app.quiz?.def.id === a.def?.id && pendingQuiz(app.quiz))) { app.pickStart = { node: card, a }; app.pickSel = null; renderPick(); return; }
+      startActivity(card, a);
+    });
+  }
+  for (const l of pane.querySelectorAll("[data-line]")) {
+    l.addEventListener("click", (e) => { e.preventDefault(); showLine(/** @type {HTMLElement} */ (l).dataset.line || ""); });
+  }
+  for (const l of pane.querySelectorAll("[data-goto]")) {
+    l.addEventListener("click", (e) => { e.preventDefault(); selectPoint(/** @type {HTMLElement} */ (l).dataset.goto || "", { reveal: true }); });
+  }
+}
+
+/** 从笔记的「任务」进一个活动：动手探索或挑战。 */
+function startActivity(card, a) {
+  if (a.module) { if (canSwitchActivity()) openExploration(card, a.module); }
+  else openQuiz(card, a.def);
+}
+
+/* ============================================================
+   领航员（docs/specs/navigators.md 第 4、5 节）：挑选页、星图标题旁的头像、领航员舱。
+   脸的 SVG 要显示时才取（loadNavigatorFaces：核对哈希、白名单），取到前先画一个空的框
+   ============================================================ */
+/** 能写、还没有生效的选择、发布包里有领航员。 */
+const canPick = () => app.mode === "writable" && !!app.session && !app.lockLost && !!app.pack && app.pack.navigators.size > 0 && app.navChosen === null;
+/** 打开时就出挑选页：设备已经有记录（干净的设备等第一次点「开始」，这样恢复不被挡）。 */
+const needsPick = () => canPick() && !showCleanHint();
+/** 点「开始」时先挑。 */
+const pickFirst = () => canPick();
+/** 发布包里的领航员，按 id 码点排序（和 shownNavigator 同一个顺序）。 */
+const navList = () => (app.pack ? [...app.pack.navigators.values()].sort((x, y) => cmpCodePoints(x.def.id, y.def.id)) : []);
+
+/** @type {Map<string, {value: Readonly<Record<string,string>>|null, failed: boolean, promise: Promise<Readonly<Record<string,string>>|null>}>} */
+const faceCache = new Map();
+/** 取一位的六张脸；核对不过就记下失败，不再取（这位不显示脸）。 @param {string} id */
+function wantFaces(id) {
+  const n = app.pack && app.pack.navigators.get(id);
+  if (!n) return Promise.resolve(null);
+  let c = faceCache.get(id);
+  if (!c) {
+    const entry = { value: null, failed: false, promise: /** @type {any} */ (null) };
+    entry.promise = loadNavigatorFaces(n.entry).then((v) => { entry.value = v; paintFaces(); return v; },
+      (e) => { console.warn("领航员的脸没有核对通过", id, e); entry.failed = true; return null; });
+    faceCache.set(id, entry);
+    c = entry;
+  }
+  return c.promise;
+}
+/** 一张脸：取到了就直接画；没取到先画空框，取到以后 paintFaces 补上。 */
+function faceSvg(id, face, cls) {
+  const v = faceCache.get(id)?.value;
+  return `<svg class="navsvg ${cls || ""}" viewBox="0 0 48 48" aria-hidden="true" data-nav="${esc(id)}" data-face="${face}"${v ? ` data-shown="${face}"` : ""}>${v ? v[face] : ""}</svg>`;
+}
+/** 页面上还空着、或表情换了的脸补画一遍。 @param {ParentNode} [root] */
+function paintFaces(root = document) {
+  for (const el of /** @type {NodeListOf<SVGElement>} */ (root.querySelectorAll("svg[data-nav]"))) {
+    const id = el.dataset.nav || "", face = el.dataset.face || "curious";
+    const c = faceCache.get(id);
+    if (c && c.value) { if (el.dataset.shown !== face) { el.innerHTML = c.value[face]; el.dataset.shown = face; } }
+    else if (!c) wantFaces(id);
+  }
+}
+const navTitle = (id) => app.pack?.navigators.get(id)?.def.title || "";
+
+/** 星图标题旁的头像；发布包里没有领航员时什么都不画。 */
+function avatarButton() {
+  if (!app.navShown) return "";
+  return `<button type="button" class="nav-ava" data-cabin aria-haspopup="dialog" aria-label="领航员${esc(navTitle(app.navShown))}，点一下打开领航员舱" title="领航员舱">${faceSvg(app.navShown, "curious")}</button>`;
+}
+function bindAvatar(root) {
+  root.querySelector("[data-cabin]")?.addEventListener("click", (e) => openCabin(/** @type {HTMLElement} */ (e.currentTarget)));
+  paintFaces(root);
+}
+
+/** 一位领航员的卡：脸、名字、见面的话。 */
+function navCard(n, face, extra = "") {
+  return `${faceSvg(n.def.id, face, "card-face")}<b class="nc-name">${esc(n.def.title)}</b><span class="nc-intro">${esc(n.def.intro)}</span>${extra}`;
+}
+
+/** 挑选页（规格第 5 节）：两位并排；点一位它鼓掌，出现「出发」；点「出发」写 navigator.chosen。 */
+function renderPick() {
+  if (!canPick()) { app.pickStart = null; app.pickSel = null; renderChart(); return; }
+  app.view = app.pickStart ? "pick" : "chart";
+  stopFloat();
+  syncNav();
+  renderExplorer();
+  renderNote();
+  const sel = app.pickSel;
+  const main = $("#main");
+  main.innerHTML = `<section class="pick" aria-labelledby="pickTitle">
+    <h1 id="pickTitle" tabindex="-1" class="sr">挑一位领航员</h1>
+    <div class="pick-row" role="group" aria-label="领航员">
+      ${navList().map((n) => `<button type="button" class="nav-card${sel === n.def.id ? " on" : ""}" data-pick="${esc(n.def.id)}" aria-pressed="${sel === n.def.id}">${navCard(n, sel === n.def.id ? "clap" : "curious")}</button>`).join("")}
+    </div>
+    <p class="pick-line">舰长，选一位陪你出发吧。以后随时可以换。</p>
+    <div class="btns center">
+      ${app.pickStart ? `<button type="button" class="btn big" data-act="pickBack">回到${homeName()}</button>` : ""}
+      <button type="button" class="btn ink big" data-act="pickGo"${sel ? "" : " hidden"}>出发</button>
+    </div>
+    <p class="pick-msg" role="alert" hidden></p>
+  </section>`;
+  for (const b of main.querySelectorAll("[data-pick]")) b.addEventListener("click", () => {
+    app.pickSel = /** @type {HTMLElement} */ (b).dataset.pick || null;
+    renderPick();
+    /** @type {HTMLElement|null} */ (main.querySelector(`[data-pick="${CSS.escape(app.pickSel || "")}"]`))?.focus({ preventScroll: true });
+  });
+  main.querySelector('[data-act="pickBack"]')?.addEventListener("click", () => { app.pickStart = null; app.pickSel = null; renderChart(); });
+  const go = /** @type {HTMLButtonElement} */ (main.querySelector('[data-act="pickGo"]'));
+  go.addEventListener("click", async () => {
+    const id = app.pickSel;
+    if (!id || go.disabled) return;
+    go.disabled = true;
+    if (!await choose(id, main.querySelector(".pick-msg"))) { go.disabled = false; return; }
+    const start = app.pickStart;
+    app.pickStart = null; app.pickSel = null;
+    app.view = "chart";
+    if (start) startActivity(start.node, start.a);
+    else renderChart();
+  });
+  paintFaces(main);
+  if (!sel) /** @type {HTMLElement|null} */ (main.querySelector("#pickTitle"))?.focus({ preventScroll: true });
+}
+
+/**
+ * 写一条 navigator.chosen（rev = 当前生效 rev + 1），存好了才换。失败时在 msgEl 里说一句。
+ * @param {string} id @param {Element|null} msgEl
+ * @returns {Promise<boolean>}
+ */
+async function choose(id, msgEl) {
+  const s = app.session;
+  if (!s || app.mode !== "writable") return false;
+  try {
+    await submitNavigatorChoice(s, guardDeps({ ids, now }, () => app.lockLost), id);
+  } catch (e) {
+    console.error(e);
+    if (msgEl) { msgEl.textContent = e instanceof FrozenError || e instanceof LockLostError ? "没存上。请刷新页面。" : "没存上。再点一次就好。"; /** @type {HTMLElement} */ (msgEl).hidden = false; }
+    if (e instanceof FrozenError && app.mode === "writable") { app.mode = "readonly"; app.why = "lost"; renderBanner(); }
+    return false;
+  }
+  recompute();
+  return true;
+}
+
+/** 领航员舱：点星图标题旁的头像弹出。两位并排，现在这位标「陪着你」，点另一位就换（干净设备、只读时只看不换）。 */
+let cabinFrom = /** @type {HTMLElement|null} */ (null);
+function openCabin(from) {
+  if (document.getElementById("cabin")) return;
+  cabinFrom = from;
+  const sc = document.createElement("div");
+  sc.className = "cabin-scrim";
+  sc.id = "cabinScrim";
+  sc.addEventListener("click", closeCabin);
+  const d = document.createElement("div");
+  d.className = "cabin";
+  d.id = "cabin";
+  d.tabIndex = -1;
+  d.setAttribute("role", "dialog");
+  d.setAttribute("aria-modal", "true");
+  d.setAttribute("aria-labelledby", "cabinTitle");
+  d.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeCabin(); return; }
+    if (e.key !== "Tab") return;
+    const f = /** @type {HTMLElement[]} */ ([...d.querySelectorAll("button:not([disabled])")]);
+    if (!f.length) return;
+    if (e.shiftKey && (document.activeElement === f[0] || document.activeElement === d)) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  });
+  document.body.append(sc, d);
+  /** @type {any} */ ($(".app")).inert = true;
+  renderCabin();
+  d.focus({ preventScroll: true });
+}
+function closeCabin() {
+  const d = document.getElementById("cabin");
+  if (!d) return;
+  d.remove();
+  document.getElementById("cabinScrim")?.remove();
+  /** @type {any} */ ($(".app")).inert = false;
+  const back = /** @type {HTMLElement|null} */ (document.querySelector("[data-cabin]")) || cabinFrom;
+  cabinFrom = null;
+  back?.focus({ preventScroll: true });
+}
+function renderCabin(focusId) {
+  const d = document.getElementById("cabin");
+  if (!d) return;
+  const cur = app.navShown;
+  const clean = showCleanHint();
+  const canChange = app.mode === "writable" && !!app.session && !app.lockLost && !clean;
+  const tag = '<span class="with-you">陪着你</span>';
+  d.innerHTML = `<div class="cabin-head"><h2 id="cabinTitle">领航员舱</h2><button class="close" type="button" data-act="cabinClose" aria-label="关上领航员舱" title="关上">${X_ICON}</button></div>
+    <div class="pick-row">
+      ${navList().map((n) => {
+        const on = n.def.id === cur;
+        return canChange && !on
+          ? `<button type="button" class="nav-card" data-switch="${esc(n.def.id)}" aria-label="换成${esc(n.def.title)}">${navCard(n, "curious")}</button>`
+          : `<div class="nav-card${on ? " on" : " still"}"${on ? ' aria-current="true"' : ""} tabindex="-1" data-card="${esc(n.def.id)}">${navCard(n, "curious", on ? tag : "")}</div>`;
+      }).join("")}
+    </div>
+    ${clean ? `<p class="cabin-note">先去玩一颗星，再回来换。</p>` : !canChange ? `<p class="cabin-note">这里只能看，现在换不了。</p>` : ""}
+    <p class="pick-msg" role="alert" hidden></p>`;
+  d.querySelector('[data-act="cabinClose"]')?.addEventListener("click", closeCabin);
+  for (const b of d.querySelectorAll("[data-switch]")) b.addEventListener("click", async () => {
+    const id = /** @type {HTMLElement} */ (b).dataset.switch || "";
+    /** @type {HTMLButtonElement} */ (b).disabled = true;
+    if (!await choose(id, d.querySelector(".pick-msg"))) { /** @type {HTMLButtonElement} */ (b).disabled = false; return; }
+    if (app.view === "chart") redrawChart(true); // 标题旁的头像跟着换
+    renderCabin(id);
+  });
+  paintFaces(d);
+  if (focusId) /** @type {HTMLElement|null} */ (d.querySelector(`[data-card="${CSS.escape(focusId)}"]`))?.focus({ preventScroll: true });
+}
+
+/* ============================================================
+   知识索引（#233，照原型 treeHTML、bindTree、renderExplorer、openTree）
+   ============================================================ */
+const EX_KEY = "curio.explorer";
+const tree = {
+  query: "",
+  /** 星座 id → 展开没有；没记的按「是不是舰长当前学段」 */ open: /** @type {Record<string, boolean>} */ ({}),
+  sel: /** @type {string|null} */ (null),
+  /** @type {Map<string, string[]>|null} */ aliases: null,
+  collapsed: false,
+};
+/** 收起状态记在 localStorage；读写失败就默认展开。 */
+function readCollapsed() { try { return localStorage.getItem(EX_KEY) === "closed"; } catch { return false; } }
+function writeCollapsed(v) { try { localStorage.setItem(EX_KEY, v ? "closed" : "open"); } catch { /* 记不住就算了 */ } }
+
+const isOpenIn = (model) => (c) => (c.id in tree.open ? tree.open[c.id] : c.band === model.currentBand);
+
+function renderExplorer() {
+  const roots = /** @type {HTMLElement[]} */ ([document.getElementById("explorer"), document.getElementById("drawer")].filter(Boolean));
+  const ready = !!(app.pack && app.pack.catalog) && !(app.mode === "readonly" && !app.hasIdentity) && app.mode !== "stopped";
+  const model = ready ? chartModel() : null;
+  if (model && !tree.aliases) tree.aliases = aliasIndex(app.pack.catalog, model.byId);
+  for (const root of roots) {
+    if (!model) { root.innerHTML = ""; continue; }
+    // 重画以后焦点、光标、滚动位置都留在原处
+    const ae = /** @type {HTMLElement|null} */ (document.activeElement);
+    let key = null, pos = null;
+    if (ae && root.contains(ae)) {
+      if (ae.matches("[data-treeq]")) { key = "[data-treeq]"; pos = /** @type {HTMLInputElement} */ (ae).selectionStart; }
+      else if (ae.dataset.cons) key = `[data-cons="${CSS.escape(ae.dataset.cons)}"]`;
+      else if (ae.dataset.node) key = `[data-node="${CSS.escape(ae.dataset.node)}"]`;
+    }
+    const top = root.scrollTop;
+    root.innerHTML = treeHtml(model, { query: tree.query, isOpen: isOpenIn(model), selected: tree.sel, aliases: /** @type {Map<string, string[]>} */ (tree.aliases) });
+    root.scrollTop = top;
+    bindTree(root, model);
+    const el = key && /** @type {HTMLElement|null} */ (root.querySelector(key));
+    if (el) { el.focus({ preventScroll: true }); if (pos != null) /** @type {HTMLInputElement} */ (el).setSelectionRange(pos, pos); }
+  }
+}
+
+let liveTimer = 0;
+function bindTree(root, model) {
+  for (const b of root.querySelectorAll("[data-cons]")) {
+    b.addEventListener("click", () => {
+      const id = /** @type {HTMLElement} */ (b).dataset.cons || "", c = model.consById.get(id);
+      tree.open[id] = !(c && isOpenIn(model)(c));
+      renderExplorer();
+    });
+  }
+  for (const b of root.querySelectorAll("[data-node]")) b.addEventListener("click", () => openLeaf(/** @type {HTMLElement} */ (b).dataset.node || "", /** @type {HTMLElement} */ (b)));
+  const qi = /** @type {HTMLInputElement|null} */ (root.querySelector("[data-treeq]"));
+  if (qi) qi.addEventListener("input", () => {
+    tree.query = qi.value;
+    renderExplorer();
+    clearTimeout(liveTimer);
+    liveTimer = setTimeout(() => {
+      const q = tree.query.trim();
+      $("#live").textContent = q ? `找到 ${searchPoints(chartModel(), /** @type {any} */ (tree.aliases), q).length} 颗星球` : "";
+    }, 400);
+  });
+}
+
+/** 点了索引里的一颗星：不在星图或地铁时先回去，再打开它的笔记。 */
+function openLeaf(id, el) {
+  const inDrawer = !!el.closest("#drawer");
+  if (inDrawer) closeDrawer(false);
+  if (app.view === "quiz" || app.view === "exploration" || app.mode === "stopped") return;
+  if (app.view === "parent") {
+    app.view = "chart"; // 先设好：hashchange 看到已经不在家长页，不再重画
+    location.hash = app.home === "metro" ? "#metro" : "#chart";
+  }
+  selectPoint(id, { from: el, reveal: true });
+}
+
+/** 桌面：收起、展开左边的知识索引。 @param {boolean} collapsed */
+function setCollapsed(collapsed) {
+  tree.collapsed = collapsed;
+  writeCollapsed(collapsed);
+  applyCollapsed();
+  if (app.view === "chart") redrawChart(true); // 星图可用的宽度变了
+}
+function applyCollapsed() {
+  $(".app").classList.toggle("ex-closed", tree.collapsed);
+  const b = document.querySelector('.ribbon [data-act="tree"]');
+  if (!b) return;
+  const words = tree.collapsed ? "展开知识索引" : "收起知识索引";
+  b.setAttribute("aria-expanded", String(!tree.collapsed));
+  b.setAttribute("aria-label", words);
+  b.setAttribute("title", words);
+}
+
+/** 手机：知识索引从左边滑出（照原型 openTree），带遮罩；Esc、点遮罩关上，焦点回到底部的「索引」。 */
+function openDrawer() {
+  if (document.getElementById("drawer")) return;
+  const btn = document.querySelector('.bottomnav [data-act="drawer"]');
+  const sc = document.createElement("div");
+  sc.className = "drawer-scrim";
+  sc.id = "drawerScrim";
+  sc.addEventListener("click", () => closeDrawer(true));
+  const d = document.createElement("aside");
+  d.className = "drawer";
+  d.id = "drawer";
+  d.tabIndex = -1;
+  d.setAttribute("role", "dialog");
+  d.setAttribute("aria-modal", "true");
+  d.setAttribute("aria-label", "知识索引");
+  d.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeDrawer(true); return; }
+    if (e.key !== "Tab") return;
+    const f = /** @type {HTMLElement[]} */ ([...d.querySelectorAll("button, input, a[href]")]);
+    if (!f.length) return;
+    if (e.shiftKey && (document.activeElement === f[0] || document.activeElement === d)) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  });
+  document.body.append(sc, d);
+  /** @type {any} */ ($(".app")).inert = true;
+  btn?.setAttribute("aria-expanded", "true");
+  renderExplorer();
+  d.focus({ preventScroll: true });
+}
+/** @param {boolean} restore 焦点回到「索引」按钮 */
+function closeDrawer(restore) {
+  const d = document.getElementById("drawer");
+  if (!d) return;
+  d.remove();
+  document.getElementById("drawerScrim")?.remove();
+  /** @type {any} */ ($(".app")).inert = false;
+  const btn = /** @type {HTMLElement|null} */ (document.querySelector('.bottomnav [data-act="drawer"]'));
+  btn?.setAttribute("aria-expanded", "false");
+  if (restore) btn?.focus({ preventScroll: true });
+}
+
+// 宽度变了（转屏、改窗口）：重画星图，排版和标签避让跟着变
+let resizeTimer = 0;
+if (typeof window !== "undefined") window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const g = document.getElementById("graph");
+    if (app.view === "chart" && app.home === "chart" && g && Math.abs(g.clientWidth - chartWidth) > 24) {
+      redrawChart(true);
+    }
+  }, 180);
+});
+
+/** 干净的设备（打开时读到的，而且之后没有新记录）：首页提示可以从备份恢复。 */
+const showCleanHint = () => app.clean && !!app.log && app.log.raw().length === 0 && app.log.quarantined().length === 0;
 
 let toastTimer = 0;
 function toast(text) {
@@ -367,32 +1176,170 @@ function toast(text) {
 }
 
 /* ============================================================
-   开始挑战（规格 6.3「开始一次挑战」）
+   开始挑战（规格 6.3「开始一次挑战」）：从笔记的「任务」进来
    ============================================================ */
-function openNode(nodeId) {
-  if (app.mode !== "writable" || !app.session) {
-    toast(app.mode === "recovering" ? "正在准备，等一下再点。" : app.why === "lost" ? "请刷新页面。" : "这里只能看，不能开始挑战。");
-    return;
+function nodeActivities(node) {
+  return (node.activities || []).map((id) => app.pack.activities.get(id)).filter(Boolean);
+}
+
+function openQuiz(node, def) {
+  if (app.mode !== "writable" || !app.session) return;
+  if (app.quiz?.def.id === def.id && pendingQuiz(app.quiz)) {
+    app.view = "quiz";
+    renderQuiz();
+  } else if (canSwitchActivity()) {
+    startChallenge(node, def);
   }
-  if (app.quiz && app.quiz.node.id === nodeId && pendingQuiz(app.quiz)) { app.view = "quiz"; renderQuiz(); return; }
-  const node = /** @type {any} */ (app.pack).nodes.find((n) => n.id === nodeId);
-  const acts = (node.activities || []).map((id) => /** @type {any} */ (app.pack).activities.get(id)).filter(Boolean);
-  const quizzes = acts.filter((a) => a.entry.kind === "quiz" && a.def);
-  if (!quizzes.length) { toast("这个还在做。"); return; }
-  startChallenge(node, quizzes[0].def);
+}
+
+// 旧挑战可能刚好退回星图、最后一笔还在写。它的重试必须继续使用同一条原始事件。
+function canSwitchActivity() {
+  if (!app.quiz?.q.pending) return true;
+  $("#live").textContent = "请先存好上次的挑战。";
+  if (app.quiz.q.view.failed) {
+    app.view = "quiz";
+    renderQuiz();
+  } else {
+    toast("正在保存上次的挑战，稍等一下再点。");
+  }
+  return false;
+}
+
+/**
+ * 合格尝试里已保存的站包括中途退出前完成的站。通关只认单独的结束事件。
+ * 按活动 id 重建，不看 activity_version（docs/specs/navigators.md 第 6 节、slice-5a）：模块改了字节加版本，舰长做过的站照样算；
+ * 站号超出当前模块站数的不算。要让旧进度失效的大改，出新的活动 id。
+ */
+export function explorationProgress(events, learnerId, activityId) {
+  const stations = new Set(), count = stationCount(activityId);
+  for (const attempt of groupAttempts(events).values()) {
+    const first = attempt[0];
+    const content = first.content;
+    if (first.learner_id !== learnerId || content?.activity_id !== activityId ||
+        content.activity_kind !== "simulation" || attemptRule(attempt)) continue;
+    if (attempt[attempt.length - 1].verb === "attempt.completed") {
+      // 较早的记录只有整次完成。各站当时必须依次走完，重进时应能任选一站。
+      return { doneStations: Array.from({ length: count }, (_, i) => i + 1), activityCompleted: true };
+    }
+    for (const e of attempt) {
+      const value = e.payload.value;
+      if (e.verb === "sim.observed" && e.payload.observable === "station.completed" &&
+          Number.isInteger(value) && value >= 1 && value <= count) stations.add(value);
+    }
+  }
+  return { doneStations: [...stations].sort((a,b) => a-b), activityCompleted: false };
+}
+
+function openExploration(node, module) {
+  if (app.exploration || app.mode !== "writable" || !app.session) return;
+  const { manifest } = module;
+  const session = app.session;
+  const history = explorationProgress(session.log.events(), session.identity.learner_id, manifest.id);
+  const run = { host: null, leaving: null, failed:false };
+  app.exploration = run;
+  app.view = "exploration";
+  $("#main").innerHTML = `<section class="exploration" aria-labelledby="exploreTitle">
+    <header class="quiz-head"><button type="button" class="back" data-act="leave" aria-label="退出探索，回到${homeName()}">${backIcon()} ${homeName()}</button>
+    <div><h1 id="exploreTitle" tabindex="-1">${esc(manifest.title)}</h1><p class="sub">${esc(node.title)}</p></div></header>
+    <div class="explore-status"><p role="status">正在打开……</p><button type="button" class="btn" data-act="refresh" hidden>刷新</button></div><div class="workbench"></div></section>`;
+  const back = $("#main [data-act=leave]");
+  const panel = $("#main .explore-status");
+  const status = panel.querySelector('[role="status"]');
+  const refresh = panel.querySelector('[data-act="refresh"]');
+  refresh.addEventListener("click", () => location.reload());
+  back.addEventListener("click", async () => {
+    if (await closeExploration(run) && app.view === "exploration") renderChart();
+  });
+  $("#exploreTitle").focus({ preventScroll: true });
+  // 选好的领航员的脸也在这时取（规格第 6 节）；取不到就不发，模块用自带的脸
+  const pilotId = app.navShown;
+  Promise.all([module.loadHtml(), pilotId ? wantFaces(pilotId) : null]).then(([html, faces]) => {
+    if (app.exploration !== run) return;
+    const navigator = pilotId && faces ? { id: pilotId, faces } : null;
+    startExploration(run, node, manifest, html, session, history, { status, refresh, panel, back }, navigator);
+  }, () => {
+    if (app.exploration !== run) return;
+    status.textContent = "打不开这个探索。请检查网络，再刷新一次。";
+    refresh.hidden = false;
+  });
+}
+
+function startExploration(run, node, manifest, html, session, history, { status, refresh, panel, back }, navigator = null) {
+  try {
+    run.host = mountExploration({
+      container: $("#main .workbench"), manifest, html, session, ids, now, navigator,
+      content: Object.freeze({ node_id: node.id, activity_id: manifest.id, activity_kind: "simulation",
+        activity_version: manifest.version, content_release: app.pack.release.release_id }),
+      mode: history.activityCompleted ? "retry" : "first", ...history,
+      onStatus(state) {
+        if (app.exploration !== run) return;
+        if (state === "completed") recompute();
+        const words = {loading:"正在打开……", active:"", completed:"", failed:"记录没存好。请刷新页面，再回到这颗星。",
+          timeout:"实物没有打开。回到星图，再试一次。", navigation:"探索中断了。请回到星图再试。"};
+        status.textContent = words[state] || "";
+        panel.hidden = !status.textContent;
+        if (state === "failed") {
+          run.failed = true;
+          back.disabled = true;
+          refresh.hidden = false;
+        }
+      }
+    });
+  } catch (e) {
+    console.error(e);
+    panel.hidden = false;
+    status.textContent = "这个探索暂时打不开，请回到星图。";
+  }
+}
+
+// 在离开宿主前等它提交最后的观察和退出，防止下一次活动争用同一个 device_seq。
+function closeExploration(run = app.exploration) {
+  if (!run) return Promise.resolve(true);
+  if (run.failed) return Promise.resolve(false);
+  if (run.leaving) return run.leaving;
+  const back = $("#main [data-act=leave]");
+  if (back) back.disabled = true;
+  run.leaving = (async () => {
+    try {
+      await run.host?.leave();
+      if (app.exploration !== run) return false;
+      run.host?.destroy();
+      app.exploration = null;
+      recompute();
+      return true;
+    } catch (e) {
+      console.error(e);
+      if (app.exploration === run) {
+        run.failed = true;
+        const panel = $("#main .explore-status");
+        if (panel) {
+          panel.hidden = false;
+          panel.querySelector('[role="status"]').textContent = "记录没存好。请刷新页面，再回到这颗星。";
+          panel.querySelector('[data-act="refresh"]').hidden = false;
+        }
+      }
+      return false;
+    }
+  })();
+  return run.leaving;
 }
 
 /** 这次挑战还没做完，或者做完了但孩子还没看到结果（最后一道存好前回了星图）。 */
 const pendingQuiz = (z) => z.q.phase !== "done" || !z.resultSeen;
 
-/** 这台设备上这个活动有没有合法完成过。 */
-function completedBefore(activityId) {
-  const s = /** @type {any} */ (app.session);
-  const bad = new Set(projectMastery(s.log.events()).conflicts.map((c) => c.attempt_id));
-  for (const [att, evs] of groupAttempts(s.log.events())) {
+/**
+ * 这个孩子在任何设备上有没有一次合法、已完成的这个活动的尝试（backup.md 第 11 节；slice-1 6.3「开始一次挑战」）。
+ * 被判不一致的、被放弃的不算。
+ * @param {any[]} events 日志里被接收的事件
+ * @param {string} learnerId
+ * @param {string} activityId
+ */
+export function completedBefore(events, learnerId, activityId) {
+  const bad = new Set(projectMastery(events).conflicts.map((c) => c.attempt_id));
+  for (const [att, evs] of groupAttempts(events)) {
     if (bad.has(att)) continue;
     const f = evs[0];
-    if (f.device_id === s.identity.device_id && f.content.activity_id === activityId && evs[evs.length - 1].verb === "attempt.completed") return true;
+    if (f.learner_id === learnerId && f.content && f.content.activity_id === activityId && evs[evs.length - 1].verb === "attempt.completed") return true;
   }
   return false;
 }
@@ -400,7 +1347,8 @@ function completedBefore(activityId) {
 function startChallenge(node, def) {
   const ids0 = (def.body && Array.isArray(def.body.items) ? def.body.items : []).map((it) => it && it.id);
   const order = def.body && def.body.shuffle ? shuffled(ids0) : ids0;
-  const mode = completedBefore(def.id) ? "retry" : "first";
+  const s0 = /** @type {any} */ (app.session);
+  const mode = completedBefore(s0.log.events(), s0.identity.learner_id, def.id) ? "retry" : "first";
   let q;
   try { q = startQuiz(def, order, mode); }
   catch { toast("这个挑战暂时不能玩。"); return; }
@@ -462,6 +1410,9 @@ async function pump() {
       else z.solved = pl.item_id;
     } else if (cur.verb === "hint.used") {
       z.focusHint = true;
+    } else if (cur.verb === "answer.revealed") {
+      // 存好了才显示答案（CURIO-013）：这道题记为「看过答案」，画面换成答案和「下一题」
+      z.solved = /** @type {any} */ (cur.payload).item_id;
     }
     z.q = step(z.q, { type: "saved", id: cur.id });
     // 读屏器：答错的反馈、新提示用常驻的 aria-live 区域读出来（焦点会回到输入框）
@@ -483,7 +1434,7 @@ async function pump() {
   }
   if (app.quiz !== z) return;
   if (app.view === "quiz") renderQuiz();
-  else if (z.q.phase === "done") renderChart(); // 存好时孩子已经回到星图：重画，星星换样子
+  else if (z.q.phase === "done" && app.view === "chart") renderChart(); // 存好时孩子已经回到星图：重画，星星换样子
   if (z.q.pending && !z.q.view.failed) pump();
 }
 
@@ -507,17 +1458,14 @@ function askHint() {
   pump();
 }
 
-/** 看答案（6.4）：不写事件，这道题记为「看过答案」，进入下一题；是最后一题时产出完成。 */
+/** 看答案（6.4，CURIO-013）：状态机接受了才写 answer.revealed，存好以后答案才显示；是最后一题时接着写完成。 */
 function revealAnswer() {
   const z = app.quiz;
   if (!z || app.mode !== "writable") return;
-  const id = z.q.view.item_id;
   const before = z.q;
   z.q = step(z.q, { type: "reveal" });
   if (z.q === before) return;
-  z.solved = id;
-  renderQuiz();
-  if (z.q.pending) pump();
+  pump();
 }
 
 /** 数字框、分数框交上来的作答；框是空的时不提交。 */
@@ -627,16 +1575,16 @@ function renderQuiz() {
   if (z.q.phase === "starting") {
     body = `<div class="q"><p class="stem">准备好了吗？</p></div>`;
   } else if (solvedItem && (z.q.phase !== "answering" || v.item_id !== z.solved)) {
-    // 刚有结果的题（答对存好，或看过答案）：先看反馈，再点「下一题」
+    // 刚有结果的题（答对存好，或 answer.revealed 存好）：先看反馈，再点「下一题」
     const fbo = v.feedback && v.feedback.item_id === z.solved ? v.feedback : null;
     const revealed = !!(fbo && fbo.revealed);
     const a = solvedItem.answer;
     const right = a.type === "choice" ? a.choices.find((c) => c.correct === true).id : null;
     const shown = a.type === "choice" ? null : revealed ? { ok: true, text: fbo.answer_text } : { ok: true, text: z.lastResponse[z.solved] + (a.unit ? " " + a.unit : "") };
     const last = z.q.phase !== "answering";
-    const bubble = revealed
+    const bubble = pilotHtml(revealed ? "surprised" : "clap", revealed
       ? `<div class="bub reveal" role="status"><p><b>答案是 ${rich(fbo.answer_text)}</b></p><p>${rich(fbo.text)}</p></div>`
-      : `<div class="bub good" role="status">${starMini()}<p>${rich(fbo ? fbo.text : "")}</p></div>`;
+      : `<div class="bub good" role="status">${starMini()}<p>${rich(fbo ? fbo.text : "")}</p></div>`);
     body = itemHtml(solvedItem, { wrong: z.wrongBy[z.solved] || [], right, disabled: true, shown }) + bubble +
       `<div class="btns"><button class="btn ink big" type="button" data-act="next" ${last && z.q.phase !== "done" ? "disabled" : ""}>${last ? "看看结果" : "下一题"}</button></div>`;
   } else if (z.q.phase === "answering" && v.item) {
@@ -652,8 +1600,10 @@ function renderQuiz() {
           ${hintMax > 0 ? `<button class="btn big" type="button" data-act="hint" ${v.can_hint ? "" : "disabled"}>${hintIcon()}${v.hints.length >= hintMax ? "提示用完了" : "要个提示"}</button>` : ""}
           <button class="btn big" type="button" data-act="reveal" ${v.can_reveal ? "" : "disabled"}>看答案</button>
         </div>` : "";
-    const after = (fb ? `<div class="bub bad" tabindex="-1"><p>${rich(fb.text)}</p>${again ? `<p class="muted small">${again}</p>` : ""}</div>` : "") +
-      hintsHtml(v.hints) + tools;
+    // 领航员的脸（规格第 5 节）：等回答是 waiting，答错 think，只看提示时 curious
+    const after = pilotHtml(fb ? "think" : v.hints.length ? "curious" : "waiting",
+      (fb ? `<div class="bub bad" tabindex="-1"><p>${rich(fb.text)}</p>${again ? `<p class="muted small">${again}</p>` : ""}</div>` : "") +
+      hintsHtml(v.hints)) + tools;
     // 数字题、分数题：同一道题里只换输入框周围的部分，不重建输入框，焦点和平板上的输入法都不丢
     const formNow = /** @type {HTMLFormElement|null} */ (main.querySelector("[data-form]"));
     if (formNow && v.answer_type !== "choice" && formNow.dataset.item === v.item_id && !z.solved) {
@@ -669,7 +1619,7 @@ function renderQuiz() {
   }
   main.innerHTML = `<section class="quiz" aria-labelledby="quizTitle">
     <div class="quiz-head">
-      <button class="back" type="button" data-act="back" aria-label="回到星图">${backIcon()}<span>星图</span></button>
+      <button class="back" type="button" data-act="back" aria-label="回到${homeName()}">${backIcon()}<span>${homeName()}</span></button>
       <div><h1 id="quizTitle">${esc(z.def.title)}</h1><p class="sub">${esc(z.node.title)}</p></div>
     </div>
     ${z.q.phase !== "done" ? progressHtml(z) : ""}
@@ -695,6 +1645,7 @@ function renderQuiz() {
     sync();
   }
   bindActs(z, main);
+  paintFaces(main);
   focusQuiz(z);
 }
 
@@ -713,6 +1664,7 @@ function patchTyped(z, form, after) {
   form.dispatchEvent(new Event("input")); // 重新算「确定」能不能点
   bindActs(z, a);
   bindActs(z, st);
+  paintFaces(a);
   focusQuiz(z);
 }
 
@@ -720,7 +1672,7 @@ function patchTyped(z, form, after) {
 function bindActs(z, root) {
   root.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", () => {
     const act = /** @type {HTMLElement} */ (b).dataset.act;
-    if (act === "back") { renderChart(); }
+    if (act === "back") { app.view = "chart"; renderChart(); }
     else if (act === "retry") retry();
     else if (act === "reload") location.reload();
     else if (act === "next") { z.solved = null; renderQuiz(); }
@@ -782,10 +1734,13 @@ function resultHtml(z) {
     <div class="result-star ${play ? "lighting" : ""}" data-state="${st}">${starSvg(st, 11, 150)}</div>
     <h2 tabindex="-1">第一次就答对了 ${r.first_try_correct} 道，一共 ${r.total} 道</h2>
     <p>${esc(line)}</p>
-    <div class="btns center"><button class="btn big" type="button" data-act="again">再来一遍</button><button class="btn ink big" type="button" data-act="back">回到星图</button></div>
+    <div class="btns center"><button class="btn big" type="button" data-act="again">再来一遍</button><button class="btn ink big" type="button" data-act="back">回到${homeName()}</button></div>
   </div>`;
 }
 
+/** 挑战里说话的地方：左边是选的那位领航员（表情跟着场合换），右边是气泡。发布包里没有领航员时只有气泡。 */
+const pilotHtml = (face, inner) => (app.navShown
+  ? `<div class="pilot">${faceSvg(app.navShown, face, "pilot-face")}<div class="pilot-says">${inner}</div></div>` : inner);
 const starMini = () => `<svg class="mini" viewBox="0 0 100 100" aria-hidden="true"><path class="star-fill" d="${Sk.area(starPoints(52, 55, 38, 16))}"/><path class="k" d="${Sk.poly(starPoints(50, 52, 38, 16), 3, true, .6)}"/></svg>`;
 const hintIcon = () => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="k1" d="${Sk.ellipse(12, 10, 6, 6, 8, .4) + Sk.line(9.5, 17, 14.5, 17, 9, .2) + Sk.line(10, 20, 14, 20, 10, .2)}"/></svg>`;
 const backIcon = () => `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path class="k" d="${Sk.line(19, 12, 5, 12, 2, .3) + Sk.line(5, 12, 11, 6, 3, .3) + Sk.line(5, 12, 11, 18, 4, .3)}"/></svg>`;
@@ -819,11 +1774,29 @@ function requestLock() {
 function lostLock() {
   app.lockLost = true; // 先记下：恢复途中（还没有 session）也靠它停止写入
   if (app.session) app.session.committer.freeze();
+  if (app.exploration) {
+    const run = app.exploration;
+    app.exploration = null;
+    run.host?.destroy();
+    app.view = location.hash === "#parent" ? "parent" : "chart";
+  }
   if (app.mode === "stopped") return;
   app.mode = "readonly";
   app.why = "lost";
   renderBanner();
-  if (app.view === "quiz") renderQuiz(); else renderChart();
+  renderCurrent();
+}
+
+/** 打开时读一次：干净不干净、上次备份、最早的记录（家长入口用）。只读事务。 */
+async function readDeviceFacts() {
+  if (!app.store) return null;
+  const snap = await app.store.snapshot();
+  app.clean = isClean(snap);
+  app.lastBackup = snap.lastBackup || null;
+  let first = null;
+  for (const e of app.log ? app.log.events() : []) if (first === null || e.occurred_at < first) first = e.occurred_at;
+  app.firstEventAt = first;
+  return snap;
 }
 
 /** 只读窗口：照样 loadAll 并重放（只读事务，不写任何东西）。 */
@@ -837,11 +1810,12 @@ async function enterReadonly(why) {
       const log = createLog();
       for (const raw of d.inbox) log.ingest(raw);
       app.log = log;
+      await readDeviceFacts();
     } catch { app.hasIdentity = false; }
   }
   recompute();
   renderBanner();
-  renderChart();
+  renderCurrent();
 }
 
 /** 拿到锁以后：正在恢复 → 可以写。 */
@@ -849,7 +1823,7 @@ async function recover() {
   app.mode = "recovering";
   app.why = null;
   renderBanner();
-  renderChart();
+  renderCurrent();
   let s;
   try {
     // 失锁以后，openSession 再要 ID 或时间就抛错，于是不再建身份、不再补写（规格 6.3「失去写锁」）
@@ -865,9 +1839,20 @@ async function recover() {
   app.log = app.session.log;
   app.hasIdentity = true;
   recompute();
-  app.mode = "writable";
+  let snap;
+  try { snap = await readDeviceFacts(); }
+  catch (e) { console.error(e); s.committer.freeze(); renderStop("出错了", "请刷新页面。还不行的话，请家长看一看。"); return; }
+  if (app.lockLost) { s.committer.freeze(); await enterReadonly("lost"); return; }
+  // backup.md 5.1：拿着写锁时，把核对过的发布包存进 releases（没有才存；失败不要紧，下次再存）
+  const rel = app.pack && app.pack.release;
+  if (rel && !snap.releases.some((r) => r.release_id === rel.release_id)) {
+    try { await /** @type {any} */ (app.store).putRelease(/** @type {any} */ (app.pack).raw, rel.release_id); } catch (e) { console.warn("发布包没存上，下次再存", e); }
+  }
+  if (app.lockLost) { s.committer.freeze(); await enterReadonly("lost"); return; }
+  // backup.md 6.3：上次恢复没做完时，不进「可以写」
+  app.mode = snap.restoring ? "unfinished" : "writable";
   renderBanner();
-  renderChart();
+  renderCurrent();
 }
 
 async function relock() {
@@ -887,11 +1872,57 @@ async function relock() {
    ============================================================ */
 async function boot() {
   window.addEventListener("pageshow", (e) => { if (e.persisted) lostLock(); });
+  // 家长页用 #parent，浏览器的「返回」也能回到星图
+  app.view = location.hash === "#parent" ? "parent" : "chart";
+  app.home = homeOfHash(location.hash);
+  tree.collapsed = readCollapsed();
+  applyCollapsed();
+  syncNav();
+  // 导航上的按钮：收起、展开知识索引，搜索，手机上打开索引抽屉
+  document.addEventListener("click", (e) => {
+    const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest?.("[data-act]"));
+    if (!b || !b.closest(".ribbon, .bottomnav")) return;
+    const act = b.dataset.act;
+    if (act === "tree") setCollapsed(!tree.collapsed);
+    else if (act === "search") {
+      if (tree.collapsed) setCollapsed(false);
+      /** @type {HTMLElement|null} */ (document.querySelector("#explorer [data-treeq]"))?.focus();
+    } else if (act === "drawer") openDrawer();
+  });
+  // Esc 收起笔记（抽屉、对话框自己先接住 Esc）
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || !app.note || app.view !== "chart" || document.getElementById("drawer")) return;
+    closeNote();
+  });
+  // 转到桌面宽度时，抽屉不再需要
+  const wide = matchMedia("(min-width: 760px)");
+  const onWide = () => { if (wide.matches) closeDrawer(false); };
+  if (wide.addEventListener) wide.addEventListener("change", onWide); else wide.addListener(onWide);
+  window.addEventListener("hashchange", async () => {
+    closeDrawer(false);
+    if (app.exploration && location.hash === "#parent") {
+      if (!await closeExploration()) return;
+      if (location.hash !== "#parent") { renderChart(); return; }
+    }
+    if (location.hash === "#parent") { if (app.view !== "parent") resetParent(); app.view = "parent"; }
+    else {
+      // 星图 / 地铁切换（#233）：在挑战、动手探索里只记下来，退出时回到这里
+      const home = homeOfHash(location.hash), changed = home !== app.home;
+      app.home = home;
+      syncNav();
+      if (app.view === "parent") app.view = "chart";
+      else if (changed && app.view === "chart") { /* 换到另一个首页，笔记照旧开着 */ }
+      else return;
+    }
+    if (app.mode !== "loading" && app.mode !== "stopped") renderCurrent();
+  });
   if (!globalThis.crypto || !crypto.subtle || typeof crypto.getRandomValues !== "function") {
     // crypto.subtle 只在安全的网址（https 或 localhost）下有；没有它核对不了内容包，不能误报「内容包不完整」
     renderStop("请用 https 或 localhost 打开", "这样才能核对内容包。请家长换一个网址打开。");
     return;
   }
+  // 请浏览器别自动清掉这台设备上的记录；没有这个功能或被拒绝时照常往下走
+  try { if (navigator.storage && typeof navigator.storage.persist === "function") navigator.storage.persist().catch(() => {}); } catch { /* 照常往下走 */ }
   try {
     app.pack = await loadRelease();
   } catch (e) {
@@ -900,10 +1931,13 @@ async function boot() {
     return;
   }
   try {
-    app.store = await openStore();
+    // 别的页面要升级数据库时，按失去写锁处理（backup.md 5.1）
+    app.store = await openStore({ onVersionChange: () => lostLock() });
   } catch (e) {
     console.error(e);
     app.store = null;
+    // 设备上的数据库比这一版新（演示页回退到旧提交时）：停在错误页，不建身份，数据不丢
+    if (e && /** @type {any} */ (e).name === "VersionError") { renderStop("需要更新", "这台设备上的记录是新一点的 Curio 存的。请家长更新 Curio，再打开。记录不会丢。"); return; }
     await enterReadonly("nostore");
     return;
   }
