@@ -1104,20 +1104,20 @@ function applyPrefsUi() {
     b.setAttribute("aria-pressed", String(dark));
     b.setAttribute("aria-label", words);
     b.title = words;
-    const moon = /** @type {HTMLElement|null} */ (b.querySelector('[data-theme-icon="moon"]'));
-    const sun = /** @type {HTMLElement|null} */ (b.querySelector('[data-theme-icon="sun"]'));
-    if (moon) moon.hidden = dark;
-    if (sun) sun.hidden = !dark;
+    const moon = b.querySelector('[data-theme-icon="moon"]');
+    const sun = b.querySelector('[data-theme-icon="sun"]');
+    if (moon) moon.toggleAttribute("hidden", dark);
+    if (sun) sun.toggleAttribute("hidden", !dark);
   }
   for (const b of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('[data-act="mute"]'))) {
     const words = muted ? "已静音，点一下打开声音" : "声音已开，点一下静音";
     b.setAttribute("aria-pressed", String(muted));
     b.setAttribute("aria-label", words);
     b.title = words;
-    const on = /** @type {HTMLElement|null} */ (b.querySelector('[data-sound="on"]'));
-    const off = /** @type {HTMLElement|null} */ (b.querySelector('[data-sound="off"]'));
-    if (on) on.hidden = muted;
-    if (off) off.hidden = !muted;
+    const on = b.querySelector('[data-sound="on"]');
+    const off = b.querySelector('[data-sound="off"]');
+    if (on) on.toggleAttribute("hidden", muted);
+    if (off) off.toggleAttribute("hidden", !muted);
   }
 }
 function toggleTheme() {

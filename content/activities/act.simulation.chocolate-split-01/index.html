@@ -603,7 +603,7 @@ VIEW = {
   s2card: [140, 170, 520, 230], s3card: [140, 170, 520, 230],
   s2: [140, 40, 520, 560], s3: [140, 96, 520, 424], s3r: [140, 190, 520, 190], end: [140, 6, 520, 598]
 };
-Object.assign(S, { t1: 0, p1: 0, lastSeam: MODEL.startSeam, stops: new Set(), lastN: MODEL.startN });
+Object.assign(S, { t1: 0, p1: 0, ks: MODEL.startSeam, kp: MODEL.startSeam, lastSeam: MODEL.startSeam, stops: new Set(), lastN: MODEL.startN });
 
 /* ============ 2. 巧克力与算式牌 ============ */
 function choc(x, y, w, h, o){
@@ -1062,8 +1062,6 @@ svg.addEventListener("keydown", e => {
     else if (Up || Dn){ e.preventDefault(); setDial(S.dialSel, (S.dialSel ? S.ones : S.tens) + (Up ? 1 : -1)); }
   }
 });
-if (window.ResizeObserver) new ResizeObserver(() => { const was = S.narrow; if (fitView() || was !== S.narrow) render(); }).observe(svg);
-
 let last = performance.now();
 function tick(now){
   const dt = Math.min(.05, (now - last) / 1000); last = now;
@@ -1083,6 +1081,7 @@ function tick(now){
 Kit.start(() => {
   fitView();
   enter1();
+  if (window.ResizeObserver) new ResizeObserver(() => { const was = S.narrow; if (fitView() || was !== S.narrow) render(); }).observe(svg);
   requestAnimationFrame(tick);
 });
 </script>
