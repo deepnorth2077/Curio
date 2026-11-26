@@ -306,6 +306,50 @@ class TestKitTool(unittest.TestCase):
         js.write_text(js.read_text() + "// 尚未发布的 v2 可以改。\n")
         self.assertEqual(kit.check_repo(self.repo, base="main"), [])
 
+    def add_module(self, name, contract, kit_line):
+        mod = self.repo / f"content/activities/{name}"
+        mod.mkdir(parents=True)
+        (mod / "manifest.yaml").write_text(
+            f"id: {name}\ncontract: {contract}\n{kit_line}type: simulation\nversion: 1\n"
+            "title: 新模块\ntargets: [math.fraction.unit-fraction]\nage_band: G3-4\nentry: index.html\n"
+            "pedagogy: explain\nemits: [observed]\nreview: approved\n", encoding="utf-8")
+        (mod / "index.html").write_text(SAMPLE_KIT_MOD if kit_line else "<!DOCTYPE html><html><body>新</body></html>\n",
+                                        encoding="utf-8")
+        return mod
+
+    def test_new_module_must_use_latest_kit_version_and_contract(self):
+        self.publish_v1()
+        base = "origin/main"
+        # 新增的 1.1 模块被拦
+        old_style = self.add_module("act.simulation.new-v11", "activity/1.1", "")
+        errs = kit.check_repo(self.repo, base=base)
+        self.assertTrue(any(f.endswith("new-v11/manifest.yaml") and "新增互动模块必须使用最新零件库" in m and "kit: 1" in m
+                            for f, m in errs), errs)
+        shutil.rmtree(old_style)
+        # 修改主线上已有的 1.1 模块不受影响
+        old_idx = self.repo / "content/activities/act.simulation.old-01/index.html"
+        old_idx.write_text(old_idx.read_text(encoding="utf-8") + "<!-- 小修 -->\n", encoding="utf-8")
+        self.assertEqual(kit.check_repo(self.repo, base=base), [])
+        # 新增的最新版 kit 模块通过
+        self.add_module("act.simulation.new-v12", "activity/1.2", "kit: 1\n")
+        self.assertEqual(kit.sync_repo(self.repo)[1], [])
+        self.assertEqual(kit.check_repo(self.repo, base=base), [])
+        # 出了 kit/2 以后：新增模块还用 kit: 1 被拦，主线已有的 demo-01 不受影响
+        shutil.copytree(self.repo / "kit/1", self.repo / "kit/2")
+        starter = self.repo / kit.STARTER_REL
+        starter.write_text(starter.read_text(encoding="utf-8").replace("curio-kit:1", "curio-kit:2"), encoding="utf-8")
+        self.assertEqual(kit.sync_repo(self.repo)[1], [])
+        errs = kit.check_repo(self.repo, base=base)
+        self.assertTrue(any(f.endswith("new-v12/manifest.yaml") and "kit: 2" in m for f, m in errs), errs)
+        self.assertFalse(any("demo-01" in f for f, _ in errs), errs)
+        # 新增模块改用 kit: 2 后通过
+        mod = self.repo / "content/activities/act.simulation.new-v12"
+        mf, idx = mod / "manifest.yaml", mod / "index.html"
+        mf.write_text(mf.read_text(encoding="utf-8").replace("kit: 1", "kit: 2"), encoding="utf-8")
+        idx.write_text(idx.read_text(encoding="utf-8").replace("curio-kit:1", "curio-kit:2"), encoding="utf-8")
+        self.assertEqual(kit.sync_repo(self.repo)[1], [])
+        self.assertEqual(kit.check_repo(self.repo, base=base), [])
+
     def test_shell_sfx_tracks_newest_version_without_changing_previous_versions(self):
         self.publish_v1()
         target = self.repo / "app/sfx.js"

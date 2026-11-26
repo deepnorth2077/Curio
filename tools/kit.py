@@ -325,6 +325,18 @@ def _published_versions(repo, base):
     return versions
 
 
+def _base_manifests(repo, base):
+    """返回基准分支上已有的互动模块 manifest 相对路径集合。"""
+    result = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", base, "content/activities"],
+        cwd=repo, capture_output=True, check=True, text=True, encoding="utf-8",
+    )
+    return {
+        line for line in result.stdout.splitlines()
+        if re.fullmatch(r"content/activities/[^/]+/manifest\.yaml", line)
+    }
+
+
 def check_immutability(repo, base="origin/main", used_versions=None):
     """与基准分支逐字节比较所有已经发布过的版本。"""
     repo = Path(repo)
@@ -368,9 +380,16 @@ def check_repo(repo, base=None):
             base = "origin/main"
     try:
         published = _published_versions(repo, base) if base else set()
+        base_manifests = _base_manifests(repo, base) if base else None
     except (subprocess.CalledProcessError, yaml.YAMLError) as exc:
         return errors + [("kit", f"无法核对 {base} 上已发布的 kit 版本：{exc}")]
-    for ver in _kit_versions(repo):
+    versions = _kit_versions(repo)
+    latest_ver = versions[-1] if versions else None
+    latest_contract = (
+        kit_readme_contract(repo / "kit" / str(latest_ver) / "README.md")
+        if latest_ver is not None else None
+    )
+    for ver in versions:
         kdir = repo / "kit" / str(ver)
         for req in ("kit.css", "kit.js", "README.md"):
             if not (kdir / req).is_file():
@@ -411,6 +430,19 @@ def check_repo(repo, base=None):
             kit_ver = doc.get("kit")
             contract = doc.get("contract")
             html = idx.read_text(encoding="utf-8")
+            is_new = base_manifests is not None and rel_mf not in base_manifests
+            if is_new and latest_ver is not None and latest_contract:
+                if contract != latest_contract:
+                    errors.append((
+                        rel_mf,
+                        f"新增互动模块必须使用最新零件库（contract: {latest_contract}、kit: {latest_ver}），不能再使用 {contract!r}",
+                    ))
+                    continue
+                if isinstance(kit_ver, int) and not isinstance(kit_ver, bool) and kit_ver >= 1 and kit_ver != latest_ver:
+                    errors.append((
+                        rel_mf,
+                        f"新增互动模块必须使用最新零件库 kit: {latest_ver}（现在声明的是 kit: {kit_ver}）",
+                    ))
             if contract == "activity/1.2":
                 if not isinstance(kit_ver, int) or isinstance(kit_ver, bool) or kit_ver < 1:
                     errors.append((rel_mf, "contract: activity/1.2 的模块必须填写正整数 kit 版本"))
