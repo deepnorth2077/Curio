@@ -35,9 +35,8 @@ export const DARK_PALETTE = Object.freeze({
  */
 export function validPalette(p) {
   if (!p || typeof p !== "object" || Object.getPrototypeOf(p) !== Object.prototype) return false;
-  const keys = Object.keys(p);
-  return keys.length === PALETTE_KEYS.length &&
-    PALETTE_KEYS.every((k) => Object.hasOwn(p, k) && typeof /** @type {any} */ (p)[k] === "string" && HEX_COLOR.test(/** @type {any} */ (p)[k]));
+  return PALETTE_KEYS.every((key) => Object.hasOwn(p, key)) &&
+    Object.values(p).every((value) => typeof value === "string" && HEX_COLOR.test(value));
 }
 
 /**
@@ -48,13 +47,16 @@ export function validPalette(p) {
  */
 export function resolvePalette(scheme, doc = typeof document !== "undefined" ? document : null) {
   const fallback = scheme === "dark" ? DARK_PALETTE : LIGHT_PALETTE;
-  const out = {};
   const style = doc?.defaultView?.getComputedStyle && doc.documentElement
     ? doc.defaultView.getComputedStyle(doc.documentElement)
     : null;
-  for (const k of PALETTE_KEYS) {
-    const raw = style ? style.getPropertyValue("--" + k).trim() : "";
-    out[k] = HEX_COLOR.test(raw) ? raw : fallback[k];
+  const out = { ...fallback };
+  if (!style) return out;
+  const declared = style.getPropertyValue("--curio-palette-keys").trim();
+  const keys = new Set([...PALETTE_KEYS, ...(declared ? declared.split(/\s+/) : [])]);
+  for (const key of keys) {
+    const value = style.getPropertyValue("--" + key).trim();
+    if (HEX_COLOR.test(value)) out[key] = value;
   }
   return out;
 }

@@ -29,6 +29,17 @@ def play(w):
     btn("拉开包装纸")
     page.wait_for_timeout(200)
     shot("1c-wrap-first", first=True)
+    check("包装纸还遮着时，缝上没有圆钮", w.grips() == 0, w.grips())
+
+    # 同一格内的两次移动隔开 35ms，避免音效自身的节流掩盖重复发声。
+    x, y = pt(*ev("[400, wrapTop(0)]"))
+    _, next_y = pt(*ev("[400, wrapTop(1 / 8)]"))
+    seq = ev("Sfx.seq()")
+    w.mouse_drag([(x, y), (x + 3, y + 2), (x - 3, y + 1)], step_ms=70, release=False)
+    check("包装纸在同一格内来回拖不响", ev("Sfx.seq()") == seq, ev("Sfx.seq()") - seq)
+    page.mouse.move(x, next_y)
+    check("包装纸拖过一格只响一次", ev("Sfx.seq()") == seq + 1, ev("Sfx.seq()") - seq)
+    page.mouse.up()
 
     # 键盘拉到底，揭晓漏掉的 16 块
     page.locator("#stage").focus()
@@ -36,6 +47,7 @@ def play(w):
         page.keyboard.press("ArrowDown")
     page.wait_for_timeout(450)
     check("包装纸拉到底转入拖缝", ev("S.wrapDone") is True and ev("S.phase1") == "seam", [ev("S.wrapDone"), ev("S.phase1")])
+    check("缝可以拖动时出现一个青绿圆钮", w.grips() == 1, w.grips())
     check("读数纠正为 35 块", readout() == "3×5 = 15 · 4×5 = 20 · 一共 35 块", readout())
     shot("1d-unwrapped")
 

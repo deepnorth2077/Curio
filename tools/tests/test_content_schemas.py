@@ -148,6 +148,21 @@ class ContentSchemaTests(unittest.TestCase):
         v11_with_kit["kit"] = 1
         self.assertFalse(self.validators["activity"].is_valid(v11_with_kit), "1.1 带 kit 应拒绝")
 
+    def test_station_count_opt_in(self):
+        base = load_document(FIXTURES / "content/experiment-manifest.json")
+        registered = dict(base, contract="activity/1.2", kit=1, type="simulation", pedagogy="explain", emits=["observed"])
+        self.assert_valid("activity", registered)
+        for count in (1, 5, 256):
+            self.assert_valid("activity", dict(registered, station_count=count))
+        for change in ({"station_count": 0}, {"station_count": 257}, {"station_count": 1.5}, {"station_count": True},
+                       {"contract": "activity/1.1"}, {"type": "experiment"}, {"pedagogy": "POE"}, {"emits": ["predicted"]}):
+            candidate = dict(registered, station_count=5)
+            candidate.update(change)
+            if candidate["contract"] == "activity/1.1":
+                del candidate["kit"]
+            with self.subTest(change=change):
+                self.assertFalse(self.validators["activity"].is_valid(candidate))
+
     def test_invalid_fixtures_are_rejected(self):
         cases = load_document(FIXTURES / "invalid" / "content.json")
         for case in cases:

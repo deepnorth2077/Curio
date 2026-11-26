@@ -5,9 +5,11 @@
   python tools/kit.py sync [文件 …]
   python tools/kit.py check
 """
+import io
 import re
 import subprocess
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 import yaml
@@ -20,17 +22,23 @@ PALETTE_KEYS = (
 )
 HEX_COLOR = re.compile(r"^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 TOKEN_TARGETS = ("app/index.html", "preview/template.html")
+SFX_TARGET = "app/sfx.js"
+SFX_BEGIN = "/* curio-sfx begin */"
+SFX_END = "/* curio-sfx end */"
 STARTER_REL = ".claude/skills/curio-anatomy/references/starter.html"
 TOKENS_BEGIN = "/* curio-tokens begin */"
 TOKENS_END = "/* curio-tokens end */"
 KIT_MARKER = re.compile(r"/\*\s*curio-kit:(\d+)\s+(begin|end)\s*\*/")
+DARK_TOKEN_RULE = re.compile(r':root\[data-theme="dark"\]\s*\{([^{}]*)\}')
 README_CONTRACT = re.compile(r"^\s*(?:-\s*)?contract:\s*(\S+)\s*$", re.M)
-STYLE_BLOCK = re.compile(r"(<style\b[^>]*>)(.*?)(</style>)", re.S | re.I)
-SCRIPT_BLOCK = re.compile(r"(<script\b[^>]*>)(.*?)(</script>)", re.S | re.I)
 
 
 def _norm_lf(text):
     return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _css_without_comments(css):
+    return re.sub(r"/\*.*?\*/", "", css, flags=re.S)
 
 
 def _extract_vars(css_block):
@@ -43,21 +51,24 @@ def _extract_vars(css_block):
 def parse_tokens(tokens_text):
     """解析 kit/tokens.css，返回 (light_dict, dark_dict, errors)。"""
     errors = []
+    tokens_text = _css_without_comments(tokens_text)
     light_m = re.search(r"(?:^|\n):root\s*\{([^{}]*)\}", tokens_text)
-    dark_m = re.search(r':root\[data-theme="dark"\]\s*\{([^{}]*)\}', tokens_text)
+    dark_m = DARK_TOKEN_RULE.search(tokens_text)
     if not light_m or not dark_m:
         return {}, {}, ["kit/tokens.css 必须同时包含 :root{…} 与 :root[data-theme=\"dark\"]{…}"]
+    if re.search(r"@media[^{]*prefers-color-scheme", tokens_text, re.I):
+        errors.append("kit/tokens.css 的系统深色规则由 sync 从显式深色规则生成，请删除重复的 @media")
     light = _extract_vars(light_m.group(1))
     dark = _extract_vars(dark_m.group(1))
-    for mode, data in (("浅色 :root", light), ("深色 data-theme=\"dark\"", dark)):
-        missing = [k for k in PALETTE_KEYS if k not in data]
-        extra = [k for k in data if k not in PALETTE_KEYS]
+    required = set(PALETTE_KEYS) | light.keys() | dark.keys()
+    for mode, data in (("浅色 :root", light), ('深色 data-theme="dark"', dark)):
+        missing = sorted(required - data.keys())
         if missing:
             errors.append(f"kit/tokens.css 的{mode}缺少平台色位：{'、'.join(missing)}")
-        if extra:
-            errors.append(f"kit/tokens.css 的{mode}多了非平台色位：{'、'.join(extra)}")
         for k, v in data.items():
-            if k in PALETTE_KEYS and not HEX_COLOR.fullmatch(v):
+            if k == "curio-palette-keys":
+                errors.append("kit/tokens.css 不能使用保留的 --curio-palette-keys")
+            if not HEX_COLOR.fullmatch(v):
                 errors.append(f"kit/tokens.css 的{mode}色位 --{k} 必须是十六进制颜色，现在是 {v!r}")
     return light, dark, errors
 
@@ -69,45 +80,123 @@ def kit_readme_contract(readme_path):
     return m.group(1) if m else None
 
 
-def _replace_segment(text, begin_mark, end_mark, payload):
-    """把 text 中唯一一对 begin_mark … end_mark 中间换成 payload。返回 (new_text, error_or_none)。"""
-    b_count = text.count(begin_mark)
-    e_count = text.count(end_mark)
+def _segment_bounds(text, begin_mark, end_mark):
+    b_count, e_count = text.count(begin_mark), text.count(end_mark)
     if b_count != 1 or e_count != 1:
-        return text, f"标记必须成对且恰好各出现 1 次：{begin_mark}（{b_count} 次）/ {end_mark}（{e_count} 次）"
-    i = text.index(begin_mark)
-    j = text.index(end_mark)
-    if j < i:
-        return text, f"结束标记写在了开始标记前面：{begin_mark}"
-    body = payload if payload.endswith("\n") else payload + "\n"
-    return text[:i + len(begin_mark)] + "\n" + body + text[j:], None
+        return None, f"标记必须成对且恰好各出现 1 次：{begin_mark}（{b_count} 次）/ {end_mark}（{e_count} 次）"
+    start = text.index(begin_mark) + len(begin_mark)
+    stop = text.index(end_mark)
+    if stop < start:
+        return None, f"结束标记写在了开始标记前面：{begin_mark}"
+    return slice(start, stop), None
 
 
-def _sync_tokens_html(html, tokens_css):
-    return _replace_segment(html, TOKENS_BEGIN, TOKENS_END, tokens_css)
+def _replace_segment(text, begin_mark, end_mark, body):
+    bounds, err = _segment_bounds(text, begin_mark, end_mark)
+    if err:
+        return text, err
+    return text[:bounds.start] + body + text[bounds.stop:], None
+
+
+def _inline_file(contents):
+    return "\n" + contents + ("" if contents.endswith("\n") else "\n")
+
+
+# HTML 定义的 classic script 的 JavaScript MIME 类型（含传统拼法）。
+_JS_MIME = {
+    "application/ecmascript", "application/javascript", "application/x-ecmascript", "application/x-javascript",
+    "text/ecmascript", "text/javascript", "text/jscript", "text/livescript", "text/x-ecmascript", "text/x-javascript",
+    *(f"text/javascript1.{minor}" for minor in range(6)),
+}
+
+
+class _KitBlocks(HTMLParser):
+    """按源码位置记录普通 HTML 中实际生效的行内样式、classic 和 module 脚本。"""
+
+    # 这些元素的文字即使长得像标签，也不产生 HTML script/style 元素。
+    CDATA_CONTENT_ELEMENTS = ("script", "style", "title", "textarea", "iframe", "noscript", "noembed", "noframes", "xmp")
+
+    def __init__(self, html):
+        super().__init__(convert_charrefs=False)
+        self.blocks = {"style": [], "script": [], "module": []}
+        self.line_starts = [0] + [m.end() for m in re.finditer(r"\n", html)]
+        self.excluded = []
+        self.kind = None
+        self.feed(html)
+        self.close()
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("template", "svg", "math"):
+            self.excluded.append(tag)
+        if self.excluded or tag not in ("style", "script"):
+            return
+        # HTML 第一个同名属性生效。
+        attrs = dict(reversed(attrs))
+        mime = (attrs.get("type") or "").strip().lower()
+        if tag == "style":
+            media = (attrs.get("media") or "").strip().lower()
+            if mime in ("", "text/css") and media in ("", "all") and "disabled" not in attrs:
+                self.kind = "style"
+        elif "src" not in attrs and "nomodule" not in attrs:
+            if "type" not in attrs and attrs.get("language"):
+                mime = "text/" + attrs["language"].lower()
+            if not mime or mime in _JS_MIME:
+                self.kind = "script"
+            elif mime == "module":
+                self.kind = "module"
+
+    def handle_endtag(self, tag):
+        if tag in ("style", "script"):
+            self.kind = None
+        if self.excluded and self.excluded[-1] == tag:
+            self.excluded.pop()
+
+    def handle_data(self, data):
+        if self.kind:
+            line, column = self.getpos()
+            start = self.line_starts[line - 1] + column
+            self.blocks[self.kind].append((start, start + len(data)))
+
+
+def executable_scripts(html, *, classic_only=False, modules_only=False):
+    blocks = _KitBlocks(html).blocks
+    if classic_only:
+        spans = blocks["script"]
+    elif modules_only:
+        spans = blocks["module"]
+    else:
+        spans = sorted(blocks["script"] + blocks["module"])
+    return [html[start:stop] for start, stop in spans]
 
 
 def _sync_kit_html(html, version, kit_css, kit_js):
     begin = f"/* curio-kit:{version} begin */"
     end = f"/* curio-kit:{version} end */"
-    other = [m.group(1) for m in KIT_MARKER.finditer(html) if int(m.group(1)) != version]
-    if other:
-        return html, f"标记里的 kit 版本（{other[0]}）和声明的 kit: {version} 不一致"
-    marks = [(m.group(2), m.start()) for m in KIT_MARKER.finditer(html)]
-    if [k for k, _ in marks] != ["begin", "end", "begin", "end"]:
+    markers = list(KIT_MARKER.finditer(html))
+    if any(int(m.group(1)) != version for m in markers):
+        return html, f"标记里的 kit 版本和声明的 kit: {version} 不一致"
+    if len(markers) != 4:
         return html, f"样式与脚本必须各有一对完整的 {begin} … {end}"
-    sm = STYLE_BLOCK.search(html)
-    jm = SCRIPT_BLOCK.search(html)
-    if not sm or not jm:
-        return html, "缺少 <style> 或 <script> 标签"
-    new_style, err1 = _replace_segment(sm.group(2), begin, end, kit_css)
-    if err1:
-        return html, f"<style> 内{err1}"
-    new_script, err2 = _replace_segment(jm.group(2), begin, end, kit_js)
-    if err2:
-        return html, f"<script> 内{err2}"
-    out = html[:sm.start(2)] + new_style + html[sm.end(2):jm.start(2)] + new_script + html[jm.end(2):]
-    return out, None
+
+    blocks = _KitBlocks(html).blocks
+    changes = []
+    for tag, payload in (("style", kit_css), ("script", kit_js)):
+        marked = [(start, stop) for start, stop in blocks[tag] if KIT_MARKER.search(html, start, stop)]
+        if len(marked) != 1:
+            return html, f"必须恰好有一个生效的行内 <{tag}> 包含 {begin} … {end}"
+        start, stop = marked[0]
+        body, err = _replace_segment(html[start:stop], begin, end, _inline_file(payload))
+        if err:
+            return html, f"<{tag}> 内{err}"
+        changes.append((start, stop, body))
+    for start, stop, body in sorted(changes, reverse=True):
+        html = html[:start] + body + html[stop:]
+    return html, None
+
+
+def _kit_versions(repo):
+    return sorted(int(d.name) for d in (repo / "kit").iterdir()
+                  if d.is_dir() and re.fullmatch(r"[1-9][0-9]*", d.name))
 
 
 def _starter_version(html):
@@ -118,15 +207,12 @@ def _starter_version(html):
 def allowlist(repo):
     """返回白名单目标：[("tokens", rel_path, None), ("kit", rel_path, version), ...]。"""
     repo = Path(repo)
-    items = []
-    for rel in TOKEN_TARGETS:
-        if (repo / rel).is_file():
-            items.append(("tokens", rel, None))
+    items = [("tokens", rel, None) for rel in TOKEN_TARGETS]
     starter = repo / STARTER_REL
-    if starter.is_file():
-        ver = _starter_version(starter.read_text(encoding="utf-8"))
-        if ver is not None:
-            items.append(("kit", STARTER_REL, ver))
+    versions = _kit_versions(repo)
+    items.append(("sfx", SFX_TARGET, versions[-1] if versions else None))
+    ver = _starter_version(starter.read_text(encoding="utf-8")) if starter.is_file() else None
+    items.append(("kit", STARTER_REL, ver))
     act_root = repo / "content/activities"
     if act_root.is_dir():
         for d in sorted(p for p in act_root.iterdir() if p.is_dir()):
@@ -143,6 +229,43 @@ def allowlist(repo):
     return items
 
 
+def _expected_target(repo, kind, rel, version, tokens_payload):
+    path = repo / rel
+    if not path.is_file():
+        return None, None, f"缺少同步目标 {rel}"
+    old = path.read_text(encoding="utf-8")
+    if kind == "tokens":
+        new, err = _replace_segment(old, TOKENS_BEGIN, TOKENS_END, _inline_file(tokens_payload))
+    elif version is None:
+        return old, None, "找不到同步来源的 kit 版本或 curio-kit 标记"
+    else:
+        kit_dir = repo / "kit" / str(version)
+        js_path = kit_dir / "kit.js"
+        if not js_path.is_file():
+            return old, None, f"找不到 kit/{version}/kit.js"
+        js = js_path.read_text(encoding="utf-8")
+        if kind == "sfx":
+            bounds, err = _segment_bounds(js, SFX_BEGIN, SFX_END)
+            if err:
+                return old, None, f"kit/{version}/kit.js：{err}"
+            new, err = _replace_segment(old, SFX_BEGIN, SFX_END, js[bounds])
+        else:
+            css_path = kit_dir / "kit.css"
+            if not css_path.is_file():
+                return old, None, f"找不到 kit/{version}/kit.css"
+            new, err = _sync_kit_html(old, version, css_path.read_text(encoding="utf-8"), js)
+    return old, new, err
+
+
+def _tokens_payload(css, light):
+    # 系统深色与手选深色共用整组声明。外壳由键名表发现扩展色，排除私有变量。
+    dark = DARK_TOKEN_RULE.search(_css_without_comments(css))
+    system_dark = ('@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){'
+                   + dark.group(1) + "}}\n") if dark else ""
+    key_list = ":root{--curio-palette-keys:" + " ".join(light) + "}\n"
+    return css.rstrip("\n") + "\n" + system_dark + key_list
+
+
 def sync_repo(repo, targets=None):
     """把 kit/ 原件同步进白名单文件（或指定的子集）。返回 (changed_rels, errors)。"""
     repo = Path(repo)
@@ -152,7 +275,7 @@ def sync_repo(repo, targets=None):
     if not tokens_path.is_file():
         return [], [("kit/tokens.css", "缺少 kit/tokens.css")]
     tokens_css = _norm_lf(tokens_path.read_text(encoding="utf-8"))
-    _, _, tok_errs = parse_tokens(tokens_css)
+    light, _, tok_errs = parse_tokens(tokens_css)
     for e in tok_errs:
         errors.append(("kit/tokens.css", e))
     if errors:
@@ -162,21 +285,12 @@ def sync_repo(repo, targets=None):
     if targets:
         wanted = {str(Path(t).resolve().relative_to(repo.resolve())).replace("\\", "/") for t in targets}
 
+    tokens_payload = _tokens_payload(tokens_css, light)
     for kind, rel, ver in allowlist(repo):
         if wanted is not None and rel not in wanted:
             continue
         path = repo / rel
-        old = _norm_lf(path.read_text(encoding="utf-8"))
-        if kind == "tokens":
-            new, err = _sync_tokens_html(old, tokens_css)
-        else:
-            kdir = repo / "kit" / str(ver)
-            if not (kdir / "kit.css").is_file() or not (kdir / "kit.js").is_file():
-                errors.append((rel, f"找不到 kit/{ver}/kit.css 或 kit/{ver}/kit.js"))
-                continue
-            kit_css = _norm_lf((kdir / "kit.css").read_text(encoding="utf-8"))
-            kit_js = _norm_lf((kdir / "kit.js").read_text(encoding="utf-8"))
-            new, err = _sync_kit_html(old, ver, kit_css, kit_js)
+        old, new, err = _expected_target(repo, kind, rel, ver, tokens_payload)
         if err:
             errors.append((rel, err))
             continue
@@ -186,28 +300,37 @@ def sync_repo(repo, targets=None):
     return changed, errors
 
 
-def check_immutability(repo, base="origin/main"):
-    """一旦 base 上已有模块使用 kit/<N>/，kit/<N>/ 下任何文件不得增删改。返回 [(file, msg), ...]。"""
-    repo = Path(repo)
-    errors = []
-    p = subprocess.run(["git", "ls-tree", "-r", "--name-only", base, "content/activities"],
-                       cwd=repo, capture_output=True, text=True, encoding="utf-8")
-    if p.returncode != 0:
-        return errors
-    used_versions = set()
-    for line in p.stdout.splitlines():
-        if not line.endswith("/manifest.yaml"):
-            continue
-        show = subprocess.run(["git", "show", f"{base}:{line}"], cwd=repo, capture_output=True, text=True, encoding="utf-8")
-        if show.returncode != 0:
-            continue
-        try:
-            doc = yaml.safe_load(show.stdout)
-        except Exception:
-            continue
-        if isinstance(doc, dict) and isinstance(doc.get("kit"), int) and not isinstance(doc.get("kit"), bool):
-            used_versions.add(doc["kit"])
+def _published_versions(repo, base):
+    """只追溯目标分支历史中实际合入的 manifest，包括已删除或迁走的最后一个使用者。"""
+    changes = subprocess.run(
+        ["git", "log", "--first-parent", "--no-renames", "--format=", "--raw", "--no-abbrev",
+         "--diff-filter=AM", base, "--", ":(glob)content/activities/*/manifest.yaml"],
+        cwd=repo, capture_output=True, check=True, text=True,
+    )
+    blobs = {line.split()[3] for line in changes.stdout.splitlines() if line.startswith(":")}
+    if not blobs:
+        return set()
+    # 一次取回每个不同的清单，避免按活动乘以提交数反复启动 git。
+    result = subprocess.run(["git", "cat-file", "--batch"], cwd=repo, check=True,
+                            input=("\n".join(blobs) + "\n").encode(), capture_output=True)
+    stream = io.BytesIO(result.stdout)
+    versions = set()
+    for header in iter(stream.readline, b""):
+        size = int(header.split()[2])
+        raw = stream.read(size)
+        stream.read(1)  # cat-file 在每个对象之后额外写一个换行
+        doc = yaml.safe_load(raw)
+        if isinstance(doc, dict) and type(doc.get("kit")) is int:
+            versions.add(doc["kit"])
+    return versions
 
+
+def check_immutability(repo, base="origin/main", used_versions=None):
+    """与基准分支逐字节比较所有已经发布过的版本。"""
+    repo = Path(repo)
+    if used_versions is None:
+        used_versions = _published_versions(repo, base)
+    errors = []
     for ver in sorted(used_versions):
         prefix = f"kit/{ver}"
         tree = subprocess.run(["git", "ls-tree", "-r", "--name-only", base, prefix],
@@ -238,26 +361,32 @@ def check_repo(repo, base=None):
     for e in tok_errs:
         errors.append(("kit/tokens.css", e))
 
-    kit_root = repo / "kit"
-    for kdir in sorted(p for p in kit_root.iterdir() if p.is_dir()) if kit_root.is_dir() else []:
-        if not kdir.name.isdigit():
-            continue
-        ver = int(kdir.name)
+    if base is None:
+        probe = subprocess.run(["git", "rev-parse", "--verify", "--quiet", "origin/main"],
+                               cwd=repo, capture_output=True)
+        if probe.returncode == 0:
+            base = "origin/main"
+    try:
+        published = _published_versions(repo, base) if base else set()
+    except (subprocess.CalledProcessError, yaml.YAMLError) as exc:
+        return errors + [("kit", f"无法核对 {base} 上已发布的 kit 版本：{exc}")]
+    for ver in _kit_versions(repo):
+        kdir = repo / "kit" / str(ver)
         for req in ("kit.css", "kit.js", "README.md"):
             if not (kdir / req).is_file():
                 errors.append((f"kit/{ver}/{req}", f"kit/{ver}/ 缺少 {req}"))
         contract = kit_readme_contract(kdir / "README.md")
         if not contract:
             errors.append((f"kit/{ver}/README.md", f"kit/{ver}/README.md 必须写明 contract: activity/1.x"))
-        if ver == 1 and (kdir / "kit.css").is_file() and light and dark:
-            kcss = (kdir / "kit.css").read_text(encoding="utf-8")
+        if ver not in published and (kdir / "kit.css").is_file() and light and dark:
+            kcss = _css_without_comments((kdir / "kit.css").read_text(encoding="utf-8"))
             km_l = re.search(r"(?:^|\n):root\s*\{([^{}]*)\}", kcss)
             km_d = re.search(r":root\.kit-dark\s*\{([^{}]*)\}", kcss)
             if not km_l or not km_d:
                 errors.append((f"kit/{ver}/kit.css", "kit.css 必须包含 :root 与 :root.kit-dark 后备色位"))
             else:
                 kl, kd = _extract_vars(km_l.group(1)), _extract_vars(km_d.group(1))
-                for k in PALETTE_KEYS:
+                for k in light:
                     if kl.get(k) != light.get(k):
                         errors.append((f"kit/{ver}/kit.css", f"浅色后备色位 --{k}（{kl.get(k)!r}）与 kit/tokens.css（{light.get(k)!r}）不一致"))
                     if kd.get(k) != dark.get(k):
@@ -297,26 +426,16 @@ def check_repo(repo, base=None):
                 errors.append((rel_idx, f"模块包含 curio-kit 标记，但 manifest.yaml 未声明 activity/1.2 与 kit"))
 
     # 逐字节检查白名单
+    tokens_payload = _tokens_payload(tokens_css, light)
     for kind, rel, ver in allowlist(repo):
-        path = repo / rel
-        cur = _norm_lf(path.read_text(encoding="utf-8"))
-        if kind == "tokens":
-            expected, err = _sync_tokens_html(cur, tokens_css)
-        else:
-            kdir = repo / "kit" / str(ver)
-            if not (kdir / "kit.css").is_file() or not (kdir / "kit.js").is_file():
-                errors.append((rel, f"找不到 kit/{ver}/kit.css 或 kit/{ver}/kit.js"))
-                continue
-            kit_css = _norm_lf((kdir / "kit.css").read_text(encoding="utf-8"))
-            kit_js = _norm_lf((kdir / "kit.js").read_text(encoding="utf-8"))
-            expected, err = _sync_kit_html(cur, ver, kit_css, kit_js)
+        cur, expected, err = _expected_target(repo, kind, rel, ver, tokens_payload)
         if err:
             errors.append((rel, err))
         elif expected != cur:
             errors.append((rel, "标记段内容与 kit/ 原件不一致，请运行 python tools/kit.py sync"))
 
     if base:
-        errors.extend(check_immutability(repo, base))
+        errors.extend(check_immutability(repo, base, published))
     return errors
 
 

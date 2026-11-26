@@ -1,11 +1,12 @@
 // 原生 Web Audio 程序化微音效（docs/specs/kit.md 第 2 节）：无背景音乐、无循环音、无外部音频文件。
 // 7 个语义声位：tick（棘轮刻度）、hop（跳步）、snap（清脆咔嗒）、tap（纸面轻点）、right（五度上行）、nudge（温和双轻叩）、lit（点亮泛音和弦）。
 
+/* curio-sfx begin */
 /**
  * 纯工厂函数，便于单测注入假 AudioContext 与假时钟。
  * @param {{AudioCtx?: any, nowMs?: () => number, requireGesture?: boolean, eventTarget?: any}} [opts]
  */
-export function createSfx(opts = {}) {
+function createSfx(opts = {}) {
   const explicitCtx = "AudioCtx" in opts;
   const AudioCtx = explicitCtx
     ? opts.AudioCtx
@@ -18,13 +19,14 @@ export function createSfx(opts = {}) {
   let lastTick = -1e9;
   let noiseBuf = null;
   let nSeq = 0;
+  const sources = new Set();
 
   function unlock() {
     unlocked = true;
     if (isMuted || !AudioCtx) return;
     try {
       if (!ctx) ctx = new AudioCtx();
-      if (ctx && ctx.state === "suspended") {
+      if (ctx && (ctx.state === "suspended" || ctx.state === "interrupted")) {
         const p = ctx.resume();
         if (p && typeof p.catch === "function") p.catch(() => {});
       }
@@ -32,8 +34,10 @@ export function createSfx(opts = {}) {
   }
 
   if (target && typeof target.addEventListener === "function") {
-    target.addEventListener("pointerdown", unlock, true);
-    target.addEventListener("keydown", unlock, true);
+    // iOS 在触摸结束时才授予激活；继续使用系统默认音频类别，尊重侧边静音开关。
+    for (const gesture of ["pointerdown", "touchend", "click", "keydown"]) {
+      target.addEventListener(gesture, unlock, true);
+    }
   }
 
   function readyCtx() {
@@ -50,13 +54,23 @@ export function createSfx(opts = {}) {
     const len = Math.max(1, Math.floor(c.sampleRate * 0.06));
     const b = c.createBuffer(1, len, c.sampleRate);
     const d = b.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = ((i * 2654435761 % 65536) / 32768 - 1) * Math.exp(-i / (len * 0.35));
+    // 固定种子生成短噪声，同采样率下宿主与沙箱得到相同波形。
+    let seed = 0x63757269;
+    for (let i = 0; i < len; i++) {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      const sample = (seed >>> 0) / 0x80000000 - 1;
+      d[i] = sample * Math.exp(-i / (len * 0.35));
+    }
     noiseBuf = b;
     return b;
   }
 
   function clean(src, nodes) {
+    sources.add(src);
     src.onended = () => {
+      sources.delete(src);
       try { src.disconnect(); } catch { /* ignore */ }
       for (const nd of nodes) { try { nd.disconnect(); } catch { /* ignore */ } }
     };
@@ -96,7 +110,17 @@ export function createSfx(opts = {}) {
 
   return {
     /** @param {boolean} v */
-    setMuted(v) { isMuted = !!v; },
+    setMuted(v) {
+      isMuted = !!v;
+      if (isMuted) {
+        // 连尚未开始的琶音一起撤掉。重新开声时只播放新的操作。
+        for (const src of sources) {
+          src.disconnect();
+          src.stop();
+        }
+        sources.clear();
+      }
+    },
     muted() { return isMuted; },
     seq() { return nSeq; },
     /** @param {number} [step] */
@@ -165,5 +189,7 @@ export function createSfx(opts = {}) {
     },
   };
 }
+/* curio-sfx end */
 
+export { createSfx };
 export const Sfx = createSfx();

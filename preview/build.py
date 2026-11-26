@@ -20,9 +20,13 @@ import json
 import os
 import re
 import shutil
+import sys
 from pathlib import Path
 
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+from kit import parse_tokens
 
 # 每个星座一张试玩页。星座里的星按顺序列；每颗星下面的活动也按这个顺序显示。
 # 动手探索的模块（manifest.yaml + index.html）排在最前面；找不到的活动会跳过。
@@ -64,6 +68,8 @@ CONSTELLATIONS = {
 }
 
 TEMPLATE = Path(__file__).with_name("template.html")
+PREFERENCES = Path(__file__).with_name("preferences.js")
+TOKENS = Path(__file__).resolve().parents[1] / "kit/tokens.css"
 
 # 每组第一颗星在试玩页里有一个跳转入口，便于分几次验收。
 ZERO_TO_ONE_GROUPS = {
@@ -157,6 +163,11 @@ def load_activity(roots, aid, figures, only_approved=False, module_src=None):
         activity = {"id": m["id"], "kind": "simulation", "contract": m.get("contract", "activity/1.1"),
                     "title": m["title"], "duration_min": m.get("duration_min"),
                     "age_band": m.get("age_band", "G3-4"), "targets": m.get("targets", [])}
+        stations = m.get("station_count")
+        if (m.get("contract") == "activity/1.2" and m.get("type") == "simulation"
+                and m.get("pedagogy") == "explain" and "observed" in (m.get("emits") or [])
+                and type(stations) is int and 1 <= stations <= 256):
+            activity["station_count"] = stations
         if module_src:
             activity["src"] = module_src(entry, aid)
         else:
@@ -310,18 +321,25 @@ def main():
         except ValueError as exc:
             ap.error(str(exc))
         blob = json.dumps(data, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
-        html = TEMPLATE.read_text(encoding="utf-8").replace("/*__DATA__*/null", blob)
+        html = TEMPLATE.read_text(encoding="utf-8").replace("/*__PREFERENCES__*/", PREFERENCES.read_text(encoding="utf-8"))
+        html = html.replace("/*__DATA__*/null", blob)
         a.out.write_text(html, encoding="utf-8")
         n = sum(len(s["activities"]) for s in data["stars"])
         print(f"写好了 {a.out}：{len(data['stars'])} 颗星，{n} 个活动，{len(data['figures'])} 张配图")
+    if a.bundle or a.trial_bundle:
+        light, dark, errors = parse_tokens(TOKENS.read_text(encoding="utf-8"))
+        if errors:
+            ap.error("；".join(errors))
     if a.bundle:
         data = build_bundle(a.root)
+        data["palettes"] = {"light": light, "dark": dark}
         blob = json.dumps(data, ensure_ascii=False, sort_keys=True).replace("</", "<\\/")
         a.bundle.write_text("// 自动生成，不要手改：python preview/build.py --root . --bundle prototype/content.js\n"
                             f"window.CURIO_CONTENT={blob};\n", encoding="utf-8")
         print(f"写好了 {a.bundle}：{len(data['nodes'])} 个知识点，{len(data['activities'])} 个活动，{len(data['figures'])} 张配图")
     if a.trial_bundle:
         data = build_trial_bundle(a.root, a.trial_bundle.parent, a.copy_trial_modules)
+        data["palettes"] = {"light": light, "dark": dark}
         blob = json.dumps(data, ensure_ascii=False, sort_keys=True)
         a.trial_bundle.write_text("// 自动生成：python preview/build.py --root . --trial-bundle prototype/trial-content.js\n"
                                   f"window.CURIO_TRIAL={blob};\n", encoding="utf-8")

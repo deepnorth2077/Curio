@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>Curio</title>
+<script>
+try {
+  const theme = localStorage.getItem("curio.theme");
+  if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+} catch { /* 无存储权限时跟随系统配色 */ }
+</script>
 <style>
 /* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
 html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -20,15 +26,6 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
   --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
-  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
-  --accent:#A797F7; --accent-soft:#2D2943;
-  --grip:#5FC4BE; --grip-soft:#1F3634;
-  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#2A2738;
-  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
-  color-scheme:dark;
-}}
 :root[data-theme="dark"]{
   --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
   --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
@@ -38,6 +35,16 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
   --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
   color-scheme:dark;
 }
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#2A2738;
+  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+:root{--curio-palette-keys:bg pane hover rule ink text muted accent accent-soft grip grip-soft sage sage-bg sky apricot paper good good-soft bad bad-soft}
 /* curio-tokens end */
 :root{
   --side:#EFEDE5; --on-accent:#FFFFFF;

@@ -18,15 +18,6 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
   --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
-  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
-  --accent:#A797F7; --accent-soft:#2D2943;
-  --grip:#5FC4BE; --grip-soft:#1F3634;
-  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#2A2738;
-  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
-  color-scheme:dark;
-}}
 :root[data-theme="dark"]{
   --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
   --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
@@ -36,6 +27,16 @@ input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:tex
   --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
   color-scheme:dark;
 }
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#2A2738;
+  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+:root{--curio-palette-keys:bg pane hover rule ink text muted accent accent-soft grip grip-soft sage sage-bg sky apricot paper good good-soft bad bad-soft}
 /* curio-tokens end */
 :root{
   --side:#EFEDE5; --on-accent:#FFFFFF;
@@ -186,6 +187,8 @@ textarea{width:100%;font:inherit;font-size:17px;padding:10px 12px;border:1.5px s
 <div class="topbar"><div class="in">
   <button class="back" id="back" hidden>← 星图</button>
   <div class="title" id="title">Curio</div>
+  <button type="button" class="back" id="theme">深色</button>
+  <button type="button" class="back" id="mute">静音</button>
   <span class="tag">试玩版 · 不保存</span>
 </div></div>
 <main class="wrap" id="app"></main>
@@ -601,15 +604,18 @@ function viewReflection(a){
 }
 
 // 动手探索：沙箱 iframe + activity/1.1 与 activity/1.2 契约
-const SIM_PALETTE_KEYS = ["bg","pane","hover","rule","ink","text","muted","accent","accent-soft","grip","grip-soft","sage","sage-bg","sky","apricot","paper","good","good-soft","bad","bad-soft"];
-function simThemePayload(){
-  const scheme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  const cs = getComputedStyle(document.documentElement);
-  const palette = {};
-  for (const k of SIM_PALETTE_KEYS) palette[k] = cs.getPropertyValue("--" + k).trim();
-  return { scheme, palette };
+/*__PREFERENCES__*/
+const prefs = createPreviewPreferences();
+const themeButton = document.getElementById("theme"), muteButton = document.getElementById("mute");
+function showPrefs(){
+  themeButton.setAttribute("aria-pressed", String(prefs.scheme() === "dark"));
+  muteButton.setAttribute("aria-pressed", String(prefs.muted()));
 }
-let simListener = null;
+themeButton.addEventListener("click", prefs.toggleTheme);
+muteButton.addEventListener("click", prefs.toggleMute);
+prefs.subscribe(showPrefs);
+showPrefs();
+let leaveSim = null;
 function viewSim(a){
   const contract = a.contract === "activity/1.2" ? "activity/1.2" : "activity/1.1";
   const log = S.log[a.id] ??= {kind:"simulation", events:[], questions:[]};
@@ -617,20 +623,24 @@ function viewSim(a){
   const frame = el("iframe", {class:"simframe", sandbox:"allow-scripts", title:a.title});
   frame.srcdoc = a.html;
   const end = el("div", {});
-  simListener = e => {
+  const post = (type, payload) => frame.contentWindow.postMessage({contract, type, payload}, "*");
+  let disconnectPrefs = null;
+  const simListener = e => {
     if (e.source !== frame.contentWindow) return;
     const m = e.data; if (!m || m.contract !== contract) return;
     const p = m.payload || {};
-    const post = (type, payload) => frame.contentWindow.postMessage({contract, type, payload}, "*");
     if (m.type === "ready"){
       // 有些站里会观察好几样东西。只认整站做完的那条标记。
       const stations = log.events
         .filter(ev => ev.verb === "observed" && ev.result?.item === "station-complete")
         .map(ev => ev.result.station)
-        .filter(n => Number.isInteger(n) && n >= 1 && n <= 4);
+        .filter(n => Number.isInteger(n) && n >= 1 && n <= (a.station_count ?? 4));
       const baseInit = {age_band:a.age_band || "G3-4", lang:"zh-CN", phase:"observe", mastery:null,
         completed_stations:[...new Set(stations)].sort((x, y) => x - y), activity_completed:S.done[a.id] === true};
-      post("init", contract === "activity/1.2" ? {...baseInit, ...simThemePayload(), muted:false} : {...baseInit, palette:{}});
+      if (contract === "activity/1.2"){
+        post("init", {...baseInit, ...prefs.themePayload(), muted:prefs.muted()});
+        disconnectPrefs ??= prefs.connect(post);
+      } else post("init", {...baseInit, palette:{}});
     }
     else if (m.type === "resize" && p.h) frame.style.height = Math.max(600, Math.ceil(p.h) + 8) + "px";
     else if (m.type === "event") log.events.push(p);
@@ -638,6 +648,7 @@ function viewSim(a){
     else if (m.type === "complete"){ S.done[a.id] = true; end.replaceChildren(el("div", {class:"endcard pop"}, el("h3", {}, "这一段做完了"), endButtons(a))); }
   };
   addEventListener("message", simListener);
+  leaveSim = () => { removeEventListener("message", simListener); disconnectPrefs?.(); };
   $app.replaceChildren(frame, end);
 }
 
@@ -694,7 +705,7 @@ function go(v){
   }
 }
 function route(){
-  if (simListener){ removeEventListener("message", simListener); simListener = null; }
+  if (leaveSim){ leaveSim(); leaveSim = null; }
   window.scrollTo(0,0);
   const m = VIEW.match(/^act:(.+)$/);
   if (m){

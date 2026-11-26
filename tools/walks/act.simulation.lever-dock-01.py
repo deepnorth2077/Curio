@@ -103,9 +103,9 @@ def arrow(w, key, steps=1):
 
 
 def drag_holes(w, kind, signed_steps, count):
-    grip = w.doc.locator(f'[data-grip="{kind}"]')
-    grip.scroll_into_view_if_needed()
-    x, y = center(grip)
+    # 杆倾斜时每帧重画把手。滚动稳定的 SVG，再读取此刻把手的屏幕位置。
+    w.doc.locator("#stage").scroll_into_view_if_needed()
+    x, y = center(w.doc.locator(f'[data-grip="{kind}"]'))
     left, _, right = pins(w, LIVE)
     distance = (right[0] - left[0]) * signed_steps / count
     points = [(x + distance * i / 12, y) for i in range(13)]

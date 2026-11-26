@@ -1,6 +1,7 @@
 id: act.simulation.hop-line-01
 contract: activity/1.2
 kit: 1
+station_count: 3
 type: simulation
 version: 3
 title: 数线跳跳

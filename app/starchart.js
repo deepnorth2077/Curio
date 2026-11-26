@@ -140,6 +140,7 @@ export function nodeProgress(events, mastery, stations) {
   const out = {};
   const bump = (id, v) => { out[id] = Math.max(out[id] ?? 0, Math.min(1, Math.max(0, v))); };
   for (const e of events || []) { const id = e && e.content && e.content.node_id; if (typeof id === "string") bump(id, 0); }
+  const observations = new Map();
   for (const evs of groupAttempts(events || []).values()) {
     if (attemptRule(evs)) continue;
     const c = evs[0].content;
@@ -147,7 +148,10 @@ export function nodeProgress(events, mastery, stations) {
     if (evs[evs.length - 1].verb === "attempt.completed") { bump(c.node_id, 1); continue; }
     const total = stations(c.activity_id);
     if (!total) continue;
-    const done = new Set();
+    // 离开再回来会产生另一条尝试。同一个孩子在这颗星同一活动做过的站只算一次。
+    const key = JSON.stringify([evs[0].learner_id, c.node_id, c.activity_id]);
+    const done = observations.get(key) ?? new Set();
+    observations.set(key, done);
     for (const e of evs) {
       const v = e.payload && e.payload.value;
       if (e.verb === "sim.observed" && e.payload.observable === "station.completed" && Number.isInteger(v) && v >= 1 && v <= total) done.add(v);

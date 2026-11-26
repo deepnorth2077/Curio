@@ -6,22 +6,46 @@ const PALETTE_KEYS = new Set([
 ]);
 const HEX_COLOR = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
-const Sfx = (() => {
-  const AudioCtx = typeof window !== "undefined" ? (window.AudioContext || window.webkitAudioContext || null) : null;
-  let isMuted = false, ctx = null, unlocked = false, lastTick = -1e9, noiseBuf = null, nSeq = 0;
-  function unlock(){
+/* curio-sfx begin */
+/**
+ * 纯工厂函数，便于单测注入假 AudioContext 与假时钟。
+ * @param {{AudioCtx?: any, nowMs?: () => number, requireGesture?: boolean, eventTarget?: any}} [opts]
+ */
+function createSfx(opts = {}) {
+  const explicitCtx = "AudioCtx" in opts;
+  const AudioCtx = explicitCtx
+    ? opts.AudioCtx
+    : (typeof globalThis !== "undefined" ? (/** @type {any} */ (globalThis).AudioContext || /** @type {any} */ (globalThis).webkitAudioContext || null) : null);
+  const nowMs = opts.nowMs || (() => (typeof performance !== "undefined" ? performance.now() : Date.now()));
+  const target = "eventTarget" in opts ? opts.eventTarget : (typeof globalThis !== "undefined" ? globalThis : null);
+  let isMuted = false;
+  let ctx = null;
+  let unlocked = explicitCtx && !opts.requireGesture;
+  let lastTick = -1e9;
+  let noiseBuf = null;
+  let nSeq = 0;
+  const sources = new Set();
+
+  function unlock() {
     unlocked = true;
     if (isMuted || !AudioCtx) return;
     try {
       if (!ctx) ctx = new AudioCtx();
-      if (ctx && ctx.state === "suspended"){ const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); }
-    } catch {}
+      if (ctx && (ctx.state === "suspended" || ctx.state === "interrupted")) {
+        const p = ctx.resume();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      }
+    } catch { /* 音频受限时静默降级 */ }
   }
-  if (typeof addEventListener === "function"){
-    addEventListener("pointerdown", unlock, true);
-    addEventListener("keydown", unlock, true);
+
+  if (target && typeof target.addEventListener === "function") {
+    // iOS 在触摸结束时才授予激活；继续使用系统默认音频类别，尊重侧边静音开关。
+    for (const gesture of ["pointerdown", "touchend", "click", "keydown"]) {
+      target.addEventListener(gesture, unlock, true);
+    }
   }
-  function readyCtx(){
+
+  function readyCtx() {
     if (isMuted || !AudioCtx || !unlocked) return null;
     try {
       if (!ctx) ctx = new AudioCtx();
@@ -29,113 +53,174 @@ const Sfx = (() => {
       return ctx;
     } catch { return null; }
   }
-  function getNoise(c){
+
+  function getNoise(c) {
     if (noiseBuf) return noiseBuf;
-    const len = Math.max(1, Math.floor(c.sampleRate * .06));
-    const b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
-    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (len * .35));
+    const len = Math.max(1, Math.floor(c.sampleRate * 0.06));
+    const b = c.createBuffer(1, len, c.sampleRate);
+    const d = b.getChannelData(0);
+    // 固定种子生成短噪声，同采样率下宿主与沙箱得到相同波形。
+    let seed = 0x63757269;
+    for (let i = 0; i < len; i++) {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      const sample = (seed >>> 0) / 0x80000000 - 1;
+      d[i] = sample * Math.exp(-i / (len * 0.35));
+    }
     noiseBuf = b;
     return b;
   }
-  function clean(src, nodes){
+
+  function clean(src, nodes) {
+    sources.add(src);
     src.onended = () => {
-      try { src.disconnect(); } catch {}
-      for (const nd of nodes){ try { nd.disconnect(); } catch {} }
+      sources.delete(src);
+      try { src.disconnect(); } catch { /* ignore */ }
+      for (const nd of nodes) { try { nd.disconnect(); } catch { /* ignore */ } }
     };
   }
-  function tone(c, type, f0, f1, t0, dur, peak){
+
+  function tone(c, type, f0, f1, t0, dur, peak) {
     const osc = c.createOscillator(), g = c.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(f0, t0);
     if (f1 !== f0) osc.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + dur);
-    g.gain.setValueAtTime(.0008, t0);
-    g.gain.linearRampToValueAtTime(peak, t0 + Math.min(.008, dur * .25));
-    g.gain.exponentialRampToValueAtTime(.0008, t0 + dur);
-    osc.connect(g); g.connect(c.destination);
+    g.gain.setValueAtTime(0.0008, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + Math.min(0.008, dur * 0.25));
+    g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
+    osc.connect(g);
+    g.connect(c.destination);
     clean(osc, [g]);
-    osc.start(t0); osc.stop(t0 + dur + .004);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.004);
   }
-  function burst(c, filterType, freq, q, t0, dur, peak){
+
+  function burst(c, filterType, freq, q, t0, dur, peak) {
     const src = c.createBufferSource(), flt = c.createBiquadFilter(), g = c.createGain();
     src.buffer = getNoise(c);
-    flt.type = filterType; flt.frequency.setValueAtTime(freq, t0); flt.Q.setValueAtTime(q, t0);
-    g.gain.setValueAtTime(.0008, t0);
-    g.gain.linearRampToValueAtTime(peak, t0 + .002);
-    g.gain.exponentialRampToValueAtTime(.0008, t0 + dur);
-    src.connect(flt); flt.connect(g); g.connect(c.destination);
+    flt.type = filterType;
+    flt.frequency.setValueAtTime(freq, t0);
+    flt.Q.setValueAtTime(q, t0);
+    g.gain.setValueAtTime(0.0008, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
+    src.connect(flt);
+    flt.connect(g);
+    g.connect(c.destination);
     clean(src, [flt, g]);
-    src.start(t0); src.stop(t0 + dur + .004);
+    src.start(t0);
+    src.stop(t0 + dur + 0.004);
   }
+
   return {
-    setMuted(v){ isMuted = !!v; },
-    muted(){ return isMuted; },
-    seq(){ return nSeq; },
-    tick(step = 0){
-      const now = performance.now();
-      if (now - lastTick < 35) return;
-      lastTick = now; nSeq++;
-      const c = readyCtx(); if (!c) return;
+    /** @param {boolean} v */
+    setMuted(v) {
+      isMuted = !!v;
+      if (isMuted) {
+        // 连尚未开始的琶音一起撤掉。重新开声时只播放新的操作。
+        for (const src of sources) {
+          src.disconnect();
+          src.stop();
+        }
+        sources.clear();
+      }
+    },
+    muted() { return isMuted; },
+    seq() { return nSeq; },
+    /** @param {number} [step] */
+    tick(step = 0) {
+      const now = nowMs();
+      if (now - lastTick < 35) return false;
+      lastTick = now;
+      nSeq++;
+      const c = readyCtx();
+      if (!c) return false;
       const k = Math.max(-6, Math.min(12, +step || 0));
-      burst(c, "bandpass", 1480 * Math.pow(2, k * .03), 4.5, c.currentTime, .018, .042);
+      burst(c, "bandpass", 1480 * Math.pow(2, k * 0.03), 4.5, c.currentTime, 0.018, 0.042);
+      return true;
     },
-    hop(step = 0){
+    /** @param {number} [step] */
+    hop(step = 0) {
       nSeq++;
-      const c = readyCtx(); if (!c) return;
-      const k = Math.max(0, Math.min(12, +step || 0)), f0 = 330 * Math.pow(2, k / 18);
-      tone(c, "triangle", f0, f0 * 1.28, c.currentTime, .055, .085);
+      const c = readyCtx();
+      if (!c) return false;
+      const k = Math.max(0, Math.min(12, +step || 0));
+      const f0 = 330 * Math.pow(2, k / 18);
+      tone(c, "triangle", f0, f0 * 1.28, c.currentTime, 0.055, 0.085);
+      return true;
     },
-    snap(){
+    snap() {
       nSeq++;
-      const c = readyCtx(); if (!c) return;
+      const c = readyCtx();
+      if (!c) return false;
       const t = c.currentTime;
-      burst(c, "highpass", 2200, 1.2, t, .016, .052);
-      tone(c, "sine", 290, 155, t, .042, .055);
+      burst(c, "highpass", 2200, 1.2, t, 0.016, 0.052);
+      tone(c, "sine", 290, 155, t, 0.042, 0.055);
+      return true;
     },
-    tap(){
+    tap() {
       nSeq++;
-      const c = readyCtx(); if (!c) return;
-      tone(c, "sine", 520, 340, c.currentTime, .022, .045);
+      const c = readyCtx();
+      if (!c) return false;
+      tone(c, "sine", 520, 340, c.currentTime, 0.022, 0.045);
+      return true;
     },
-    right(){
+    right() {
       nSeq++;
-      const c = readyCtx(); if (!c) return;
+      const c = readyCtx();
+      if (!c) return false;
       const t = c.currentTime;
-      tone(c, "triangle", 523.25, 523.25, t, .11, .075);
-      tone(c, "triangle", 783.99, 783.99, t + .065, .12, .08);
+      tone(c, "triangle", 523.25, 523.25, t, 0.11, 0.075);
+      tone(c, "triangle", 783.99, 783.99, t + 0.065, 0.12, 0.08);
+      return true;
     },
-    nudge(){
+    nudge() {
       nSeq++;
-      const c = readyCtx(); if (!c) return;
+      const c = readyCtx();
+      if (!c) return false;
       const t = c.currentTime;
-      tone(c, "sine", 250, 210, t, .04, .06);
-      tone(c, "sine", 220, 185, t + .048, .045, .055);
+      tone(c, "sine", 250, 210, t, 0.04, 0.06);
+      tone(c, "sine", 220, 185, t + 0.048, 0.045, 0.055);
+      return true;
     },
-    lit(){
+    lit() {
       nSeq++;
-      const c = readyCtx(); if (!c) return;
-      const t = c.currentTime, notes = [523.25, 659.25, 783.99, 1046.5];
-      notes.forEach((f, i) => tone(c, "triangle", f, f, t + i * .075, .32, .055));
-    }
+      const c = readyCtx();
+      if (!c) return false;
+      const t = c.currentTime;
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(c, "triangle", f, f, t + i * 0.075, 0.32, 0.055));
+      return true;
+    },
   };
-})();
+}
+/* curio-sfx end */
+const Sfx = createSfx();
 
 const Host = (() => {
-  const h = {}, inFrame = window.parent !== window;
+  const listeners = new Map(), inFrame = window.parent !== window;
   addEventListener("message", e => {
     const m = e.data;
-    if (m && m.contract === "activity/1.2" && h[m.type]) h[m.type](m.payload || {});
+    if (e.source !== window.parent || !m || m.contract !== "activity/1.2") return;
+    for (const handler of listeners.get(m.type) || []) handler(m.payload || {});
   });
   const send = (type, payload) => {
     if (inFrame) parent.postMessage({ contract: "activity/1.2", type, payload: payload || {} }, "*");
     else (window.__sent = window.__sent || []).push({ type, payload: payload || {} });
   };
-  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
+  if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body || document.documentElement);
   return {
     inFrame,
-    on: (k, f) => { h[k] = f; },
+    on(type, handler){
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      const handlers = listeners.get(type);
+      handlers.add(handler);
+      return () => handlers.delete(handler);
+    },
     ready: () => send("ready"),
     event: (verb, result) => send("event", { verb, result }),
     state: o => send("state", o),
+    requestHint: () => send("request_hint"),
     noteQuestion: text => send("note_question", { text }),
     complete: r => send("complete", r || {})
   };
@@ -170,7 +255,11 @@ if (!Host.inFrame && typeof matchMedia === "function"){
 }
 
 let navFaces = null, navNow = "curious";
-function navFace(k){ navNow = k; if (navFaces && typeof navFaces[k] === "string") document.querySelector(".ava").innerHTML = navFaces[k]; }
+function navFace(k){
+  navNow = k;
+  const avatar = document.querySelector(".ava");
+  if (avatar && typeof navFaces?.[k] === "string") avatar.innerHTML = navFaces[k];
+}
 
 const sentPred = new Set(), sentObs = new Set();
 let completed = false;
@@ -216,7 +305,18 @@ function arcD(cx, cy, r, a0, a1, seed){
 
 const narrow = () => document.body.classList.contains("narrow");
 const CN1 = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
-const cnNum = n => (n = +n, n === 100 ? "百" : n === 1000 ? "千" : !Number.isInteger(n) || n < 1 || n > 99 ? undefined : n <= 10 ? CN1[n] : n < 20 ? "十" + CN1[n - 10] : CN1[Math.floor(n / 10)] + "十" + (n % 10 ? CN1[n % 10] : ""));
+function cnNum(value){
+  const n = Number(value);
+  if (n === 100) return "百";
+  if (n === 1000) return "千";
+  if (!Number.isInteger(n) || n < 0 || n > 999) return String(value);
+  if (n <= 10) return CN1[n];
+  const hundreds = Math.floor(n / 100), tens = Math.floor(n / 10) % 10, ones = n % 10;
+  let text = hundreds ? CN1[hundreds] + "百" : "";
+  if (tens) text += (tens === 1 && !hundreds ? "" : CN1[tens]) + "十";
+  else if (hundreds && ones) text += "零";
+  return text + (ones ? CN1[ones] : "");
+}
 const cnFrac = (a, b) => `${cnNum(b)}分之${cnNum(a)}`;
 const F = (a, b) => `<span class="frac" role="img" aria-label="${cnFrac(a, b)}"><span aria-hidden="true">${a}</span><span aria-hidden="true">${b}</span></span>`;
 const FSZ = { fs: [16, 20], fm: [22, 26], fb: [34, 38] };
@@ -270,12 +370,16 @@ function hint(s){ $("hint").textContent = s || ""; }
 function readout(html){ if ($("readout").innerHTML !== (html || "")) $("readout").innerHTML = html || ""; }
 function say(html, tone){ const b = $("say"); b.innerHTML = html; b.className = "bubble" + (tone ? " " + tone : ""); navFace(tone === "good" ? "clap" : tone === "bad" || tone === "hmm" ? "think" : "curious"); }
 let fingerDown = false;
-addEventListener("pointerdown", () => { fingerDown = true; }, true);
-for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);
 let keysDown = 0;
-addEventListener("keydown", e => { if (!e.repeat) keysDown++; }, true);
-addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true);
-addEventListener("blur", () => { keysDown = 0; S.hold = false; });
+function mountStationControls(){
+  addEventListener("pointerdown", () => { fingerDown = true; }, true);
+  for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);
+  addEventListener("keydown", e => { if (!e.repeat) keysDown++; }, true);
+  addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true);
+  addEventListener("blur", () => { fingerDown = false; keysDown = 0; S.hold = false; });
+  if (svg) addEventListener("resize", fitView);
+  mountQuestion();
+}
 function actions(list){
   const boxEl = $("actions"); boxEl.replaceChildren();
   S.dirty = true;
@@ -314,6 +418,7 @@ function ask(question, options, onAnswer){
     if (!sentPred.has(S.station)){ sentPred.add(S.station); Host.event("predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null }); }
     S.guess = S.guess || {}; S.guess[S.station] = o;
     say(o.feedback, o.correct ? "good" : "hmm");
+    if (o.correct) Sfx.right(); else Sfx.nudge();
     onAnswer(o);
   }})));
 }
@@ -327,9 +432,9 @@ function endActions(){
   replay = 0; picking = false;
   actions([{ label: "从头玩", go: restart, cls: "ghost tight" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1), cls: "tight" }))));
 }
-let doneStations = 0, picking = false;
+let doneStations = 0, picking = false, stationOptions = null;
 function resumeFrom(p){
-  if (picking || doneStations || !p) return;
+  if (!stationOptions || picking || doneStations || !p) return;
   const saved = new Set(Array.isArray(p.completed_stations) ? p.completed_stations : []);
   const all = p.activity_completed === true;
   while (doneStations < STATIONS && (all || saved.has(doneStations + 1))) doneStations++;
@@ -338,13 +443,21 @@ function resumeFrom(p){
 function pickStation(){
   picking = true; replay = 0; gen++; S.mode = "talk"; hint(""); readout(""); disarmCue();
   const list = [];
+  const nextStation = doneStations + 1;
+  const canContinue = nextStation <= STATIONS && typeof stationOptions.resume === "function";
+  if (canContinue) list.push({ label: `继续第 ${nextStation} 站`, go: () => {
+    picking = false;
+    S.station = nextStation;
+    stationOptions.resume(nextStation);
+  } });
   for (let k = 1; k <= doneStations; k++) list.push({ label: `重玩第 ${k} 站`, go: () => replayAt(k), cls: "tight" });
   list.push({ label: "从头玩", go: restart, cls: "ghost tight" });
-  say(doneStations < STATIONS ? `上次做完了 ${doneStations} 站。重玩一站，还是从头玩？` : "这几站你都做完了。想重玩哪一站？");
+  if (canContinue) say(`上次做完了 ${doneStations} 站。接着玩，还是重玩一站？`);
+  else say(doneStations < STATIONS ? `上次做完了 ${doneStations} 站。重玩一站，还是从头玩？` : "这几站你都做完了。想重玩哪一站？");
   actions(list);
 }
 
-(function(){
+function mountQuestion(){
   const area = $("qarea");
   if (!area) return;
   const open = document.createElement("button");
@@ -360,7 +473,7 @@ function pickStation(){
     area.append(bx); ta.focus();
   });
   area.append(open);
-})();
+}
 
 let cuePos = null, cueTimer = 0;
 function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; S.dirty = true; } }, 1500); }
@@ -380,7 +493,6 @@ function fitView(){
   if (svg.getAttribute("viewBox") !== v){ svg.setAttribute("viewBox", v); S.dirty = true; return true; }
   return false;
 }
-addEventListener("resize", fitView);
 function scene(name){ S.scene = name; fitView(); S.dirty = true; }
 
 Host.on("theme", p => { applyHostTheme(p); S.dirty = true; });
@@ -392,7 +504,7 @@ const Kit = (() => {
     if (booted || !enterFn) return;
     booted = true;
     clearTimeout(timer);
-    enterFn();
+    enterFn(pendingInit || {});
   }
   Host.on("init", p => {
     applyHostTheme(p);
@@ -403,11 +515,14 @@ const Kit = (() => {
     }
     if (p && p.question_available === false && $("qarea")) $("qarea").hidden = true;
     pendingInit = p;
-    if (!booted) boot();
-    resumeFrom(p);
+    // 先让活动自己的 init 订阅读到年级、阶段等字段，再进入首屏。
+    queueMicrotask(() => { boot(); if (booted) resumeFrom(p); });
   });
   return {
-    start(fn){
+    start(fn, { stations = null } = {}){
+      if (enterFn) return;
+      stationOptions = stations;
+      if (stationOptions) mountStationControls();
       enterFn = fn;
       Host.ready();
       if (!Host.inFrame) boot();

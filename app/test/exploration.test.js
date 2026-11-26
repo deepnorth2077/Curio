@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mountExploration, stationCount } from "../exploration.js";
-import { PALETTE_KEYS, DARK_PALETTE, LIGHT_PALETTE } from "../theme.js";
+import { PALETTE_KEYS, DARK_PALETTE, LIGHT_PALETTE, resolvePalette } from "../theme.js";
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 const content = {
@@ -36,12 +36,12 @@ function setup(options = {}, submit) {
       events.push(e);
     },
   }};
-  const { contract: _ignored, ...mountOpts } = options;
+  const { contract: _ignored, manifestFields, ...mountOpts } = options;
   const handle = mountExploration({
     container: {ownerDocument:{defaultView:win, createElement:()=>frame},append(){}},
     manifest: {id:(options.content ?? content).activity_id, contract, ...(contract === "activity/1.2" ? {kit: 1} : {}), type:"simulation",
       version:(options.content ?? content).activity_version,
-      targets:[(options.content ?? content).node_id], age_band:"G3-4", emits:["observed","predicted","answered"]},
+      targets:[(options.content ?? content).node_id], age_band:"G3-4", pedagogy:"explain", emits:["observed","predicted","answered"], ...manifestFields},
     html: "<!DOCTYPE html><html><head><title>活动</title></head><body></body></html>",
     session, now:()=>new Date(0).toISOString(), ids:{attempt:()=>"attempt",event:()=>String(++serial)},
     content, onStatus:(s)=>statuses.push(s), ...mountOpts,
@@ -221,4 +221,71 @@ test("activity/1.1 stays frozen without 1.2 palette, scheme, muted, or theme/mut
   h.handle.setMuted(false);
   assert.equal(h.messages.length, 1);
   await h.handle.leave();
+});
+
+
+test("platform colors declared by tokens reach both init and live updates", async () => {
+  const style = {
+    getPropertyValue(name) {
+      return {
+        "--curio-palette-keys": "outline",
+        "--outline": "#abc",
+        "--side": "#eee",
+      }[name] || "";
+    },
+  };
+  const palette = resolvePalette("dark", { documentElement: {}, defaultView: { getComputedStyle: () => style } });
+  assert.deepEqual(palette, { ...DARK_PALETTE, outline: "#abc" });
+  const h = setup({ contract: "activity/1.2", scheme: "dark", palette });
+  await h.start();
+  assert.deepEqual(h.messages[0].payload.palette, palette);
+  h.handle.setTheme({ scheme: "light", palette: { ...LIGHT_PALETTE, outline: "#123456" } });
+  assert.equal(h.messages.at(-1).payload.palette.outline, "#123456");
+  assert.throws(() => h.handle.setTheme({ palette: { ...palette, outline: "plum" } }), /不合法/);
+  const { accent, ...missing } = palette;
+  assert.throws(() => h.handle.setTheme({ palette: missing }), /不合法/);
+  await h.handle.leave();
+});
+
+test("preferences reach the frame while its completion is being saved", async () => {
+  let finish;
+  const saving = new Promise((resolve) => { finish = resolve; });
+  const h = setup({ contract: "activity/1.2" }, (e) => e.verb === "attempt.completed" && saving);
+  await h.start();
+  for (let station = 1; station <= 4; station++) h.progress(station);
+  h.signals("complete");
+  await tick();
+  h.handle.setMuted(true);
+  h.handle.setTheme({ scheme: "dark", palette: DARK_PALETTE });
+  assert.deepEqual(h.messages.slice(1).map((m) => [m.type, m.payload]), [
+    ["mute", { muted: true }],
+    ["theme", { scheme: "dark", palette: DARK_PALETTE }],
+  ]);
+  finish();
+  await tick();
+  assert.equal(h.statuses.at(-1), "completed");
+  await h.handle.leave();
+});
+
+test("a new five-station exploration resumes, rejects station 6 and must finish station 5", async () => {
+  const options = {
+    contract: "activity/1.2",
+    content: { ...content, activity_id: "act.simulation.five-stations" },
+    manifestFields: { station_count: 5 },
+    doneStations: [1, 2, 6],
+  };
+  const h = setup(options);
+  await h.start();
+  assert.deepEqual(h.messages[0].payload.completed_stations, [1, 2]);
+  h.progress(5); h.progress(3); h.progress(4); h.progress(6); h.signals("complete");
+  await tick();
+  assert.deepEqual(h.events.map((e) => e.verb), ["attempt.started", "sim.observed", "sim.observed"]);
+  h.progress(5); h.signals("complete");
+  await tick();
+  assert.equal(h.events.at(-1).verb, "attempt.completed");
+  await h.handle.leave();
+  assert.throws(() => setup({ ...options, contract: "activity/1.1" }), /清单/);
+  assert.throws(() => setup({ ...options, manifestFields: {} }), /清单/);
+  assert.throws(() => setup({ ...options, manifestFields: { station_count: 257 } }), /清单/);
+  assert.throws(() => setup({ ...options, manifestFields: { station_count: 5, targets: ["math.other"] } }), /清单/);
 });

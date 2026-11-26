@@ -1,6 +1,7 @@
 id: act.simulation.chocolate-split-01
 contract: activity/1.2
 kit: 1
+station_count: 3
 type: simulation
 version: 3
 title: 掰巧克力

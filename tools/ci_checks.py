@@ -319,11 +319,17 @@ def activity_misconception_refs(doc):
 def explains_node(nid, activity, entry_html):
     """被收录的动手探索能否承担本星讲解：清单指向本星、activity/1.1 或 1.2、simulation、explain、
     入口 index.html、声明 observed，并且入口 HTML 用 slice-5a 的站完成标记。entry_html 是入口文件的文字（读不到为 None）。"""
-    return (activity.get("type") == "simulation" and activity.get("pedagogy") == "explain"
-            and activity.get("contract") in ("activity/1.1", "activity/1.2") and activity.get("entry") == "index.html"
-            and nid in activity.get("targets", []) and isinstance(activity.get("emits"), list)
-            and "observed" in activity["emits"]
-            and isinstance(entry_html, str) and STATION_COMPLETE_MARK.search(entry_html) is not None)
+    if not (activity.get("type") == "simulation" and activity.get("pedagogy") == "explain"
+            and activity.get("entry") == "index.html" and nid in activity.get("targets", [])
+            and isinstance(activity.get("emits"), list) and "observed" in activity["emits"]
+            and isinstance(entry_html, str)):
+        return False
+    if activity.get("contract") == "activity/1.1":
+        return STATION_COMPLETE_MARK.search(entry_html) is not None
+    # 正式宿主按清单里的站数挂载 1.2 讲解；没有登记站数的自由活动仍可作为其他收录内容。
+    count = activity.get("station_count")
+    return (activity.get("contract") == "activity/1.2" and type(count) is int and 1 <= count <= 256
+            and module_lint.kit_reports_station(entry_html))
 
 
 def read_entry_beside(manifest_path):
@@ -942,8 +948,8 @@ def run(repo, base="origin/main", branch="", labels=()):
     for message in status_errors:
         r.err(message, "docs/constellations")
 
-    # ---------- 4e. 共用色位与零件库（docs/specs/kit.md）：只有在仓库里有 kit/ 时才查，兼容不含 kit/ 的旧夹具仓库 ----------
-    if (repo / "kit").is_dir():
+    # ---------- 4e. 共用色位与零件库（docs/specs/kit.md）：目标分支已有 kit/ 时，删除整个目录也须拦下 ----------
+    if (repo / "kit").is_dir() or git(repo, "cat-file", "-e", f"{base}:kit").returncode == 0:
         for file_rel, message in kit_tool.check_repo(repo, base=base):
             r.err(message, file_rel)
 

@@ -8,7 +8,7 @@
 平台把模块放进 `sandbox="allow-scripts"` 的 iframe 里运行，双方只通过 `postMessage` 通信。每条消息都带与该模块 `manifest.yaml` 一致的 `contract`（`"activity/1.1"` 或 `"activity/1.2"`），不匹配的一律忽略。
 
 - `activity/1.1`：首批已发布模块使用的契约，冻结现有宿主行为不变。
-- `activity/1.2`（详见 `docs/specs/kit.md`）：必填 `kit: <版本号>`，内联 `kit/<版本号>/` 零件库；`init` 额外下发 20 个十六进制平台色位 `palette`、`scheme: "light"|"dark"` 与 `muted: boolean`，并在运行中途接收宿主的 `theme`（切换明暗/配色）和 `mute`（切换静音）消息。
+- `activity/1.2`（详见 `docs/specs/kit.md`）：必填 `kit: <版本号>`，内联 `kit/<版本号>/` 零件库；`init` 额外下发 20 个十六进制平台色位 `palette`、`scheme: "light"|"dark"` 与 `muted: boolean`。宿主可以增加十六进制色位，旧库忽略未知键。活动在运行中途接收宿主的 `theme`（切换明暗/配色）和 `mute`（切换静音）消息。
 
 ## 硬性约束
 
@@ -24,6 +24,8 @@
 | --- | --- | --- | --- |
 | 模块 → 平台 | `ready` | — | 模块加载完成。平台 3 秒内没收到 `ready`，会记一条契约警告。 |
 | 平台 → 模块 | `init` | `{age_band, lang, phase, palette, mastery}`，可选 `navigator` | `palette` 是当前主题的颜色表，模块据此设置自己的 CSS 变量，保证和平台的明暗主题一致。可选的 `navigator: {id, faces: {curious, waiting, surprised, clap, think, wrong}}` 是舰长选的领航员，每个值是那张脸的 SVG 去掉最外层 `<svg>` 以后的内容（宿主核对过哈希、按白名单查过，只用 `k`、`k1`、`f-*` 十个类，颜色由模块的样式给）；模块拿它换掉自带的那张脸，表情跟着场合换（`docs/specs/navigators.md` 第 6 节）。缺了不算契约警告；契约版本仍是 1.1，不认识它的模块忽略。 |
+| 平台 → 模块 | `theme`（1.2） | `{scheme, palette}` | 切换配色时更新明暗模式及颜色。缺少或无效的已知键回退至当前模式的库后备色。 |
+| 平台 → 模块 | `mute`（1.2） | `{muted}` | 切换声音开关后立即应用到当前活动。 |
 | 平台 → 模块 | `phase` | `{phase}` | 实验类的阶段：`predict`（锁定操作）、`observe`（解锁）。 |
 | 模块 → 平台 | `event` | `{verb, result}` | 一条学习事件。`verb` 必须在 manifest 的 `emits` 里声明过，否则平台会记一条契约警告。 |
 | 模块 → 平台 | `state` | 可观测量的当前值 | 实验类在每次变化时发送，平台用它生成「解释」一步里的对比，例如亮度从「很暗」变成「较亮」。 |
@@ -40,11 +42,11 @@
 
 | 字段 | 含义 |
 | --- | --- |
-| `completed_stations` | 已完成站号的数组。宿主按当前孩子、活动 ID 和活动版本从有效尝试重建。空数组从头开始。 |
+| `completed_stations` | 已完成站号的数组。宿主按当前孩子和活动 ID 从有效尝试重建，并按当前站数过滤。空数组从头开始。 |
 | `activity_completed` | 已经领过本活动的星卡。最后一站完成和领星卡可以分两次访问。 |
 | `question_available` | 能否接收提问。正式入口给 `false`，模块隐藏提问按钮。 |
 
-正式宿主只接受来自当前沙箱窗口、匹配 `activity/1.1` 和运行阶段的消息。三个四站活动各自完成一站时发 `event`，载荷为 `{verb:"observed",result:{station:1,item:"station-complete"}}`，其中站号按顺序从 1 到 4。每个新完成的站只记录一次。站齐后领星卡的 `complete` 结束尝试。已领星卡的重玩全程保留在模块内。频繁变化的读数和画面高度都不产生站点记录。
+正式宿主只接受来自当前沙箱窗口、匹配活动所声明契约和运行阶段的消息。三个四站活动各自完成一站时发 `event`，载荷为 `{verb:"observed",result:{station:1,item:"station-complete"}}`，其中站号按顺序从 1 到 4。每个新完成的站只记录一次。站齐后领星卡的 `complete` 结束尝试。已领星卡的重玩全程保留在模块内。频繁变化的读数和画面高度都不产生站点记录。
 
 ## 「预测 → 观察 → 解释」由谁做
 
@@ -54,7 +56,11 @@
 2. **观察**：平台发送 `phase: observe`，模块解锁。孩子操作，模块持续发送 `state`；孩子点「观察完了」，模块发送 `event: observed`。
 3. **解释**：平台对比预测和观察结果，展示 `explain` 里的解释，并收集一句反思。
 
-## 最小实现
+## 1.2 活动的入口
+
+新活动从 `starter.html` 起步。要在正式外壳按站记录和恢复进度，1.2 模拟在 manifest 声明 `pedagogy: explain`、`emits` 包含 `observed`，并用 `station_count` 写明总站数（1–256）。各站依次发送完成事件，越界站号会被忽略。只用通信、配色和音效的活动可直接调用 `Kit.start(enter)`。需要选站、重玩或续站的活动按对应版本的 [零件库说明](../kit/1/README.md) 传入站点选项。活动可以订阅 `init`、`theme`、`mute` 或 `phase`，每个订阅与库内建处理共同生效。
+
+## 1.1 最小实现
 
 ```html
 <script>

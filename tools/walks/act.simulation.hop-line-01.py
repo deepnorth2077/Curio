@@ -65,7 +65,24 @@ def play(w):
 
     def drag_flag(to, mid=None):
         fx, fy = pt(*ev("[X(S.fp), FY + gripR()*.2]")); tx, _ = pt(*ev(f"[X({to}), FY]"))
-        before = (lambda: (page.wait_for_timeout(200), shot(mid))) if mid else None
+
+        def before():
+            if not mid:
+                return
+            page.wait_for_timeout(200)
+            shot(mid)
+            if name == "desk":
+                seq = ev("Sfx.seq()")
+                page.mouse.move(tx + 2, fy)
+                w.wait(70)
+                page.mouse.move(tx, fy)
+                check("旗在同一格内来回拖不响", ev("Sfx.seq()") == seq, ev("Sfx.seq()") - seq)
+                cross_x, _ = pt(*ev(f"[X({to} + 1 / 8), FY]"))
+                w.wait(70)
+                page.mouse.move(cross_x, fy)
+                check("旗拖过一格只响一次", ev("Sfx.seq()") == seq + 1, ev("Sfx.seq()") - seq)
+                page.mouse.move(tx, fy)
+
         if touch and name == "phone":   # 真实触摸事件（教训 25）
             path = [(fx, fy)] + [(fx + (tx - fx) * i / 14, fy + 30 * math.sin(i)) for i in range(1, 15)]
             w.touch_drag(path, before_release=before, no_scroll="拖旗时页面不滚")
