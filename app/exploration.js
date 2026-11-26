@@ -1,10 +1,10 @@
 // One verified release entry, one opaque iframe, one ordered stream of local writes.
 import { assemble, localReceipt } from "./session.js";
+import { validPalette, resolvePalette } from "./theme.js";
 
-const CONTRACT = "activity/1.1";
-// Explorations this shell hosts, with each module's station count (slice-5a; zero-to-one in #233).
-// The count bounds station numbers and decides when the whole exploration is done.
-const stationCounts = new Map([
+export const SUPPORTED_CONTRACTS = Object.freeze(["activity/1.1", "activity/1.2"]);
+// Released before station_count was available. Keep old packages and their progress readable.
+const legacyStationCounts = new Map([
   ["act.simulation.cell-zoom-01", 4],
   ["act.simulation.chromosome-pack-01", 4],
   ["act.simulation.dna-book-01", 4],
@@ -31,8 +31,18 @@ const stationCounts = new Map([
   // 「乘法的秘密」掰巧克力（#54）
   ["act.simulation.chocolate-split-01", 3],
 ]);
-export const supportedExploration = (id) => stationCounts.has(id);
-export const stationCount = (id) => stationCounts.get(id) ?? 0;
+export function stationCount(id, manifest) {
+  if (manifest && Object.hasOwn(manifest, "station_count")) {
+    const count = manifest.station_count;
+    if (manifest.id !== id || manifest.contract !== "activity/1.2" || manifest.type !== "simulation" ||
+        manifest.pedagogy !== "explain" || !Array.isArray(manifest.emits) || !manifest.emits.includes("observed") ||
+        !Number.isSafeInteger(manifest.kit) || manifest.kit < 1 ||
+        !Number.isSafeInteger(count) || count < 1 || count > 256) return 0;
+    return count;
+  }
+  return legacyStationCounts.get(id) ?? 0;
+}
+export const supportedExploration = (id, manifest) => stationCount(id, manifest) > 0;
 
 const policy = [
   "default-src 'none'", "script-src 'unsafe-inline'", "style-src 'unsafe-inline'",
@@ -68,16 +78,27 @@ export function navigatorPayload(n) {
 export function mountExploration({
   container, manifest, html, session, ids, now, content, mode = "first",
   doneStations = [], activityCompleted = false, onStatus = () => {}, navigator = null,
+  scheme = "light", palette = null, muted = false,
 }) {
-  if (!supportedExploration(manifest.id) || manifest.contract !== CONTRACT ||
+  const contract = manifest.contract;
+  const count = stationCount(manifest.id, manifest);
+  if (!count || !SUPPORTED_CONTRACTS.includes(contract) ||
       manifest.type !== "simulation" || manifest.id !== content.activity_id ||
       manifest.version !== content.activity_version || content.activity_kind !== "simulation" ||
-      !manifest.targets.includes(content.node_id) || !Array.isArray(manifest.emits) ||
+      !Array.isArray(manifest.targets) || !manifest.targets.includes(content.node_id) || !Array.isArray(manifest.emits) ||
       !manifest.emits.includes("observed")) throw new Error("活动清单和入口不符");
   // 选好的领航员（docs/specs/navigators.md 第 6 节）：外壳核对过哈希、按白名单查过、去掉了最外层 <svg>。形状不对就不发
   const pilot = navigatorPayload(navigator);
   const srcdoc = isolatedDocument(html);
   const doc = container.ownerDocument;
+  let curScheme = scheme === "dark" ? "dark" : "light";
+  let curMuted = !!muted;
+  let curPalette = null;
+  if (contract === "activity/1.2") {
+    const candidate = palette !== null ? palette : resolvePalette(curScheme, doc);
+    if (!validPalette(candidate)) throw new Error("活动配色表不合法");
+    curPalette = { ...candidate };
+  }
   const win = doc.defaultView;
   const frame = doc.createElement("iframe");
   frame.setAttribute("sandbox", "allow-scripts");
@@ -87,7 +108,6 @@ export function mountExploration({
   frame.inert = true;
   frame.style.visibility = "hidden";
 
-  const count = stationCount(manifest.id);
   const previous = [...new Set(doneStations.filter((n) => stationNumber(n, count)))].sort((a,b) => a-b);
   const stations = new Set(previous);
   const attempt = activityCompleted ? null : ids.attempt();
@@ -155,10 +175,11 @@ export function mountExploration({
       if (!accepting) return;
       phase = "active";
       frame.contentWindow.postMessage({
-        contract: CONTRACT, type: "init", payload: {
+        contract, type: "init", payload: {
           age_band: manifest.age_band, lang: "zh-CN", phase: "observe",
           completed_stations: previous, activity_completed: activityCompleted, question_available: false,
           ...(pilot ? { navigator: pilot } : {}),
+          ...(contract === "activity/1.2" ? { scheme: curScheme, palette: { ...curPalette }, muted: curMuted } : {}),
         },
       }, "*"); // sandboxed srcdoc has an opaque origin.
       frame.inert = false;
@@ -166,6 +187,12 @@ export function mountExploration({
       if (pendingHeight !== undefined) resize(pendingHeight);
       onStatus("active");
     });
+  }
+  function sendPreference(type, payload) {
+    // 初始化前的切换由 init 发送。初始化后，无论站点是否正在存盘，沙箱都可接收偏好。
+    if (accepting && phase !== "loading" && phase !== "starting") {
+      frame.contentWindow.postMessage({ contract, type, payload }, "*");
+    }
   }
   function load() {
     if (loaded) { stop("navigation", "error"); return; }
@@ -184,7 +211,7 @@ export function mountExploration({
   function receive(event) {
     if (!accepting || event.source !== frame.contentWindow || event.origin !== "null" || event.ports?.length) return;
     const m = event.data;
-    if (!exact(m, ["contract", "type", "payload"]) || m.contract !== CONTRACT) return;
+    if (!exact(m, ["contract", "type", "payload"]) || m.contract !== contract) return;
     const p = m.payload;
     if (m.type === "ready" && phase === "loading" && exact(p, [])) {
       ready = true;
@@ -229,5 +256,19 @@ export function mountExploration({
     },
     // On loss of writer ownership, queued and future writes must stop immediately.
     destroy() { aborted = true; detach(); },
+    setTheme({ scheme: nextScheme, palette: nextPalette } = {}) {
+      if (contract !== "activity/1.2") return;
+      const scheme = nextScheme === "dark" ? "dark" : "light";
+      const candidate = nextPalette ?? resolvePalette(scheme, doc);
+      if (!validPalette(candidate)) throw new Error("活动配色表不合法");
+      curScheme = scheme;
+      curPalette = { ...candidate };
+      sendPreference("theme", { scheme: curScheme, palette: { ...curPalette } });
+    },
+    setMuted(nextMuted) {
+      if (contract !== "activity/1.2") return;
+      curMuted = !!nextMuted;
+      sendPreference("mute", { muted: curMuted });
+    },
   };
 }

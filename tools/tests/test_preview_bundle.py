@@ -60,6 +60,20 @@ class PreviewBundleReviewGate(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp)
 
+    def test_simulation_station_count_for_resume(self):
+        folder = self.tmp / "content/activities" / SIMULATION
+        path = folder / "manifest.yaml"
+        manifest = yaml.safe_load(path.read_text(encoding="utf-8"))
+        for contract, count, expected in [
+            ("activity/1.2", 7, 7), ("activity/1.1", 7, None),
+            ("activity/1.2", 0, None), ("activity/1.2", True, None), ("activity/1.2", 257, None),
+        ]:
+            with self.subTest(contract=contract, count=count):
+                manifest.update(contract=contract, station_count=count)
+                path.write_text(yaml.safe_dump(manifest, allow_unicode=True), encoding="utf-8")
+                activity = build.load_activity([self.tmp], SIMULATION, {})
+                self.assertEqual(activity.get("station_count"), expected)
+
     def test_approved_activities_are_included(self):
         data, _ = bundle(self.tmp)
         for aid in (SIMULATION, QUIZ):

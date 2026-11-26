@@ -57,7 +57,7 @@
 - **宿主同时认 `activity/1.1` 和 `activity/1.2`**：消息信封的 `contract` 字段严格按该模块 `manifest.yaml` 声明的版本收发。
 - **冻结 `1.1` 现状**：对未迁移的 `activity/1.1` 模块，正式外壳和试玩壳保持现有 `init` 下发行为不变（不强灌紫色 `--accent`，不改 `1.1` 模块画面）；只对 `activity/1.2` 模块发 20 键 `palette`、`scheme` 和 `muted`。
 - **首帧不闪烁**：在 iframe 内运行时（`window.parent !== window`），`Kit.start(enter)` 先发 `ready`，等待 `init` 到达后再应用配色/明暗并调用 `enter()`；若 `300ms` 内未收到 `init`（如简易测试容器），超时后用默认配色进入 `enter()`。独立打开时（不在 iframe 内）直接调用 `enter()`。
-- **Schema 与门禁**：`schemas/activity.schema.json` 中 `contract` 改为 `enum: ["activity/1.1", "activity/1.2"]`；新增正整数字段 `kit`；当 `contract` 为 `"activity/1.2"` 时 `kit` 必填，当 `contract` 为 `"activity/1.1"` 时禁止出现 `kit`。`docs/specs/content.md` 第 5 节、`docs/activity-contract.md`、`tools/ci_checks.py`（`explains_node`）与 `app/app.js`、`app/exploration.js`、`preview/template.html` 同步认 `"activity/1.2"`。
+- **Schema 与门禁**：`schemas/activity.schema.json` 中 `contract` 改为 `enum: ["activity/1.1", "activity/1.2"]`；新增正整数字段 `kit`；当 `contract` 为 `"activity/1.2"` 时 `kit` 必填，当 `contract` 为 `"activity/1.1"` 时禁止出现 `kit`。通过分站模拟承担正式讲解的 1.2 活动，在清单中声明 `station_count`，供宿主验证并恢复进度。`docs/specs/content.md` 第 5 节、`docs/activity-contract.md`、`tools/ci_checks.py`（`explains_node`）与 `app/app.js`、`app/exploration.js`、`preview/template.html` 同步认 `"activity/1.2"`。
 
 ---
 
@@ -71,7 +71,7 @@
   - 外壳在 `localStorage`（键 `curio.muted`，`"1"` 为静音，默认有声；主题键 `curio.theme`，`"light" | "dark"`，未设时跟随系统）保存偏好——这两项是设备界面偏好，不是学习事实，不写学习事件，也不改变备份格式。
   - 外壳左侧导航栏底部（桌面端 `.ribbon` 锁图标上方、移动端顶栏/家长页旁，不增加页面导航项）提供轻量的**声音开关**与**明暗切换**按钮，带清晰 `aria-label` 与 `aria-pressed`。
   - `muted === true`、环境无 `AudioContext`（如 Node 单测）、或浏览器尚未收到用户手势解锁音频时，所有 `Sfx.*()` 静默无操作，不抛错。
-  - 首次 `pointerdown` 或 `keydown` 时，若 `AudioContext.state === "suspended"`，自动调用 `resume()`。
+  - 在 `pointerdown`、`keydown`、`touchend` 或 `click` 的用户手势中，若 `AudioContext.state === "suspended"`，自动调用 `resume()`。
 
 #### 2.2 七个语义「声位」
 
@@ -87,7 +87,7 @@
 | `Sfx.nudge()` | `~90ms` 低柔木质双轻叩（不用刺耳蜂鸣器） | 答错触发误区引导、分母填 0 等温和提醒 |
 | `Sfx.lit()` | `~550ms` 温暖四音泛音琶音和弦（如 `C5–E5–G5–C6`），配 1.2 秒点亮动效；`prefers-reduced-motion` 下照常发声（除非静音） | 星星首次点亮、动手探索全部站完成领星卡 |
 
-- **测试接缝**：`createSfx({ AudioCtx, nowMs })` 纯工厂函数（`app/sfx.js` 导出，`kit/1/kit.js` 内联同源实现）支持在 `node:test` 注入假 `AudioCtx` 与假时钟，精确验证：静音时不建节点、`35ms` 节流生效、7 个声位参数合法且自动清理节点、无 `AudioCtx` 时不抛错。
+- **测试接缝**：`createSfx({ AudioCtx, nowMs })` 纯工厂函数（以最新 `kit/<N>/kit.js` 的 `curio-sfx` 标记段为原件，工具同步到 `app/sfx.js` 导出）支持在 `node:test` 注入假 `AudioCtx` 与假时钟，精确验证：静音时不建节点、`35ms` 节流生效、7 个声位参数合法且自动清理节点、无 `AudioCtx` 时不抛错。
 
 ---
 
@@ -108,8 +108,10 @@ kit/
   `/* curio-kit:1 begin */` … `/* curio-kit:1 end */`
 - 外壳文件（`app/index.html`、`preview/template.html`）颜色变量段：
   `/* curio-tokens begin */` … `/* curio-tokens end */`
+  系统深色和手动深色都从同一份深色色值生成。同步工具按平台色表生成 `--curio-palette-keys`，宿主读取这些键并校验各值。深浅两套色表使用同一组键。
   段后保留外壳别名：`--c-sci: var(--sage); --c-sci-bg: var(--sage-bg); --c-math: var(--apricot); --c-sky: var(--sky); --wash: var(--paper);`（`--c-sci-2`、`--c-math-2`、`--c-math-bg` 留在外壳自身）。
 - **明确扫描白名单**（不扫 `docs/`、`prompts/` 或构建产物）：
+  - `app/sfx.js` 的 `curio-sfx` 段
   - `app/index.html`、`preview/template.html`（原型 `prototype/index.html` 已冻结，不强改）
   - `.claude/skills/curio-anatomy/references/starter.html`（改为基于 `curio-kit:1` 的薄骨架）
   - `content/activities/*/index.html` 中对应 `manifest.yaml` 声明了 `kit` 的模块
@@ -120,9 +122,9 @@ kit/
 
 1. `contract: "activity/1.2"` 的模块必填 `kit: N`，`index.html` 必须包含样式与脚本两段 `curio-kit:N`，且逐字节等于 `kit/<N>/` 原件，且 `kit/<N>/README.md` 声明的契约等于 `"activity/1.2"`。
 2. `1.2` 模块的 `<style>` 里不得出现 `prefers-color-scheme`（明暗一律走 `.kit-dark` 类），模块自己的深色变量写在 `.kit-dark` 下。
-3. 标记段以外不得重新声明 `kit` 导出的顶层名字（`Host`、`Kit`、`Sk`、`sketchLib`、`Sfx`、`fracS`、`oneMark`、`grip`）。
+3. 标记段以外不得重新声明 `kit` 导出的顶层名字（`Host`、`Kit`、`Sk`、`sketchLib`、`Sfx`、`fracS`、`oneMark`、`grip`、`lineStrip` 等）。允许函数内部定义独立的局部变量。
 4. 模块内禁止 `<audio>`、`<video>` 或外部音频引用（`module_lint.py`），声音统一走 `Sfx`。
-5. 一旦 `origin/main` 上已有模块使用 `kit/<N>/`，`kit/<N>/` 下任何文件不得修改（改则报错，须新建 `kit/<N+1>/`）；`kit/tokens.css` 允许修改并同步到外壳。
+5. 版本首次发布前，检查后备色与当时平台色表一致。主线上的活动一旦使用过某一版，该版目录就永久冻结，即使使用它的最后一个活动已迁走。之后平台可以改色和增加色位，只同步外壳。独立打开的旧活动继续使用其发版时的后备色。
 
 ---
 

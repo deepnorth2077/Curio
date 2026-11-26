@@ -2,10 +2,11 @@
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync, cpSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, cpSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { stationCount } from "../exploration.js";
 import { canonicalJson, cmpCodePoints, loadRelease, ReleaseError } from "../app.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -93,4 +94,38 @@ test("带知识点目录的发布包仍能打开课程；目录摘要受 content
   manifest.catalog.json.sha256 = "0".repeat(64);
   writeFileSync(join(release, "release.json"), JSON.stringify(manifest));
   await assert.rejects(loadRelease(urlOf(release), fileFetch), (err) => err.kind === "broken");
+});
+
+test("only a verified station manifest opens a new activity, scoped to its release", async () => {
+  const dir = tempDir("curio-stations-");
+  const content = join(dir, "content");
+  const id = "act.simulation.five-stations", node = "math.number.fraction-intro";
+  cpSync(join(root, "tools/tests/fixtures/slice-1a/content"), content, { recursive: true });
+  const nodeFile = join(content, "nodes", "num", node + ".yaml");
+  writeFileSync(nodeFile, readFileSync(nodeFile, "utf8").replace("activities:\n", "activities:\n  - " + id + "\n"));
+  const activity = join(content, "activities", id);
+  mkdirSync(activity);
+  writeFileSync(join(activity, "index.html"), "<!DOCTYPE html><p>five stations</p>");
+  const manifest = { id, version: 1, title: "五站探索", type: "simulation", entry: "index.html",
+    contract: "activity/1.2", kit: 1, targets: [node], age_band: "G3-4", pedagogy: "explain", emits: ["observed"], review: "approved" };
+  let sequence = 0;
+  function load(fields) {
+    writeFileSync(join(activity, "manifest.yaml"), JSON.stringify({ ...manifest, ...fields }));
+    const out = join(dir, "release-" + (++sequence));
+    execFileSync("python3", [join(root, "tools/build_release.py"), "--content", content, "--out", out, "--commit", "0".repeat(40)]);
+    return loadRelease(urlOf(out), fileFetch);
+  }
+  const five = (await load({ station_count: 5 })).activities.get(id).module;
+  const six = (await load({ version: 2, station_count: 6 })).activities.get(id).module;
+  assert.equal(stationCount(id, six.manifest), 6);
+  assert.equal(stationCount(id, five.manifest), 5);
+  assert.equal(await five.loadHtml(), "<!DOCTYPE html><p>five stations</p>");
+  assert.equal((await load({})).activities.get(id).module, undefined);
+  assert.equal((await load({ contract: "activity/1.1", kit: undefined })).activities.get(id).module, undefined);
+  for (const fields of [
+    { contract: "activity/1.1", kit: undefined }, { emits: ["predicted"] },
+    { pedagogy: "POE" }, { kit: undefined }, { station_count: 257 },
+  ]) {
+    await assert.rejects(load({ station_count: 5, ...fields }), (e) => e instanceof ReleaseError && e.kind === "broken");
+  }
 });

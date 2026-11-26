@@ -784,6 +784,14 @@ class TestModuleLint(Base):
     """动手探索模块的静态检查接进了 ci_checks（tools/module_lint.py 自己的规则测试在 test_module_lint.py）。"""
     AID = "act.simulation.frac-cut"
 
+    def test_deleting_kit_directory_cannot_disable_its_checks(self):
+        self.r.write("kit/tokens.css", (REPO / "kit/tokens.css").read_text(encoding="utf-8"))
+        self.r.baseline()
+        self.r.branch("arch/remove-kit")
+        shutil.rmtree(self.r.dir / "kit")
+        self.r.commit()
+        self.fails(self.r.check(), "缺少 kit/tokens.css")
+
     def module(self, script):
         self.r.write(f"{NODE_DIR}/{N2}.yaml", node(N2, activities=[self.AID], mis=("denominator-bigger",)))
         self.r.write(f"content/activities/{self.AID}/manifest.yaml", activity(self.AID, [N2], type_="simulation", mis=("denominator-bigger",)))
@@ -936,6 +944,40 @@ class TestPublishGate(Base):
         self.assertIsNone(ci_checks.read_entry_beside(folder / "manifest.yaml"))
         (folder / "index.html").write_text('item: "station-complete"', encoding="utf-8")
         self.assertEqual(ci_checks.read_entry_beside(folder / "manifest.yaml"), 'item: "station-complete"')
+
+    def test_kit_explanation_needs_activity_code_to_report_a_completed_station(self):
+        nid = "math.fraction.fourths"
+        manifest = {"type": "simulation", "contract": "activity/1.2", "kit": 1, "station_count": 3, "entry": "index.html",
+                    "pedagogy": "explain", "targets": [nid], "emits": ["observed"]}
+        kit = (REPO / "kit/1/kit.js").read_text(encoding="utf-8")
+
+        def explains(code):
+            html = f"<script>/* curio-kit:1 begin */\n{kit}/* curio-kit:1 end */\nKit.start(() => {{ {code} }});</script>"
+            return ci_checks.explains_node(nid, manifest, html)
+
+        for code in ("", 'say("observedOnce(1)");', "/* observedOnce(1) */",
+                     "const observedOnce = n => n; observedOnce(1);",
+                     "const pretend = Host => Host.event('observed', {station:1, item:'station-complete'});",
+                     'const example = { station: 1, item: "station-complete" };',
+                     'Host.event("observed", { station });', 'Host.event("observed", {item: "station-complete"});',
+                     'Host.event("predicted", { station: 1, item: "station-complete" });'):
+            with self.subTest(code=code):
+                self.assertFalse(explains(code))
+        self.assertTrue(explains("observedOnce(3);"))
+        self.assertTrue(explains("""Host.event('observed', {'item': 'station-complete', station});"""))
+
+    def test_kit_explanation_needs_a_station_count_supported_by_the_host(self):
+        nid = "math.fraction.fourths"
+        manifest = {"type": "simulation", "contract": "activity/1.2", "kit": 1, "entry": "index.html",
+                    "pedagogy": "explain", "targets": [nid], "emits": ["observed"]}
+        html = '<script>Host.event("observed", {station: 1, item:"station-complete"});</script>'
+        self.assertFalse(ci_checks.explains_node(nid, manifest, html))
+        for count in (0, 257, True, 1.5, "3"):
+            with self.subTest(count=count):
+                self.assertFalse(ci_checks.explains_node(nid, {**manifest, "station_count": count}, html))
+        for count in (1, 5, 256):
+            self.assertTrue(ci_checks.explains_node(nid, {**manifest, "station_count": count}, html))
+        self.assertTrue(ci_checks.explains_node(nid, {**manifest, "contract": "activity/1.1"}, html))
 
     def test_life_explorations_still_supply_their_explanations(self):
         for nid, aid in (("biology.cell.cell-intro", "act.simulation.cell-zoom-01"),

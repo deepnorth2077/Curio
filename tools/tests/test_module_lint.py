@@ -88,11 +88,85 @@ class TestAllModules(Lint):
         self.fails(page(css="@import url(x.css);"), "@import")
         self.fails(page(css="body{background:url(https://example.com/a.png)}"), "url(外部地址)")
         self.fails(page().replace("<script>", '<script src="https://cdn.example.com/lib.js"></script><script>'), "<script src>")
+        self.fails(page(body='<audio src="beep.mp3"></audio>'), "<audio>")
+        self.fails(page(body='<video src="clip.mp4"></video>'), "<video>")
+        self.fails(page('const Host={ready(){}};\nHost.ready();\nnew Audio("x.mp3");\n'), "new Audio(", {"emits": []})
 
     def test_ready_before_first_station(self):
         self.fails(page('const Host={ready(){}};\nfunction enter1(){}\nenter1();\nHost.ready();\n'), "Host.ready() 必须先于第一站", {"emits": []})
         self.fails(page('const Host={ready(){}};\nfunction enter1(){}\nenter1();\n'), "没有调用 Host.ready()", {"emits": []})
         self.ok(page('const Host={ready(){}};\nfunction enter1(){}\nHost.ready();\nenter1();\n'), {"emits": []})
+        self.ok(page('/* curio-kit:1 begin */\nconst Kit={start(fn){fn()}};\n/* curio-kit:1 end */\nfunction enter1(){}\nKit.start(enter1);\n'),
+                {"contract": "activity/1.2", "kit": 1, "emits": []})
+
+    def test_v12_forbids_prefers_color_scheme_and_redeclaring_kit_exports(self):
+        m12 = {"contract": "activity/1.2", "kit": 1, "emits": ["predicted", "observed"], "misconceptions": ["bigger-denominator-bigger"]}
+        kit_script = (
+            '/* curio-kit:1 begin */\n' + (REPO / "kit/1/kit.js").read_text(encoding="utf-8") +
+            '\n/* curio-kit:1 end */\n'
+            'const OPTS = [{ label: "八分之一那块大", mis: "bigger-denominator-bigger" }];\n'
+            'function enter1(){ ask("选哪一块", OPTS, () => observedOnce(1)); }\n'
+            'Kit.start(enter1);\n'
+        )
+        self.ok(page(kit_script, css=".kit-dark{--own:#112233}\n"), m12)
+        self.fails(page(kit_script, css="@media (prefers-color-scheme:dark){.x{color:#fff}}\n"), "prefers-color-scheme", m12)
+        for name in ("Host", "Kit", "Sfx", "Sk", "sketchLib", "fracS", "oneMark", "grip", "lineStrip"):
+            with self.subTest(name=name):
+                self.fails(page(kit_script + f"const {name} = 1;\n"), f"重新声明零件库导出的名字 {name}", m12)
+
+    def test_kit_checks_script_scope_and_takes_exports_from_the_embedded_version(self):
+        kit = "/* curio-kit:2 begin */\nconst Kit = {}; function createSfx(){} function newPart(){}\n/* curio-kit:2 end */\n"
+        manifest = {"contract": "activity/1.2", "kit": 2, "emits": []}
+        local = "function play(newPart){ const Kit = {}; var createSfx; } { let newPart; }"
+        self.ok(page(kit + local + "\nKit.start(play);"), manifest)
+        for decl, name in (("let first, createSfx;", "createSfx"),
+                           ("const {a: newPart} = options;", "newPart"),
+                           ("if (playing) { var Kit; }", "Kit"),
+                           ("class newPart {}", "newPart")):
+            with self.subTest(decl=decl):
+                self.fails(page(kit + decl + "\nKit.start(play);"), f"重新声明零件库导出的名字 {name}", manifest)
+
+    def test_kit_verbs_belong_to_the_activity_that_calls_the_helper(self):
+        kit = ("/* curio-kit:1 begin */\n"
+               'function ask(q){Host.event("predicted", q)}\n'
+               'function observedOnce(n){Host.event("observed", {station:n, item:"station-complete"})}\n'
+               "/* curio-kit:1 end */\n")
+        manifest = {"contract": "activity/1.2", "kit": 1, "emits": ["observed"]}
+        observe = 'Kit.start(() => { say("predicted"); observedOnce(1); });'
+        html = page(kit + observe)
+        self.assertEqual(module_lint.lint(html, manifest), ([], []))
+        self.fails(page(kit + 'Kit.start(() => ask("选什么", [], cb));'), "代码里发了 predicted", manifest)
+        self.warns(page(kit + "Kit.start(() => {});"), "emits 里写了 observed，代码里没有发", manifest)
+
+    def test_events_inside_local_scopes_resolve_to_their_own_bindings(self):
+        kit = ("/* curio-kit:1 begin */\nconst Host={}; function ask(){} function observedOnce(){}\n"
+               "/* curio-kit:1 end */\n")
+        m = {"contract": "activity/1.2", "kit": 1, "emits": []}
+        for own in (
+            "Kit.start(() => {const observedOnce = x => x; observedOnce(1)});",
+            "Kit.start(() => {if (true) {var ask = f}; ask('local')});",
+            "Kit.start(() => {function observedOnce(n){} observedOnce(1)});",
+            "Kit.start(({ask}) => ask('local'));",
+            "Kit.start(() => {try {} catch (Host) {Host.event('answered', {})}});",
+            "Kit.start(() => {for (const ask of handlers) ask('local')});",
+        ):
+            with self.subTest(own=own):
+                self.assertEqual(module_lint.lint(page(kit + own), m), ([], []))
+        outer = "Kit.start(() => {{ const ask = f; ask(1); } ask('global'); });"
+        self.fails(page(kit + outer), "代码里发了 predicted", m)
+
+    def test_only_executable_scripts_count_and_each_module_has_its_own_scope(self):
+        kit = "/* curio-kit:1 begin */\nfunction ask(){} function observedOnce(){}\n/* curio-kit:1 end */\n"
+        m = {"contract": "activity/1.2", "kit": 1, "emits": []}
+        body = ('<script type="text/plain">observedOnce(1)</script>'
+                '<template><script>ask("question")</script></template>'
+                '<script type="module">const observedOnce = callback; observedOnce(1)</script>')
+        self.assertEqual(module_lint.lint(page(kit + "Kit.start(() => {});", body=body), m), ([], []))
+        imported = '<script type="module">import {local as observedOnce} from "./local.js"; observedOnce(1)</script>'
+        self.assertFalse(module_lint.kit_reports_station(page(kit, body=imported)))
+
+        html = page(kit, body=body).replace("</body>", '<script type="module">\nKit.start(() => observedOnce(1));</script></body>')
+        self.assertEqual(module_lint.lint(html, {**m, "emits": ["observed"]}), ([], []))
 
     def test_verbs_must_be_in_emits(self):
         self.fails(page(), "代码里发了 observed", {"emits": ["predicted"], "misconceptions": ["bigger-denominator-bigger"]})

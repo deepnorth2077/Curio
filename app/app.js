@@ -19,6 +19,8 @@ import { metroLayout, metroSvg, metroScroll, metroCardsHtml, LINE_NAME } from ".
 import { aliasIndex, treeHtml, searchPoints, noteHtml } from "./explorer.js";
 import { renderParent, resetParent, abandonUnfinished, isClean, needsDot, TEXT as PTEXT,
   refreshProfile, currentGradeOf, needsProfileHint, PROFILE_TEXT } from "./parent.js";
+import { Sfx } from "./sfx.js";
+import { resolvePalette } from "./theme.js";
 
 /** 这个外壳实现的引擎等级（内容规格 3.8）。挑战的三种答案（选择、数字、分数）都支持；讲解、反思还没做，点开显示「这个还在做」。
  * 2：认得发布包里的 navigators（docs/specs/navigators.md 第 2 节）。 */
@@ -26,7 +28,7 @@ export const ENGINE_LEVEL = 2;
 /** 每位领航员的六张脸（docs/specs/navigators.md 第 1 节，定义在 navigator.js）。读包时只核对清单里列全了，SVG 要显示时才取。 */
 export { NAVIGATOR_FACES };
 /** 这个外壳认得的活动契约版本（内容规格 3.8）。清单的 contracts 里有别的版本时，提示「需要更新」。 */
-export const KNOWN_CONTRACTS = ["activity/1.1"];
+export const KNOWN_CONTRACTS = ["activity/1.1", "activity/1.2"];
 /** 发布包的位置：部署时 release/ 和 app/ 同级（规格第 2、8 节）。 */
 const RELEASE_URL = new URL("../release/release.json", import.meta.url);
 
@@ -154,18 +156,22 @@ export async function loadRelease(url = RELEASE_URL, fetchFn = fetch) {
   /** @type {Map<string, {entry: any, def: any|null, module?: {manifest:any, loadHtml: () => Promise<string>}}>} */
   const activities = new Map();
   const loaded = await Promise.all(rel.activities.map(async (a) => {
-    if (supportedExploration(a.id)) {
-      const dir = "content/activities/" + a.id + "/";
-      const manifestFile = a.files.find((f) => f.path === dir + "manifest.yaml");
+    const dir = "content/activities/" + a.id + "/";
+    const manifestFile = a.files.find((f) => f.path === dir + "manifest.yaml");
+    const legacy = supportedExploration(a.id);
+    if (legacy || (a.kind === "simulation" && manifestFile)) {
       const htmlFile = a.files.find((f) => f.path === dir + "index.html");
       if (a.kind !== "simulation" || !manifestFile || manifestFile.json?.path !== manifestFile.path + ".json" || !htmlFile) {
         throw new ReleaseError("broken", `探索 ${a.id} 的文件不完整`);
       }
       const manifest = await fetchVerifiedJson(url, manifestFile.json, fetchFn);
+      if (!legacy && !Object.hasOwn(manifest ?? {}, "station_count")) {
+        return [a.id, { entry: a, def: null }];
+      }
       const targets = nodes.filter((n) => n.activities?.includes(a.id));
       if (manifest?.id !== a.id || manifest.version !== a.version || manifest.type !== a.kind ||
-          manifest.contract !== "activity/1.1" || manifest.entry !== "index.html" || manifest.pedagogy !== "explain" ||
-          !Array.isArray(manifest.emits) || !Array.isArray(manifest.targets) ||
+          !rel.contracts.includes(manifest.contract) || !supportedExploration(a.id, manifest) || manifest.entry !== "index.html" || manifest.pedagogy !== "explain" ||
+          !Array.isArray(manifest.emits) || !manifest.emits.includes("observed") || !Array.isArray(manifest.targets) ||
           !targets.length || !targets.every((n) => manifest.targets.includes(n.id))) {
         throw new ReleaseError("broken", `探索 ${a.id} 和发布清单或所属星对不上`);
       }
@@ -474,7 +480,8 @@ function renderStop(title, text) {
    ============================================================ */
 /** 星图的数据：目录 + 已发布卡 + 掌握度投影 + 当前年级。 */
 function chartModel() {
-  const progress = app.log ? nodeProgress(app.log.events(), app.mastery, stationCount) : null;
+  const progress = app.log ? nodeProgress(app.log.events(), app.mastery,
+    (id) => stationCount(id, app.pack?.activities.get(id)?.module?.manifest)) : null;
   return buildChart({ catalog: app.pack ? app.pack.catalog : null, nodes: app.pack ? app.pack.nodes : [], mastery: app.mastery, grade: app.currentGrade(Date.now()), progress });
 }
 let stopFloat = () => {};
@@ -823,15 +830,15 @@ function renderNote(model) {
   const evs = app.log ? app.log.events() : [];
   const lid = app.session?.identity.learner_id || evs.find((e) => typeof e.learner_id === "string")?.learner_id || "";
   const simChoice = choices.find((a) => a.module);
-  const simProg = simChoice && lid ? explorationProgress(evs, lid, simChoice.entry.id) : null;
+  const simProg = simChoice && lid ? explorationProgress(evs, lid, simChoice.entry.id, simChoice.module.manifest) : null;
   const hasUnfinishedSim = !!simChoice && !(simProg && simProg.activityCompleted);
   const tasks = choices.map((a) => {
     const def = a.module?.manifest || a.def;
     const isQuiz = a.entry.kind === "quiz";
     const resume = isQuiz && app.quiz?.def.id === def.id && pendingQuiz(app.quiz);
     if (!isQuiz) {
-      const total = stationCount(def.id);
-      const pr = lid ? explorationProgress(evs, lid, def.id) : { doneStations: [], activityCompleted: false };
+      const total = stationCount(def.id, def);
+      const pr = lid ? explorationProgress(evs, lid, def.id, def) : { doneStations: [], activityCompleted: false };
       const meta = pr.activityCompleted ? `动手探索 · ${total} 站 · 已探完`
         : pr.doneStations.length > 0 ? `动手探索 · 已探 ${pr.doneStations.length}/${total} 站`
         : `动手探索 · ${total} 站`;
@@ -959,6 +966,7 @@ function renderPick() {
     <p class="pick-msg" role="alert" hidden></p>
   </section>`;
   for (const b of main.querySelectorAll("[data-pick]")) b.addEventListener("click", () => {
+    Sfx.tap();
     app.pickSel = /** @type {HTMLElement} */ (b).dataset.pick || null;
     renderPick();
     /** @type {HTMLElement|null} */ (main.querySelector(`[data-pick="${CSS.escape(app.pickSel || "")}"]`))?.focus({ preventScroll: true });
@@ -1059,6 +1067,7 @@ function renderCabin(focusId) {
     <p class="pick-msg" role="alert" hidden></p>`;
   d.querySelector('[data-act="cabinClose"]')?.addEventListener("click", closeCabin);
   for (const b of d.querySelectorAll("[data-switch]")) b.addEventListener("click", async () => {
+    Sfx.tap();
     const id = /** @type {HTMLElement} */ (b).dataset.switch || "";
     /** @type {HTMLButtonElement} */ (b).disabled = true;
     if (!await choose(id, d.querySelector(".pick-msg"))) { /** @type {HTMLButtonElement} */ (b).disabled = false; return; }
@@ -1073,6 +1082,58 @@ function renderCabin(focusId) {
    知识索引（#233，照原型 treeHTML、bindTree、renderExplorer、openTree）
    ============================================================ */
 const EX_KEY = "curio.explorer";
+const THEME_KEY = "curio.theme";
+const MUTE_KEY = "curio.muted";
+
+function effectiveScheme() {
+  const saved = typeof document !== "undefined" ? document.documentElement.dataset.theme : null;
+  if (saved === "light" || saved === "dark") return saved;
+  return typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+function readMutedPref() {
+  try { return localStorage.getItem(MUTE_KEY) === "1"; } catch { return false; }
+}
+function applyPrefsUi() {
+  if (typeof document === "undefined") return;
+  const dark = effectiveScheme() === "dark";
+  const muted = Sfx.muted();
+  for (const b of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('[data-act="theme"]'))) {
+    const words = dark ? "深色模式已开，切换浅色模式" : "切换深色模式";
+    b.setAttribute("aria-pressed", String(dark));
+    b.setAttribute("aria-label", words);
+    b.title = words;
+    const moon = b.querySelector('[data-theme-icon="moon"]');
+    const sun = b.querySelector('[data-theme-icon="sun"]');
+    if (moon) moon.toggleAttribute("hidden", dark);
+    if (sun) sun.toggleAttribute("hidden", !dark);
+  }
+  for (const b of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('[data-act="mute"]'))) {
+    const words = muted ? "已静音，点一下打开声音" : "声音已开，点一下静音";
+    b.setAttribute("aria-pressed", String(muted));
+    b.setAttribute("aria-label", words);
+    b.title = words;
+    const on = b.querySelector('[data-sound="on"]');
+    const off = b.querySelector('[data-sound="off"]');
+    if (on) on.toggleAttribute("hidden", muted);
+    if (off) off.toggleAttribute("hidden", !muted);
+  }
+}
+function toggleTheme() {
+  const next = effectiveScheme() === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem(THEME_KEY, next); } catch { /* ignore */ }
+  Sfx.tap();
+  applyPrefsUi();
+  app.exploration?.host?.setTheme({ scheme: next, palette: resolvePalette(next) });
+}
+function toggleMute() {
+  const next = !Sfx.muted();
+  Sfx.setMuted(next);
+  try { localStorage.setItem(MUTE_KEY, next ? "1" : "0"); } catch { /* ignore */ }
+  if (!next) Sfx.tap();
+  applyPrefsUi();
+  app.exploration?.host?.setMuted(next);
+}
 const tree = {
   query: "",
   /** 星座 id → 展开没有；没记的按「是不是舰长当前学段」 */ open: /** @type {Record<string, boolean>} */ ({}),
@@ -1279,8 +1340,8 @@ function canSwitchActivity() {
  * 按活动 id 重建，不看 activity_version（docs/specs/navigators.md 第 6 节、slice-5a）：模块改了字节加版本，舰长做过的站照样算；
  * 站号超出当前模块站数的不算。要让旧进度失效的大改，出新的活动 id。
  */
-export function explorationProgress(events, learnerId, activityId) {
-  const stations = new Set(), count = stationCount(activityId);
+export function explorationProgress(events, learnerId, activityId, manifest) {
+  const stations = new Set(), count = stationCount(activityId, manifest);
   for (const attempt of groupAttempts(events).values()) {
     const first = attempt[0];
     const content = first.content;
@@ -1303,7 +1364,7 @@ function openExploration(node, module) {
   if (app.exploration || app.mode !== "writable" || !app.session) return;
   const { manifest } = module;
   const session = app.session;
-  const history = explorationProgress(session.log.events(), session.identity.learner_id, manifest.id);
+  const history = explorationProgress(session.log.events(), session.identity.learner_id, manifest.id, manifest);
   const run = { host: null, leaving: null, failed:false };
   app.exploration = run;
   app.view = "exploration";
@@ -1335,8 +1396,10 @@ function openExploration(node, module) {
 
 function startExploration(run, node, manifest, html, session, history, { status, refresh, panel, back }, navigator = null) {
   try {
+    const scheme = effectiveScheme();
     run.host = mountExploration({
       container: $("#main .workbench"), manifest, html, session, ids, now, navigator,
+      scheme, palette: resolvePalette(scheme), muted: Sfx.muted(),
       content: Object.freeze({ node_id: node.id, activity_id: manifest.id, activity_kind: "simulation",
         activity_version: manifest.version, content_release: app.pack.release.release_id }),
       mode: history.activityCompleted ? "retry" : "first", ...history,
@@ -1475,8 +1538,8 @@ async function pump() {
       const pl = /** @type {any} */ (cur.payload);
       z.answered[pl.item_id] = true;
       z.lastResponse[pl.item_id] = pl.response;
-      if (!pl.correct) z.wrongBy[pl.item_id] = [...(z.wrongBy[pl.item_id] || []), pl.response];
-      else z.solved = pl.item_id;
+      if (!pl.correct) { z.wrongBy[pl.item_id] = [...(z.wrongBy[pl.item_id] || []), pl.response]; Sfx.nudge(); }
+      else { z.solved = pl.item_id; Sfx.right(); }
     } else if (cur.verb === "hint.used") {
       z.focusHint = true;
     } else if (cur.verb === "answer.revealed") {
@@ -1559,6 +1622,7 @@ function submitTyped(form) {
     const a = val("a").trim(), b = val("b").trim();
     if (!a || !b) return;
     if (isZeroDenominator(b)) {
+      Sfx.nudge();
       z.inputHint = { item_id: z.q.view.item_id, text: ZERO_DENOM_TEXT };
       z.announce = ZERO_DENOM_TEXT;
       renderQuiz();
@@ -1722,6 +1786,7 @@ function renderQuiz() {
       `<div class="after">${after}</div>`;
   } else if (z.q.phase === "done") {
     body = resultHtml(z);
+    z.resultSeen = true;
   } else {
     body = `<div class="q"><p class="stem">马上就好……</p></div>`;
   }
@@ -1784,7 +1849,11 @@ function bindActs(z, root) {
     if (act === "back") { app.view = "chart"; renderChart(); }
     else if (act === "retry") retry();
     else if (act === "reload") location.reload();
-    else if (act === "next") { z.solved = null; renderQuiz(); }
+    else if (act === "next") {
+      z.solved = null;
+      if (z.q.phase === "done" && z.lit && !z.resultSeen) Sfx.lit();
+      renderQuiz();
+    }
     else if (act === "hint") askHint();
     else if (act === "reveal") revealAnswer();
     else if (act === "again") { const node = z.node, def = z.def; app.quiz = null; startChallenge(node, def); }
@@ -1828,7 +1897,6 @@ function focusQuiz(z) {
 }
 
 function resultHtml(z) {
-  z.resultSeen = true;
   const r = z.q.view.result;
   const st = nodeState(z.node.id);
   const need = Math.ceil(r.total * 4 / 5);
@@ -1836,9 +1904,8 @@ function resultHtml(z) {
   if (st === "lit" && !z.litBefore) line = "星星亮起来了！";
   else if (st === "lit") line = "星星还亮着。";
   else line = `第一次就答对 ${need} 道，星星就会亮。再来一遍试试？`;
-  // 点亮动效只放一次；reduced-motion 时不加这个类，CSS 里也只在 no-preference 下才有动画
-  const play = z.lit && !reducedMotion();
-  z.lit = false;
+  // 点亮动效只放一次；reduced-motion 时不加这个类，但微音效照常播放（静音除外，kit.md 2.2）
+  const play = z.lit && !z.resultSeen && !reducedMotion();
   return `<div class="result">
     <div class="result-star ${play ? "lighting" : ""}" data-state="${st}">${starSvg(st, 11, 150)}</div>
     <h2 tabindex="-1">第一次就答对了 ${r.first_try_correct} 道，一共 ${r.total} 道</h2>
@@ -1982,12 +2049,22 @@ async function relock() {
 async function boot() {
   window.addEventListener("pageshow", (e) => { if (e.persisted) lostLock(); });
   // 家长页用 #parent，浏览器的「返回」也能回到星图
+  Sfx.setMuted(readMutedPref());
+  applyPrefsUi();
+  const darkMq = matchMedia("(prefers-color-scheme: dark)");
+  const onDarkChange = () => {
+    if (document.documentElement.dataset.theme) return;
+    applyPrefsUi();
+    const s = effectiveScheme();
+    app.exploration?.host?.setTheme({ scheme: s, palette: resolvePalette(s) });
+  };
+  if (darkMq.addEventListener) darkMq.addEventListener("change", onDarkChange);
   app.view = location.hash === "#parent" ? "parent" : "chart";
   app.home = homeOfHash(location.hash);
   tree.collapsed = readCollapsed();
   applyCollapsed();
   syncNav();
-  // 导航上的按钮：收起、展开知识索引，搜索，手机上打开索引抽屉；点星图/地铁切换顶层视图时收起星球笔记
+  // 导航上的按钮：收起、展开知识索引，搜索，手机上打开索引抽屉，明暗切换与声音开关；点星图/地铁切换顶层视图时收起星球笔记
   document.addEventListener("click", (e) => {
     const navLink = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest?.(".ribbon a[data-view], .bottomnav a[data-view]"));
     if (navLink) {
@@ -1998,13 +2075,15 @@ async function boot() {
       }
     }
     const b = /** @type {HTMLElement|null} */ (/** @type {HTMLElement} */ (e.target).closest?.("[data-act]"));
-    if (!b || !b.closest(".ribbon, .bottomnav")) return;
+    if (!b || !b.closest(".ribbon, .bottomnav, .topbar")) return;
     const act = b.dataset.act;
     if (act === "tree") setCollapsed(!tree.collapsed);
     else if (act === "search") {
       if (tree.collapsed) setCollapsed(false);
       /** @type {HTMLElement|null} */ (document.querySelector("#explorer [data-treeq]"))?.focus();
     } else if (act === "drawer") openDrawer();
+    else if (act === "theme") toggleTheme();
+    else if (act === "mute") toggleMute();
   });
   // Esc 收起笔记（抽屉、对话框自己先接住 Esc）
   document.addEventListener("keydown", (e) => {

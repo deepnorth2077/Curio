@@ -36,7 +36,7 @@ HOST = "http://walk.curio/"   # 放进沙箱 iframe 打开时用的假地址（�
 HARNESS = """<!DOCTYPE html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%}iframe{border:0;width:100%;height:100%;display:block}</style></head>
 <body><iframe id="m" sandbox="allow-scripts" src="module/index.html"></iframe><script>
 window.__got = [];
-addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1") window.__got.push({ type: m.type, payload: m.payload || {} }); });
+addEventListener("message", e => { const m = e.data; if (m && (m.contract === "activity/1.1" || m.contract === "activity/1.2")) window.__got.push({ type: m.type, payload: m.payload || {} }); });
 </script></body></html>"""
 
 

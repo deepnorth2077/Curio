@@ -8,29 +8,55 @@
 /* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
 html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+/* curio-tokens begin */
 :root{
-  --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
+  --bg:#F5F4EE; --pane:#FBFAF6; --hover:#E7E4D9; --rule:#E0DCD0;
   --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
-  --accent:#C2603F; --accent-soft:#F3E0D6; --on-accent:#FFFFFF;
-  --c-math:#ECCDB6; --c-sci:#CCD6C0; --c-sci-2:#93A982; --c-sci-bg:#DCE3D2;
-  --c-sky:#CFDCE6; --wash:#EFE4D6; --dad:#4F7FA8; --mom:#C2603F;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --grip:#2A7F7C; --grip-soft:#D3E8E5;
+  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
   --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#2A2738;
+  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#2A2738;
+  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+:root{--curio-palette-keys:bg pane hover rule ink text muted accent accent-soft grip grip-soft sage sage-bg sky apricot paper good good-soft bad bad-soft}
+/* curio-tokens end */
+:root{
+  --side:#EFEDE5; --on-accent:#FFFFFF;
+  --c-math:var(--apricot); --c-sci:var(--sage); --c-sci-2:#93A982; --c-sci-bg:var(--sage-bg);
+  --c-sky:var(--sky); --wash:var(--paper); --dad:#4F7FA8; --mom:#C2603F;
   --shadow:0 1px 2px rgba(31,30,28,.06),0 8px 28px rgba(31,30,28,.08);
   --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
   --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
   --f-hand:"ZCOOL KuaiLe","Kaiti SC","STKaiti","KaiTi","Noto Sans SC",sans-serif;
-  color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
-  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
-  --accent:#A797F7; --accent-soft:#2D2943; --on-accent:#15121F;
-  --c-math:#5A4536; --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
-  --c-sky:#2D3B47; --wash:#2A2738; --dad:#7FA9CF; --mom:#E0876A;
-  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --side:#1B1B1B; --on-accent:#15121F;
+  --c-sci-2:#6F8560; --dad:#7FA9CF; --mom:#E0876A;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
-  color-scheme:dark;
 }}
+:root[data-theme="dark"]{
+  --side:#1B1B1B; --on-accent:#15121F;
+  --c-sci-2:#6F8560; --dad:#7FA9CF; --mom:#E0876A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased;
@@ -161,6 +187,8 @@ textarea{width:100%;font:inherit;font-size:17px;padding:10px 12px;border:1.5px s
 <div class="topbar"><div class="in">
   <button class="back" id="back" hidden>← 星图</button>
   <div class="title" id="title">Curio</div>
+  <button type="button" class="back" id="theme">深色</button>
+  <button type="button" class="back" id="mute">静音</button>
   <span class="tag">试玩版 · 不保存</span>
 </div></div>
 <main class="wrap" id="app"></main>
@@ -575,27 +603,44 @@ function viewReflection(a){
   $app.replaceChildren(chat);
 }
 
-// 动手探索：沙箱 iframe + activity/1.1 契约
-let simListener = null;
+// 动手探索：沙箱 iframe + activity/1.1 与 activity/1.2 契约
+/*__PREFERENCES__*/
+const prefs = createPreviewPreferences();
+const themeButton = document.getElementById("theme"), muteButton = document.getElementById("mute");
+function showPrefs(){
+  themeButton.setAttribute("aria-pressed", String(prefs.scheme() === "dark"));
+  muteButton.setAttribute("aria-pressed", String(prefs.muted()));
+}
+themeButton.addEventListener("click", prefs.toggleTheme);
+muteButton.addEventListener("click", prefs.toggleMute);
+prefs.subscribe(showPrefs);
+showPrefs();
+let leaveSim = null;
 function viewSim(a){
+  const contract = a.contract === "activity/1.2" ? "activity/1.2" : "activity/1.1";
   const log = S.log[a.id] ??= {kind:"simulation", events:[], questions:[]};
   dock();
   const frame = el("iframe", {class:"simframe", sandbox:"allow-scripts", title:a.title});
   frame.srcdoc = a.html;
   const end = el("div", {});
-  simListener = e => {
+  const post = (type, payload) => frame.contentWindow.postMessage({contract, type, payload}, "*");
+  let disconnectPrefs = null;
+  const simListener = e => {
     if (e.source !== frame.contentWindow) return;
-    const m = e.data; if (!m || m.contract !== "activity/1.1") return;
+    const m = e.data; if (!m || m.contract !== contract) return;
     const p = m.payload || {};
-    const post = (type, payload) => frame.contentWindow.postMessage({contract:"activity/1.1", type, payload}, "*");
     if (m.type === "ready"){
       // 有些站里会观察好几样东西。只认整站做完的那条标记。
       const stations = log.events
         .filter(ev => ev.verb === "observed" && ev.result?.item === "station-complete")
         .map(ev => ev.result.station)
-        .filter(n => Number.isInteger(n) && n >= 1 && n <= 4);
-      post("init", {age_band:a.age_band || "G3-4", lang:"zh-CN", phase:"observe", palette:{}, mastery:null,
-        completed_stations:[...new Set(stations)].sort((x, y) => x - y), activity_completed:S.done[a.id] === true});
+        .filter(n => Number.isInteger(n) && n >= 1 && n <= (a.station_count ?? 4));
+      const baseInit = {age_band:a.age_band || "G3-4", lang:"zh-CN", phase:"observe", mastery:null,
+        completed_stations:[...new Set(stations)].sort((x, y) => x - y), activity_completed:S.done[a.id] === true};
+      if (contract === "activity/1.2"){
+        post("init", {...baseInit, ...prefs.themePayload(), muted:prefs.muted()});
+        disconnectPrefs ??= prefs.connect(post);
+      } else post("init", {...baseInit, palette:{}});
     }
     else if (m.type === "resize" && p.h) frame.style.height = Math.max(600, Math.ceil(p.h) + 8) + "px";
     else if (m.type === "event") log.events.push(p);
@@ -603,6 +648,7 @@ function viewSim(a){
     else if (m.type === "complete"){ S.done[a.id] = true; end.replaceChildren(el("div", {class:"endcard pop"}, el("h3", {}, "这一段做完了"), endButtons(a))); }
   };
   addEventListener("message", simListener);
+  leaveSim = () => { removeEventListener("message", simListener); disconnectPrefs?.(); };
   $app.replaceChildren(frame, end);
 }
 
@@ -659,7 +705,7 @@ function go(v){
   }
 }
 function route(){
-  if (simListener){ removeEventListener("message", simListener); simListener = null; }
+  if (leaveSim){ leaveSim(); leaveSim = null; }
   window.scrollTo(0,0);
   const m = VIEW.match(/^act:(.+)$/);
   if (m){

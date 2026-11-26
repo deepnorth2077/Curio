@@ -134,6 +134,35 @@ class ContentSchemaTests(unittest.TestCase):
             with self.subTest(path=relative_path):
                 self.assert_valid(schema_name, load_document(FIXTURES / relative_path))
 
+    def test_activity_v12_requires_kit_and_v11_forbids_kit(self):
+        base = load_document(FIXTURES / "content/experiment-manifest.json")
+        v12 = copy.deepcopy(base)
+        v12["contract"] = "activity/1.2"
+        self.assertFalse(self.validators["activity"].is_valid(v12), "1.2 缺 kit 应拒绝")
+        v12["kit"] = 0
+        self.assertFalse(self.validators["activity"].is_valid(v12), "kit: 0 应拒绝")
+        v12["kit"] = 1
+        self.assert_valid("activity", v12)
+
+        v11_with_kit = copy.deepcopy(base)
+        v11_with_kit["kit"] = 1
+        self.assertFalse(self.validators["activity"].is_valid(v11_with_kit), "1.1 带 kit 应拒绝")
+
+    def test_station_count_opt_in(self):
+        base = load_document(FIXTURES / "content/experiment-manifest.json")
+        registered = dict(base, contract="activity/1.2", kit=1, type="simulation", pedagogy="explain", emits=["observed"])
+        self.assert_valid("activity", registered)
+        for count in (1, 5, 256):
+            self.assert_valid("activity", dict(registered, station_count=count))
+        for change in ({"station_count": 0}, {"station_count": 257}, {"station_count": 1.5}, {"station_count": True},
+                       {"contract": "activity/1.1"}, {"type": "experiment"}, {"pedagogy": "POE"}, {"emits": ["predicted"]}):
+            candidate = dict(registered, station_count=5)
+            candidate.update(change)
+            if candidate["contract"] == "activity/1.1":
+                del candidate["kit"]
+            with self.subTest(change=change):
+                self.assertFalse(self.validators["activity"].is_valid(candidate))
+
     def test_invalid_fixtures_are_rejected(self):
         cases = load_document(FIXTURES / "invalid" / "content.json")
         for case in cases:

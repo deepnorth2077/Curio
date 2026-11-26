@@ -510,6 +510,7 @@ textarea{min-height:84px;resize:vertical}
 </div>
 
 <!-- 内容包：python preview/build.py --root . --bundle prototype/content.js 生成；没有它原型照常打开 -->
+<script src="../preview/preferences.js"></script>
 <script src="content.js"></script>
 <script src="trial-content.js"></script>
 <script src="design/constellation-shapes.js"></script>
@@ -1724,6 +1725,7 @@ const Player=(()=>{
   }
 
   // ---------- 打开一个活动 ----------
+  let previewPrefs;
   let openNow=null;   // 同一时间只开一个
   function open(actId,nodeId){
     const A=ACTIVITIES[actId]; if(!A) return;
@@ -1760,13 +1762,24 @@ const Player=(()=>{
     function runSim(){
       dock();
       const frame=el("iframe",{sandbox:"allow-scripts",title:A.title}), end=el("div",{});
-      const post=(type,payload)=>frame.contentWindow&&frame.contentWindow.postMessage({contract:"activity/1.1",type,payload},"*");
+      const contract=A.contract || "activity/1.1";
+      const post=(type,payload)=>frame.contentWindow&&frame.contentWindow.postMessage({contract,type,payload},"*");
+      let disconnectPrefs;
+      offs.push(()=>disconnectPrefs?.());
       const cs=getComputedStyle(document.documentElement), pal={}; ["bg","pane","rule","hover","ink","text","muted"].forEach(k=>pal[k]=cs.getPropertyValue("--"+k).trim());
       const onMsg=e=>{
         if(e.source!==frame.contentWindow) return;
-        const m=e.data; if(!m||m.contract!=="activity/1.1") return;
+        const m=e.data; if(!m||m.contract!==contract) return;
         const p=m.payload||{};
-        if(m.type==="ready") post("init",{age_band:A.age_band||ageBand(),lang:"zh-CN",phase:"observe",palette:pal,mastery:null});
+        if(m.type==="ready"){
+          const init={age_band:A.age_band||ageBand(),lang:"zh-CN",phase:"observe",palette:pal,mastery:null};
+          if(contract==="activity/1.2"){
+            previewPrefs??=createPreviewPreferences(published.palettes || trial.palettes);
+            Object.assign(init,previewPrefs.themePayload(),{muted:previewPrefs.muted()});
+            disconnectPrefs??=previewPrefs.connect(post);
+          }
+          post("init",init);
+        }
         else if(m.type==="resize"&&p.h) frame.style.height=Math.max(600,Math.ceil(p.h)+8)+"px";
         else if(m.type==="note_question"&&p.text){ addQuestion(String(p.text).slice(0,80),null); toast("问题已发到信号站"); }
         else if(m.type==="complete"){ done(); end.replaceChildren(el("div",{class:"pl-end pl-in"},el("h3",{},"这一段做完了"),endButtons())); }

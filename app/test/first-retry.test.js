@@ -2,6 +2,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createLog } from "../../kernel/js/log.js";
+import { nodeProgress } from "../starchart.js";
+import { stationCount } from "../exploration.js";
 import { completedBefore, explorationProgress } from "../app.js";
 import { isClean, lastBackupText, needsDot, formatFingerprint } from "../parent.js";
 import { CONTENT_V1 } from "./fake-store.js";
@@ -138,3 +140,26 @@ test("入口的小圆点：超过 30 天没备份才有；干净的设备没有"
 });
 
 test("指纹两组显示", () => { assert.equal(formatFingerprint("3fa9c021"), "3fa9 c021"); });
+
+test("resume and chart project old station observations against the selected verified release", () => {
+  const id = "act.simulation.five-stations";
+  const sim = { ...LIFE, activity_id: id };
+  const [start, end] = attempt({ content: sim, seq: 1, ends: "abandoned" });
+  const observed = JSON.stringify({ ...JSON.parse(start), verb: "sim.observed", event_id: "evt_" + body(++n),
+    device_seq: 2, payload: { observable: "station.completed", value: 5 } });
+  const history = events(start, observed, JSON.stringify({ ...JSON.parse(end), device_seq: 3 }));
+  const five = { id, contract: "activity/1.2", kit: 1, type: "simulation", pedagogy: "explain", emits: ["observed"], station_count: 5 };
+  const [returnStart, returnEnd] = attempt({ content: sim, seq: 4, ends: "abandoned" });
+  const again = JSON.stringify({ ...JSON.parse(returnStart), verb: "sim.observed", event_id: "evt_" + body(++n),
+    device_seq: 5, payload: { observable: "station.completed", value: 4 } });
+  const visits = [...history, ...events(returnStart, again, JSON.stringify({ ...JSON.parse(returnEnd), device_seq: 6 }))];
+  assert.deepEqual(explorationProgress(visits, LRN, id, five).doneStations, [4, 5]);
+  assert.equal(nodeProgress(visits, null, (key) => stationCount(key, five))[sim.node_id], 2 / 5);
+  const four = { ...five, station_count: 4 };
+  assert.deepEqual(explorationProgress(history, LRN, id, five), { doneStations: [5], activityCompleted: false });
+  assert.equal(nodeProgress(history, null, (key) => stationCount(key, five))[sim.node_id], 1 / 5);
+  assert.deepEqual(explorationProgress(history, LRN, id, four), { doneStations: [], activityCompleted: false });
+  assert.equal(nodeProgress(history, null, (key) => stationCount(key, four))[sim.node_id], 0);
+  assert.deepEqual(explorationProgress(events(attempt({ content: sim, seq: 1 })), LRN, id, five),
+    { doneStations: [1, 2, 3, 4, 5], activityCompleted: true });
+});

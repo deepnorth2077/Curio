@@ -5,47 +5,69 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <title>Curio</title>
+<script>
+try {
+  const theme = localStorage.getItem("curio.theme");
+  if (theme === "light" || theme === "dark") document.documentElement.dataset.theme = theme;
+} catch { /* 无存储权限时跟随系统配色 */ }
+</script>
 <style>
 /* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
 html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
-/* 和原型同一套颜色：浅色是暖纸面加手绘墨线，深色是 Obsidian 风格（prototype/index.html 的 CSS 变量） */
+/* 平台 20 个通用色位由 kit/tokens.css 唯一维护（tools/kit.py sync） */
+/* curio-tokens begin */
 :root{
-  --bg:#F5F4EE; --pane:#FBFAF6; --side:#EFEDE5; --hover:#E7E4D9; --rule:#E0DCD0;
+  --bg:#F5F4EE; --pane:#FBFAF6; --hover:#E7E4D9; --rule:#E0DCD0;
   --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
-  --accent:#C2603F; --accent-soft:#F3E0D6; --on-accent:#FFFFFF;
-  --c-math:#ECCDB6; --c-math-2:#D59E7A; --c-math-bg:#F2E1D3;
-  --c-sci:#CCD6C0; --c-sci-2:#93A982; --c-sci-bg:#DCE3D2;
-  --c-sky:#CFDCE6; --wash:#EFE4D6; --gold:#E7B84A;
+  --accent:#C2603F; --accent-soft:#F3E0D6;
+  --grip:#2A7F7C; --grip-soft:#D3E8E5;
+  --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
+  --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#2A2738;
+  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
+  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
+  --accent:#A797F7; --accent-soft:#2D2943;
+  --grip:#5FC4BE; --grip-soft:#1F3634;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#2A2738;
+  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  color-scheme:dark;
+}}
+:root{--curio-palette-keys:bg pane hover rule ink text muted accent accent-soft grip grip-soft sage sage-bg sky apricot paper good good-soft bad bad-soft}
+/* curio-tokens end */
+:root{
+  --side:#EFEDE5; --on-accent:#FFFFFF;
+  --c-math:var(--apricot); --c-math-2:#D59E7A; --c-math-bg:#F2E1D3;
+  --c-sci:var(--sage); --c-sci-bg:var(--sage-bg); --c-sci-2:#93A982;
+  --c-sky:var(--sky); --wash:var(--paper); --gold:#E7B84A;
   --l1:#C2603F; --l2:#C9962A; --l3:#4F7FA8; --l4:#8E5B8A; --l5:#3E8C86; --l6:#D07A2E; --l7:#6E9A4E; --l8:#5D6B8A;
-  --good:#3B7A56; --bad:#B4432E; --good-soft:#DCEBDF; --bad-soft:#F5DFD8;
   --shadow:0 1px 2px rgba(31,30,28,.06),0 8px 28px rgba(31,30,28,.08);
   --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
   --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
   --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
   --f-hand:"ZCOOL KuaiLe","Noto Sans SC","PingFang SC",sans-serif;
-  color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
-  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
-  --accent:#A797F7; --accent-soft:#2D2943; --on-accent:#15121F;
-  --c-math:#5A4536; --c-math-2:#9A7558; --c-math-bg:#33291F;
-  --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
-  --c-sky:#2D3B47; --wash:#2A2738; --gold:#D9AE4E;
+  --side:#1B1B1B; --on-accent:#15121F;
+  --c-math-2:#9A7558; --c-math-bg:#33291F; --c-sci-2:#6F8560; --gold:#D9AE4E;
   --l1:#E08A6C; --l2:#E0B65A; --l3:#7FA8D0; --l4:#B98AB5; --l5:#6CB8B1; --l6:#E9A05F; --l7:#97C277; --l8:#93A0C2;
-  --good:#7CC79A; --bad:#EF8A72; --good-soft:#203528; --bad-soft:#3A2420;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark}}
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35)}}
 :root[data-theme="dark"]{
-  --bg:#1E1E1E; --pane:#252525; --side:#1B1B1B; --hover:#2E2E2E; --rule:#353535;
-  --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
-  --accent:#A797F7; --accent-soft:#2D2943; --on-accent:#15121F;
-  --c-math:#5A4536; --c-math-2:#9A7558; --c-math-bg:#33291F;
-  --c-sci:#3C4836; --c-sci-2:#6F8560; --c-sci-bg:#28301F;
-  --c-sky:#2D3B47; --wash:#2A2738; --gold:#D9AE4E;
+  --side:#1B1B1B; --on-accent:#15121F;
+  --c-math-2:#9A7558; --c-math-bg:#33291F; --c-sci-2:#6F8560; --gold:#D9AE4E;
   --l1:#E08A6C; --l2:#E0B65A; --l3:#7FA8D0; --l4:#B98AB5; --l5:#6CB8B1; --l6:#E9A05F; --l7:#97C277; --l8:#93A0C2;
-  --good:#7CC79A; --bad:#EF8A72; --good-soft:#203528; --bad-soft:#3A2420;
-  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35); color-scheme:dark}
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35)}
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -78,6 +100,7 @@ p{margin:0}
   padding-block:8px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
 .topbar .logo{width:30px;height:30px;flex:none}
 .topbar .title{font-family:var(--f-serif);font-weight:600;color:var(--ink);font-size:18px}
+.top-prefs{margin-left:auto;display:flex;align-items:center;gap:2px}
 .banner{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--accent-soft);color:var(--ink);border-bottom:1px solid var(--rule);
   padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .banner p{flex:1 1 240px}
@@ -533,6 +556,10 @@ button.nav-card:hover{border-color:var(--ink)}
       <path d="M44 80q6 14 12 0z" fill="var(--accent)" opacity=".85"/>
     </svg>
     <span class="title">Curio</span>
+    <div class="top-prefs">
+      <button class="ibtn" type="button" data-act="mute" aria-pressed="false" title="声音已开，点一下静音" aria-label="声音已开，点一下静音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9.5h3.2L13 5.5v13l-4.8-4H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z"/><g data-sound="on"><path d="M16.2 9a4.5 4.5 0 0 1 0 6"/><path d="M18.8 6.8a8 8 0 0 1 0 10.4"/></g><g data-sound="off" hidden><path d="M16.5 9.5l4.5 5M21 9.5l-4.5 5"/></g></svg></button>
+      <button class="ibtn" type="button" data-act="theme" aria-pressed="false" title="切换深色模式" aria-label="切换深色模式"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g data-theme-icon="moon"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/></g><g data-theme-icon="sun" hidden><circle cx="12" cy="12" r="4"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></g></svg></button>
+    </div>
   </header>
   <div id="banner" class="banner" role="status" aria-live="polite" hidden></div>
   <div id="live" class="sr" aria-live="polite" aria-atomic="true"></div>
@@ -545,6 +572,8 @@ button.nav-card:hover{border-color:var(--ink)}
       <span class="sep" aria-hidden="true"></span>
       <button class="ibtn" type="button" data-act="search" title="搜索知识点" aria-label="搜索知识点"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg></button>
       <span class="sp"></span>
+      <button class="ibtn" type="button" data-act="mute" aria-pressed="false" title="声音已开，点一下静音" aria-label="声音已开，点一下静音"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9.5h3.2L13 5.5v13l-4.8-4H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1z"/><g data-sound="on"><path d="M16.2 9a4.5 4.5 0 0 1 0 6"/><path d="M18.8 6.8a8 8 0 0 1 0 10.4"/></g><g data-sound="off" hidden><path d="M16.5 9.5l4.5 5M21 9.5l-4.5 5"/></g></svg></button>
+      <button class="ibtn" type="button" data-act="theme" aria-pressed="false" title="切换深色模式" aria-label="切换深色模式"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g data-theme-icon="moon"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/></g><g data-theme-icon="sun" hidden><circle cx="12" cy="12" r="4"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></g></svg></button>
       <a class="ibtn" href="#parent" data-view="parent" title="家长" aria-label="家长" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg><span class="ndot" hidden></span><span class="lock-hint" hidden></span></a>
     </nav>
     <aside class="explorer" id="explorer" aria-label="知识索引"></aside>

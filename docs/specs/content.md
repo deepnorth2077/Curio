@@ -219,6 +219,7 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 
 - 新增必填字段 `version`（正整数）。
 - `type` 只允许 `experiment`（实验）或 `simulation`（模拟）。讲解、测验一律用结构化活动。
+- 新增的 1.2 分站讲解模拟在 manifest 写 `station_count`（1–256），数值与活动站数一致。达到上限时，重玩菜单和恢复列表最多包含 256 站。宿主从已核对的发布包读取；原有活动继续使用发版时的站数登记。
 - `misconceptions` 继续是**声明**：实验没有题目数据，覆盖关系只能由 manifest 声明，并在审核时人工核对。
 
 ## 5. 校验规则（CI）
@@ -226,7 +227,7 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 | 规则 | 说明 |
 | --- | --- |
 | 形态 | 活动目录要么是结构化（只有 `activity.yaml`），要么是自定义（`manifest.yaml` + `index.html`） |
-| schema | 结构化活动按 `kind` 校验 body；自定义实验按 activity/1.1 的 manifest 校验 |
+| schema | 结构化活动按 `kind` 校验 body；自定义实验按 activity/1.1 或 activity/1.2 的 manifest 校验（`1.2` 必填正整数 `kit` 并逐字节核对 `kit/<N>/`） |
 | 引用 | 知识点的 `activities` 和活动的 `targets` 双向一致；题目里引用的误区 id 必须出自目标知识点；`svg` 配图引用的文件必须存在 |
 | 题目 | 选择题恰好一个正确选项；同一活动内题目 id 唯一；配图 `shaded` 不超过 `parts`、下标不越界；提示泄露检查（3.4：数字题和分数题报错，选择题警告） |
 | 文字 | 3.7 的字数和用词规则 |
@@ -234,7 +235,7 @@ SVG 文件按**白名单**检查，名单以外的一律报错（CI 检查）：
 | 路径 | 第 1 节的路径规则，含大小写冲突 |
 | 引擎 | `engine` 不低于这个活动用到的能力所需的等级（按 3.8 的表） |
 | 误区覆盖 | **从数据计算**：结构化活动里，被错误选项或 `common_wrong` 引用过的误区，算作已覆盖；自定义实验以 manifest 声明为准 |
-| 发布门禁 | 只看**会被收录**的活动，也就是 `approved` 的那些；`pending`、`claude-reviewed` 的活动不收录，也不阻断发布。知识点 `published` 时，它被收录的活动里：必须有讲解和至少一个 `quiz`，每个 `quiz` 至少 5 道题，每个误区都要被覆盖。结构化 `explain` 提供讲解。任何知识点的讲解也可以由一个被收录的动手探索承担：清单须指向本星，使用 `activity/1.1`、`type: simulation`、`pedagogy: explain`、`entry: index.html`，并声明 `observed`；入口 HTML 还要用 [slice-5a](slice-5a.md) 的站完成标记（`observed` 的结果为 `{station, item: "station-complete"}`），正式外壳才能按站记进度、选站重玩。另外**引用闭包**（6.1）要成立 |
+| 发布门禁 | 只看**会被收录**的活动，也就是 `approved` 的那些；`pending`、`claude-reviewed` 的活动不收录，也不阻断发布。知识点 `published` 时，它被收录的活动里：必须有讲解和至少一个 `quiz`，每个 `quiz` 至少 5 道题，每个误区都要被覆盖。结构化 `explain` 提供讲解。任何知识点的讲解也可以由一个被收录的动手探索承担：清单须指向本星，使用 `activity/1.1` 或 `activity/1.2`、`type: simulation`、`pedagogy: explain`、`entry: index.html`，并声明 `observed`。1.2 活动还要声明 `station_count`。入口 HTML 还要用 [slice-5a](slice-5a.md) 的站完成标记（`observed` 的结果为 `{station, item: "station-complete"}`），正式外壳才能按站记进度、选站重玩。另外**引用闭包**（6.1）要成立 |
 
 ## 6. 不可变发布（release/1）
 
