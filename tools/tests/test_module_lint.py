@@ -162,6 +162,8 @@ class TestAllModules(Lint):
                 '<template><script>ask("question")</script></template>'
                 '<script type="module">const observedOnce = callback; observedOnce(1)</script>')
         self.assertEqual(module_lint.lint(page(kit + "Kit.start(() => {});", body=body), m), ([], []))
+        imported = '<script type="module">import {local as observedOnce} from "./local.js"; observedOnce(1)</script>'
+        self.assertFalse(module_lint.kit_reports_station(page(kit, body=imported)))
 
         html = page(kit, body=body).replace("</body>", '<script type="module">\nKit.start(() => observedOnce(1));</script></body>')
         self.assertEqual(module_lint.lint(html, {**m, "emits": ["observed"]}), ([], []))
