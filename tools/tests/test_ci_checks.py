@@ -784,6 +784,29 @@ class TestModuleLint(Base):
     """动手探索模块的静态检查接进了 ci_checks（tools/module_lint.py 自己的规则测试在 test_module_lint.py）。"""
     AID = "act.simulation.frac-cut"
 
+    def kit_files(self):
+        for rel in ("kit/tokens.css", "kit/1/kit.css", "kit/1/kit.js", "kit/1/README.md", "app/index.html",
+                    "app/sfx.js", "preview/template.html", ci_checks.kit_tool.STARTER_REL):
+            self.r.write(rel, (REPO / rel).read_text(encoding="utf-8"))
+
+    def test_new_activity_requires_latest_kit_while_existing_v11_may_be_edited(self):
+        self.kit_files()
+        self.module("Host.ready();\nenter1();\n"); self.r.baseline()
+        # 主线上已有的 1.1 模块小修仍然通过
+        self.r.branch("arch/edit-old")
+        html = f"content/activities/{self.AID}/index.html"
+        self.r.write(html, (self.r.dir / html).read_text(encoding="utf-8").replace("enter1();\n", "enter1();\n// 小修\n", 1))
+        self.r.commit()
+        self.ok(self.r.check())
+        # 新增的 1.1 模块被拦
+        self.r.git("checkout", "-q", "main"); self.r.branch("arch/new-old-contract")
+        new = "act.simulation.new-cut"
+        self.r.write(f"{NODE_DIR}/{N1}.yaml", node(N1, activities=[new], mis=("denominator-bigger",)))
+        self.r.write(f"content/activities/{new}/manifest.yaml", activity(new, [N1], type_="simulation", mis=("denominator-bigger",)))
+        self.add_html(new, body="<script>const Host={ready(){}};function enter1(){}\nHost.ready();\nenter1();</script>")
+        self.r.commit()
+        self.fails(self.r.check(), "新增互动模块必须使用最新零件库")
+
     def test_deleting_kit_directory_cannot_disable_its_checks(self):
         self.r.write("kit/tokens.css", (REPO / "kit/tokens.css").read_text(encoding="utf-8"))
         self.r.baseline()
