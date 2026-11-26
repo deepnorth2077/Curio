@@ -6,7 +6,7 @@ name: 发布原型到 GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ["prototype/**", "preview/build.py", "preview/template.html", "preview/courses.yaml", "relay/**", "app/**", "kernel/**", "engine/**", "tools/build_release.py", "content/**", ".github/workflows/pages.yml"]
+    paths: ["prototype/**", "preview/build.py", "preview/template.html", "preview/courses.yaml", "relay/**", "app/**", "kit/**", "kernel/**", "engine/**", "tools/build_release.py", "content/**", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:

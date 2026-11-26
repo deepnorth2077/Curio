@@ -1,11 +1,14 @@
-# 互动模块契约 activity/1.1
+# 互动模块契约 activity/1.1 与 activity/1.2
 
 互动模块是讲解、实验、测验等可插拔的小程序。每个模块由两个文件组成：
 
 - `manifest.yaml`：描述模块，格式见 `schemas/activity.schema.json`；
 - `index.html`：单文件实现。
 
-平台把模块放进 `sandbox="allow-scripts"` 的 iframe 里运行，双方只通过 `postMessage` 通信。每条消息都带 `contract: "activity/1.1"`，不带的一律忽略。
+平台把模块放进 `sandbox="allow-scripts"` 的 iframe 里运行，双方只通过 `postMessage` 通信。每条消息都带与该模块 `manifest.yaml` 一致的 `contract`（`"activity/1.1"` 或 `"activity/1.2"`），不匹配的一律忽略。
+
+- `activity/1.1`：首批已发布模块使用的契约，冻结现有宿主行为不变。
+- `activity/1.2`（详见 `docs/specs/kit.md`）：必填 `kit: <版本号>`，内联 `kit/<版本号>/` 零件库；`init` 额外下发 20 个十六进制平台色位 `palette`、`scheme: "light"|"dark"` 与 `muted: boolean`，并在运行中途接收宿主的 `theme`（切换明暗/配色）和 `mute`（切换静音）消息。
 
 ## 硬性约束
 

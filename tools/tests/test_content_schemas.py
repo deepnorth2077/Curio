@@ -134,6 +134,20 @@ class ContentSchemaTests(unittest.TestCase):
             with self.subTest(path=relative_path):
                 self.assert_valid(schema_name, load_document(FIXTURES / relative_path))
 
+    def test_activity_v12_requires_kit_and_v11_forbids_kit(self):
+        base = load_document(FIXTURES / "content/experiment-manifest.json")
+        v12 = copy.deepcopy(base)
+        v12["contract"] = "activity/1.2"
+        self.assertFalse(self.validators["activity"].is_valid(v12), "1.2 缺 kit 应拒绝")
+        v12["kit"] = 0
+        self.assertFalse(self.validators["activity"].is_valid(v12), "kit: 0 应拒绝")
+        v12["kit"] = 1
+        self.assert_valid("activity", v12)
+
+        v11_with_kit = copy.deepcopy(base)
+        v11_with_kit["kit"] = 1
+        self.assertFalse(self.validators["activity"].is_valid(v11_with_kit), "1.1 带 kit 应拒绝")
+
     def test_invalid_fixtures_are_rejected(self):
         cases = load_document(FIXTURES / "invalid" / "content.json")
         for case in cases:

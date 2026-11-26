@@ -5,31 +5,30 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>数线跳跳</title>
 <style>
-/* kit:base —— 颜色、卡片、气泡、按钮。色值不要改；模块自己的样式写在最后一段 */
-/* 长按不选字、不弹菜单（#156）。输入框照常能选能改 */
+/* curio-kit:1 begin */
 html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 :root{
-  --bg:#F5F4EE; --pane:#FBFAF6; --rule:#E0DCD0; --hover:#E7E4D9;
+  --bg:#F5F4EE; --pane:#FBFAF6; --hover:#E7E4D9; --rule:#E0DCD0;
   --ink:#1F1E1C; --text:#3B3833; --muted:#7A766D;
   --accent:#C2603F; --accent-soft:#F3E0D6;
   --grip:#2A7F7C; --grip-soft:#D3E8E5;
   --sage:#CCD6C0; --sage-bg:#DCE3D2; --sky:#CFDCE6; --apricot:#ECCDB6; --paper:#EFE4D6;
-  --dad:#4F7FA8; --mom:#C2603F; --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
+  --good:#3B7A56; --good-soft:#DCEBDF; --bad:#B4432E; --bad-soft:#F5DFD8;
   --f-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
   --f-sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
   --f-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#1E1E1E; --pane:#252525; --rule:#353535; --hover:#2E2E2E;
+:root.kit-dark{
+  --bg:#1E1E1E; --pane:#252525; --hover:#2E2E2E; --rule:#353535;
   --ink:#E4E0D8; --text:#CBC6BC; --muted:#8C887F;
-  --accent:#E0876A; --accent-soft:#3A2A24;
+  --accent:#A797F7; --accent-soft:#2D2943;
   --grip:#5FC4BE; --grip-soft:#1F3634;
-  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#33302A;
-  --dad:#7FA9CF; --mom:#E0876A; --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
+  --sage:#3C4836; --sage-bg:#28301F; --sky:#2D3B47; --apricot:#5A4536; --paper:#2A2738;
+  --good:#7CC79A; --good-soft:#203528; --bad:#EF8A72; --bad-soft:#3A2420;
   color-scheme:dark;
-}}
+}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-sans);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -53,7 +52,6 @@ svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
 .tm{fill:var(--muted);font-family:var(--f-sans);font-size:15px}
 .talk{display:flex;gap:10px;align-items:flex-start;margin:14px 2px 6px}
 .ava{flex:none;width:42px;height:42px}
-/* 领航员的脸（docs/specs/navigators.md 第 6 节）：正式外壳在 init.navigator 里给选好的那位，十个类 k、k1、f-* 的颜色在这里 */
 .f-ink{fill:var(--ink)} .f-pane{fill:var(--pane)} .f-sky{fill:var(--sky)} .f-sage{fill:var(--sage)} .f-apricot{fill:var(--apricot)} .f-paper{fill:var(--paper)} .f-muted{fill:var(--muted)} .f-accent{fill:var(--accent)}
 .bubble{background:var(--pane);border:1px solid var(--rule);border-radius:16px 16px 16px 4px;padding:10px 14px;color:var(--ink);min-height:44px;flex:1}
 .bubble.good{background:var(--good-soft);border-color:transparent}
@@ -70,7 +68,6 @@ svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
 .qbox textarea{flex:1 1 260px;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink);min-height:64px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-width:520px){ body{font-size:16px} h1{font-size:17px} .card header,.card footer{padding:8px 12px} .card footer{flex-wrap:wrap;row-gap:2px} .hint{white-space:nowrap} .readout{font-size:14px;flex:1 1 auto} }
-/* kit:grip 2026-11-14 —— 圆钮（「可抓」记号，g1.md A.4 G1～G8）。--grip 只给圆钮、托、按住按钮、焦点框用；--accent 不给任何控件用 */
 .btn.hold{touch-action:none;background:var(--grip);border-color:var(--grip);color:var(--bg);display:inline-flex;align-items:center;gap:10px;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 .btn.hold.on{filter:brightness(.82)}
 .btn.hold svg{width:18px;height:18px;flex:none}
@@ -84,14 +81,14 @@ svg#stage.kbd:focus-visible{outline:2px solid var(--grip);outline-offset:-4px}
 #cue{fill:none;stroke:var(--grip);stroke-width:2.4;transform-box:fill-box;transform-origin:center;animation:cue 2.4s ease-out infinite}
 @keyframes cue{0%{transform:scale(1);opacity:.95}50%{transform:scale(1.8);opacity:0}100%{transform:scale(1.8);opacity:0}}
 @media (prefers-reduced-motion:reduce){#cue{animation:none;transform:scale(1.3);opacity:.9}}
-/* kit:frac 2026-11-14 —— 分数一律上下结构（A.4 第 2 条）。HTML 里用 .frac，SVG 里用 fracS() */
 .frac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.08;font-family:var(--f-mono);font-size:.84em;margin:0 .2em;font-variant-numeric:tabular-nums}
 .frac>span:first-child{border-bottom:1.6px solid currentColor;padding:0 .28em .04em}
 .frac>span:last-child{padding:.04em .28em 0}
 .fl{fill:none;stroke:var(--ink);stroke-width:1.8;stroke-linecap:round}
 .fs{fill:var(--ink);font-family:var(--f-mono);font-size:16px} .fm{fill:var(--ink);font-family:var(--f-mono);font-size:22px} .fb{fill:var(--ink);font-family:var(--f-mono);font-size:34px}
 body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{font-size:38px}
-/* 模块自己的画面样式写在这里：字号全写在类上，窄屏在 body.narrow 里放大（教训 14、28）。下面几个类可以直接用 */
+/* curio-kit:1 end */
+/* 模块自己的画面样式写在这里：字号全写在类上，窄屏在 body.narrow 里放大（教训 14、28） */
 .food{fill:var(--apricot)} .lead{fill:var(--accent)} .papr{fill:var(--paper)} .pane{fill:var(--pane)}
 .kacc{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .one{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linecap:round;stroke-dasharray:7 6}
@@ -135,56 +132,187 @@ body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .s
 <script>
 "use strict";
 /* Curio · 数线跳跳 act.simulation.hop-line-01（几分之几：分数也能数）。设计说明：docs/constellations/zero-to-one/g1.md C.2 */
+/* curio-kit:1 begin */
+const PALETTE_KEYS = new Set([
+  "bg", "pane", "hover", "rule", "ink", "text", "muted",
+  "accent", "accent-soft", "grip", "grip-soft",
+  "sage", "sage-bg", "sky", "apricot", "paper",
+  "good", "good-soft", "bad", "bad-soft"
+]);
+const HEX_COLOR = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
-/* ============ 1. 真相模型：页面上的每个数字都从这里算。只放数和纯函数，不碰页面 ============ */
-const MODEL = {
-  firstDen: 4,                               // 第一趟每步 1/4（设计约定）
-  dens: [2, 3, 5, 6, 8, 10],                 // 第二趟可选的步长：1/2、1/3、1/5、1/6、1/8、1/10（设计约定）
-  lineMax: 2,                                // 跳和插旗用的数线画的是 0 到 2，只标 0、1、2（设计约定）
-  flags: [[1, 2], [1, 4], [3, 4]],           // 三面旗依次是 1/2、1/4、3/4（设计约定）
-  spots: [["甲", 1, 2], ["乙", 2, 2], ["丙", 3, 2]],   // 提问时的三个候选点：甲在 1/2，乙在 1，丙在 1 又 1/2（设计约定）
-  hit: 0.04, near: 0.12,                     // 离真实位置不超过 0.04 算正中，不超过 0.12 算差一点，再远算差得远（手感约定）
-  flagStep: 0.02,                            // 键盘每按一次移 0.02（手感约定）
-  flagStart: 1.75,                           // 旗子出场的位置：离三面旗的答案和 0、1、2 都远，不暗示（设计约定）
-  gears: [2, 3, 4, 5, 6, 8, 10, 12, 20, 50, 100, 1000],   // 加密盘的档位（设计约定）
-  crowd: 50,                                 // 到 50 段以上，线上的刻度挤成一片，出现放大圈（画面约定）
-  mustReach: [100, 1000], minGears: 3,       // 至少在 3 个档位停过，并且到过 100 或 1000（设计约定）
-  settleMs: 600,                             // 转盘停住 0.6 秒算停过一档（手感约定）
-};
-const pos = (k, n) => k / n;                                  // k 个 1/n 是 k/n，离 0 的距离是 k ÷ n（0 到 1 的距离当作 1）
-const between = n => n - 1;                                   // 0 到 1 平均分成 n 段，中间多出 n − 1 个点：100→99，1000→999
-const grade = (drop, target) => { const d = Math.abs(drop - target); return d <= MODEL.hit + 1e-9 ? "hit" : d <= MODEL.near + 1e-9 ? "near" : "far"; };
-const r2 = v => Math.round(v * 100) / 100;
-const fmt = n => String(Math.round(n));
+const Sfx = (() => {
+  const AudioCtx = typeof window !== "undefined" ? (window.AudioContext || window.webkitAudioContext || null) : null;
+  let isMuted = false, ctx = null, unlocked = false, lastTick = -1e9, noiseBuf = null, nSeq = 0;
+  function unlock(){
+    unlocked = true;
+    if (isMuted || !AudioCtx) return;
+    try {
+      if (!ctx) ctx = new AudioCtx();
+      if (ctx && ctx.state === "suspended"){ const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); }
+    } catch {}
+  }
+  if (typeof addEventListener === "function"){
+    addEventListener("pointerdown", unlock, true);
+    addEventListener("keydown", unlock, true);
+  }
+  function readyCtx(){
+    if (isMuted || !AudioCtx || !unlocked) return null;
+    try {
+      if (!ctx) ctx = new AudioCtx();
+      if (!ctx || ctx.state !== "running") return null;
+      return ctx;
+    } catch { return null; }
+  }
+  function getNoise(c){
+    if (noiseBuf) return noiseBuf;
+    const len = Math.max(1, Math.floor(c.sampleRate * .06));
+    const b = c.createBuffer(1, len, c.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (len * .35));
+    noiseBuf = b;
+    return b;
+  }
+  function clean(src, nodes){
+    src.onended = () => {
+      try { src.disconnect(); } catch {}
+      for (const nd of nodes){ try { nd.disconnect(); } catch {} }
+    };
+  }
+  function tone(c, type, f0, f1, t0, dur, peak){
+    const osc = c.createOscillator(), g = c.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(f0, t0);
+    if (f1 !== f0) osc.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + dur);
+    g.gain.setValueAtTime(.0008, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + Math.min(.008, dur * .25));
+    g.gain.exponentialRampToValueAtTime(.0008, t0 + dur);
+    osc.connect(g); g.connect(c.destination);
+    clean(osc, [g]);
+    osc.start(t0); osc.stop(t0 + dur + .004);
+  }
+  function burst(c, filterType, freq, q, t0, dur, peak){
+    const src = c.createBufferSource(), flt = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = getNoise(c);
+    flt.type = filterType; flt.frequency.setValueAtTime(freq, t0); flt.Q.setValueAtTime(q, t0);
+    g.gain.setValueAtTime(.0008, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + .002);
+    g.gain.exponentialRampToValueAtTime(.0008, t0 + dur);
+    src.connect(flt); flt.connect(g); g.connect(c.destination);
+    clean(src, [flt, g]);
+    src.start(t0); src.stop(t0 + dur + .004);
+  }
+  return {
+    setMuted(v){ isMuted = !!v; },
+    muted(){ return isMuted; },
+    seq(){ return nSeq; },
+    tick(step = 0){
+      const now = performance.now();
+      if (now - lastTick < 35) return;
+      lastTick = now; nSeq++;
+      const c = readyCtx(); if (!c) return;
+      const k = Math.max(-6, Math.min(12, +step || 0));
+      burst(c, "bandpass", 1480 * Math.pow(2, k * .03), 4.5, c.currentTime, .018, .042);
+    },
+    hop(step = 0){
+      nSeq++;
+      const c = readyCtx(); if (!c) return;
+      const k = Math.max(0, Math.min(12, +step || 0)), f0 = 330 * Math.pow(2, k / 18);
+      tone(c, "triangle", f0, f0 * 1.28, c.currentTime, .055, .085);
+    },
+    snap(){
+      nSeq++;
+      const c = readyCtx(); if (!c) return;
+      const t = c.currentTime;
+      burst(c, "highpass", 2200, 1.2, t, .016, .052);
+      tone(c, "sine", 290, 155, t, .042, .055);
+    },
+    tap(){
+      nSeq++;
+      const c = readyCtx(); if (!c) return;
+      tone(c, "sine", 520, 340, c.currentTime, .022, .045);
+    },
+    right(){
+      nSeq++;
+      const c = readyCtx(); if (!c) return;
+      const t = c.currentTime;
+      tone(c, "triangle", 523.25, 523.25, t, .11, .075);
+      tone(c, "triangle", 783.99, 783.99, t + .065, .12, .08);
+    },
+    nudge(){
+      nSeq++;
+      const c = readyCtx(); if (!c) return;
+      const t = c.currentTime;
+      tone(c, "sine", 250, 210, t, .04, .06);
+      tone(c, "sine", 220, 185, t + .048, .045, .055);
+    },
+    lit(){
+      nSeq++;
+      const c = readyCtx(); if (!c) return;
+      const t = c.currentTime, notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((f, i) => tone(c, "triangle", f, f, t + i * .075, .32, .055));
+    }
+  };
+})();
 
-/* ============ 2. 平台契约 activity/1.1（单独打开时也能玩）  kit:host ============ */
 const Host = (() => {
   const h = {}, inFrame = window.parent !== window;
-  addEventListener("message", e => { const m = e.data; if (m && m.contract === "activity/1.1" && h[m.type]) h[m.type](m.payload || {}); });
-  const send = (type, payload) => { if (inFrame) parent.postMessage({ contract: "activity/1.1", type, payload: payload || {} }, "*"); else (window.__sent = window.__sent || []).push({ type, payload: payload || {} }); };
+  addEventListener("message", e => {
+    const m = e.data;
+    if (m && m.contract === "activity/1.2" && h[m.type]) h[m.type](m.payload || {});
+  });
+  const send = (type, payload) => {
+    if (inFrame) parent.postMessage({ contract: "activity/1.2", type, payload: payload || {} }, "*");
+    else (window.__sent = window.__sent || []).push({ type, payload: payload || {} });
+  };
   if (window.ResizeObserver) new ResizeObserver(() => send("resize", { h: document.documentElement.scrollHeight })).observe(document.body);
-  return { on: (k, f) => { h[k] = f; }, ready: () => send("ready"), event: (verb, result) => send("event", { verb, result }),
-    state: o => send("state", o), noteQuestion: text => send("note_question", { text }), complete: r => send("complete", r || {}) };
+  return {
+    inFrame,
+    on: (k, f) => { h[k] = f; },
+    ready: () => send("ready"),
+    event: (verb, result) => send("event", { verb, result }),
+    state: o => send("state", o),
+    noteQuestion: text => send("note_question", { text }),
+    complete: r => send("complete", r || {})
+  };
 })();
-// 领航员（docs/specs/navigators.md 第 6 节）：正式外壳在 init.navigator 给选好的那位的六张脸（去掉了最外层 <svg>），
-// .ava 换成它，表情跟着 say() 换。没给（单独打开、试玩页、旧宿主）就留着自带的脸
+
+let hostThemed = false;
+function applyHostTheme(p){
+  if (!p || typeof p !== "object") return;
+  const root = document.documentElement;
+  if (p.scheme === "dark" || p.scheme === "light"){
+    hostThemed = true;
+    root.classList.toggle("kit-dark", p.scheme === "dark");
+    root.style.colorScheme = p.scheme;
+  }
+  if (p.palette && typeof p.palette === "object"){
+    hostThemed = true;
+    for (const k of PALETTE_KEYS) root.style.removeProperty("--" + k);
+    for (const [k, v] of Object.entries(p.palette)){
+      if (PALETTE_KEYS.has(k) && typeof v === "string" && HEX_COLOR.test(v)) root.style.setProperty("--" + k, v);
+    }
+  }
+}
+if (!Host.inFrame && typeof matchMedia === "function"){
+  const mq = matchMedia("(prefers-color-scheme: dark)");
+  const syncSys = () => {
+    if (hostThemed) return;
+    document.documentElement.classList.toggle("kit-dark", mq.matches);
+    document.documentElement.style.colorScheme = mq.matches ? "dark" : "light";
+  };
+  syncSys();
+  if (mq.addEventListener) mq.addEventListener("change", syncSys);
+}
+
 let navFaces = null, navNow = "curious";
 function navFace(k){ navNow = k; if (navFaces && typeof navFaces[k] === "string") document.querySelector(".ava").innerHTML = navFaces[k]; }
-Host.on("init", p => {
-  if (p && p.navigator && p.navigator.faces && typeof p.navigator.faces.curious === "string"){ navFaces = p.navigator.faces; navFace(navNow); }
-  if (p && p.palette) for (const [k, v] of Object.entries(p.palette)) if (/^[a-z-]+$/.test(k)) document.documentElement.style.setProperty("--" + k, v);
-  if (p && p.question_available === false) $("qarea").hidden = true;   // 正式外壳先关提问入口（slice-5a）
-  resumeFrom(p);   // 正式外壳记得做过哪几站：先让孩子选站（kit:shell）
-});
-// 每站的猜测和观察只记一次，complete 只发一次（C.0 第 3 条；教训 15、19）
+
 const sentPred = new Set(), sentObs = new Set();
 let completed = false;
-// observed 只在一站做完时发一次，带整站完成的标记（slice-5a）；站内中途的操作不发 observed
 function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station, item: "station-complete" }); }
 let lastState = "";
 function sendState(o){ const s = JSON.stringify(o); if (s === lastState) return; lastState = s; Host.state(o); }
 
-/* ============ 3. 手绘线条（平台的 sketchLib）  kit:sketch ============ */
 function sketchLib(){
   const R=(seed)=>{ let s=((seed|0)*2654435761)>>>0||7; return ()=>{ s^=s<<13; s>>>=0; s^=s>>>17; s^=s<<5; s>>>=0; return s/4294967296; }; };
   const f=n=>Math.round(n*10)/10;
@@ -209,42 +337,41 @@ const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const r1 = n => Math.round(n * 10) / 10;
 const box = (x, y, w, h, seed, j) => Sk.line(x, y, x + w, y, seed, j) + Sk.line(x + w, y, x + w, y + h, seed + 1, j) + Sk.line(x + w, y + h, x, y + h, seed + 2, j) + Sk.line(x, y + h, x, y, seed + 3, j);
-// 角度：从正上方起、顺时针，和钟面一样
 const pol = (cx, cy, r, deg) => { const a = deg * Math.PI / 180; return [cx + r * Math.sin(a), cy - r * Math.cos(a)]; };
 function sectorD(cx, cy, r, a0, a1){
   if (a1 - a0 >= 359.9) return `M${r1(cx - r)} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0Z`;
   const p0 = pol(cx, cy, r, a0), p1 = pol(cx, cy, r, a1);
   return `M${r1(cx)} ${r1(cy)}L${r1(p0[0])} ${r1(p0[1])}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${r1(p1[0])} ${r1(p1[1])}Z`;
 }
-function arcD(cx, cy, r, a0, a1, seed){   // 手绘的一段圆弧
+function arcD(cx, cy, r, a0, a1, seed){
   const rnd = Sk.R(seed), N = Math.max(2, Math.ceil((a1 - a0) / 14)), pts = [];
   for (let i = 0; i <= N; i++) pts.push(pol(cx, cy, r * (1 + (rnd() - .5) * .012), a0 + (a1 - a0) * i / N));
   return Sk.cr(pts, false);
 }
 
-/* ============ 4. 共用零件：分数、「1」记号、圆钮、数线条  kit:parts ============ */
 const narrow = () => document.body.classList.contains("narrow");
-// 4.1 分数：HTML 里的 .frac（带读法）和 SVG 里的 fracS（上下结构，手绘分数线）。任何地方都不用斜杠写法
 const CN1 = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
-const cnNum = n => (n = +n, n === 100 ? "百" : n === 1000 ? "千" : !Number.isInteger(n) || n < 1 || n > 99 ? undefined : n <= 10 ? CN1[n] : n < 20 ? "十" + CN1[n - 10] : CN1[Math.floor(n / 10)] + "十" + (n % 10 ? CN1[n % 10] : ""));   // 认 1 到 99、100（百）、1000（千）；别的数（含 0）不认，读出来是 undefined，用到先补这里
-const cnFrac = (a, b) => `${cnNum(b)}分之${cnNum(a)}`;          // 读法：3/4 读作四分之三
+const cnNum = n => (n = +n, n === 100 ? "百" : n === 1000 ? "千" : !Number.isInteger(n) || n < 1 || n > 99 ? undefined : n <= 10 ? CN1[n] : n < 20 ? "十" + CN1[n - 10] : CN1[Math.floor(n / 10)] + "十" + (n % 10 ? CN1[n % 10] : ""));
+const cnFrac = (a, b) => `${cnNum(b)}分之${cnNum(a)}`;
 const F = (a, b) => `<span class="frac" role="img" aria-label="${cnFrac(a, b)}"><span aria-hidden="true">${a}</span><span aria-hidden="true">${b}</span></span>`;
 const FSZ = { fs: [16, 20], fm: [22, 26], fb: [34, 38] };
-function fracS(x, y, a, b, cls, seed){   // x 是中线，y 是分数线的高度
+function fracS(x, y, a, b, cls, seed){
   const sz = FSZ[cls][narrow() ? 1 : 0], w = Math.max(String(a).length, String(b).length) * sz * .62 + sz * .5;
   return `<g role="img" aria-label="${cnFrac(a, b)}">` + TC(x, r1(y - sz * .3), a, cls) + P(Sk.line(x - w / 2, y, x + w / 2, y, seed || 7, .45), "fl") + TC(x, r1(y + sz * .98), b, cls) + `</g>`;
 }
-// 4.2 「1」记号：整体外面一圈手绘虚线框，左上角挂一块写着 1 的纸色小牌
-function oneMark(x, y, w, h, seed, o){   // o.below：牌子挂在左下角（框上面要留给别的东西时用）
+function oneMark(x, y, w, h, seed, o){
   const tx = x + 4, ty = o && o.below ? y + h - 15 : y - 15;
   return P(box(x, y, w, h, seed, .8), "one") +
     `<g transform="rotate(-5 ${tx + 14} ${ty + 14})"><rect x="${tx}" y="${ty}" width="28" height="30" rx="4" class="papr"/>` + P(box(tx, ty, 28, 30, seed + 9, .4), "k1") + TC(tx + 14, ty + 22, "1", "fm") + `</g>`;
 }
-// 4.3 圆钮：实心圆、墨线外圈、三道防滑纹、两侧箭头（G1）。dir 是能动的方向（单位向量）；arc 给出圆心时箭头沿圆弧
+
+const $ = id => document.getElementById(id);
+const svg = $("stage"), gDyn = $("dyn"), cueEl = $("cue");
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const vbW = () => svg.viewBox.baseVal.width || 800;
-const pxScale = () => vbW() / (svg.clientWidth || 800);                 // 1 个屏幕像素合多少 viewBox 单位
-const gripR = () => Math.max(17, 15 * pxScale());                       // 画出来直径不小于 28 px（G4）
-const hitR = () => Math.max(30, 26 * pxScale());                        // 能点中的范围不小于 48 px（G4）
+const pxScale = () => vbW() / (svg.clientWidth || 800);
+const gripR = () => Math.max(17, 15 * pxScale());
+const hitR = () => Math.max(30, 26 * pxScale());
 function chevron(px, py, dx, dy, s){ const nx = -dy, ny = dx; return `M${r1(px - dx * s + nx * s)} ${r1(py - dy * s + ny * s)}L${r1(px + dx * s * .7)} ${r1(py + dy * s * .7)}L${r1(px - dx * s - nx * s)} ${r1(py - dy * s - ny * s)}`; }
 function grip(x, y, dir, o){
   o = o || {}; const g = gripR(), on = !!o.on, k = on ? 1.12 : 1, r = g * k, [dx, dy] = dir, nx = -dy, ny = dx;
@@ -257,7 +384,6 @@ function grip(x, y, dir, o){
   if (o.kbd) s += `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r + 6)}" class="gkbd"/>`;
   return s;
 }
-// 4.4 数线条：0 和 1 的刻度长，数写在线下面；fracs 是要钉上去的分数 [[分子, 分母], …]，标签太挤时只标一部分
 function lineStrip(lx, ly, lw, fracs, seed){
   let s = P(Sk.line(lx - 10, ly, lx + lw + 14, ly, seed, .5)) + P(`M${lx} ${ly - 12}v24M${lx + lw} ${ly - 12}v24`) + TC(lx, ly + 38, "0", "lbm") + TC(lx + lw, ly + 38, "1", "lbm"), lastLab = 1e9;
   for (const [a, b] of fracs.slice().sort((p, q) => q[0] / q[1] - p[0] / p[1])){
@@ -267,22 +393,17 @@ function lineStrip(lx, ly, lw, fracs, seed){
   }
   return s;
 }
-const RIDGES = `<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 3v12M9 3v12M14 3v12"/></svg>`;   // 按住按钮上的防滑纹小图标
+const RIDGES = `<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M4 3v12M9 3v12M14 3v12"/></svg>`;
 
-/* ============ 5. 页面骨架  kit:shell ============ */
-const $ = id => document.getElementById(id);
-const svg = $("stage"), gDyn = $("dyn"), cueEl = $("cue");
-const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-const STATIONS = 3;   // 一共几站
-// t 是孩子操作推到的进度（0～1），p 是画面上缓动跟随的进度；读数和画面都用 p（教训 2）
+let STATIONS = 3;
 const S = { station: 1, mode: "talk", scene: "s1", hold: false, press: false, kbd: false, dirty: true };
-let gen = 0;          // 每换一站加一：延时回调先确认还在原来的状态（教训 11）
+let gen = 0;
 const later = (ms, f) => { const g = gen; setTimeout(() => { if (g === gen) f(); }, reduced ? Math.min(ms, 60) : ms); };
 
 function head(n, title){ $("station").textContent = n ? `第 ${n} 站 · 共 ${STATIONS} 站` : "星卡"; $("title").textContent = title; }
 function hint(s){ $("hint").textContent = s || ""; }
 function readout(html){ if ($("readout").innerHTML !== (html || "")) $("readout").innerHTML = html || ""; }
-function say(html, tone){ const b = $("say"); b.innerHTML = html; b.className = "bubble" + (tone ? " " + tone : ""); navFace(tone === "good" ? "clap" : tone === "bad" || tone === "hmm" ? "think" : "curious"); }   // 领航员的表情跟着气泡换
+function say(html, tone){ const b = $("say"); b.innerHTML = html; b.className = "bubble" + (tone ? " " + tone : ""); navFace(tone === "good" ? "clap" : tone === "bad" || tone === "hmm" ? "think" : "curious"); }
 let fingerDown = false;
 addEventListener("pointerdown", () => { fingerDown = true; }, true);
 for (const ev of ["pointerup", "pointercancel"]) addEventListener(ev, () => { fingerDown = false; }, true);
@@ -292,7 +413,7 @@ addEventListener("keyup", () => { keysDown = Math.max(0, keysDown - 1); }, true)
 addEventListener("blur", () => { keysDown = 0; S.hold = false; });
 function actions(list){
   const boxEl = $("actions"); boxEl.replaceChildren();
-  S.dirty = true;   // 换按钮就是换了状态：一律重画一次，免得圆钮留在锁住的画面上
+  S.dirty = true;
   const guard = fingerDown, born = performance.now();
   let keyGuard = keysDown > 0;
   if (keyGuard){ const off = () => { if (keysDown === 0){ setTimeout(() => { keyGuard = false; }, 0); removeEventListener("keyup", off, true); } }; addEventListener("keyup", off, true); }
@@ -303,12 +424,17 @@ function actions(list){
       const on = v => { S.hold = v; b.classList.toggle("on", v); if (v) touched(); };
       b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture && b.setPointerCapture(e.pointerId); on(true); });
       for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => on(false));
-      b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(true); } });
+      b.addEventListener("keydown", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); if (a.step) a.step(); else on(true); } });
       b.addEventListener("keyup", e => { if (e.key === " " || e.key === "Enter"){ e.preventDefault(); on(false); } });
       b.addEventListener("blur", () => on(false));
       b.addEventListener("contextmenu", e => e.preventDefault());
     } else {
-      b.addEventListener("click", e => { if (performance.now() - born < 400 || (keyGuard && e.detail === 0)) return; a.go(e); });
+      b.addEventListener("click", e => {
+        if (performance.now() - born < 400 || (keyGuard && e.detail === 0)) return;
+        const s0 = Sfx.seq();
+        a.go(e);
+        if (Sfx.seq() === s0) Sfx.tap();
+      });
       if (guard){ b.disabled = true; const en = () => { setTimeout(() => { b.disabled = false; }, 120); removeEventListener("pointerup", en, true); }; addEventListener("pointerup", en, true); }
     }
     boxEl.append(b);
@@ -317,9 +443,8 @@ function actions(list){
   if (first && !/^act/.test(S.mode)) first.focus({ preventScroll: true });
   return boxEl;
 }
-// 猜测：只记下来，不在这里判对错的颜色。猜错的反馈先接住、再说清，然后一律去动手，让实物来回答
 function ask(question, options, onAnswer){
-  say(question); navFace("waiting");   // 等舰长回答
+  say(question); navFace("waiting");
   actions(options.map((o, i) => ({ label: o.label, cls: "choice", go: () => {
     if (!sentPred.has(S.station)){ sentPred.add(S.station); Host.event("predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null }); }
     S.guess = S.guess || {}; S.guess[S.station] = o;
@@ -328,22 +453,15 @@ function ask(question, options, onAnswer){
   }})));
 }
 function next(label, go, cls){ actions([{ label, go, cls }]); }
-// 星卡上选站重玩（#154）：replay 是正在重玩的站号，0 是从头往下走。重玩一站跳过开场和猜测题，直接进这一站的动手；
-// 揭晓完，原来「去第 k+1 站」「看我的星卡」的按钮换成「回星卡」（用 nextOr）。不出猜测题就不发 predicted；
-// observed 靠 observedOnce、complete 靠 completed，都只记第一次。每站怎么复位、怎么进动手是模块自己的事，写在 REPLAY[站号] 里
 let replay = 0;
 const REPLAY = {};
 function nextOr(label, go, cls){ if (replay && picking) next("回到选站", pickStation); else if (replay) next("回星卡", enterEnd); else next(label, go, cls); }
 function replayAt(k){ replay = k; gen++; S.station = k; hint(""); readout(""); disarmCue(); REPLAY[k](); }
-function restart(){ replay = 0; picking = false; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }   // 从头玩：和以前的「再玩一次」一样
-function endActions(){   // 星卡的按钮：从头玩 + 第 1 站…第 N 站。enterEnd() 最后调它
+function restart(){ replay = 0; picking = false; sentPred.clear(); sentObs.clear(); S.guess = {}; lastState = ""; enter1(); }
+function endActions(){
   replay = 0; picking = false;
-  actions([{ label: "从头玩", go: restart, cls: "ghost tight" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1), cls: "tight" }))));   // tight：手机上一行排得下
+  actions([{ label: "从头玩", go: restart, cls: "ghost tight" }].concat(Array.from({ length: STATIONS }, (_, i) => ({ label: `第 ${i + 1} 站`, go: () => replayAt(i + 1), cls: "tight" }))));
 }
-// 选站（slice-5a）：正式外壳在 init 里给 completed_stations（做完的站号）和 activity_completed（拿过星卡没有）。
-// 有做完的站，打开时先选：重玩做过的站，或从头玩。重玩完回到这里（nextOr 换成「回到选站」）。
-// 没做完的站不能从中间接着做：星卡要用到前面每一站的结果，所以没拿过星卡时「从头玩」接着往下走。
-// 没有这两个字段（试玩页第一次打开、单独打开）就照旧从第 1 站开始
 let doneStations = 0, picking = false;
 function resumeFrom(p){
   if (picking || doneStations || !p) return;
@@ -361,42 +479,107 @@ function pickStation(){
   actions(list);
 }
 
-(function(){   // 「我有个问题」：随时可以问，发到信号站
+(function(){
   const area = $("qarea");
+  if (!area) return;
   const open = document.createElement("button");
   open.type = "button"; open.className = "btn ghost small"; open.textContent = "我有个问题";
   open.style.marginTop = "12px";
   open.addEventListener("click", () => {
     if (area.querySelector("textarea")) return;
+    Sfx.tap();
     const ta = document.createElement("textarea"); ta.maxLength = 120; ta.placeholder = "想问领航员什么？";
     const send = document.createElement("button"); send.type = "button"; send.className = "btn small"; send.textContent = "发给领航员";
     const bx = document.createElement("div"); bx.className = "qbox"; bx.append(ta, send);
-    send.addEventListener("click", () => { const q = ta.value.trim(); if (!q) return; Host.noteQuestion(q); bx.remove(); say("好问题，我记下来了。等会儿一起找答案。"); });
+    send.addEventListener("click", () => { const q = ta.value.trim(); if (!q) return; Sfx.tap(); Host.noteQuestion(q); bx.remove(); say("好问题，我记下来了。等会儿一起找答案。"); });
     area.append(bx); ta.focus();
   });
   area.append(open);
 })();
 
-// 第一屏的提醒（G6）：进入动手 1.5 秒还没碰，第一个圆钮外面扩出一圈细环；一碰就再也不出现
 let cuePos = null, cueTimer = 0;
 function armCue(pos){ disarmCue(); const g = gen; cueTimer = setTimeout(() => { if (g === gen && /^act/.test(S.mode)){ cuePos = pos; S.dirty = true; } }, 1500); }
 function disarmCue(){ clearTimeout(cueTimer); cuePos = null; cueEl.style.display = "none"; }
 function touched(){ if (cuePos || cueTimer) disarmCue(); cueTimer = 0; }
-function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }   // 第三个数是被提醒的东西的半径（托里的一个）
+function placeCue(){ if (!cuePos) return; const [x, y, r] = cuePos(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1((r || gripR()) + 2)); cueEl.style.display = ""; }
+function cueAt(x, y, r){ disarmCue(); cueEl.setAttribute("cx", r1(x)); cueEl.setAttribute("cy", r1(y)); cueEl.setAttribute("r", r1(r)); cueEl.style.display = ""; }
+function hideCue(){ disarmCue(); }
 
-// 窄屏：viewBox 缩到中间 600 宽的操作区，字号类放大（教训 13、28）。每个场景写明自己用到的高度
-// 排版规矩：要紧的东西都画在 x = 110～690 之间；每个场景在这里写 [起始 y, 高度]
-const VIEW = { s1: [110, 330], s1c: [110, 500], s2: [110, 330], s3q: [150, 300], s3: [120, 470], end: [8, 596] };
+let VIEW = {};
 function fitView(){
-  const nar = (svg.clientWidth || 800) < 600, [y, h] = VIEW[S.scene] || [0, 610];
+  const nar = (svg.clientWidth || 800) < 600, cfg = VIEW[S.scene];
+  S.narrow = nar;
   document.body.classList.toggle("narrow", nar);
-  const v = (nar ? [100, y, 600, h] : [0, y, 800, h]).join(" ");
-  if (svg.getAttribute("viewBox") !== v){ svg.setAttribute("viewBox", v); S.dirty = true; }
+  const b = !cfg ? [0, 0, 800, 610] : cfg.length === 4 ? (nar ? cfg : [0, 0, 800, 610]) : (nar ? [100, cfg[0], 600, cfg[1]] : [0, cfg[0], 800, cfg[1]]);
+  const v = b.join(" ");
+  if (svg.getAttribute("viewBox") !== v){ svg.setAttribute("viewBox", v); S.dirty = true; return true; }
+  return false;
 }
 addEventListener("resize", fitView);
 function scene(name){ S.scene = name; fitView(); S.dirty = true; }
 
-/* ============ 6. 这个模块的零件：数线、停靠环、小火箭、旗 ============ */
+Host.on("theme", p => { applyHostTheme(p); S.dirty = true; });
+Host.on("mute", p => { if (p && typeof p.muted === "boolean") Sfx.setMuted(p.muted); });
+
+const Kit = (() => {
+  let enterFn = null, booted = false, timer = 0, pendingInit = null;
+  function boot(){
+    if (booted || !enterFn) return;
+    booted = true;
+    clearTimeout(timer);
+    enterFn();
+  }
+  Host.on("init", p => {
+    applyHostTheme(p);
+    if (p && typeof p.muted === "boolean") Sfx.setMuted(p.muted);
+    if (p && p.navigator && p.navigator.faces && typeof p.navigator.faces.curious === "string"){
+      navFaces = p.navigator.faces;
+      navFace(navNow);
+    }
+    if (p && p.question_available === false && $("qarea")) $("qarea").hidden = true;
+    pendingInit = p;
+    if (!booted) boot();
+    resumeFrom(p);
+  });
+  return {
+    start(fn){
+      enterFn = fn;
+      Host.ready();
+      if (!Host.inFrame) boot();
+      else if (!booted){
+        if (pendingInit){ boot(); resumeFrom(pendingInit); }
+        else timer = setTimeout(boot, 300);
+      }
+    }
+  };
+})();
+/* curio-kit:1 end */
+
+/* ============ 1. 真相模型：页面上的每个数字都从这里算。只放数和纯函数，不碰页面 ============ */
+const MODEL = {
+  firstDen: 4,                               // 第一趟每步 1/4（设计约定）
+  dens: [2, 3, 5, 6, 8, 10],                 // 第二趟可选的步长：1/2、1/3、1/5、1/6、1/8、1/10（设计约定）
+  lineMax: 2,                                // 跳和插旗用的数线画的是 0 到 2，只标 0、1、2（设计约定）
+  flags: [[1, 2], [1, 4], [3, 4]],           // 三面旗依次是 1/2、1/4、3/4（设计约定）
+  spots: [["甲", 1, 2], ["乙", 2, 2], ["丙", 3, 2]],   // 提问时的三个候选点：甲在 1/2，乙在 1，丙在 1 又 1/2（设计约定）
+  hit: 0.04, near: 0.12,                     // 离真实位置不超过 0.04 算正中，不超过 0.12 算差一点，再远算差得远（手感约定）
+  flagStep: 0.02,                            // 键盘每按一次移 0.02（手感约定）
+  flagStart: 1.75,                           // 旗子出场的位置：离三面旗的答案和 0、1、2 都远，不暗示（设计约定）
+  gears: [2, 3, 4, 5, 6, 8, 10, 12, 20, 50, 100, 1000],   // 加密盘的档位（设计约定）
+  crowd: 50,                                 // 到 50 段以上，线上的刻度挤成一片，出现放大圈（画面约定）
+  mustReach: [100, 1000], minGears: 3,       // 至少在 3 个档位停过，并且到过 100 或 1000（设计约定）
+  settleMs: 600,                             // 转盘停住 0.6 秒算停过一档（手感约定）
+};
+const pos = (k, n) => k / n;                                  // k 个 1/n 是 k/n，离 0 的距离是 k ÷ n（0 到 1 的距离当作 1）
+const between = n => n - 1;                                   // 0 到 1 平均分成 n 段，中间多出 n − 1 个点：100→99，1000→999
+const grade = (drop, target) => { const d = Math.abs(drop - target); return d <= MODEL.hit + 1e-9 ? "hit" : d <= MODEL.near + 1e-9 ? "near" : "far"; };
+const r2 = v => Math.round(v * 100) / 100;
+const fmt = n => String(Math.round(n));
+
+STATIONS = 3;
+VIEW = { s1: [110, 330], s1c: [110, 500], s2: [110, 330], s3q: [150, 300], s3: [120, 470], end: [8, 596] };
+
+/* ============ 2. 这个模块的零件：数线、停靠环、小火箭、旗 ============ */
 const LN = { x0: 140, u: 260, y: 290 };                       // 第 1、2 站：0 到 2 的数线，1 个单位画 260 宽
 const X = v => LN.x0 + LN.u * v;
 function numLine(y, x0, u, max, seed){   // 一条墨线，0、1、2 三个站各一个停靠环，数写在环里
@@ -420,7 +603,7 @@ const hopH = w => clamp(w * .45, 20, 64);
 const arc = (xa, xb, y, cls) => P(`M${r1(xa)} ${y}Q${r1((xa + xb) / 2)} ${r1(y - 2 * hopH(xb - xa))} ${r1(xb)} ${y}`, cls);
 const labelFits = (n, u) => u / n >= (narrow() ? 50 : 40);          // 标签太挤就只标当前这一步
 
-/* ============ 7. 第 1 站 · 跳：分数也能一个一个数 ============ */
+/* ============ 3. 第 1 站 · 跳：分数也能一个一个数 ============ */
 const chipPos = i => narrow() ? { x: 400 + (i % 3 - 1) * 100, y: 452 + Math.floor(i / 3) * 92, r: 40 } : { x: 400 + (i - 2.5) * 70, y: 470, r: 28 };
 function trail(den, steps, ghost){   // 一趟跳下来留下的弧线、刻度和分数标签
   let s = "";
@@ -454,7 +637,7 @@ function readout1(){
 function hint1(){ hint(S.done2 ? "按「跳一步」，或者换个步子" : S.done4 ? "点一个小圆片换步子，再跳到 1" : "按「跳一步」"); }
 function hop(){
   if (S.mode !== "act1" || S.hop < 1 || S.steps >= S.den * MODEL.lineMax) return;
-  S.steps++; S.hop = reduced ? 1 : 0; S.dirty = true; touchedHop(); if (reduced) landed();
+  S.steps++; S.hop = reduced ? 1 : 0; S.dirty = true; Sfx.hop(S.steps); touchedHop(); if (reduced) landed();
 }
 function touchedHop(){ if (!S.done4) return; }
 function landed(){
@@ -473,6 +656,7 @@ function landed(){
 }
 function pickDen(d){
   if (S.mode !== "act1" || !S.done4 || S.hop < 1 || (d === S.den && S.trip === 2)) return;
+  Sfx.tap();
   S.ghost = { den: S.den, steps: Math.min(S.steps, S.den) }; S.den = d; S.steps = 0; S.trip = 2; S.dirty = true;
   say(`每步 ${F(1, d)}。按「跳一步」，数一数几步到 1。`); readout1(); hint1();
 }
@@ -488,23 +672,24 @@ function enter1(){
   ], () => next("让火箭跳", act1)));
 }
 function act1(){ S.mode = "act1"; acts1(); readout1(); hint1(); say(`这枚小火箭每步跳这一段的 ${F(1, 4)}。按「跳一步」。`); svg.focus({ preventScroll: true }); }
-REPLAY[1] = () => {   // 重玩第 1 站：火箭回到 0、步长回到 1/4、清掉上一趟的影子和托，跳过开场和猜测题。lastDen 留着，跳到 1 时才换成新的
+REPLAY[1] = () => {
   head(1, "跳：一步一个"); Object.assign(S, { den: MODEL.firstDen, steps: 0, hop: 1, trip: 1, ghost: null, done4: false, done2: false, overSaid: false }); scene("s1"); act1();
 };
 function done1(){
-  S.mode = "talk"; hint(""); disarmCue(); observedOnce(1);
+  S.mode = "talk"; hint(""); disarmCue(); observedOnce(1); Sfx.right();
   say("分数也能像 1、2、3 那样一个一个数。数了几个，上面就写几。", "good");
-  next("我来说", () => {   // 让舰长自己说出结论：只挑半句，不记事件（notes-star1.md 第三部分第 5 条，这颗星先试）
+  next("我来说", () => {
     say(`你来说：火箭每步 ${F(1, 5)}，跳了 3 步。它落在哪个数上？`);
     actions([[5, 3, false], [3, 5, true], [1, 5, false]].map(([a, b, ok]) => ({ label: F(a, b), cls: "choice", go: () => {
+      if (ok) Sfx.right(); else Sfx.nudge();
       say(ok ? "对。跳了 3 步，上面写 3；每步是五分之一，下面写 5。" : `是 ${F(3, 5)}。跳了 3 步，上面写 3；每步是五分之一，下面写 5。`, ok ? "good" : "hmm");
       next("还有呢", () => { const g = S.guess && S.guess[1]; say("火箭每次落脚的地方，都是 0 和 1 之间的一个数。" + (g && g.correct ? "你猜得没错，不止一个。" : "那一小段一点也不空。"), "good"); nextOr("去第 2 站", enter2); });
     }})));
   });
 }
 
-/* ============ 8. 第 2 站 · 插旗：先找到 1 在哪儿 ============ */
-const FY = LN.y - 50;                                         // 旗在手里时，旗杆底端（圆钮）悬在线上方
+/* ============ 4. 第 2 站 · 插旗：先找到 1 在哪儿 ============ */
+const FY = LN.y - 50;
 const curFlag = () => MODEL.flags[S.fi];
 const flagName = (a, b) => `${a}/${b}`;
 function draw2(){
@@ -512,8 +697,8 @@ function draw2(){
   const shown = S.planted.length > 0, quarters = S.planted.some(f => f.b === 4);
   if (shown) s += oneBand(LN.y, LN.x0, LN.u, 60);
   s += numLine(LN.y, LN.x0, LN.u, MODEL.lineMax, 70);
-  if (S.s2q) MODEL.spots.forEach(([nm, a, b], i) => { const x = X(pos(a, b)); if (a % b) s += `<circle cx="${x}" cy="${LN.y}" r="7" fill="var(--ink)"/>`; s += TC(x, LN.y - 30, nm, "lb"); });
-  if (S.s2q) s += flag(400, LN.y - 96, 1, 2) + P(Sk.line(382, LN.y - 96, 418, LN.y - 96, 99, .3), "k1");   // 提问时旗放在架子上，线上只有三个候选点
+  if (S.s2q) MODEL.spots.forEach(([nm, a, b]) => { const x = X(pos(a, b)); if (a % b) s += `<circle cx="${x}" cy="${LN.y}" r="7" fill="var(--ink)"/>`; s += TC(x, LN.y - 30, nm, "lb"); });
+  if (S.s2q) s += flag(400, LN.y - 96, 1, 2) + P(Sk.line(382, LN.y - 96, 418, LN.y - 96, 99, .3), "k1");
   if (shown){ const ts = quarters ? [1, 2, 3] : [2]; for (const k of ts){ const x = X(pos(k, 4)); s += P(`M${x} ${LN.y - 10}V${LN.y + 10}`, "kacc"); if (S.planted.length === 3) s += fracS(x, LN.y + 46, k, 4, "fs", 100 + k); } }
   for (const f of S.planted){ if (Math.abs(f.drop - f.target) > .005) s += flag(X(f.drop), LN.y, f.a, f.b, { ghost: true }); }
   for (const f of S.planted) s += flag(X(f.px), LN.y, f.a, f.b);
@@ -523,6 +708,7 @@ function draw2(){
 function plant(){
   if (S.mode !== "act2") return;
   const [a, b] = curFlag(), t = pos(a, b), drop = r2(clamp(S.fv, 0, MODEL.lineMax)), g = grade(drop, t), atOne = a === 1 && b === 2 && Math.abs(drop - 1) <= .08 + 1e-9;
+  if (g === "hit") Sfx.right(); else if (g === "near") Sfx.snap(); else Sfx.nudge();
   S.planted.push({ a, b, target: t, drop, grade: g, px: drop }); S.mode = "talk"; hint(""); disarmCue();
   sendState({ station: 2, flag: flagName(a, b), drop, target: t, grade: g });
   readout(`${F(a, b)} 插好了 · ${{ hit: "正中", near: "差一点", far: "差得远" }[g]}`);
@@ -546,16 +732,16 @@ function enter2(){
     { label: "丙", mis: "two-numbers", feedback: "旗上有 1 和 2，丙正好在 1 和 2 之间。可这面旗是一个数，不是两个。" }
   ], () => next("我来插", () => { S.s2q = false; nextFlag(); })));
 }
-REPLAY[2] = () => {   // 重玩第 2 站：拔掉三面旗，第一面旗回到手里，跳过开场和猜测题
+REPLAY[2] = () => {
   head(2, "插旗：它在哪儿"); Object.assign(S, { planted: [], fi: 0, fv: MODEL.flagStart, fp: MODEL.flagStart, s2q: false }); scene("s2"); nextFlag();
 };
 function done2(){
-  observedOnce(2); const g = S.guess && S.guess[2];
+  observedOnce(2); Sfx.right(); const g = S.guess && S.guess[2];
   say(`先找到 1 在哪儿。${F(1, 2)} 是 0 到 1 的正中间，不是整条线的正中间。` + (g && g.correct ? "你一开始就找对了。" : ""), "good");
   next("还有呢", () => { say(`咦，${F(2, 4)} 和 ${F(1, 2)} 落在了同一个地方。这个秘密，后面有一颗星专门讲。`); nextOr("去第 3 站", enter3); });
 }
 
-/* ============ 9. 第 3 站 · 拧：0 和 1 之间的数数不完 ============ */
+/* ============ 5. 第 3 站 · 拧：0 和 1 之间的数数不完 ============ */
 const L3 = { x0: 140, u: 520, y: 220 }, DIAL = { x: 580, y: 440, r: 62 }, LP = { x: 240, y: 440, r: 84 };
 const X3 = v => L3.x0 + L3.u * v;
 const gearN = () => S.gi < 0 ? 1 : MODEL.gears[S.gi];
@@ -568,10 +754,10 @@ function draw3(){
   const n = gearN(), act = S.mode === "act3"; let s = "";
   if (n >= MODEL.crowd) s += P(`M${X3(.5)} ${L3.y + 14}L${LP.x - 46} ${LP.y - LP.r + 12}M${X3(.5)} ${L3.y + 14}L${LP.x + 46} ${LP.y - LP.r + 12}`, "faint");
   s += oneBand(L3.y, L3.x0, L3.u, 60);
-  if (n >= 1000) s += `<rect x="${X3(0) + 15}" y="${L3.y - 11}" width="${L3.u - 30}" height="22" class="lead"/>`;   // 1000 段：线上看起来是一条实心的带子
+  if (n >= 1000) s += `<rect x="${X3(0) + 15}" y="${L3.y - 11}" width="${L3.u - 30}" height="22" class="lead"/>`;
   else if (n > 1){ let d = ""; for (let k = 1; k < n; k++) d += `M${r1(X3(pos(k, n)))} ${L3.y - 12}v24`; s += P(d, n >= MODEL.crowd ? "tkd" : "tk"); if (labelFits(n, L3.u) && n <= 6) for (let k = 1; k < n; k++) s += fracS(r1(X3(pos(k, n))), L3.y + 48, k, n, "fs", 120 + k); }
   s += numLine(L3.y, L3.x0, L3.u, 1, 70);
-  if (n >= MODEL.crowd){   // 挤成一片了：放大圈里还是一条一条分得开；1000 段要再套一个放大圈
+  if (n >= MODEL.crowd){
     s += loupe(LP.x, LP.y, LP.r, zoomTicks(LP.x, LP.y, LP.r, n >= 1000 ? 3.2 : 26, 30), 130);
     if (n >= 1000) s += P(`M${LP.x + 14} ${LP.y + 6}L${LP.x + 62} ${LP.y + 22}`, "faint") + loupe(LP.x + 84, LP.y + 58, 50, zoomTicks(LP.x + 84, LP.y + 58, 50, 24, 22), 131);
   }
@@ -585,7 +771,7 @@ function draw3(){
 }
 function readout3(){ const n = gearN(); readout(n < 2 ? "0 到 1 · 还没分" : `平均分成 ${n} 段 · 0 和 1 之间多出 ${between(n)} 个数`); if (n > 1) sendState({ station: 3, den: n, between: between(n) }); }
 function hint3(){ const far = S.seen.some(n => MODEL.mustReach.includes(n)); hint(S.s3ready ? `转一转圆钮 · 停过 ${S.seen.length} 档` : !far && S.seen.length >= 2 ? `转一转圆钮 · 还要拧到 ${MODEL.mustReach[0]}` : `转一转圆钮 · 停过 ${S.seen.length} 档`); }
-function setGear(i){ i = clamp(Math.round(i), 0, MODEL.gears.length - 1); if (i === S.gi) return; S.gi = i; S.gAt = performance.now(); S.settled = false; S.dirty = true; readout3(); }
+function setGear(i){ i = clamp(Math.round(i), 0, MODEL.gears.length - 1); if (i === S.gi) return; S.gi = i; S.gAt = performance.now(); S.settled = false; S.dirty = true; Sfx.tick(i); readout3(); }
 function settle3(){
   S.settled = true; const n = gearN(); if (!S.seen.includes(n)) S.seen.push(n);
   const far = S.seen.some(m => MODEL.mustReach.includes(m));
@@ -593,7 +779,6 @@ function settle3(){
   else if (n >= MODEL.crowd && !S.saidCrowd){ S.saidCrowd = true; say("挤成一片了。放大圈里看，还是一条一条分得开。"); }
   else if (S.seen.length === 1) say(`平均分成 ${n} 段，0 和 1 之间多出 ${between(n)} 个数。接着拧。`);
   else if (!S.s3ready && !far && S.seen.length >= 2) say(`${n} 段，中间 ${between(n)} 个数。一直拧到 ${MODEL.mustReach[0]} 看看。`);
-  // 重玩这一站：第一次已经停过 3 档了，这回拧到 100 或 1000 就能看
   if (!S.s3ready && far && S.seen.length >= MODEL.minGears){ S.s3ready = true; if (n < 1000 || S.seen.length > MODEL.minGears) say("还能接着拧。看够了点「看一看」。"); next("看一看", done3); }
   hint3();
 }
@@ -610,15 +795,15 @@ function act3(){
   Object.assign(S, { mode: "act3", gi: -1, ang: 0, seen: [], settled: true, s3ready: false, saidCrowd: false, said1000: false }); scene("s3"); actions([]); readout3(); hint3();
   say("转一转加密盘。先分成 2 段、3 段，数数中间多出几个数。"); svg.focus({ preventScroll: true }); armCue(dialGrip);
 }
-REPLAY[3] = () => { head(3, "拧：越分越密"); act3(); };   // 重玩第 3 站：act3() 把加密盘拧回「还没分」、清掉停过的档，跳过开场和猜测题
+REPLAY[3] = () => { head(3, "拧：越分越密"); act3(); };
 function done3(){
-  S.mode = "talk"; hint(""); disarmCue(); observedOnce(3); S.best = Math.max(...S.seen); S.gi = MODEL.gears.indexOf(100); S.settled = true; S.dirty = true; readout3();   // 先停在 100：画面和第一句话说的是同一个数
+  S.mode = "talk"; hint(""); disarmCue(); observedOnce(3); Sfx.right(); S.best = Math.max(...S.seen); S.gi = MODEL.gears.indexOf(100); S.settled = true; S.dirty = true; readout3();
   const g = S.guess && S.guess[3];
   say("分成 100 段，中间是 99 个数：两头的 0 和 1 本来就在。" + (g && g.correct ? "你猜对了。" : ""), "good");
   next("再密呢", () => { S.gi = MODEL.gears.length - 1; S.dirty = true; readout3(); say("分成 1000 段，就有 999 个数挤在 0 和 1 之间。还能接着分，永远分不完。光是分数，就数也数不完。", "good"); nextOr("看我的星卡", enterEnd); });
 }
 
-/* ============ 10. 星卡 · 我的数线：舰长自己选的步长、自己插的三个位置、自己拧到的档位（教训 12） ============ */
+/* ============ 6. 星卡 · 我的数线：舰长自己选的步长、自己插的三个位置、自己拧到的档位（教训 12） ============ */
 function drawEnd(){
   const n = S.lastDen || MODEL.dens[0], x0 = 150, u = 500, hits = S.planted.filter(f => f.grade === "hit").length, best = S.best || MODEL.mustReach[0];
   let s = `<rect x="108" y="16" width="584" height="580" rx="20" fill="var(--pane)" stroke="var(--rule)"/>` +
@@ -638,15 +823,15 @@ function enterEnd(){
   gen++; S.station = STATIONS + 1; S.mode = "end"; head(0, "我的数线"); hint(""); disarmCue(); scene("end");
   readout(`每步 ${F(1, S.lastDen || MODEL.dens[0])} · ${S.planted.filter(f => f.grade === "hit").length} 面正中 · ${between(S.best || MODEL.mustReach[0])} 个数`);
   say("这是你的数线。0 和 1 之间的这些数，都是你自己找出来的。", "good");
-  if (!completed){ completed = true; Host.complete({}); }
-  endActions();   // 从头玩 + 第 1 站…第 3 站（kit:shell）
+  if (!completed){ completed = true; Sfx.lit(); Host.complete({}); }
+  endActions();
 }
 
-/* ============ 11. 画面和输入 ============ */
+/* ============ 7. 画面和输入 ============ */
 const DRAW = { s1: draw1, s1c: draw1, s2: draw2, s3q: draw3q, s3: draw3, end: drawEnd };
 function render(){ gDyn.innerHTML = DRAW[S.scene](); placeCue(); }
 function toSvg(e){ const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); }
-function hit(q){   // 这一刻能抓的东西：步长的小圆片、手里的旗、加密盘。别的地方照常滑页面
+function hit(q){
   if (S.mode === "act1" && S.scene === "s1c") for (let i = 0; i < MODEL.dens.length; i++){ const c = chipPos(i); if (Math.hypot(q.x - c.x, q.y - c.y) < c.r + 4) return "chip" + i; }
   if (S.mode === "act2" && Math.abs(q.x - X(S.fp)) < hitR() && q.y > FY - 80 && q.y < FY + hitR() + gripR()) return "flag";
   if (S.mode === "act3" && Math.hypot(q.x - DIAL.x, q.y - DIAL.y) < dialGripR() + hitR()) return "dial";
@@ -666,7 +851,7 @@ svg.addEventListener("pointermove", e => {
   if (!drag){ const h = hit(q); svg.style.cursor = !h ? "" : /^chip/.test(h) ? "pointer" : "grab"; return; }
   if (!drag.moved && Math.hypot(e.clientX - drag.cx, e.clientY - drag.cy) > 6) drag.moved = true;
   if (!drag.moved) return;
-  if (drag.kind === "flag" && S.mode === "act2"){ S.fv = clamp((q.x - drag.dx - LN.x0) / LN.u, 0, MODEL.lineMax); S.dirty = true; }
+  if (drag.kind === "flag" && S.mode === "act2"){ S.fv = clamp((q.x - drag.dx - LN.x0) / LN.u, 0, MODEL.lineMax); S.dirty = true; Sfx.tick(Math.round(S.fv * 8)); }
   if (drag.kind === "dial" && S.mode === "act3") dialFrom(q);
 });
 function endDrag(e){
@@ -677,12 +862,12 @@ function endDrag(e){
   if (d.kind === "dial" && !d.moved && !d.onGrip && S.mode === "act3") setGear(S.gi + (toSvg(e).x < DIAL.x ? -1 : 1));
 }
 for (const ev of ["pointerup", "pointercancel"]) svg.addEventListener(ev, endDrag);
-svg.addEventListener("keydown", e => {   // 键盘：第 1 站空格或回车跳一步、← → 选步长；第 2 站 ← → 移旗、回车或空格插下；第 3 站 ← → 换档
+svg.addEventListener("keydown", e => {
   const step = /ArrowRight|ArrowUp/.test(e.key) ? 1 : /ArrowLeft|ArrowDown/.test(e.key) ? -1 : 0, go = e.key === " " || e.key === "Enter";
   if ((!step && !go) || !/^act/.test(S.mode)) return;
   e.preventDefault(); S.kbd = true; svg.classList.add("kbd"); touched(); S.dirty = true;
   if (S.mode === "act1"){ if (go && !e.repeat) hop(); else if (step && S.done4){ const i = S.trip === 2 ? MODEL.dens.indexOf(S.den) : -1; pickDen(MODEL.dens[clamp(i + step, 0, MODEL.dens.length - 1)]); } }
-  if (S.mode === "act2"){ if (step) S.fv = r2(clamp(S.fv + step * MODEL.flagStep, 0, MODEL.lineMax)); else if (!e.repeat) plant(); }
+  if (S.mode === "act2"){ if (step){ S.fv = r2(clamp(S.fv + step * MODEL.flagStep, 0, MODEL.lineMax)); Sfx.tick(Math.round(S.fv * 8)); } else if (!e.repeat) plant(); }
   if (S.mode === "act3" && step) setGear(S.gi + step);
 });
 
@@ -693,7 +878,7 @@ function tick(now){
   if (S.station === 1 && S.hop < 1){ S.hop = Math.min(1, S.hop + dt / .42); S.dirty = true; if (S.hop >= 1) landed(); }
   if (S.station === 2){
     if (Math.abs(S.fv - S.fp) > 1e-4){ S.fp = Math.abs(S.fv - S.fp) < .002 ? S.fv : S.fp + (S.fv - S.fp) * kf; S.dirty = true; }
-    for (const f of S.planted) if (Math.abs(f.target - f.px) > 1e-4){ f.px = Math.abs(f.target - f.px) < .002 ? f.target : f.px + (f.target - f.px) * k * .6; S.dirty = true; }   // 刻度显形后，旗滑到真实位置
+    for (const f of S.planted) if (Math.abs(f.target - f.px) > 1e-4){ f.px = Math.abs(f.target - f.px) < .002 ? f.target : f.px + (f.target - f.px) * k * .6; S.dirty = true; }
   }
   if (S.scene === "s3"){
     const da = (((S.gi + 1) * 30 - S.ang) % 360 + 540) % 360 - 180; if (Math.abs(da) > .05){ S.ang += Math.abs(da) < .4 ? da : da * kf; S.dirty = true; }
@@ -702,10 +887,11 @@ function tick(now){
   if (S.dirty){ S.dirty = false; render(); }
   requestAnimationFrame(tick);
 }
-Host.ready();      // 必须先于任何 state、event（教训 31）
-fitView();
-enter1();
-requestAnimationFrame(tick);
+Kit.start(() => {
+  fitView();
+  enter1();
+  requestAnimationFrame(tick);
+});
 </script>
 </body>
 </html>

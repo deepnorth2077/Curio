@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mountExploration, stationCount } from "../exploration.js";
+import { PALETTE_KEYS, DARK_PALETTE, LIGHT_PALETTE } from "../theme.js";
 
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 const content = {
@@ -20,9 +21,10 @@ function setup(options = {}, submit) {
   frame.style = {};
   frame.contentWindow = { postMessage: (m) => messages.push(m) };
   frame.remove = () => { frame.removed = true; };
+  const contract = options.contract || "activity/1.1";
   const signals = (type, payload = {}, overrides = {}) => {
     const event = new Event("message");
-    Object.assign(event, {origin: "null", source: frame.contentWindow, data: {contract:"activity/1.1", type, payload}, ...overrides});
+    Object.assign(event, {origin: "null", source: frame.contentWindow, data: {contract, type, payload}, ...overrides});
     win.dispatchEvent(event);
   };
   const session = { identity: {learner_id:"learner", device_id:"device"}, committer: {
@@ -34,14 +36,15 @@ function setup(options = {}, submit) {
       events.push(e);
     },
   }};
+  const { contract: _ignored, ...mountOpts } = options;
   const handle = mountExploration({
     container: {ownerDocument:{defaultView:win, createElement:()=>frame},append(){}},
-    manifest: {id:(options.content ?? content).activity_id, contract:"activity/1.1", type:"simulation",
+    manifest: {id:(options.content ?? content).activity_id, contract, ...(contract === "activity/1.2" ? {kit: 1} : {}), type:"simulation",
       version:(options.content ?? content).activity_version,
       targets:[(options.content ?? content).node_id], age_band:"G3-4", emits:["observed","predicted","answered"]},
     html: "<!DOCTYPE html><html><head><title>活动</title></head><body></body></html>",
     session, now:()=>new Date(0).toISOString(), ids:{attempt:()=>"attempt",event:()=>String(++serial)},
-    content, onStatus:(s)=>statuses.push(s), ...options,
+    content, onStatus:(s)=>statuses.push(s), ...mountOpts,
   });
   const load = () => frame.dispatchEvent(new Event("load"));
   const progress = (station) => signals("event", {verb:"observed", result:{station, item:"station-complete"}});
@@ -171,4 +174,51 @@ test("without a navigator (old release) or with a malformed one, init has no nav
     assert.equal("navigator" in h.messages[0].payload, false, JSON.stringify(navigator));
     await h.handle.leave();
   }
+});
+
+// docs/specs/kit.md：activity/1.2 下发 20 键十六进制 palette、scheme、muted，支持运行期 theme/mute；1.1 保持冻结
+test("activity/1.2 receives 20 hex palette keys, scheme, muted, and live theme/mute updates", async () => {
+  const hop = {
+    activity_id: "act.simulation.hop-line-01", node_id: "math.fraction.count-on-line",
+    activity_kind: "simulation", activity_version: 3, content_release: "test-release",
+  };
+  const h = setup({ contract: "activity/1.2", content: hop, scheme: "dark", muted: true });
+  await h.start();
+
+  assert.equal(h.messages[0].contract, "activity/1.2");
+  assert.equal(h.messages[0].type, "init");
+  assert.equal(h.messages[0].payload.scheme, "dark");
+  assert.equal(h.messages[0].payload.muted, true);
+  assert.deepEqual(Object.keys(h.messages[0].payload.palette).sort(), [...PALETTE_KEYS].sort());
+  assert.equal(h.messages[0].payload.palette.accent, "#A797F7");
+  assert.deepEqual(h.messages[0].payload.palette, DARK_PALETTE);
+
+  // 忽略 1.1 信封的消息
+  h.signals("event", { verb: "observed", result: { station: 1, item: "station-complete" } },
+    { data: { contract: "activity/1.1", type: "event", payload: { verb: "observed", result: { station: 1, item: "station-complete" } } } });
+  await tick();
+  assert.deepEqual(h.events.map((e) => e.verb), ["attempt.started"]);
+
+  // 运行期切浅色、开声音
+  h.handle.setTheme({ scheme: "light", palette: LIGHT_PALETTE });
+  h.handle.setMuted(false);
+  assert.deepEqual(h.messages[1], { contract: "activity/1.2", type: "theme", payload: { scheme: "light", palette: LIGHT_PALETTE } });
+  assert.deepEqual(h.messages[2], { contract: "activity/1.2", type: "mute", payload: { muted: false } });
+
+  // 非法十六进制颜色表被宿主自检拦下
+  assert.throws(() => h.handle.setTheme({ scheme: "dark", palette: { ...DARK_PALETTE, accent: "purple" } }), /不合法/);
+  await h.handle.leave();
+});
+
+test("activity/1.1 stays frozen without 1.2 palette, scheme, muted, or theme/mute messages", async () => {
+  const h = setup({ scheme: "dark", muted: true });
+  await h.start();
+  assert.equal(h.messages[0].contract, "activity/1.1");
+  assert.equal("palette" in h.messages[0].payload, false);
+  assert.equal("scheme" in h.messages[0].payload, false);
+  assert.equal("muted" in h.messages[0].payload, false);
+  h.handle.setTheme({ scheme: "light", palette: LIGHT_PALETTE });
+  h.handle.setMuted(false);
+  assert.equal(h.messages.length, 1);
+  await h.handle.leave();
 });

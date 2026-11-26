@@ -1,7 +1,8 @@
 // One verified release entry, one opaque iframe, one ordered stream of local writes.
 import { assemble, localReceipt } from "./session.js";
+import { validPalette, resolvePalette } from "./theme.js";
 
-const CONTRACT = "activity/1.1";
+export const SUPPORTED_CONTRACTS = Object.freeze(["activity/1.1", "activity/1.2"]);
 // Explorations this shell hosts, with each module's station count (slice-5a; zero-to-one in #233).
 // The count bounds station numbers and decides when the whole exploration is done.
 const stationCounts = new Map([
@@ -68,8 +69,10 @@ export function navigatorPayload(n) {
 export function mountExploration({
   container, manifest, html, session, ids, now, content, mode = "first",
   doneStations = [], activityCompleted = false, onStatus = () => {}, navigator = null,
+  scheme = "light", palette = null, muted = false,
 }) {
-  if (!supportedExploration(manifest.id) || manifest.contract !== CONTRACT ||
+  const contract = manifest.contract;
+  if (!supportedExploration(manifest.id) || !SUPPORTED_CONTRACTS.includes(contract) ||
       manifest.type !== "simulation" || manifest.id !== content.activity_id ||
       manifest.version !== content.activity_version || content.activity_kind !== "simulation" ||
       !manifest.targets.includes(content.node_id) || !Array.isArray(manifest.emits) ||
@@ -78,6 +81,14 @@ export function mountExploration({
   const pilot = navigatorPayload(navigator);
   const srcdoc = isolatedDocument(html);
   const doc = container.ownerDocument;
+  let curScheme = scheme === "dark" ? "dark" : "light";
+  let curMuted = !!muted;
+  let curPalette = null;
+  if (contract === "activity/1.2") {
+    const candidate = palette !== null ? palette : resolvePalette(curScheme, doc);
+    if (!validPalette(candidate)) throw new Error("活动配色表不合法");
+    curPalette = { ...candidate };
+  }
   const win = doc.defaultView;
   const frame = doc.createElement("iframe");
   frame.setAttribute("sandbox", "allow-scripts");
@@ -155,10 +166,11 @@ export function mountExploration({
       if (!accepting) return;
       phase = "active";
       frame.contentWindow.postMessage({
-        contract: CONTRACT, type: "init", payload: {
+        contract, type: "init", payload: {
           age_band: manifest.age_band, lang: "zh-CN", phase: "observe",
           completed_stations: previous, activity_completed: activityCompleted, question_available: false,
           ...(pilot ? { navigator: pilot } : {}),
+          ...(contract === "activity/1.2" ? { scheme: curScheme, palette: { ...curPalette }, muted: curMuted } : {}),
         },
       }, "*"); // sandboxed srcdoc has an opaque origin.
       frame.inert = false;
@@ -184,7 +196,7 @@ export function mountExploration({
   function receive(event) {
     if (!accepting || event.source !== frame.contentWindow || event.origin !== "null" || event.ports?.length) return;
     const m = event.data;
-    if (!exact(m, ["contract", "type", "payload"]) || m.contract !== CONTRACT) return;
+    if (!exact(m, ["contract", "type", "payload"]) || m.contract !== contract) return;
     const p = m.payload;
     if (m.type === "ready" && phase === "loading" && exact(p, [])) {
       ready = true;
@@ -229,5 +241,22 @@ export function mountExploration({
     },
     // On loss of writer ownership, queued and future writes must stop immediately.
     destroy() { aborted = true; detach(); },
+    setTheme({ scheme: nextScheme, palette: nextPalette } = {}) {
+      if (contract !== "activity/1.2") return;
+      curScheme = nextScheme === "dark" ? "dark" : "light";
+      const candidate = nextPalette !== undefined && nextPalette !== null ? nextPalette : resolvePalette(curScheme, doc);
+      if (!validPalette(candidate)) throw new Error("活动配色表不合法");
+      curPalette = { ...candidate };
+      if (accepting && (phase === "active" || phase === "completed")) {
+        frame.contentWindow.postMessage({ contract, type: "theme", payload: { scheme: curScheme, palette: { ...curPalette } } }, "*");
+      }
+    },
+    setMuted(nextMuted) {
+      if (contract !== "activity/1.2") return;
+      curMuted = !!nextMuted;
+      if (accepting && (phase === "active" || phase === "completed")) {
+        frame.contentWindow.postMessage({ contract, type: "mute", payload: { muted: curMuted } }, "*");
+      }
+    },
   };
 }

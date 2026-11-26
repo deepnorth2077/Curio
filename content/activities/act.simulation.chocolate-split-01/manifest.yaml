@@ -1,16 +1,17 @@
 id: act.simulation.chocolate-split-01
-contract: activity/1.1
+contract: activity/1.2
+kit: 1
 type: simulation
-version: 2
+version: 3
 title: 掰巧克力
 targets: [math.operation.distributive-law]
 age_band: G3-4
 entry: index.html
 duration_min: 8
 pedagogy: explain
-capabilities: [pointer, keyboard]
+capabilities: [pointer, keyboard, audio]
 misconceptions: [multiply-one-part, add-instead-of-multiply, merge-unlike, drop-small-part]
 emits: [predicted, observed]
 author: {model: Claude Opus 5.5 (claude-opus-5-5), prompt_ref: prompts/act.simulation.chocolate-split-01.md}
-review: approved  # Luka 2026-11-22 要求进正式外壳（#54）
+review: approved  # Luka 2026-11-22 要求进正式外壳（#54）；2026-11-25 升至 activity/1.2 + kit: 1（#251）
 # END OF FILE

@@ -88,11 +88,31 @@ class TestAllModules(Lint):
         self.fails(page(css="@import url(x.css);"), "@import")
         self.fails(page(css="body{background:url(https://example.com/a.png)}"), "url(外部地址)")
         self.fails(page().replace("<script>", '<script src="https://cdn.example.com/lib.js"></script><script>'), "<script src>")
+        self.fails(page(body='<audio src="beep.mp3"></audio>'), "<audio>")
+        self.fails(page(body='<video src="clip.mp4"></video>'), "<video>")
+        self.fails(page('const Host={ready(){}};\nHost.ready();\nnew Audio("x.mp3");\n'), "new Audio(", {"emits": []})
 
     def test_ready_before_first_station(self):
         self.fails(page('const Host={ready(){}};\nfunction enter1(){}\nenter1();\nHost.ready();\n'), "Host.ready() 必须先于第一站", {"emits": []})
         self.fails(page('const Host={ready(){}};\nfunction enter1(){}\nenter1();\n'), "没有调用 Host.ready()", {"emits": []})
         self.ok(page('const Host={ready(){}};\nfunction enter1(){}\nHost.ready();\nenter1();\n'), {"emits": []})
+        self.ok(page('/* curio-kit:1 begin */\nconst Kit={start(fn){fn()}};\n/* curio-kit:1 end */\nfunction enter1(){}\nKit.start(enter1);\n'),
+                {"contract": "activity/1.2", "kit": 1, "emits": []})
+
+    def test_v12_forbids_prefers_color_scheme_and_redeclaring_kit_exports(self):
+        m12 = {"contract": "activity/1.2", "kit": 1, "emits": ["predicted", "observed"], "misconceptions": ["bigger-denominator-bigger"]}
+        kit_script = (
+            '/* curio-kit:1 begin */\nconst Host={ready(){},event(){}}, Kit={start(fn){Host.ready();fn();}}, Sfx={tap(){}};\n/* curio-kit:1 end */\n'
+            'function ask(){ Host.event("predicted", { misconception: null }); }\n'
+            'const OPTS = [{ label: "八分之一那块大", mis: "bigger-denominator-bigger" }];\n'
+            'function enter1(){ ask(); Host.event("observed", { station: 1 }); }\n'
+            'Kit.start(enter1);\n'
+        )
+        self.ok(page(kit_script, css=".kit-dark{--own:#112233}\n"), m12)
+        self.fails(page(kit_script, css="@media (prefers-color-scheme:dark){.x{color:#fff}}\n"), "prefers-color-scheme", m12)
+        for name in ("Host", "Kit", "Sfx", "Sk", "sketchLib", "fracS", "oneMark", "grip"):
+            with self.subTest(name=name):
+                self.fails(page(kit_script + f"const {name} = 1;\n"), f"重新声明零件库导出的名字 {name}", m12)
 
     def test_verbs_must_be_in_emits(self):
         self.fails(page(), "代码里发了 observed", {"emits": ["predicted"], "misconceptions": ["bigger-denominator-bigger"]})

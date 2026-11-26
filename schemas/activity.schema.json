@@ -1,14 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/deepnorth2077/curio/schemas/activity.schema.json",
-  "title": "activity/1.1 · 互动模块 manifest",
-  "description": "讲解、实验、测验等互动模块的描述文件。消息协议见 docs/activity-contract.md。",
+  "title": "activity/1.1 · 1.2 · 互动模块 manifest",
+  "description": "讲解、实验、测验等互动模块的描述文件。消息协议见 docs/activity-contract.md 与 docs/specs/kit.md。",
   "type": "object",
   "required": ["id", "contract", "type", "version", "title", "targets", "age_band", "entry", "pedagogy", "emits", "review"],
   "additionalProperties": false,
   "properties": {
     "id": { "type": "string", "pattern": "^act\\.[a-z]+\\.[a-z0-9-]+$" },
-    "contract": { "const": "activity/1.1" },
+    "contract": { "enum": ["activity/1.1", "activity/1.2"] },
+    "kit": { "type": "integer", "minimum": 1, "description": "共用零件库版本（kit/<N>/）；activity/1.2 必填，activity/1.1 不填" },
     "type": { "enum": ["experiment", "simulation"] },
     "version": { "type": "integer", "minimum": 1 },
     "title": { "type": "string", "maxLength": 20 },
@@ -28,5 +29,9 @@
     "author": { "type": "object", "properties": { "model": { "type": "string" }, "prompt_ref": { "type": "string" } } },
     "review": { "enum": ["pending", "claude-reviewed", "approved"] }
   },
-  "allOf": [ { "if": { "properties": { "pedagogy": { "const": "POE" } } }, "then": { "required": ["controls", "observables", "predict", "explain"] } } ]
+  "allOf": [
+    { "if": { "properties": { "pedagogy": { "const": "POE" } }, "required": ["pedagogy"] }, "then": { "required": ["controls", "observables", "predict", "explain"] } },
+    { "if": { "properties": { "contract": { "const": "activity/1.2" } }, "required": ["contract"] }, "then": { "required": ["kit"] } },
+    { "if": { "properties": { "contract": { "const": "activity/1.1" } }, "required": ["contract"] }, "then": { "not": { "required": ["kit"] } } }
+  ]
 }

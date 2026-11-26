@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import kit as kit_tool  # noqa: E402  共用色位与零件库检查（#107）
 import module_lint  # noqa: E402  动手探索模块的静态检查（#140）
 import status_gen  # noqa: E402  状态只写一处（#140 第 5 条）
 
@@ -25,7 +26,7 @@ import status_gen  # noqa: E402  状态只写一处（#140 第 5 条）
 # kp/ 分支改自己活动的提示词和任务文件；feat/、fix/、chore/ 分支新增任务文件留档（*.task.md）。
 # relay/ 里 Claude 手算的验收用例、跑用例的脚本和领航员说明也只能在 arch/ 改：实现者不能为了通过去改期望值。
 # 竖切片 1 的向量和验收测试同理；实现者自己加的测试放在同目录的其他文件里。
-PROTECTED = ["schemas/*", "docs/*", "tools/*", ".github/*", "prompts/*", "AGENTS.md", "CLAUDE.md", "README.md", "GLOSSARY.md",
+PROTECTED = ["schemas/*", "docs/*", "tools/*", "kit/*", ".github/*", "prompts/*", "AGENTS.md", "CLAUDE.md", "README.md", "GLOSSARY.md",
              "relay/test/cases.json", "relay/test/cases.test.js", "relay/src/navigator.js",
              # 竖切片 1 的黄金向量和验收测试（规格第 7 节）：同上，实现者不能改期望值
              "kernel/vectors/*", "engine/vectors/*", "kernel/test/vectors.test.js", "engine/test/grading.test.js",
@@ -316,10 +317,10 @@ def activity_misconception_refs(doc):
 
 
 def explains_node(nid, activity, entry_html):
-    """被收录的动手探索能否承担本星讲解：清单指向本星、activity/1.1、simulation、explain、
+    """被收录的动手探索能否承担本星讲解：清单指向本星、activity/1.1 或 1.2、simulation、explain、
     入口 index.html、声明 observed，并且入口 HTML 用 slice-5a 的站完成标记。entry_html 是入口文件的文字（读不到为 None）。"""
     return (activity.get("type") == "simulation" and activity.get("pedagogy") == "explain"
-            and activity.get("contract") == "activity/1.1" and activity.get("entry") == "index.html"
+            and activity.get("contract") in ("activity/1.1", "activity/1.2") and activity.get("entry") == "index.html"
             and nid in activity.get("targets", []) and isinstance(activity.get("emits"), list)
             and "observed" in activity["emits"]
             and isinstance(entry_html, str) and STATION_COMPLETE_MARK.search(entry_html) is not None)
@@ -940,6 +941,11 @@ def run(repo, base="origin/main", branch="", labels=()):
     status_errors, _ = status_gen.sync(repo, write=False)
     for message in status_errors:
         r.err(message, "docs/constellations")
+
+    # ---------- 4e. 共用色位与零件库（docs/specs/kit.md）：只有在仓库里有 kit/ 时才查，兼容不含 kit/ 的旧夹具仓库 ----------
+    if (repo / "kit").is_dir():
+        for file_rel, message in kit_tool.check_repo(repo, base=base):
+            r.err(message, file_rel)
 
     # ---------- 5. 署名提醒 ----------
     log = git(repo, "log", f"{base}..HEAD", "--format=%h%x00%s%x00%B%x1e").stdout

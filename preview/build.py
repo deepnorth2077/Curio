@@ -154,7 +154,8 @@ def load_activity(roots, aid, figures, only_approved=False, module_src=None):
         if not_approved(m, aid, only_approved):
             return None
         entry = find(roots, f"content/activities/{aid}/{m.get('entry', 'index.html')}")
-        activity = {"id": m["id"], "kind": "simulation", "title": m["title"], "duration_min": m.get("duration_min"),
+        activity = {"id": m["id"], "kind": "simulation", "contract": m.get("contract", "activity/1.1"),
+                    "title": m["title"], "duration_min": m.get("duration_min"),
                     "age_band": m.get("age_band", "G3-4"), "targets": m.get("targets", [])}
         if module_src:
             activity["src"] = module_src(entry, aid)

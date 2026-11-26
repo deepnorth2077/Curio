@@ -1,16 +1,17 @@
 id: act.simulation.hop-line-01
-contract: activity/1.1
+contract: activity/1.2
+kit: 1
 type: simulation
-version: 2
+version: 3
 title: 数线跳跳
 targets: [math.fraction.count-on-line]
 age_band: G3-4
 entry: index.html
 duration_min: 8
 pedagogy: explain
-capabilities: [pointer, keyboard]
+capabilities: [pointer, keyboard, audio]
 misconceptions: [no-numbers-between, whole-line-as-one, two-numbers, count-ticks-not-steps]
 emits: [predicted, observed]
 author: {model: Claude Fable 5.2 (claude-fable-5-2), prompt_ref: docs/constellations/zero-to-one/g1.md}
-review: approved  # Luka 2026-11-22 验收（#233）
+review: approved  # Luka 2026-11-22 验收（#233）；2026-11-25 升至 activity/1.2 + kit: 1（#251）
 # END OF FILE

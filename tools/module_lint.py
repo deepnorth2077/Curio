@@ -31,6 +31,7 @@ FORBIDDEN_APIS = [
     (r"\blocalStorage\b", "localStorage"), (r"\bsessionStorage\b", "sessionStorage"), (r"\bindexedDB\b", "indexedDB"),
     (r"\bdocument\.cookie\b", "document.cookie"), (r"\bcaches\.open\b", "caches.open"), (r"\bimport\s*\(", "import("),
     (r"<script[^>]*\bsrc\s*=", "<script src>"), (r"<link\b", "<link>"), (r"@import\b", "@import"),
+    (r"<audio\b", "<audio>"), (r"<video\b", "<video>"), (r"\bnew\s+Audio\s*\(", "new Audio("),
     (r"url\(\s*['\"]?(?:https?:)?//", "url(外部地址)"), (r"\b(?:src|href)\s*=\s*['\"](?:https?:)?//", "外部 src/href"),
 ]
 
@@ -40,11 +41,13 @@ CONTROL_SELECTOR = re.compile(r"\.btn\.hold|focus-visible|\.g(?:fill|soft|arrow|
 GRIP_SELECTOR = re.compile(r"\.btn\.hold|focus-visible|\.g(?:fill|soft|arrow|ring|ridge|kbd)\b|#cue\b")
 
 ENTRY_CALL = re.compile(r"^(?:enter\w*|start\w*|init\w*|boot\w*)\s*\(", re.M)
-HOST_READY = re.compile(r"^Host\.ready\s*\(\s*\)", re.M)
+HOST_READY = re.compile(r"^(?:Host\.ready\s*\(\s*\)|Kit\.start\s*\()", re.M)
 STRING_LITERAL = re.compile(r'"(?:[^"\\\n]|\\.)*"|\'(?:[^\'\\\n]|\\.)*\'|`(?:[^`\\]|\\.)*`', re.S)
 SLASH_FRACTION = re.compile(r"(?<![\w$}.\-/])\d{1,4}/\d{1,4}(?![\w/.])")
 MIS_IN_CODE = re.compile(r"\b(?:mis|misconception)\s*:\s*[\"']([a-z0-9-]+)[\"']")
-KIT_MARK = re.compile(r"kit:([a-z0-9-]+)")
+KIT_MARK = re.compile(r"(?<!curio-)kit:([a-z0-9-]+)")
+CURIO_KIT_SEG = re.compile(r"/\*\s*curio-kit:\d+\s+begin\s*\*/.*?/\*\s*curio-kit:\d+\s+end\s*\*/", re.S)
+KIT_EXPORT_REDECL = re.compile(r"\b(?:const|let|var|function|class)\s+(Host|Kit|Sk|sketchLib|Sfx|fracS|oneMark|grip)\b")
 SECTION_BREAK = re.compile(r"/\* =+|</style>|</script>")
 
 # 长按不选字、不弹菜单（#156）：孩子会碰到的页面都要有这两条，ci_checks 也拿它查三个外壳文件
@@ -188,6 +191,15 @@ def lint(html, manifest=None, node_misconceptions=None, starter=None):
         bangs = sum(lit.count("！") for lit in literals)
         if bangs > 3:
             errors.append(f"一个模块里感叹号不超过 3 个，现在有 {bangs} 个（A.2 领航员怎么说话）")
+
+    # ---------- activity/1.2 与共用零件库规则（docs/specs/kit.md 3.2） ----------
+    if manifest.get("contract") == "activity/1.2" or "kit" in manifest:
+        if "prefers-color-scheme" in _strip_comments(styles):
+            errors.append("activity/1.2 模块的样式里不能写 prefers-color-scheme：明暗由宿主通过 .kit-dark 类同步（kit.md 3.2）")
+        own_scripts = CURIO_KIT_SEG.sub("", scripts)
+        own_code = STRING_LITERAL.sub('""', _strip_comments(own_scripts))
+        for m in KIT_EXPORT_REDECL.finditer(own_code):
+            errors.append(f"不能在 curio-kit 标记段外重新声明零件库导出的名字 {m.group(1)}（kit.md 3.2）")
 
     # ---------- 提醒：kit 段落和骨架不一样 ----------
     if starter:
