@@ -48,6 +48,7 @@ def make_fixture_repo():
     (root / "app").mkdir()
     (root / "preview").mkdir()
     (root / "app/sfx.js").write_text("/* curio-sfx begin */\n占位\n/* curio-sfx end */\nexport { createSfx };\n")
+    (root / kit.SFX_LAB).write_text("/* curio-sfx begin */\n占位\n/* curio-sfx end */\n")
     (root / "app/index.html").write_text(SAMPLE_TOKENS_SHELL, encoding="utf-8")
     (root / "preview/template.html").write_text(SAMPLE_TOKENS_SHELL, encoding="utf-8")
     starter = root / kit.STARTER_REL
@@ -79,7 +80,7 @@ class TestKitTool(unittest.TestCase):
         self.repo = make_fixture_repo()
         changed, errors = kit.sync_repo(self.repo)
         self.assertEqual(errors, [])
-        self.assertEqual(len(changed), 5)
+        self.assertEqual(len(changed), 6)
 
     def tearDown(self):
         shutil.rmtree(self.repo, ignore_errors=True)
@@ -362,6 +363,11 @@ class TestKitTool(unittest.TestCase):
         self.assertTrue(any(f == "app/sfx.js" for f, _ in kit.check_repo(self.repo)))
         self.assertEqual(kit.sync_repo(self.repo), (["app/sfx.js"], []))
         self.assertIn("return 2", target.read_text())
+        lab = self.repo / kit.SFX_LAB
+        self.assertIn("function createSfx() {}", lab.read_text())
+        lab.write_text(lab.read_text().replace("{}", "{ return 2; }"))
+        self.assertTrue(any(f == kit.SFX_LAB for f, _ in kit.check_repo(self.repo)))
+        self.assertEqual(kit.sync_repo(self.repo), ([kit.SFX_LAB], []))
         self.assertIn("export { createSfx };", target.read_text())
         self.assertEqual(v1.read_text(), original)
         self.assertEqual(kit.check_repo(self.repo), [])

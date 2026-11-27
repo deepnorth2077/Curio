@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-const kit = readFileSync(new URL("../../kit/1/kit.js", import.meta.url), "utf8");
+const kit = readFileSync(new URL("../../kit/2/kit.js", import.meta.url), "utf8");
 const darkPalette = {
   bg: "#1E1E1E", pane: "#252525", hover: "#2E2E2E", rule: "#353535",
   ink: "#E4E0D8", text: "#CBC6BC", muted: "#8C887F", accent: "#A797F7",
@@ -170,17 +170,36 @@ test("both fraction renderers produce readable Chinese labels for zero and large
   }
 });
 
-test("prediction choices play exactly one right or nudge sound", () => {
+test("correct and incorrect predictions each play only one tap", () => {
   const s = sandbox({ ids: stationIds });
   s.run(`
-    const heard = [];
-    for (const key of ["right", "nudge", "tap"]) {
-      const sound = Sfx[key];
-      Sfx[key] = () => { heard.push(key); return sound(); };
-    }
     ask("有几块？", [{label:"一",correct:true,feedback:"对了"}, {label:"二",feedback:"再看看"}], () => {});
   `);
   s.advance(500);
-  for (const button of s.elements.actions.children) button.dispatchEvent(new Event("click"));
-  assert.deepEqual([...s.run("heard")], ["right", "nudge"]);
+  for (const [i, button] of s.elements.actions.children.entries()) {
+    button.dispatchEvent(new Event("click"));
+    assert.equal(s.run('Sfx.count("tap")'), i + 1);
+    assert.equal(s.run("Sfx.seq()"), i + 1);
+  }
+});
+
+test("station and card sounds remember completed progress across replays and repeated init", async () => {
+  const s = sandbox({ ids: stationIds });
+  s.run("function enter1() {} Kit.start(enter1, {stations: {}})");
+  await s.send("init", { completed_stations: [1], activity_completed: false });
+  s.run("observedOnce(1); observedOnce(2); observedOnce(2); restart(); observedOnce(2);");
+  assert.equal(s.run('Sfx.count("right")'), 1);
+  await s.send("init", { completed_stations: [1], activity_completed: false });
+  s.run("observedOnce(3); Host.complete({}); restart(); Host.complete({});");
+  assert.equal(s.run('Sfx.count("right")'), 2);
+  assert.equal(s.run('Sfx.count("lit")'), 1);
+  // Event delivery retains the existing restart/complete contract.
+  assert.equal(s.sent.filter(m => m.type === "event" && m.payload.verb === "observed").length, 4);
+  assert.equal(s.sent.filter(m => m.type === "complete").length, 2);
+
+  const restored = sandbox({ ids: stationIds });
+  restored.run("Kit.start(() => {}, {stations: {}})");
+  await restored.send("init", { activity_completed: true });
+  restored.run("observedOnce(1); Host.complete({});");
+  assert.equal(restored.run("Sfx.seq()"), 0);
 });

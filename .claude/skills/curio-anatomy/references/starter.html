@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{活动标题}}</title>
 <style>
-/* curio-kit:1 begin */
+/* curio-kit:2 begin */
 html{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 :root{
@@ -91,7 +91,7 @@ body.narrow .fs{font-size:20px} body.narrow .fm{font-size:26px} body.narrow .fb{
 .papr{fill:var(--paper)} .lead{fill:var(--accent)}
 .lbm{fill:var(--ink);font-family:var(--f-mono);font-size:17px}
 body.narrow .lbm{font-size:20px}
-/* curio-kit:1 end */
+/* curio-kit:2 end */
 /* 模块自己的画面样式写在这里：字号全写在类上，窄屏在 body.narrow 里放大（教训 14、28）。深色补充变量写在 :root.kit-dark 里 */
 .food{fill:var(--apricot)} .pane{fill:var(--pane)}
 .kacc{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
@@ -133,9 +133,9 @@ body.narrow .big{font-size:50px} body.narrow .ttl{font-size:30px} body.narrow .s
 
 <script>
 "use strict";
-/* Curio · 动手探索模块薄骨架（activity/1.2 + kit: 1）。
-   复制本文件，把 {{…}} 换成具体内容，在 manifest.yaml 写 contract: activity/1.2 与 kit: 1，然后运行 python tools/kit.py sync。 */
-/* curio-kit:1 begin */
+/* Curio · 动手探索模块薄骨架（activity/1.2 + kit: 2）。
+   复制本文件，把 {{…}} 换成具体内容，在 manifest.yaml 写 contract: activity/1.2 与 kit: 2，然后运行 python tools/kit.py sync。 */
+/* curio-kit:2 begin */
 const PALETTE_KEYS = new Set([
   "bg", "pane", "hover", "rule", "ink", "text", "muted",
   "accent", "accent-soft", "grip", "grip-soft",
@@ -162,6 +162,8 @@ function createSfx(opts = {}) {
   let lastTick = -1e9;
   let noiseBuf = null;
   let nSeq = 0;
+  const counts = new Map();
+  let master = null;
   const sources = new Set();
 
   function unlock() {
@@ -183,11 +185,25 @@ function createSfx(opts = {}) {
     }
   }
 
-  function readyCtx() {
+  function readyCtx(name) {
+    // 记录操作所请求的声位，即使静音也让按钮和走查得到相同的反馈语义。
+    nSeq++;
+    counts.set(name, (counts.get(name) || 0) + 1);
     if (isMuted || !AudioCtx || !unlocked) return null;
     try {
       if (!ctx) ctx = new AudioCtx();
       if (!ctx || ctx.state !== "running") return null;
+      if (!master) {
+        const gain = ctx.createGain(), compressor = ctx.createDynamicsCompressor();
+        gain.gain.value = 3;
+        compressor.threshold.value = -18;
+        compressor.ratio.value = 4;
+        compressor.attack.value = 0.003;
+        compressor.release.value = 0.12;
+        gain.connect(compressor);
+        compressor.connect(ctx.destination);
+        master = gain;
+      }
       return ctx;
     } catch { return null; }
   }
@@ -219,7 +235,7 @@ function createSfx(opts = {}) {
     };
   }
 
-  function tone(c, type, f0, f1, t0, dur, peak) {
+  function tone(c, type, f0, f1, t0, dur, peak, vibrato = false) {
     const osc = c.createOscillator(), g = c.createGain();
     osc.type = type;
     osc.frequency.setValueAtTime(f0, t0);
@@ -227,8 +243,18 @@ function createSfx(opts = {}) {
     g.gain.setValueAtTime(0.0008, t0);
     g.gain.linearRampToValueAtTime(peak, t0 + Math.min(0.008, dur * 0.25));
     g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
+    if (vibrato) {
+      const lfo = c.createOscillator(), depth = c.createGain();
+      lfo.frequency.value = 5.5;
+      depth.gain.value = 6;
+      lfo.connect(depth);
+      depth.connect(osc.detune);
+      clean(lfo, [depth]);
+      lfo.start(t0);
+      lfo.stop(t0 + dur + 0.004);
+    }
     osc.connect(g);
-    g.connect(c.destination);
+    g.connect(master);
     clean(osc, [g]);
     osc.start(t0);
     osc.stop(t0 + dur + 0.004);
@@ -245,7 +271,7 @@ function createSfx(opts = {}) {
     g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
     src.connect(flt);
     flt.connect(g);
-    g.connect(c.destination);
+    g.connect(master);
     clean(src, [flt, g]);
     src.start(t0);
     src.stop(t0 + dur + 0.004);
@@ -266,13 +292,13 @@ function createSfx(opts = {}) {
     },
     muted() { return isMuted; },
     seq() { return nSeq; },
+    count(name) { return counts.get(name) || 0; },
     /** @param {number} [step] */
     tick(step = 0) {
       const now = nowMs();
       if (now - lastTick < 35) return false;
       lastTick = now;
-      nSeq++;
-      const c = readyCtx();
+      const c = readyCtx("tick");
       if (!c) return false;
       const k = Math.max(-6, Math.min(12, +step || 0));
       burst(c, "bandpass", 1480 * Math.pow(2, k * 0.03), 4.5, c.currentTime, 0.018, 0.042);
@@ -280,8 +306,7 @@ function createSfx(opts = {}) {
     },
     /** @param {number} [step] */
     hop(step = 0) {
-      nSeq++;
-      const c = readyCtx();
+      const c = readyCtx("hop");
       if (!c) return false;
       const k = Math.max(0, Math.min(12, +step || 0));
       const f0 = 330 * Math.pow(2, k / 18);
@@ -289,24 +314,22 @@ function createSfx(opts = {}) {
       return true;
     },
     snap() {
-      nSeq++;
-      const c = readyCtx();
+      const c = readyCtx("snap");
       if (!c) return false;
       const t = c.currentTime;
       burst(c, "highpass", 2200, 1.2, t, 0.016, 0.052);
-      tone(c, "sine", 290, 155, t, 0.042, 0.055);
+      tone(c, "sine", 620, 420, t, 0.045, 0.055);
+      tone(c, "sine", 1240, 1240, t, 0.045, 0.055 * 0.18);
       return true;
     },
     tap() {
-      nSeq++;
-      const c = readyCtx();
+      const c = readyCtx("tap");
       if (!c) return false;
-      tone(c, "sine", 520, 340, c.currentTime, 0.022, 0.045);
+      tone(c, "sine", 880, 660, c.currentTime, 0.020, 0.045);
       return true;
     },
     right() {
-      nSeq++;
-      const c = readyCtx();
+      const c = readyCtx("right");
       if (!c) return false;
       const t = c.currentTime;
       tone(c, "triangle", 523.25, 523.25, t, 0.11, 0.075);
@@ -314,26 +337,39 @@ function createSfx(opts = {}) {
       return true;
     },
     nudge() {
-      nSeq++;
-      const c = readyCtx();
+      const c = readyCtx("nudge");
       if (!c) return false;
       const t = c.currentTime;
-      tone(c, "sine", 250, 210, t, 0.04, 0.06);
-      tone(c, "sine", 220, 185, t + 0.048, 0.045, 0.055);
+      for (const [from, to, delay, duration, peak] of [[440, 370, 0, 0.04, 0.06], [392, 330, 0.048, 0.045, 0.055]]) {
+        tone(c, "sine", from, to, t + delay, duration, peak);
+        tone(c, "sine", from * 2, to * 2, t + delay, duration, peak * 0.35);
+      }
+      return true;
+    },
+    discover() {
+      const c = readyCtx("discover");
+      if (!c) return false;
+      tone(c, "triangle", 659.25, 659.25, c.currentTime, 0.09, 0.075 * 0.7);
       return true;
     },
     lit() {
-      nSeq++;
-      const c = readyCtx();
+      const c = readyCtx("lit");
       if (!c) return false;
       const t = c.currentTime;
-      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(c, "triangle", f, f, t + i * 0.075, 0.32, 0.055));
+      [523.25, 659.25, 783.99].forEach((f, i) => tone(c, "triangle", f, f, t + i * 0.075, 0.32, 0.055));
+      const tail = t + 3 * 0.075;
+      tone(c, "triangle", 1046.5, 1046.5, tail, 0.7, 0.055, true);
+      tone(c, "sine", 1567.98, 1567.98, tail, 0.7, 0.055 * 0.25);
       return true;
     },
   };
 }
 /* curio-sfx end */
 const Sfx = createSfx();
+
+// 奖励音跟随已完成进度；重玩仍按原契约上报事件。
+const rewardedStations = new Set();
+let starCardRewarded = false;
 
 const Host = (() => {
   const listeners = new Map(), inFrame = window.parent !== window;
@@ -360,7 +396,13 @@ const Host = (() => {
     state: o => send("state", o),
     requestHint: () => send("request_hint"),
     noteQuestion: text => send("note_question", { text }),
-    complete: r => send("complete", r || {})
+    complete(r) {
+      if (!starCardRewarded) {
+        starCardRewarded = true;
+        Sfx.lit();
+      }
+      send("complete", r || {});
+    }
   };
 })();
 
@@ -401,7 +443,15 @@ function navFace(k){
 
 const sentPred = new Set(), sentObs = new Set();
 let completed = false;
-function observedOnce(station){ if (sentObs.has(station)) return; sentObs.add(station); Host.event("observed", { station, item: "station-complete" }); }
+function observedOnce(station){
+  if (sentObs.has(station)) return;
+  sentObs.add(station);
+  if (!starCardRewarded && !rewardedStations.has(station)) {
+    rewardedStations.add(station);
+    Sfx.right();
+  }
+  Host.event("observed", { station, item: "station-complete" });
+}
 let lastState = "";
 function sendState(o){ const s = JSON.stringify(o); if (s === lastState) return; lastState = s; Host.state(o); }
 
@@ -556,7 +606,7 @@ function ask(question, options, onAnswer){
     if (!sentPred.has(S.station)){ sentPred.add(S.station); Host.event("predicted", { station: S.station, choice: i, correct: !!o.correct, misconception: o.mis || null }); }
     S.guess = S.guess || {}; S.guess[S.station] = o;
     say(o.feedback, o.correct ? "good" : "hmm");
-    if (o.correct) Sfx.right(); else Sfx.nudge();
+    Sfx.tap();
     onAnswer(o);
   }})));
 }
@@ -645,6 +695,10 @@ const Kit = (() => {
     enterFn(pendingInit || {});
   }
   Host.on("init", p => {
+    if (Array.isArray(p.completed_stations)) {
+      for (const station of p.completed_stations) rewardedStations.add(station);
+    }
+    if (p.activity_completed === true) starCardRewarded = true;
     applyHostTheme(p);
     if (p && typeof p.muted === "boolean") Sfx.setMuted(p.muted);
     if (p && p.navigator && p.navigator.faces && typeof p.navigator.faces.curious === "string"){
@@ -671,7 +725,7 @@ const Kit = (() => {
     }
   };
 })();
-/* curio-kit:1 end */
+/* curio-kit:2 end */
 
 /* ============ 1. 真相模型：页面上的每个数字都从这里算，每个值旁边写出处 ============ */
 const MODEL = {
@@ -709,7 +763,7 @@ function act1(){
 }
 REPLAY[1] = () => { head(1, "{{第 1 站标题}}"); act1(); };
 function done1(){
-  S.mode = "talk"; hint(""); disarmCue(); observedOnce(1); Sfx.right(); const g = S.guess && S.guess[1];
+  S.mode = "talk"; hint(""); disarmCue(); observedOnce(1); const g = S.guess && S.guess[1];
   say("{{揭晓 + 一个从 MODEL 算出来的「哇」}}" + (g && g.correct ? "{{你一开始就猜对了}}" : ""), "good"); nextOr("去第 2 站", enter2);
 }
 
@@ -721,7 +775,7 @@ function enter2(){
   actions([{ label: "按住 {{动作}}", cls: "hold", hold: true }]); svg.focus({ preventScroll: true });
 }
 REPLAY[2] = enter2;
-function done2(){ S.hold = false; S.mode = "talk"; hint(""); observedOnce(2); Sfx.right(); say("{{揭晓}}", "good"); nextOr("看我的星卡", enterEnd); }
+function done2(){ S.hold = false; S.mode = "talk"; hint(""); observedOnce(2); say("{{揭晓}}", "good"); nextOr("看我的星卡", enterEnd); }
 
 /* ============ 4. 星卡 ============ */
 function drawEnd(){
@@ -732,7 +786,7 @@ function drawEnd(){
 function enterEnd(){
   gen++; S.station = STATIONS + 1; S.mode = "end"; head(0, "{{星卡标题}}"); hint(""); readout(""); disarmCue(); scene("end");
   say("{{收尾的话}}", "good");
-  if (!completed){ completed = true; Sfx.lit(); Host.complete({}); }
+  if (!completed){ completed = true; Host.complete({}); }
   endActions();
 }
 

@@ -926,8 +926,9 @@ def run(repo, base="origin/main", branch="", labels=()):
             continue
         targets = doc.get("targets") or []
         mis = {m["id"] for t in targets if t in nodes for m in nodes[t][1].get("misconceptions", []) if isinstance(m, dict) and "id" in m}
-        errors, warnings = module_lint.lint(html.read_text(encoding="utf-8"), doc, mis if all(t in nodes for t in targets) else None, starter)
-        no_walk = module_lint.missing_walk(html.read_text(encoding="utf-8"), aid, repo)
+        html_text = html.read_text(encoding="utf-8")
+        errors, warnings = module_lint.lint(html_text, doc, mis if all(t in nodes for t in targets) else None, starter)
+        no_walk = module_lint.missing_walk(html_text, aid, repo)
         for message in errors + ([no_walk] if no_walk else []):
             r.err(message, rel(repo, html))
         # 提醒只对这次改过的模块报，免得每个 PR 都刷同样的提醒
@@ -948,6 +949,7 @@ def run(repo, base="origin/main", branch="", labels=()):
     for message in status_errors:
         r.err(message, "docs/constellations")
 
+    # 新增模块所需的版本由 check_repo 从 kit/<N> 读取，与外壳音效的同步来源一致。
     # ---------- 4e. 共用色位与零件库（docs/specs/kit.md）：目标分支已有 kit/ 时，删除整个目录也须拦下 ----------
     if (repo / "kit").is_dir() or git(repo, "cat-file", "-e", f"{base}:kit").returncode == 0:
         for file_rel, message in kit_tool.check_repo(repo, base=base):

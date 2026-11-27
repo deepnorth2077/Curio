@@ -1539,7 +1539,7 @@ async function pump() {
       z.answered[pl.item_id] = true;
       z.lastResponse[pl.item_id] = pl.response;
       if (!pl.correct) { z.wrongBy[pl.item_id] = [...(z.wrongBy[pl.item_id] || []), pl.response]; Sfx.nudge(); }
-      else { z.solved = pl.item_id; Sfx.right(); }
+      else { z.solved = pl.item_id; Sfx.discover(); }
     } else if (cur.verb === "hint.used") {
       z.focusHint = true;
     } else if (cur.verb === "answer.revealed") {
