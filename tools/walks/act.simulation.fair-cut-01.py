@@ -18,7 +18,7 @@ def play(w):
     shot("1a-intro"); btn("然后呢"); btn("是吗"); shot("1b-ask")
     check("提问时没有圆钮", grips() == 0, grips())
     labels = ev("[...document.querySelectorAll('#actions .choice')].map(b=>b.innerText.replace(/\\s+/g,''))"); print("  选项", labels)
-    btn("那块大")   # 第一个：1/8 那块大（误区）
+    w.guess("那块大")   # 第一个：1/8 那块大（误区）
     check("猜错用中性气泡", "hmm" in ev("document.getElementById('say').className"), None); shot("1c-wrong")
     btn("动手切"); page.wait_for_timeout(300); shot("1d-act-first", first=True)
     check("动手第一屏有 1 个圆钮", grips() == 1, grips())
@@ -51,21 +51,42 @@ def play(w):
     turn_to(5); last_n = 5
     btn("看托盘"); page.wait_for_timeout(1700); shot("1j-reveal"); check("揭晓后没有圆钮", grips() == 0, grips())
     check("托盘补满 11 块", ev("S.tray.length") == 11, ev("S.tray.length"))
-    btn("所以呢"); shot("1k-reveal2"); btn("去第 2 站")
+    btn("所以呢"); shot("1k-reveal2")
+    w.check_rewards(1, 0)
+    btn("去第 2 站")
     # ---------- 第 2 站 ----------
     shot("2a-intro"); btn("然后呢"); shot("2b-ask"); check("提问时没有圆钮", grips() == 0, grips())
-    btn("3 块里拿了 1 块"); btn("动手切"); shot("2c-talk"); btn("明白"); page.wait_for_timeout(300); shot("2d-act-first", first=True)
+    w.guess("3 块里拿了 1 块"); btn("动手切"); shot("2c-talk"); btn("明白"); page.wait_for_timeout(300); shot("2d-act-first", first=True)
     check("第 2 站第一屏 1 个圆钮", grips() == 1, grips())
 
     def drag_knife(to, steps=14, release=True, mid=None):
         kx, ky = pt(*ev("[cellX(S.knifeP)-KN.off, KN.grip]")); tx, _ = pt(*ev(f"[cellX({to})-KN.off, KN.grip]"))
-        before = (lambda: (page.wait_for_timeout(250), shot(mid))) if mid else None
+
+        def before():
+            if not mid:
+                return
+            page.wait_for_timeout(250)
+            shot(mid)
+            if name == "desk":
+                seq = ev("Sfx.seq()")
+                page.mouse.move(tx + 2, ky)
+                w.wait(70)
+                page.mouse.move(tx, ky)
+                check("刀在同一档内来回拖不响", ev("Sfx.seq()") == seq, ev("Sfx.seq()") - seq)
+                cross_x, _ = pt(*ev(f"[cellX({to} + 5)-KN.off, KN.grip]"))
+                w.wait(70)
+                page.mouse.move(cross_x, ky)
+                check("刀跨过一档只响一次", ev("Sfx.seq()") == seq + 1, ev("Sfx.seq()") - seq)
+                w.wait(70)
+                page.mouse.move(tx, ky)
+
+        before_cb = before if mid else None
         if touch and name == "phone":   # 真实触摸事件（教训 25）
             path = [(kx, ky)] + [(kx + (tx - kx) * i / steps, ky + 30 * math.sin(i)) for i in range(1, steps + 1)]
-            w.touch_drag(path, before_release=before, release=release, no_scroll="拖刀时页面不滚")
+            w.touch_drag(path, before_release=before_cb, release=release, no_scroll="拖刀时页面不滚")
         else:
             path = [(kx, ky)] + [(kx + (tx - kx) * i / steps, ky) for i in range(1, steps + 1)]
-            w.mouse_drag(path, before_release=before, release=release)
+            w.mouse_drag(path, before_release=before_cb, release=release)
         page.wait_for_timeout(250)
     drag_knife(46, mid="2e-dragging")
     check("46 格：不落刀", ev("S.cuts.length") == 0 and ev("S.knife") == 46, [ev("S.cuts"), ev("S.knife")])
@@ -81,9 +102,11 @@ def play(w):
     drag_knife(74); page.wait_for_timeout(900); check("三刀在 25、50、75", ev("S.cuts") == [25, 50, 75], ev("S.cuts"))
     check("三刀后读数", readout() == "4 份一样大 · 每份是它的 1 4", readout()); shot("2i-cut3")
     page.wait_for_timeout(1500); shot("2j-stack"); btn("开场那 3 块呢"); page.wait_for_timeout(900); shot("2k-weigh"); check("开场三块一头沉", abs(ev("S.wtilt")) > 10, ev("S.wtilt"))
-    btn("所以呢"); shot("2l-reveal"); btn("还有呢"); btn("去第 3 站")
+    btn("所以呢"); shot("2l-reveal"); btn("还有呢")
+    w.check_rewards(2, 0)
+    btn("去第 3 站")
     # ---------- 第 3 站 ----------
-    shot("3a-intro"); btn("然后呢"); shot("3b-ask"); btn("那段"); btn("动手排"); page.wait_for_timeout(200); shot("3c-act-first", first=True)
+    shot("3a-intro"); btn("然后呢"); shot("3b-ask"); w.guess("那段"); btn("动手排"); page.wait_for_timeout(200); shot("3c-act-first", first=True)
     hb = page.locator("#actions button.hold"); check("按住按钮在", hb.count() == 1, hb.count())
 
     def hold(ms, mid=None, midshot=None):
@@ -92,6 +115,7 @@ def play(w):
         if mid: page.wait_for_timeout(mid); shot(midshot); page.wait_for_timeout(max(0, ms - mid))
         else: page.wait_for_timeout(ms)
         page.mouse.up(); page.wait_for_timeout(300)
+    discoveries = ev('Sfx.count("discover")')
     for i, (n, unit, ms) in enumerate([(10, "分米", 3600), (100, "厘米", 4600), (1000, "毫米", 5600)]):
         if rm == "reduce" or i == 0:
             hold(1200 if i == 0 else 900); c = ev("count3()"); check(f"第 {i+1} 轮松手就停（{c}）", 0 < c < n, c)
@@ -100,8 +124,16 @@ def play(w):
         else: hold(ms + 300, 2400, f"3d-round{i+1}-mid")
         check(f"第 {i+1} 轮正好停在 {n}", ev("count3()") == n and readout() == f"{n} 个 1 {n} = 1 · 正好 1 米", [ev("count3()"), readout()])
         st = sent("state")[-1]["payload"]; check(f"state 第 3 站 unit={n}", st == {"station": 3, "unit": n, "count": n}, st)
+        found = ev('Sfx.count("discover")') - discoveries
+        check(f"排满第 {i+1} 轮只新增一声发现音", found == i + 1, found)
+        w.check_rewards(2, 0)  # 排满三轮还没看三个放大圈
         shot(f"3e-round{i+1}-done"); btn("换更小的" if i < 2 else "看三个放大圈"); page.wait_for_timeout(200)
-    shot("3f-wow"); btn("有多薄"); shot("3g-wow2"); btn("看我的星卡"); page.wait_for_timeout(300); shot("4-card")
+    w.check_rewards(3, 0)  # 看三个放大圈时才完成第 3 站
+    shot("3f-wow"); btn("有多薄"); shot("3g-wow2")
+    w.check_rewards(3, 0)
+    btn("看我的星卡")
+    w.check_rewards(3, 1)
+    page.wait_for_timeout(300); shot("4-card")
     # ---------- 星卡和事件 ----------
     pins = ev("document.querySelectorAll('#dyn circle.lead').length"); kinds = ev("kinds().length"); check("钉子数 = 切过的份数", pins - 1 == kinds or pins == kinds, [pins, kinds])   # 第 3 格的放大圈也用了 lead
     check("星卡是最后停的份数", ev("S.lastN") == last_n, ev("S.lastN"))
@@ -127,8 +159,9 @@ def play(w):
     btn("回星卡"); page.wait_for_timeout(300); shot("5c-card-again")
     check("回到星卡", ev("S.mode") == "end", ev("S.mode")); check("星卡换成这次停的份数", ev("S.lastN") == 7, ev("S.lastN"))
     check("重玩一站不多记猜测和完成", events() == before, [before, events()]); check("重玩一站不再发 complete", len(sent("complete")) == 1, len(sent("complete")))
+    w.check_rewards(3, 1)
     btn("从头玩"); page.wait_for_timeout(300); shot("5-replay"); check("从头玩回到第 1 站", ev("S.station") == 1 and ev("S.scene") == "s1q")
-    btn("然后呢"); btn("是吗"); btn("一样大"); btn("动手切"); check("复位：托盘空、没切", ev("S.tray.length") == 0 and ev("S.n") == 1, None); check("再玩不再发 complete", len(sent("complete")) == 1)
+    btn("然后呢"); btn("是吗"); w.guess("一样大"); btn("动手切"); check("复位：托盘空、没切", ev("S.tray.length") == 0 and ev("S.n") == 1, None); check("再玩不再发 complete", len(sent("complete")) == 1)
     check("页面没有横向溢出", ev("document.documentElement.scrollWidth <= innerWidth"), ev("document.documentElement.scrollWidth"))
 
 

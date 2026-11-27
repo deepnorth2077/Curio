@@ -23,6 +23,7 @@ PALETTE_KEYS = (
 HEX_COLOR = re.compile(r"^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$")
 TOKEN_TARGETS = ("app/index.html", "preview/template.html")
 SFX_TARGET = "app/sfx.js"
+SFX_LAB = "app/sfx-lab.html"
 SFX_BEGIN = "/* curio-sfx begin */"
 SFX_END = "/* curio-sfx end */"
 STARTER_REL = ".claude/skills/curio-anatomy/references/starter.html"
@@ -208,6 +209,7 @@ def allowlist(repo):
     """返回白名单目标：[("tokens", rel_path, None), ("kit", rel_path, version), ...]。"""
     repo = Path(repo)
     items = [("tokens", rel, None) for rel in TOKEN_TARGETS]
+    items.append(("sfx", SFX_LAB, 1))
     starter = repo / STARTER_REL
     versions = _kit_versions(repo)
     items.append(("sfx", SFX_TARGET, versions[-1] if versions else None))

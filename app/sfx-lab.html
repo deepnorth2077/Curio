@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家长试音台 · Curio</title>
+<style>
+  :root { color-scheme: light dark; --paper:#faf7ef; --ink:#252e2c; --muted:#53625c; --line:#c4c9bb; --accent:#215e50; --wash:#e5efe4; --card:#fffdf6; }
+  @media (prefers-color-scheme:dark) {
+    :root { --paper:#1e2525; --ink:#f1eee4; --muted:#b6c4bc; --line:#52615c; --accent:#a7dbc2; --wash:#2e443c; --card:#252e2c; }
+  }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.5 system-ui,sans-serif; }
+  main { max-width:56rem; margin:auto; padding:clamp(16px,4vw,42px); }
+  header { border-top:4px solid var(--accent); padding-top:16px; }
+  h1,h2,h3,p,fieldset { margin:0; }
+  h1 { font-size:clamp(32px,5vw,48px); letter-spacing:.03em; }
+  h2 { margin:28px 0 10px; font-size:21px; }
+  h3 { font-size:17px; }
+  p, small { color:var(--muted); }
+  .volume { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:20px; padding:10px 16px; background:var(--wash); border-radius:8px; }
+  .volume input { flex:1; min-width:80px; height:44px; accent-color:var(--accent); }
+  output { min-width:4ch; font-variant-numeric:tabular-nums; }
+  #sounds { border-top:1px solid var(--line); }
+  article { display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:18px; padding:14px 0; border-bottom:1px solid var(--line); }
+  .play,.options,.series { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  fieldset { border:0; padding:0; min-width:0; }
+  legend { position:absolute; width:1px; height:1px; clip-path:inset(50%); overflow:hidden; }
+  button { min-width:54px; min-height:48px; padding:8px 14px; border:1px solid var(--accent); border-radius:7px; background:var(--card); color:var(--accent); font:inherit; font-weight:600; cursor:pointer; touch-action:manipulation; }
+  button:active { background:var(--wash); }
+  label.pick { display:inline-flex; align-items:center; gap:5px; min-height:48px; padding:0 7px; cursor:pointer; }
+  label.pick:has(:checked) { border-radius:7px; background:var(--wash); }
+  input[type=radio] { margin:0; accent-color:var(--accent); width:18px; height:18px; }
+  .result { margin-top:24px; padding:16px; background:var(--wash); border-radius:8px; }
+  .result h2 { margin:0 0 8px; }
+  .result input { width:100%; padding:10px; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:4px; font:15px/1.6 ui-monospace,monospace; }
+  .result footer { margin-top:10px; display:flex; align-items:center; gap:12px; }
+  button:disabled { opacity:.55; cursor:default; }
+  #playing { min-height:1.5em; margin-top:8px; }
+  @media (max-width:640px) {
+    article { grid-template-columns:auto 1fr; gap:6px 12px; }
+    article > div:first-child { grid-column:1/-1; }
+    .options { justify-content:flex-end; }
+  }
+</style>
+<main>
+  <header><h1>家长试音台</h1>
+    <p>用 iPad 扬声器听一听。点 A 听现在的声音，点 B 听候选版，再勾选喜欢的一版。</p>
+  </header>
+  <div class="volume">
+    <label for="volume"><strong>总音量</strong></label>
+    <input id="volume" type="range" min="0.5" max="3" step="0.1" value="1.5">
+    <output id="level" for="volume">1.5×</output>
+  </div>
+  <h2>逐个试听</h2>
+  <div id="sounds"></div>
+  <h2>连起来听</h2>
+  <div class="series">
+    <button data-series="hop">小火箭连跳 8 步</button>
+    <button data-series="tick">拖过 12 档</button>
+    <button data-series="reward">一站做完 → 拿星卡</button>
+  </div>
+  <p id="playing" role="status"></p>
+  <section class="result"><h2><label for="result">选择结果</label></h2>
+    <input id="result" readonly spellcheck="false">
+    <footer><button id="copy" disabled>复制</button><span id="progress" role="status"></span></footer>
+  </section>
+</main>
+<script type="module">
+// A 版固定为 kit/1。由 tools/kit.py sync 与冻结原件同步。
+/* curio-sfx begin */
+/**
+ * 纯工厂函数，便于单测注入假 AudioContext 与假时钟。
+ * @param {{AudioCtx?: any, nowMs?: () => number, requireGesture?: boolean, eventTarget?: any}} [opts]
+ */
+function createSfx(opts = {}) {
+  const explicitCtx = "AudioCtx" in opts;
+  const AudioCtx = explicitCtx
+    ? opts.AudioCtx
+    : (typeof globalThis !== "undefined" ? (/** @type {any} */ (globalThis).AudioContext || /** @type {any} */ (globalThis).webkitAudioContext || null) : null);
+  const nowMs = opts.nowMs || (() => (typeof performance !== "undefined" ? performance.now() : Date.now()));
+  const target = "eventTarget" in opts ? opts.eventTarget : (typeof globalThis !== "undefined" ? globalThis : null);
+  let isMuted = false;
+  let ctx = null;
+  let unlocked = explicitCtx && !opts.requireGesture;
+  let lastTick = -1e9;
+  let noiseBuf = null;
+  let nSeq = 0;
+  const sources = new Set();
+
+  function unlock() {
+    unlocked = true;
+    if (isMuted || !AudioCtx) return;
+    try {
+      if (!ctx) ctx = new AudioCtx();
+      if (ctx && (ctx.state === "suspended" || ctx.state === "interrupted")) {
+        const p = ctx.resume();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      }
+    } catch { /* 音频受限时静默降级 */ }
+  }
+
+  if (target && typeof target.addEventListener === "function") {
+    // iOS 在触摸结束时才授予激活；继续使用系统默认音频类别，尊重侧边静音开关。
+    for (const gesture of ["pointerdown", "touchend", "click", "keydown"]) {
+      target.addEventListener(gesture, unlock, true);
+    }
+  }
+
+  function readyCtx() {
+    if (isMuted || !AudioCtx || !unlocked) return null;
+    try {
+      if (!ctx) ctx = new AudioCtx();
+      if (!ctx || ctx.state !== "running") return null;
+      return ctx;
+    } catch { return null; }
+  }
+
+  function getNoise(c) {
+    if (noiseBuf) return noiseBuf;
+    const len = Math.max(1, Math.floor(c.sampleRate * 0.06));
+    const b = c.createBuffer(1, len, c.sampleRate);
+    const d = b.getChannelData(0);
+    // 固定种子生成短噪声，同采样率下宿主与沙箱得到相同波形。
+    let seed = 0x63757269;
+    for (let i = 0; i < len; i++) {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      const sample = (seed >>> 0) / 0x80000000 - 1;
+      d[i] = sample * Math.exp(-i / (len * 0.35));
+    }
+    noiseBuf = b;
+    return b;
+  }
+
+  function clean(src, nodes) {
+    sources.add(src);
+    src.onended = () => {
+      sources.delete(src);
+      try { src.disconnect(); } catch { /* ignore */ }
+      for (const nd of nodes) { try { nd.disconnect(); } catch { /* ignore */ } }
+    };
+  }
+
+  function tone(c, type, f0, f1, t0, dur, peak) {
+    const osc = c.createOscillator(), g = c.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(f0, t0);
+    if (f1 !== f0) osc.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + dur);
+    g.gain.setValueAtTime(0.0008, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + Math.min(0.008, dur * 0.25));
+    g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
+    osc.connect(g);
+    g.connect(c.destination);
+    clean(osc, [g]);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.004);
+  }
+
+  function burst(c, filterType, freq, q, t0, dur, peak) {
+    const src = c.createBufferSource(), flt = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = getNoise(c);
+    flt.type = filterType;
+    flt.frequency.setValueAtTime(freq, t0);
+    flt.Q.setValueAtTime(q, t0);
+    g.gain.setValueAtTime(0.0008, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
+    src.connect(flt);
+    flt.connect(g);
+    g.connect(c.destination);
+    clean(src, [flt, g]);
+    src.start(t0);
+    src.stop(t0 + dur + 0.004);
+  }
+
+  return {
+    /** @param {boolean} v */
+    setMuted(v) {
+      isMuted = !!v;
+      if (isMuted) {
+        // 连尚未开始的琶音一起撤掉。重新开声时只播放新的操作。
+        for (const src of sources) {
+          src.disconnect();
+          src.stop();
+        }
+        sources.clear();
+      }
+    },
+    muted() { return isMuted; },
+    seq() { return nSeq; },
+    /** @param {number} [step] */
+    tick(step = 0) {
+      const now = nowMs();
+      if (now - lastTick < 35) return false;
+      lastTick = now;
+      nSeq++;
+      const c = readyCtx();
+      if (!c) return false;
+      const k = Math.max(-6, Math.min(12, +step || 0));
+      burst(c, "bandpass", 1480 * Math.pow(2, k * 0.03), 4.5, c.currentTime, 0.018, 0.042);
+      return true;
+    },
+    /** @param {number} [step] */
+    hop(step = 0) {
+      nSeq++;
+      const c = readyCtx();
+      if (!c) return false;
+      const k = Math.max(0, Math.min(12, +step || 0));
+      const f0 = 330 * Math.pow(2, k / 18);
+      tone(c, "triangle", f0, f0 * 1.28, c.currentTime, 0.055, 0.085);
+      return true;
+    },
+    snap() {
+      nSeq++;
+      const c = readyCtx();
+      if (!c) return false;
+      const t = c.currentTime;
+      burst(c, "highpass", 2200, 1.2, t, 0.016, 0.052);
+      tone(c, "sine", 290, 155, t, 0.042, 0.055);
+      return true;
+    },
+    tap() {
+      nSeq++;
+      const c = readyCtx();
+      if (!c) return false;
+      tone(c, "sine", 520, 340, c.currentTime, 0.022, 0.045);
+      return true;
+    },
+    right() {
+      nSeq++;
+      const c = readyCtx();
+      if (!c) return false;
+      const t = c.currentTime;
+      tone(c, "triangle", 523.25, 523.25, t, 0.11, 0.075);
+      tone(c, "triangle", 783.99, 783.99, t + 0.065, 0.12, 0.08);
+      return true;
+    },
+    nudge() {
+      nSeq++;
+      const c = readyCtx();
+      if (!c) return false;
+      const t = c.currentTime;
+      tone(c, "sine", 250, 210, t, 0.04, 0.06);
+      tone(c, "sine", 220, 185, t + 0.048, 0.045, 0.055);
+      return true;
+    },
+    lit() {
+      nSeq++;
+      const c = readyCtx();
+      if (!c) return false;
+      const t = c.currentTime;
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(c, "triangle", f, f, t + i * 0.075, 0.32, 0.055));
+      return true;
+    },
+  };
+}
+/* curio-sfx end */
+
+const CANDIDATE = {
+  // tick 与 right 直接复用 kit/1。
+  hop: { scale: [523.25, 587.33, 659.25, 783.99, 880], maxStep: 12, duration: .060, peak: .074, overtone: .3 },
+  snap: { noiseHz: 2200, q: 1.2, noiseDuration: .016, noisePeak: .052,
+          from: 620, to: 420, duration: .045, peak: .055, overtoneHz: 1240, overtone: .18 },
+  tap: { from: 880, to: 660, duration: .020, peak: .045 },
+  nudge: { knocks: [[440,370,0,.040,.060], [392,330,.048,.045,.055]], overtone: .35 },
+  discover: { hz: 659.25, duration: .090, peak: .075 * .7 },
+  lit: { notes: [523.25,659.25,783.99,1046.5], spacing: .075, duration: .32, tail: .70,
+         peak: .055, vibratoHz: 5.5, cents: 6, overtoneHz: 1567.98, overtone: .25 },
+  compressor: { threshold: -18, ratio: 4, attack: .003, release: .12 },
+};
+
+// 两版共用设备时钟。给原工厂一个路由到音量节点的 destination，保留原版合成参数。
+let device, masterA, masterB, busB;
+function routedContext(destination) {
+  if (!destination) throw new Error("音频尚未解锁");
+  return {
+    destination,
+    get currentTime() { return device.currentTime; },
+    get state() { return device.state; },
+    get sampleRate() { return device.sampleRate; },
+    resume: () => device.resume(),
+    createOscillator: () => device.createOscillator(),
+    createBufferSource: () => device.createBufferSource(),
+    createBuffer: (...args) => device.createBuffer(...args),
+    createBiquadFilter: () => device.createBiquadFilter(),
+    createGain: () => device.createGain(),
+  };
+}
+
+function createSfxCandidate(getContext) {
+  let count = 0, noiseBuffer;
+  const active = new Set();
+  const original = createSfx({
+    AudioCtx: class {
+      constructor() {
+        const context = getContext();
+        if (!context) throw new Error("音频尚未解锁");
+        return context;
+      }
+    },
+    eventTarget: null,
+  });
+
+  function source(src, nodes, t, duration) {
+    active.add(src);
+    src.onended = () => {
+      active.delete(src);
+      src.disconnect();
+      for (const node of nodes) node.disconnect();
+    };
+    src.start(t);
+    src.stop(t + duration + .004);
+  }
+
+  function envelope(c, t, duration, peak, attack) {
+    const amp = c.createGain();
+    amp.gain.setValueAtTime(.0008, t);
+    amp.gain.linearRampToValueAtTime(peak, t + attack);
+    amp.gain.exponentialRampToValueAtTime(.0008, t + duration);
+    amp.connect(c.destination);
+    return amp;
+  }
+
+  function tone(c, type, from, to, t, duration, peak, vibrato = false) {
+    const osc = c.createOscillator();
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, t);
+    if (from !== to) osc.frequency.exponentialRampToValueAtTime(to, t + duration);
+    const amp = envelope(c, t, duration, peak, Math.min(.008, duration * .25));
+    osc.connect(amp);
+    if (vibrato) {
+      const lfo = c.createOscillator(), depth = c.createGain();
+      lfo.frequency.value = CANDIDATE.lit.vibratoHz;
+      depth.gain.value = CANDIDATE.lit.cents;
+      lfo.connect(depth);
+      depth.connect(osc.detune);
+      source(lfo, [depth], t, duration);
+    }
+    source(osc, [amp], t, duration);
+  }
+
+  function snapNoise(c, t, p) {
+    if (!noiseBuffer) {
+      const len = Math.max(1, Math.floor(c.sampleRate * .06));
+      noiseBuffer = c.createBuffer(1, len, c.sampleRate);
+      const data = noiseBuffer.getChannelData(0);
+      let seed = 0x63757269;
+      for (let i = 0; i < len; i++) {
+        seed ^= seed << 13;
+        seed ^= seed >>> 17;
+        seed ^= seed << 5;
+        data[i] = ((seed >>> 0) / 0x80000000 - 1) * Math.exp(-i / (len * .35));
+      }
+    }
+    const src = c.createBufferSource(), filter = c.createBiquadFilter();
+    src.buffer = noiseBuffer;
+    filter.type = "highpass";
+    filter.frequency.value = p.noiseHz;
+    filter.Q.value = p.q;
+    const amp = envelope(c, t, p.noiseDuration, p.noisePeak, .002);
+    src.connect(filter);
+    filter.connect(amp);
+    source(src, [filter, amp], t, p.noiseDuration);
+  }
+
+  function play(build) {
+    count++;
+    if (original.muted()) return false;
+    const c = getContext();
+    if (!c || c.state !== "running") return false;
+    build(c, c.currentTime);
+    return true;
+  }
+
+  return {
+    tick: original.tick, right: original.right, muted: original.muted,
+    seq: () => count + original.seq(),
+    setMuted(value) {
+      original.setMuted(value);
+      if (value) for (const src of active) { src.disconnect(); src.stop(); }
+    },
+    hop(step = 0) {
+      return play((c, t) => {
+        const p = CANDIDATE.hop;
+        const k = Math.min(p.maxStep, Math.max(0, Math.floor(step) || 0));
+        const hz = p.scale[k % p.scale.length] * 2 ** Math.floor(k / p.scale.length);
+        tone(c, "triangle", hz, hz, t, p.duration, p.peak);
+        tone(c, "sine", hz * 2, hz * 2, t, p.duration, p.peak * p.overtone);
+      });
+    },
+    snap() {
+      return play((c, t) => {
+        const p = CANDIDATE.snap;
+        snapNoise(c, t, p);
+        tone(c, "sine", p.from, p.to, t, p.duration, p.peak);
+        tone(c, "sine", p.overtoneHz, p.overtoneHz, t, p.duration, p.peak * p.overtone);
+      });
+    },
+    tap() {
+      const p = CANDIDATE.tap;
+      return play((c, t) => tone(c, "sine", p.from, p.to, t, p.duration, p.peak));
+    },
+    nudge() {
+      return play((c, t) => {
+        const p = CANDIDATE.nudge;
+        for (const [from, to, delay, duration, peak] of p.knocks) {
+          tone(c, "sine", from, to, t + delay, duration, peak);
+          tone(c, "sine", from * 2, to * 2, t + delay, duration, peak * p.overtone);
+        }
+      });
+    },
+    discover() {
+      const p = CANDIDATE.discover;
+      return play((c, t) => tone(c, "triangle", p.hz, p.hz, t, p.duration, p.peak));
+    },
+    lit() {
+      return play((c, t) => {
+        const p = CANDIDATE.lit;
+        p.notes.forEach((hz, i) => {
+          const tail = i === p.notes.length - 1, start = t + i * p.spacing;
+          tone(c, "triangle", hz, hz, start, tail ? p.tail : p.duration, p.peak, tail);
+          if (tail) tone(c, "sine", p.overtoneHz, p.overtoneHz, start, p.tail, p.peak * p.overtone);
+        });
+      });
+    },
+  };
+}
+
+const $ = id => document.getElementById(id);
+const volume = $("volume");
+const A = createSfx({ AudioCtx: class { constructor() { return routedContext(masterA); } }, eventTarget: null });
+const B = createSfxCandidate(() => busB);
+window.__lab = { A, B, CANDIDATE };
+
+async function enableAudio() {
+  if (!device) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    device = new AudioCtx();
+    masterA = device.createGain();
+    masterB = device.createGain();
+    masterA.gain.value = masterB.gain.value = Number(volume.value);
+    masterA.connect(device.destination);
+    const compressor = device.createDynamicsCompressor();
+    for (const [name, value] of Object.entries(CANDIDATE.compressor)) compressor[name].value = value;
+    masterB.connect(compressor);
+    compressor.connect(device.destination);
+    busB = routedContext(masterB);
+  }
+  if (device.state !== "running") await device.resume();
+}
+
+const sounds = [
+  ["tick","拖动刻度","拖过一档时的咔哒声。"],
+  ["hop","小火箭跳步","火箭每跳一步，音高跟着往上走。"],
+  ["snap","掰开或扣合","两块分开、拼块卡进位置时响。"],
+  ["tap","纸面轻点","点按钮或选一个猜想时响。"],
+  ["right","一站做完","完成一站时的两声「叮咚」。"],
+  ["nudge","轻声提醒","操作失误或挑战题答错时响。"],
+  ["lit","拿到星卡","第一次点亮这颗星时响起琶音。"],
+  ["discover","发现","看到一轮结果时的单音。A 沿用现状，没有单独的发现音。"],
+];
+
+for (const [key, title, description] of sounds) {
+  const row = document.createElement("article");
+  row.innerHTML = `<div><h3>${title}</h3><p>${description}</p></div>
+    <div class="play"></div><fieldset><legend>${title}，这个好</legend><div class="options"><small>这个好</small></div></fieldset>`;
+  for (const version of ["A","B"]) {
+    const button = document.createElement("button");
+    button.textContent = "▶ " + version;
+    button.setAttribute("aria-label", `试听${title} ${version}`);
+    if (key === "discover" && version === "A") {
+      button.disabled = true;
+      button.textContent = "A 无声";
+    }
+    button.onclick = () => audition(id => note(version, key, 0, id), version + key);
+    row.querySelector(".play").append(button);
+    const label = document.createElement("label");
+    label.className = "pick";
+    label.innerHTML = `<input type="radio" name="${key}" value="${version}"> ${version}`;
+    row.querySelector(".options").append(label);
+  }
+  $("sounds").append(row);
+}
+
+let generation = 0, lastSound;
+async function audition(run, sound) {
+  const id = ++generation;
+  try {
+    // 必须在点按处理器里同步创建 / 恢复；等恢复完成再送第一音。
+    await enableAudio();
+    if (id !== generation) return;
+    // 连点同一个声位时保留叠音，便于试听压缩器；切换试听项目时切掉前一段。
+    if (!sound || lastSound !== sound) {
+      for (const bank of [A,B]) { bank.setMuted(true); bank.setMuted(false); }
+    }
+    lastSound = sound;
+    await run(id);
+  } catch {
+    if (id === generation) $("playing").textContent = "声音未能播放，请再点一次。";
+  }
+}
+function note(version, key, step, id) {
+  if (id !== generation) return;
+  (version === "A" ? A : B)[key](step);
+  $("playing").textContent = `${version} · ${sounds.find(row => row[0] === key)[1]}`;
+}
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+for (const button of document.querySelectorAll("[data-series]")) {
+  button.onclick = () => audition(async id => {
+    const key = button.dataset.series;
+    if (key === "reward") {
+      for (const [sound, pause] of [["discover",450],["right",600],["lit",0]]) {
+        if (id !== generation) return;
+        note("B", sound, 0, id);
+        if (pause) await wait(pause);
+      }
+      return;
+    }
+    const count = key === "hop" ? 8 : 12, interval = key === "hop" ? 180 : 60;
+    for (const version of ["A","B"]) {
+      for (let i = 0; i < count; i++) {
+        if (id !== generation) return;
+        note(version, key, i, id);
+        if (i + 1 < count) await wait(interval);
+      }
+      if (version === "A") await wait(450);
+    }
+  });
+}
+
+function updateResult() {
+  const choices = sounds.map(([key]) => document.querySelector(`input[name="${key}"]:checked`)?.value || "?");
+  const fields = sounds.map(([key], i) => key + "=" + choices[i]);
+  const station = document.querySelector('input[name="right"]:checked')?.value || "?";
+  $("level").value = volume.value + "×";
+  $("result").value = [...fields, "station=" + station, "volume=" + volume.value].join(" ");
+  const remaining = choices.filter(v => v === "?").length;
+  $("copy").disabled = remaining > 0;
+  $("progress").textContent = remaining ? `还有 ${remaining} 项待选` : "已选完，可以复制。";
+}
+volume.oninput = () => {
+  if (device) for (const master of [masterA, masterB]) {
+    master.gain.setTargetAtTime(Number(volume.value), device.currentTime, .008);
+  }
+  updateResult();
+};
+$("sounds").onchange = updateResult;
+$("copy").onclick = async () => {
+  const field = $("result");
+  try {
+    await navigator.clipboard.writeText(field.value);
+    $("progress").textContent = "已复制选择结果。";
+  } catch {
+    field.focus();
+    field.select();
+    field.setSelectionRange(0, field.value.length);
+    $("progress").textContent = document.execCommand("copy") ? "已复制选择结果。" : "已选中整行，请长按复制。";
+  }
+};
+updateResult();
+</script>
+</html>

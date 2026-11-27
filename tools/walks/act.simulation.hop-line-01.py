@@ -27,7 +27,7 @@ def play(w):
     shot("1a-intro"); btn("然后呢"); shot("1b-ask"); check("提问时没有圆钮", grips() == 0, grips())
     n_fs = ev("document.querySelectorAll('#dyn .fs').length")   # .fs 是 SVG 里的分数标签；「1」记号牌用 .one 和 .fm，不算
     check("提问时 0 和 1 之间是空的：一个分数标签都没有", ev("S.steps") == 0 and n_fs == 0, [ev("S.steps"), n_fs])
-    btn("没有，0 后面就是 1"); check("猜错用中性气泡", "hmm" in ev("document.getElementById('say').className")); btn("让火箭跳"); shot("1c-act-first", first=True)
+    w.guess("没有，0 后面就是 1"); check("猜错用中性气泡", "hmm" in ev("document.getElementById('say').className")); btn("让火箭跳"); shot("1c-act-first", first=True)
     hop(1); shot("1d-hop1"); hop(2)
     check("跳 3 步读数", readout() == "跳了 3 步 · 3 个 1 4 是 3 4", readout())
     st = sent("state")[-1]["payload"]; check("state 第 1 站", st == {"station": 1, "den": 4, "steps": 3}, st)
@@ -57,11 +57,13 @@ def play(w):
     # 走到这里：1/5 跳到了 1，又换成 1/6 只跳了一步。星卡只能画孩子真做到的事（教训 12）：
     # 用最后一种「跳到 1」的步长，也就是 1/5；1/6 没跳完，不能画成「跳了 6 步到 1」
     last_den = 5
-    btn("看明白了"); btn("我来说"); shot("1j-say"); btn("3"); btn("还有呢"); shot("1k-reveal"); btn("去第 2 站")
+    btn("看明白了"); btn("我来说"); shot("1j-say"); btn("3"); btn("还有呢"); shot("1k-reveal")
+    w.check_rewards(1, 0)
+    btn("去第 2 站")
     # ---------- 第 2 站 ----------
     shot("2a-intro"); btn("然后呢"); shot("2b-ask")
     check("提问时没有圆钮、没有「1」记号", grips() == 0 and ev("document.querySelectorAll('#dyn .one').length") == 0, [grips(), ev("document.querySelectorAll('#dyn .one').length")])
-    btn("乙"); btn("我来插"); page.wait_for_timeout(300); shot("2c-act-first", first=True); check("第 2 站第一屏 1 个圆钮", grips() == 1, grips())
+    w.guess("乙"); btn("我来插"); page.wait_for_timeout(300); shot("2c-act-first", first=True); check("第 2 站第一屏 1 个圆钮", grips() == 1, grips())
 
     def drag_flag(to, mid=None):
         fx, fy = pt(*ev("[X(S.fp), FY + gripR()*.2]")); tx, _ = pt(*ev(f"[X({to}), FY]"))
@@ -121,9 +123,11 @@ def play(w):
         if (g !== want) bad.push([t, drop, g, want]); }
       return bad; })()""")
     check("容差边界：0.25、0.5、0.75 各 ±0.20 内每个插法的评级和整数比较一致", bad == [], bad[:5])
-    btn("看一看"); shot("2h-reveal"); btn("还有呢"); check("埋了伏笔", "同一个地方" in said(), said()); btn("去第 3 站")
+    btn("看一看"); shot("2h-reveal"); btn("还有呢"); check("埋了伏笔", "同一个地方" in said(), said())
+    w.check_rewards(2, 0)
+    btn("去第 3 站")
     # ---------- 第 3 站 ----------
-    shot("3a-intro"); btn("然后呢"); shot("3b-ask"); btn("100 个"); btn("动手拧"); page.wait_for_timeout(300); shot("3c-act-first", first=True)
+    shot("3a-intro"); btn("然后呢"); shot("3b-ask"); w.guess("100 个"); btn("动手拧"); page.wait_for_timeout(300); shot("3c-act-first", first=True)
     check("第 3 站第一屏 1 个圆钮", grips() == 1, grips())
     page.locator("#stage").focus()
     for n in [2, 3, 4, 5, 6, 8, 10, 12, 20, 50, 100, 1000]:
@@ -137,7 +141,11 @@ def play(w):
     gx, gy = pt(*ev("dialGrip()"))
     path = [(gx, gy)] + [tuple(pt(*ev(f"pol(DIAL.x,DIAL.y,dialGripR(),{360 - 30 * i / 8})"))) for i in range(1, 9)]
     w.mouse_drag(path, step_ms=15); page.wait_for_timeout(800); check("拖圆钮退到 100", ev("gearN()") == 100, ev("gearN()"))
-    btn("看一看"); page.wait_for_timeout(400); shot("3e-wow"); check("揭晓后没有圆钮", grips() == 0, grips()); btn("再密呢"); shot("3f-wow2"); btn("看我的星卡"); page.wait_for_timeout(300); shot("4-card")
+    btn("看一看"); page.wait_for_timeout(400); shot("3e-wow"); check("揭晓后没有圆钮", grips() == 0, grips()); btn("再密呢"); shot("3f-wow2")
+    w.check_rewards(3, 0)
+    btn("看我的星卡")
+    w.check_rewards(3, 1)
+    page.wait_for_timeout(300); shot("4-card")
     got = [ev("S.lastDen"), ev("S.planted.length"), ev("S.best")]
     check("星卡：最后一种跳到 1 的步长（1/5，不是只跳了一步的 1/6）、三面旗、拧到的最密一档", got == [last_den, 3, 1000], got)
     card = ev("[...document.querySelectorAll('#dyn text')].map(t=>t.textContent).join('')")
@@ -177,6 +185,7 @@ def play(w):
     card = ev("[...document.querySelectorAll('#dyn text')].map(t=>t.textContent).join('')")
     check("星卡换成这次的步长：跳了 3 步到 1", ev("S.lastDen") == 3 and "跳了 3 步到 1" in card, [ev("S.lastDen"), card[:80]])
     check("重玩一站不多记猜测和完成", events() == before, [before, events()]); check("重玩一站不再发 complete", len(sent("complete")) == 1, len(sent("complete")))
+    w.check_rewards(3, 1)
     btn("从头玩"); page.wait_for_timeout(300)
     check("从头玩回到第 1 站", ev("S.station") == 1 and ev("S.steps") == 0 and ev("S.scene") == "s1", [ev("S.station"), ev("S.steps"), ev("S.scene")]); shot("5-replay")
     check("页面没有横向溢出", ev("document.documentElement.scrollWidth <= innerWidth"), ev("document.documentElement.scrollWidth"))

@@ -79,6 +79,11 @@ JS_VAR_SCOPES = {
     "generator_function", "arrow_function", "method_definition", "class_static_block",
 }
 JS_CALLS = Query(JS, "(call_expression) @call")
+# 检查成员引用也能覆盖把 Sfx.right 作为回调传递的情况。
+JS_SFX_MEMBERS = Query(JS, """
+    (member_expression object: (identifier) @object property: (property_identifier) @property)
+    (subscript_expression object: (identifier) @object index: [(string) (template_string)] @property)
+""")
 SECTION_BREAK = re.compile(r"/\* =+|</style>|</script>")
 
 # 长按不选字、不弹菜单（#156）：孩子会碰到的页面都要有这两条，ci_checks 也拿它查三个外壳文件
@@ -198,7 +203,15 @@ def _script_events(own, local, exports):
     return verbs, completes_station
 
 
-def _kit_usage(html):
+def _uses_station_sound(script, bindings):
+    for _, match in QueryCursor(JS_SFX_MEMBERS).matches(script):
+        obj, prop = match["object"][0], match["property"][0]
+        if obj.text == b"Sfx" and (_literal(prop) or prop.text.decode()) == "right" and not _shadowed(obj, "Sfx", bindings):
+            return True
+    return False
+
+
+def _kit_usage(html, check_station_sound=False):
     """经典脚本共用全局绑定；各 module 可调用全局 kit，也可以在自己的作用域内重新用名。"""
     classic = "\n;\n".join(executable_scripts(html, classic_only=True))
     parser = Parser(JS)
@@ -208,12 +221,16 @@ def _kit_usage(html):
     global_bindings = _scope_bindings(own)
     conflicts = global_bindings[own] & exports
     verbs, completes_station = _script_events(own, global_bindings, exports)
+    station_sound = check_station_sound and _uses_station_sound(own, global_bindings)
     for script in executable_scripts(html, modules_only=True):
         module = parser.parse(script.encode()).root_node
-        module_verbs, module_completes = _script_events(module, _scope_bindings(module), exports)
+        module_bindings = _scope_bindings(module)
+        module_verbs, module_completes = _script_events(module, module_bindings, exports)
+        if check_station_sound:
+            station_sound |= _uses_station_sound(module, module_bindings)
         verbs.update(module_verbs)
         completes_station |= module_completes
-    return verbs, completes_station, conflicts
+    return verbs, completes_station, conflicts, station_sound
 
 
 def kit_reports_station(html):
@@ -300,7 +317,10 @@ def lint(html, manifest=None, node_misconceptions=None, starter=None):
 
     literals = [s[1:-1] for s in STRING_LITERAL.findall(_strip_comments(scripts))]
     if uses_kit:
-        sent, _, conflicts = _kit_usage(html)
+        version = manifest.get("kit")
+        sent, _, conflicts, station_sound = _kit_usage(html, type(version) is int and version >= 2)
+        if station_sound:
+            errors.append("模块不能手写 Sfx.right()，请由 observedOnce(n) 在首次完成该站时发声")
     else:
         sent = {v for v in MODULE_VERBS if v in literals}
     emits = set(manifest.get("emits") or [])

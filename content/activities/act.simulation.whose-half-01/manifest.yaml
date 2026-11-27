@@ -1,16 +1,18 @@
 id: act.simulation.whose-half-01
-contract: activity/1.1
+contract: activity/1.2
+kit: 2
+station_count: 3
 type: simulation
-version: 2
+version: 4
 title: 谁的一半
 targets: [math.fraction.the-whole]
 age_band: G3-4
 entry: index.html
 duration_min: 8
 pedagogy: explain
-capabilities: [pointer, keyboard]
+capabilities: [pointer, keyboard, audio]
 misconceptions: [ignore-the-whole, numerator-as-count, denominator-as-count, add-instead-of-copy]
 emits: [predicted, observed]
 author: {model: Claude Opus 5.5 (claude-opus-5-5), prompt_ref: docs/constellations/zero-to-one/stars/03-the-whole.md}
-review: approved  # Luka 2026-11-22 验收（#233）
+review: approved  # Luka 2026-11-22 验收（#233）；2026-11-26 升至 activity/1.2 + kit: 1（#255）
 # END OF FILE

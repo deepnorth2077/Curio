@@ -785,7 +785,8 @@ class TestModuleLint(Base):
     AID = "act.simulation.frac-cut"
 
     def kit_files(self):
-        for rel in ("kit/tokens.css", "kit/1/kit.css", "kit/1/kit.js", "kit/1/README.md", "app/index.html",
+        for rel in ("kit/tokens.css", "kit/1/kit.css", "kit/1/kit.js", "kit/1/README.md",
+                    "kit/2/kit.css", "kit/2/kit.js", "kit/2/README.md", ci_checks.kit_tool.SFX_LAB, "app/index.html",
                     "app/sfx.js", "preview/template.html", ci_checks.kit_tool.STARTER_REL):
             self.r.write(rel, (REPO / rel).read_text(encoding="utf-8"))
 
@@ -806,6 +807,33 @@ class TestModuleLint(Base):
         self.add_html(new, body="<script>const Host={ready(){}};function enter1(){}\nHost.ready();\nenter1();</script>")
         self.r.commit()
         self.fails(self.r.check(), "新增互动模块必须使用最新零件库")
+
+    def test_new_v12_activity_requires_kit2(self):
+        self.kit_files()
+        self.r.baseline()
+        self.r.branch("arch/new-kit-module")
+        self.module("Host.ready();\n")
+        aid = self.AID
+        self.r.write(f"tools/walks/{aid}.py", "# 走查样例\n")
+        mf = f"content/activities/{aid}/manifest.yaml"
+        doc = yaml.safe_load((self.r.dir / mf).read_text())
+        doc.update(contract="activity/1.2", kit=1)
+        entry = f"content/activities/{aid}/index.html"
+        self.r.write(entry, """<style>/* curio-kit:1 begin *//* curio-kit:1 end */</style>
+<script>/* curio-kit:1 begin *//* curio-kit:1 end */
+Kit.start(() => {});
+</script>""")
+        for version in (1, 2):
+            doc["kit"] = version
+            self.r.write(mf, yaml.safe_dump(doc, allow_unicode=True))
+            html = (self.r.dir / entry).read_text().replace("curio-kit:1", f"curio-kit:{version}")
+            self.r.write(entry, html)
+            self.assertEqual(ci_checks.kit_tool.sync_repo(self.r.dir)[1], [])
+            self.r.commit()
+            if version == 1:
+                self.fails(self.r.check(), "最新零件库 kit: 2")
+            else:
+                self.ok(self.r.check())
 
     def test_deleting_kit_directory_cannot_disable_its_checks(self):
         self.r.write("kit/tokens.css", (REPO / "kit/tokens.css").read_text(encoding="utf-8"))
