@@ -99,7 +99,13 @@ def run(stations, correct_positions, *, on_card=None):
             w.check("提问画面没有操作圆钮", w.grips() == 0, w.grips())
             w.wait(440)
             pick = {"tablet": 0, "phone": 1, "desk": 2}[w.name]
+            has_sfx = w.ev("typeof Sfx === 'object' && typeof Sfx.count === 'function'")
+            before_guess = w.ev('[Sfx.seq(), Sfx.count("tap")]') if has_sfx else None
             choices.nth(pick).click(timeout=3000)
+            if has_sfx:
+                w.wait(150)
+                after_guess = w.ev('[Sfx.seq(), Sfx.count("tap")]')
+                w.check(f"第 {number} 站猜想只响一次轻点", after_guess == [n + 1 for n in before_guess], [before_guess, after_guess])
             s.button(re.compile("动手"))
             w.check("画面适合屏宽", w.ev("document.documentElement.scrollWidth <= innerWidth"))
             prediction = w.sent("event")[-1]["payload"]

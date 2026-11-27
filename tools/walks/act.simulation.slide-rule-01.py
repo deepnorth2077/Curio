@@ -1,4 +1,6 @@
 """滑尺。输入来自孩子用的键盘操作或屏上按钮，期望值由任务中的数学关系算得。"""
+import re
+
 from constellation import LEFT, RIGHT, run
 
 
@@ -8,6 +10,16 @@ def first(s):
         [s.w.ev('Sfx.count("right")'), s.w.ev('Sfx.count("nudge")'), s.w.ev('Sfx.count("lit")')] == [0, 0, 0],
     )
     if not s.w.touch:
+        s.w.page.set_viewport_size({"width": 820, "height": 1180})
+        s.w.wait(150)
+        s.w.page.set_viewport_size({"width": 390, "height": 844})
+        s.w.wait(220)
+        try:
+            r = s.w.ev("document.querySelector('#dyn .gfill')?.getAttribute('r')")
+            s.w.check("缩窄视口后圆钮半径立即重算", r is not None and 20 < float(r) < 27, r)
+        finally:
+            s.w.page.set_viewport_size(s.w.vp)
+            s.w.wait(150)
         seq0 = s.w.ev("Sfx.seq()")
         s.drag((520, 126), (510, 126))
         s.w.check("滑条同档内微移不响", s.w.ev("Sfx.seq()") == seq0, s.w.ev("Sfx.seq()") - seq0)
@@ -51,6 +63,11 @@ def third(s):
 
 
 def card(s):
+    s.w.check_rewards(3, 1)
+    s.button(re.compile(r"第\s*2\s*站"))
+    s.keys(RIGHT, 3)
+    s.button("看看发现")
+    s.button("回星卡")
     s.w.check_rewards(3, 1)
 
 

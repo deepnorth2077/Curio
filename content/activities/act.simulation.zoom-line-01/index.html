@@ -1478,7 +1478,7 @@ svg.addEventListener("touchstart", e => {
   if (t && hit(toSvg(t))) e.preventDefault();
 }, { passive: false });
 svg.addEventListener("pointerdown", e => {
-  if (drag || e.button !== 0) return;
+  if (drag || e.button !== 0 || !e.isPrimary) return;
   const q = toSvg(e), h = hit(q);
   if (!h) return;
   S.kbd = false; svg.classList.remove("kbd"); touched();
@@ -1557,8 +1557,35 @@ function tick(now){
   if (S.dirty){ S.dirty = false; render(); }
   requestAnimationFrame(tick);
 }
-if (window.ResizeObserver) new ResizeObserver(() => fitView()).observe(svg);
-Kit.start(() => { fitView(); enter1(); requestAnimationFrame(tick); }, { stations: {} });
+addEventListener("pointercancel", () => {
+  if (S.mode === "hair") return;
+  const pending = [...$("actions").querySelectorAll("button:disabled")];
+  if (pending.length) setTimeout(() => {
+    for (const b of pending) if (b.isConnected && !fingerDown) b.disabled = false;
+  }, 120);
+}, true);
+$("actions").addEventListener("pointerdown", e => {
+  if (!e.target.closest("button.hold")) return;
+  if (e.button !== 0 || !e.isPrimary){ e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation(); }
+}, true);
+for (const ev of ["pointerup", "pointercancel"]){
+  $("actions").addEventListener(ev, e => {
+    if (e.target.closest("button.hold") && !e.isPrimary){ e.stopImmediatePropagation(); e.stopPropagation(); }
+  }, true);
+}
+Kit.start(() => {
+  fitView();
+  if (window.ResizeObserver){
+    new ResizeObserver(() => { fitView(); S.dirty = true; }).observe(svg);
+    new ResizeObserver(() => {
+      const h = document.body.scrollHeight;
+      if (Host.inFrame) parent.postMessage({ contract: "activity/1.2", type: "resize", payload: { h } }, "*");
+      else (window.__sent = window.__sent || []).push({ type: "resize", payload: { h } });
+    }).observe(document.body);
+  }
+  enter1();
+  requestAnimationFrame(tick);
+}, { stations: {} });
 </script>
 </body>
 </html>

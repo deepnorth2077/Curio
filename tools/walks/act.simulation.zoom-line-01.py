@@ -183,6 +183,23 @@ def play(w):
     else:
         drag("#height-grip circle", "#height-target", vertical=True)
     check_state("压到头顶 1.3 米", {"station": 1, "height": 1.3})
+    if w.name == "desk":
+        w.page.set_viewport_size({"width": 820, "height": 1180})
+        w.wait(150)
+        h_wide = w.sent("resize")[-1]["payload"]["h"]
+        w.page.set_viewport_size({"width": 390, "height": 844})
+        w.wait(220)
+        try:
+            h_narrow = w.sent("resize")[-1]["payload"]["h"]
+            wrap_h = w.ev("document.querySelector('.wrap').getBoundingClientRect().height")
+            w.check(
+                "缩窄到 390 宽后上报内容实际高度",
+                h_narrow < h_wide - 100 and abs(h_narrow - wrap_h) <= 2,
+                [h_wide, h_narrow, wrap_h],
+            )
+        finally:
+            w.page.set_viewport_size(w.vp)
+            w.wait(150)
     w.check("横杆进入 1–2 米后显示十等分", height_ticks() == 9, height_ticks())
     w.check("碰过横杆后撤掉提醒", not w.cue(), w.cue())
     check_parts("身高读数写作 1.3 米，说明 3 个十分之一米", "1.3 米", "3 个")
@@ -190,7 +207,18 @@ def play(w):
     w.shot("1d-height")
     w.check("只量过身高，不能提前结束", not action_exists("看读数"), w.buttons())
     w.btn("量下一样")
-    drag("#height-grip circle", "#height-target", vertical=True)
+    if w.name == "desk":
+        p0 = point("#height-grip circle", scroll=True)
+        p1 = point("#height-target")
+        w.mouse_drag([p0, (p0[0], p1[1])], release=False)
+        w.wait(100)
+        w.check("按住达标时下一题按钮先停用", w.doc.locator("#actions button", has_text="量下一样").is_disabled())
+        w.ev("window.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true }))")
+        w.wait(180)
+        w.check("pointercancel 后无需再点即可恢复按钮", not w.doc.locator("#actions button", has_text="量下一样").is_disabled())
+        w.page.mouse.up()
+    else:
+        drag("#height-grip circle", "#height-target", vertical=True)
     check_state("门高 1.9 米", {"station": 1, "height": 1.9})
     w.btn("量下一样")
     drag("#height-grip circle", "#height-target", vertical=True)
@@ -262,6 +290,23 @@ def play(w):
     endpoints("range", "0", "1")
     hold(80)
     w.check("点一下立即松开不会完成放大", state().get("depth") == 0, state())
+    if w.name == "desk":
+        bx, by = point("#actions button.hold", scroll=True)
+        w.page.mouse.move(bx, by)
+        w.page.mouse.down(button="right")
+        w.wait(180)
+        w.check("右键长按放大键不会触发放大", not w.ev("S.hold"), w.ev("S.hold"))
+        w.page.mouse.up(button="right")
+        w.ev("""(() => {
+            const btn = document.querySelector('#actions button.hold');
+            btn.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 2, button: 0, isPrimary: false }));
+        })()""")
+        w.wait(120)
+        w.check("非主指长按放大键不会触发放大", not w.ev("S.hold"), w.ev("S.hold"))
+        w.ev("""(() => {
+            const btn = document.querySelector('#actions button.hold');
+            btn.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, pointerId: 2, button: 0, isPrimary: false }));
+        })()""")
     d2 = w.ev('Sfx.count("discover")')
     zoom_to(1, 10, "0.1", by_key=w.name == "desk")
     if w.name == "desk":

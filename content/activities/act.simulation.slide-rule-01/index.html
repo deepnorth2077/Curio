@@ -1027,9 +1027,29 @@ svg.addEventListener("keydown",e=>{
   if(!S.mode.startsWith("act") || e.ctrlKey||e.metaKey||e.altKey)return;
   if(key(e.key,e.shiftKey)){e.preventDefault();touched();svg.classList.add("kbd");}
 });
-addEventListener("resize",()=>{if(S.mode.startsWith("act")||S.mode==="end"||S.mode==="reveal") draw();});
-if (window.ResizeObserver) new ResizeObserver(() => { if (fitView() && (S.mode.startsWith("act") || S.mode === "end" || S.mode === "reveal")) draw(); }).observe(svg);
-Kit.start(() => { fitView(); enter1(); }, { stations: {} });
+function onResize(){
+  fitView();
+  if(S.mode.startsWith("act")||S.mode==="end"||S.mode==="reveal") draw();
+}
+addEventListener("pointercancel", () => {
+  const pending = [...$("actions").querySelectorAll("button:disabled")];
+  if (pending.length) setTimeout(() => {
+    for (const b of pending) if (b.isConnected && !fingerDown) b.disabled = false;
+  }, 120);
+}, true);
+Kit.start(() => {
+  onResize();
+  addEventListener("resize", onResize);
+  if (window.ResizeObserver){
+    new ResizeObserver(onResize).observe(svg);
+    new ResizeObserver(() => {
+      const h = document.body.scrollHeight;
+      if (Host.inFrame) parent.postMessage({ contract: "activity/1.2", type: "resize", payload: { h } }, "*");
+      else (window.__sent = window.__sent || []).push({ type: "resize", payload: { h } });
+    }).observe(document.body);
+  }
+  enter1();
+}, { stations: {} });
 
 </script>
 </body>

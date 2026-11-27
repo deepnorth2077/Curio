@@ -4,6 +4,13 @@ import re
 from constellation import DOWN, LEFT, RIGHT, UP, run
 
 
+def box_center(s, selector):
+    loc = s.w.doc.locator(selector).first
+    loc.scroll_into_view_if_needed()
+    rect = loc.bounding_box(timeout=2000)
+    return rect["x"] + rect["width"] / 2, rect["y"] + rect["height"] / 2
+
+
 def first(s):
     s.w.check(
         "开场未触发正误或星卡音",
@@ -11,8 +18,34 @@ def first(s):
     )
     snap0 = s.w.ev('Sfx.count("snap")')
     disc0 = s.w.ev('Sfx.count("discover")')
-    for digit in "1255":
-        s.keys(digit)
+    if not s.w.touch:
+        dst = box_center(s, '#workbench [data-side="0"][data-cell="0"]')
+        src_bad = box_center(s, '#workbench .digit[data-digit="2"]')
+        before_bad = s.w.ev('[Sfx.seq(), Sfx.count("nudge"), Sfx.count("tap")]')
+        s.w.mouse_drag([src_bad, ((src_bad[0] + dst[0]) / 2, (src_bad[1] + dst[1]) / 2), dst])
+        s.w.wait(120)
+        after_bad = s.w.ev('[Sfx.seq(), Sfx.count("nudge"), Sfx.count("tap")]')
+        s.w.check(
+            "鼠标错拖数字只响提醒音",
+            after_bad == [before_bad[0] + 1, before_bad[1] + 1, before_bad[2]],
+            [before_bad, after_bad],
+        )
+
+        src_ok = box_center(s, '#workbench .digit[data-digit="1"]')
+        before_ok = s.w.ev('[Sfx.seq(), Sfx.count("snap"), Sfx.count("tap")]')
+        s.w.mouse_drag([src_ok, ((src_ok[0] + dst[0]) / 2, (src_ok[1] + dst[1]) / 2), dst])
+        s.w.wait(120)
+        after_ok = s.w.ev('[Sfx.seq(), Sfx.count("snap"), Sfx.count("tap")]')
+        s.w.check(
+            "鼠标对拖数字只响拼合音",
+            after_ok == [before_ok[0] + 1, before_ok[1] + 1, before_ok[2]],
+            [before_ok, after_ok],
+        )
+        for digit in "255":
+            s.keys(digit)
+    else:
+        for digit in "1255":
+            s.keys(digit)
     s.expect(a="0.125", b="0.5", larger="b")
     s.w.check(
         "摆完目标小数响拼合音和发现音",
@@ -68,6 +101,18 @@ def first_pour(s):
     if s.w.touch:
         s.drag((top["x"], top["y"]), (top["x"] - top["step"], top["y"]))
     else:
+        s.w.page.set_viewport_size({"width": 820, "height": 1180})
+        s.w.wait(150)
+        s.w.page.set_viewport_size({"width": 390, "height": 844})
+        s.w.wait(220)
+        try:
+            r = s.w.ev("document.querySelector('#dyn .gfill')?.getAttribute('r')")
+            s.w.check("缩窄视口后圆钮半径立即重算", r is not None and 20 < float(r) < 27, r)
+        finally:
+            s.w.page.set_viewport_size(s.w.vp)
+            s.w.wait(150)
+        top = row(s, "top")
+        bottom = row(s, "bottom")
         s.keys(UP)
         seq0 = s.w.ev("Sfx.seq()")
         s.drag((top["x"], top["y"]), (top["x"] - 10, top["y"]))

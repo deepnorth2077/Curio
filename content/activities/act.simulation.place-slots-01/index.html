@@ -775,6 +775,7 @@ function control(label, go, parent = bench, cls = "btn ghost"){
   const b = document.createElement("button");
   b.type = "button"; b.textContent = label; b.className = cls;
   b.addEventListener("click", () => {
+    if (b.dragged){ b.dragged = false; return; }
     touched();
     const s0 = Sfx.seq();
     go();
@@ -962,9 +963,9 @@ function publish(){
   if(S.station===2){hint("试过 "+seen.size+" 种添法，共 2 种");const value=zeroValue();readout("水面 <b>"+value+"</b> 筒");sendState({station:2,value,level:String(+value)});}
   if(S.station===3){hint("成功倒了 "+(problem+Number(poured))+" 道，共 3 道");const [top,bottom]=MODEL.examples[problem];readout(top+" + "+bottom+(poured?" = <b>"+sums()+"</b>":""));sendState({station:3,top,bottom,aligned:rowsAligned(),sum:poured?sums():null});}
 }
-function selectSlot(a,i){
+function selectSlot(a,i,silent){
   if(!free && (a!==fixture[stepIndex][0]||i!==fixture[stepIndex][1])){Sfx.nudge();say("先看看目标小数。亮框是接下来要放的格子。");return;}
-  if(side!==a||slot!==i)Sfx.tap();
+  if(!silent && (side!==a||slot!==i))Sfx.tap();
   side=a;slot=i;syncSlots();
 }
 function put(d){
@@ -1004,7 +1005,7 @@ function mount(){
     }
     const rack=document.createElement("div");rack.className="digits";bench.append(rack);
     for(let d=0;d<=9;d++){
-      const b=control(String(d),()=>{if(!b.dragged)put(d);b.dragged=false;},rack,"digit");
+      const b=control(String(d),()=>put(d),rack,"digit");
       b.dataset.digit=d;
       let token=null;
       const restore=()=>{b.style.removeProperty("transform");b.style.removeProperty("z-index");b.style.removeProperty("position");};
@@ -1019,7 +1020,7 @@ function mount(){
         if(!token)return;const dist=Math.hypot(e.clientX-token.x,e.clientY-token.y);token=null;restore();
         if(dist<8)return;b.dragged=true;
         const target=document.elementFromPoint(e.clientX,e.clientY)?.closest("[data-cell]");
-        if(target){selectSlot(+target.dataset.side,+target.dataset.cell);if(side===+target.dataset.side&&slot===+target.dataset.cell)put(d);}
+        if(target){selectSlot(+target.dataset.side,+target.dataset.cell,true);if(side===+target.dataset.side&&slot===+target.dataset.cell)put(d);}
       });
       b.addEventListener("pointercancel",()=>{token=null;restore();});
     }
@@ -1192,9 +1193,29 @@ svg.addEventListener("keydown",e=>{
   if(!S.mode.startsWith("act") || e.ctrlKey||e.metaKey||e.altKey)return;
   if(key(e.key,e.shiftKey)){e.preventDefault();touched();svg.classList.add("kbd");}
 });
-addEventListener("resize",()=>{if(S.mode.startsWith("act")||S.mode==="end"||S.mode==="reveal") draw();});
-if (window.ResizeObserver) new ResizeObserver(() => { if (fitView() && (S.mode.startsWith("act") || S.mode === "end" || S.mode === "reveal")) draw(); }).observe(svg);
-Kit.start(() => { fitView(); enter1(); }, { stations: {} });
+function onResize(){
+  fitView();
+  if(S.mode.startsWith("act")||S.mode==="end"||S.mode==="reveal") draw();
+}
+addEventListener("pointercancel", () => {
+  const pending = [...$("actions").querySelectorAll("button:disabled")];
+  if (pending.length) setTimeout(() => {
+    for (const b of pending) if (b.isConnected && !fingerDown) b.disabled = false;
+  }, 120);
+}, true);
+Kit.start(() => {
+  onResize();
+  addEventListener("resize", onResize);
+  if (window.ResizeObserver){
+    new ResizeObserver(onResize).observe(svg);
+    new ResizeObserver(() => {
+      const h = document.body.scrollHeight;
+      if (Host.inFrame) parent.postMessage({ contract: "activity/1.2", type: "resize", payload: { h } }, "*");
+      else (window.__sent = window.__sent || []).push({ type: "resize", payload: { h } });
+    }).observe(document.body);
+  }
+  enter1();
+}, { stations: {} });
 
 </script>
 </body>
