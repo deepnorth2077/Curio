@@ -16,6 +16,7 @@
 用法：python tools/module_lint.py <模块目录> [<模块目录> …]
 """
 from collections import defaultdict
+from html.parser import HTMLParser
 import re
 import sys
 from pathlib import Path
@@ -204,6 +205,39 @@ def _script_events(own, local, exports):
     return verbs, completes_station
 
 
+class _EventHandlers(HTMLParser):
+    """收集 HTML/SVG 元素上以内联事件或 javascript: URL 形式出现的脚本片段。"""
+
+    CDATA_CONTENT_ELEMENTS = ("script", "style", "title", "textarea", "iframe", "noscript", "noembed", "noframes", "xmp")
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.scripts = []
+
+    def handle_starttag(self, tag, attrs):
+        seen = set()
+        for raw_name, raw_val in attrs:
+            name = raw_name.lower()
+            if name in seen:
+                continue
+            seen.add(name)
+            if not raw_val:
+                continue
+            if name.startswith("on") and len(name) > 2:
+                self.scripts.append(raw_val)
+            elif name in ("href", "xlink:href", "action", "formaction"):
+                stripped = raw_val.lstrip()
+                if stripped[:11].lower() == "javascript:":
+                    self.scripts.append(stripped[11:])
+
+
+def _event_handler_scripts(html):
+    parser = _EventHandlers()
+    parser.feed(html)
+    parser.close()
+    return parser.scripts
+
+
 def _reward_sounds_used(script, bindings):
     names = set()
     for _, match in QueryCursor(JS_SFX_MEMBERS).matches(script):
@@ -233,6 +267,11 @@ def _kit_usage(html, check_reward_sounds=False):
             reward_sounds.update(_reward_sounds_used(module, module_bindings))
         verbs.update(module_verbs)
         completes_station |= module_completes
+    if check_reward_sounds:
+        for code in _event_handler_scripts(html):
+            handler = parser.parse(f"function _handler(event){{\n{code}\n}}".encode()).root_node
+            handler_bindings = _scope_bindings(handler)
+            reward_sounds.update(_reward_sounds_used(handler, handler_bindings))
     return verbs, completes_station, conflicts, reward_sounds
 
 

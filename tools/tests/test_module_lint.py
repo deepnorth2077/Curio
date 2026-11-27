@@ -118,6 +118,12 @@ Host.ready();
                     self.fails(page(shared + call), f"不能手写 {direct}，请由 {entrypoint}", v2)
                 module = f'<script type="module">{direct}</script>'
                 self.fails(page(shared, body=module), f"不能手写 {direct}", v2)
+                inline_btn = f'<button onclick="{direct}">星卡</button>'
+                self.fails(page(shared, body=inline_btn), f"不能手写 {direct}，请由 {entrypoint}", v2)
+                self.fails(page(shared, body=f'<button onclick="return {direct}">星卡</button>'), f"不能手写 {direct}", v2)
+                self.fails(page(shared, body=f'<svg><circle onclick="{direct}"/></svg>'), f"不能手写 {direct}", v2)
+                self.fails(page(shared, body=f'<a href="javascript:{direct}">星卡</a>'), f"不能手写 {direct}", v2)
+                self.ok(page(shared, body=f'<!-- <button onclick="{direct}">星卡</button> --><button data-onclick="{direct}">星卡</button>'), v2)
                 self.ok(page(shared + direct), {"kit": 1})
 
     def test_v12_forbids_prefers_color_scheme_and_redeclaring_kit_exports(self):
