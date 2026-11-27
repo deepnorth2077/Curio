@@ -137,9 +137,12 @@ def play(w):
             check_prediction_ruler()
         w.shot(f"{station}b-ask")
         w.step(f"预测第 {station} 站，选第 {pick + 1} 项")
+        before_guess = w.ev('[Sfx.seq(), Sfx.count("tap")]')
         w.wait(430)
         w.doc.locator("#actions .choice").nth(pick).click(timeout=2500)
         w.wait(150)
+        after_guess = w.ev('[Sfx.seq(), Sfx.count("tap")]')
+        w.check(f"第 {station} 站猜想只响一次轻点", after_guess == [n + 1 for n in before_guess], [before_guess, after_guess])
         prediction = w.sent("event")[-1]["payload"]
         w.check(
             f"第 {station} 站的正确答案位于第 {correct + 1} 个",
@@ -165,10 +168,18 @@ def play(w):
     intro(1, 1, {"phone": 0, "tablet": 2, "desk": 1}[w.name])
     w.check("横杆还在 2 米以上，没有小格", height_ticks() == 0, height_ticks())
     if w.name == "desk":
+        x0, y0 = point("#height-grip circle", scroll=True)
+        seq0 = w.ev("Sfx.seq()")
+        w.mouse_drag([(x0, y0), (x0, y0 + 3), (x0, y0 + 2)])
+        w.check("横杆同一档内微移不响", w.ev("Sfx.seq()") == seq0, w.ev("Sfx.seq()") - seq0)
+        t0 = w.ev('Sfx.count("tick")')
         press("ArrowDown")
+        w.check("横杆跨一档只响一次", w.ev('Sfx.count("tick")') == t0 + 1, w.ev('Sfx.count("tick")') - t0)
         press("ArrowUp")
         check_state("上键移横杆，每次 0.1 米", {"station": 1, "height": 2.2})
+        d0 = w.ev('Sfx.count("discover")')
         press("ArrowDown", 9)
+        w.check("压到目标高度响一次发现音", w.ev('Sfx.count("discover")') == d0 + 1, w.ev('Sfx.count("discover")') - d0)
     else:
         drag("#height-grip circle", "#height-target", vertical=True)
     check_state("压到头顶 1.3 米", {"station": 1, "height": 1.3})
@@ -185,6 +196,7 @@ def play(w):
     drag("#height-grip circle", "#height-target", vertical=True)
     check_state("桌高 0.7 米", {"station": 1, "height": 0.7})
     w.btn("看读数")
+    w.check_rewards(1, 0)
     check_parts("1.3 米是 1 米 3 分米", "1 米 3 分米")
     w.shot("1e-reveal")
     w.btn("去第 2 站")
@@ -250,6 +262,7 @@ def play(w):
     endpoints("range", "0", "1")
     hold(80)
     w.check("点一下立即松开不会完成放大", state().get("depth") == 0, state())
+    d2 = w.ev('Sfx.count("discover")')
     zoom_to(1, 10, "0.1", by_key=w.name == "desk")
     if w.name == "desk":
         press("ArrowRight", 4)
@@ -295,19 +308,23 @@ def play(w):
     endpoints("selected", "0.37", "0.38")
     w.shot("2c-selected-037-to-038")
     zoom_to(3, 1000, "0.001")
+    w.check("第 2 站放大三次共响三次发现音", w.ev('Sfx.count("discover")') == d2 + 3, w.ev('Sfx.count("discover")') - d2)
     endpoints("range", "0.37", "0.38")
     w.check("放大三次还需要钉下一个点", not action_exists("看钉下的点"), w.buttons())
+    s2 = w.ev('Sfx.count("snap")')
     if w.name == "desk":
         press("ArrowRight", 4)
         press("Enter")
     else:
         tap("[data-tick='4']")
     check_state("3、7、4 钉下 0.374", {"station": 2, "depth": 3, "path": [3, 7, 4], "pin": 0.374})
+    w.check("钉点响一次咔嗒音", w.ev('Sfx.count("snap")') == s2 + 1, w.ev('Sfx.count("snap")') - s2)
     check_parts("钉点读数跟随孩子选的位置", "0.374", "3 个", "7 个", "4 个")
     w.check("钉点读数拆成十分之一、百分之一、千分之一三个单位",
             all(fraction(den) for den in (10, 100, 1000)), w.readout())
     w.shot("2e-pin")
     w.btn("看钉下的点")
+    w.check_rewards(2, 0)
     w.btn("去第 3 站")
 
     # 第 3 站：130 厘米、103 厘米和独立摆出的 1.01 米。
@@ -323,8 +340,11 @@ def play(w):
 
     stick(0, 2)
     place(0, 0, 0, "0")
+    w.check("放错格子有温和提醒音", w.ev('Sfx.count("nudge")') >= 1, w.ev('Sfx.count("nudge")'))
+    h3 = w.ev('Sfx.count("hop")')
     stick(0, photo="3d-dragging")
     place(1, 0, 0, "1")
+    w.check("放对一棒响一次跃音", w.ev('Sfx.count("hop")') == h3 + 1, w.ev('Sfx.count("hop")') - h3)
     w.check("摆到 1 米还不能留下 1.3 米", not action_exists("留下这一排"), w.buttons())
     if w.name == "desk":
         press("ArrowRight")
@@ -363,6 +383,7 @@ def play(w):
     stick(2)
     place(1, 0, 1, "1.01")
     w.btn("留下我的长度")
+    w.check_rewards(3, 0)
     w.check("揭晓时无圆钮", w.grips() == 0, w.grips())
 
     def hair_ruler(which):
@@ -462,6 +483,7 @@ def play(w):
         w.check("头发尺等孩子自己放大", False, w.buttons())
 
     w.btn("看我的星卡")
+    w.check_rewards(3, 1)
 
     def card_text():
         return w.ev("document.querySelector('#stage').textContent.replace(/\\s+/g, ' ')")
@@ -505,6 +527,7 @@ def play(w):
     check_parts("千分位上的 0 仍然显示", "0.010")
     w.btn("看钉下的点")
     w.btn("回星卡")
+    w.check_rewards(3, 1)
     text = card_text()
     w.check("重玩星卡改为 0.010，其余保留", "0.010" in text and "1.01" in text and "0.374" not in text)
     w.check("重玩不重复记事件", events() == before and len(w.sent("complete")) == 1,
