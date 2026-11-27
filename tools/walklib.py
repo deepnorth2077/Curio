@@ -118,6 +118,17 @@ class Walker:
             raise WalkError(f"卡在这一步：点「{text}」。找不到这个按钮，现在的按钮：{self.buttons()}") from None
         self.wait(150)
 
+    def guess(self, text):
+        """kit/2 猜测题：点选只增加一个 tap，包含猜对和猜错两条路径。"""
+        before = self.ev('[Sfx.seq(), Sfx.count("tap")]')
+        self.btn(text)
+        after = self.ev('[Sfx.seq(), Sfx.count("tap")]')
+        self.check(f"猜「{text}」只响一次轻点", after == [n + 1 for n in before], [before, after])
+
+    def check_rewards(self, stations, cards):
+        counts = self.ev('[Sfx.count("right"), Sfx.count("lit")]')
+        self.check(f"共响 {stations} 次站完成音、{cards} 次星卡音", counts == [stations, cards], counts)
+
     # ---------- 读画面 ----------
     def pt(self, x, y):
         return self.ev(f"(()=>{{const s=document.getElementById('stage');const p=s.createSVGPoint();p.x={x};p.y={y};const q=p.matrixTransform(s.getScreenCTM());return [q.x,q.y]}})()")

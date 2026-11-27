@@ -99,6 +99,19 @@ class TestAllModules(Lint):
         self.ok(page('/* curio-kit:1 begin */\nconst Kit={start(fn){fn()}};\n/* curio-kit:1 end */\nfunction enter1(){}\nKit.start(enter1);\n'),
                 {"contract": "activity/1.2", "kit": 1, "emits": []})
 
+    def test_kit2_reserves_station_sound_for_shared_code(self):
+        shared = "/* curio-kit:2 begin */\nconst Sfx = {}; function observedOnce() { Sfx.right(); }\n/* curio-kit:2 end */\n"
+        # 引用来自真实脚本，注释、字符串及函数局部同名对象不触发门禁。
+        def html(own):
+            return page(shared + "Host.ready();\n" + own)
+        v2 = {"kit": 2, "emits": ["observed"]}
+        self.ok(html('observedOnce(1); /* Sfx.right() */ "Sfx.right()"; function test(Sfx) { Sfx.right(); }'), v2)
+        for call in ("Sfx.right()", 'Sfx["right"]()', "Sfx?.right?.()", "queueMicrotask(Sfx.right)"):
+            with self.subTest(call=call):
+                self.fails(html(call), "不能手写 Sfx.right()", v2)
+        self.fails(page(shared + "Host.ready();", body='<script type="module">Sfx.right()</script>'), "不能手写 Sfx.right()", v2)
+        self.ok(html("Sfx.right()"), {"kit": 1})
+
     def test_v12_forbids_prefers_color_scheme_and_redeclaring_kit_exports(self):
         m12 = {"contract": "activity/1.2", "kit": 1, "emits": ["predicted", "observed"], "misconceptions": ["bigger-denominator-bigger"]}
         kit_script = (

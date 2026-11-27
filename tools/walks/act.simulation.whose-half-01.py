@@ -63,13 +63,32 @@ def play(w):
     def drag_handle(to_cm, mid=None):
         hx, hy_svg = ev("handleXY()")
         fx, fy = pt(hx, hy_svg); tx, _ = pt(ev(f"lenX({to_cm})"), hy_svg)
-        before = (lambda: (page.wait_for_timeout(200), shot(mid))) if mid else None
+
+        def before():
+            if not mid:
+                return
+            page.wait_for_timeout(200)
+            shot(mid)
+            if name == "desk":
+                seq = ev("Sfx.seq()")
+                page.mouse.move(tx - 2, fy)
+                w.wait(70)
+                page.mouse.move(tx, fy)
+                check("拉手在同一档内微移不响", ev("Sfx.seq()") == seq, ev("Sfx.seq()") - seq)
+                cross_x, _ = pt(ev("lenX(56)"), hy_svg)
+                w.wait(70)
+                page.mouse.move(cross_x, fy)
+                check("拉手跨过一档只响一次", ev("Sfx.seq()") == seq + 1, ev("Sfx.seq()") - seq)
+                w.wait(70)
+                page.mouse.move(tx, fy)
+
+        before_cb = before if mid else None
         if touch and name == "phone":   # 真实触摸事件（教训 25）
             path = [(fx, fy)] + [(fx + (tx - fx) * i / 14, fy + 30 * math.sin(i)) for i in range(1, 15)]
-            w.touch_drag(path, before_release=before, no_scroll="拖拉手时页面不滚")
+            w.touch_drag(path, before_release=before_cb, no_scroll="拖拉手时页面不滚")
         else:
             path = [(fx, fy)] + [(fx + (tx - fx) * i / 14, fy) for i in range(1, 15)]
-            w.mouse_drag(path, before_release=before)
+            w.mouse_drag(path, before_release=before_cb)
         page.wait_for_timeout(300)
 
     w.open()
@@ -78,7 +97,7 @@ def play(w):
     shot("1a-intro"); btn("然后呢"); shot("1b-ask")
     check("第 1 站提问时没有圆钮", grips() == 0, grips())
     check("第 1 站提问时不画蛋糕卷（不泄露答案）", cnt("#dyn .roll") == 0, cnt("#dyn .roll"))
-    btn("领航员"); neutral("第 1 站猜错用中性气泡"); btn("揭开餐罩"); page.wait_for_timeout(300); shot("1c-act-first", first=True)
+    w.guess("领航员"); neutral("第 1 站猜错用中性气泡"); btn("揭开餐罩"); page.wait_for_timeout(300); shot("1c-act-first", first=True)
     check("第 1 站第一屏 1 个圆钮（拉手）", grips() == 1, grips())
     check("第 1 站一开始 L=16", ev("S.station") == 1 and ev("S.L") == 16, [ev("S.station"), ev("S.L")])
     check("第 1 站读数 L=16", readout() == READ_L.format(L=16, p=4), readout())
@@ -103,12 +122,13 @@ def play(w):
     joined = "".join(t1)
     check("第 1 站揭晓出现「整体」", "整体" in joined, t1)
     check("第 1 站揭晓有「同一条蛋糕卷上」那句", "同一条蛋糕卷" in joined, t1)
+    w.check_rewards(1, 0)
     btn("去第 2 站")
     # ---------- 第 2 站 · 发 ----------
     shot("2a-intro"); btn("然后呢"); shot("2b-ask")
     check("第 2 站提问时没有圆钮", grips() == 0, grips())
     check("第 2 站提问时不画糖（不泄露答案）", cnt("#dyn .candy") == 0, cnt("#dyn .candy"))
-    btn("1 颗"); neutral("第 2 站猜错用中性气泡"); btn("发糖"); page.wait_for_timeout(300); shot("2c-act-first", first=True)
+    w.guess("1 颗"); neutral("第 2 站猜错用中性气泡"); btn("发糖"); page.wait_for_timeout(300); shot("2c-act-first", first=True)
     check("第 2 站第一屏 1 个圆钮（糖袋）", grips() == 1, grips())
     check("第 2 站一开始 4 个盘子", ev("S.station") == 2 and ev("S.plates") == 4 and ev("S.dealt") == 0, [ev("S.plates"), ev("S.dealt")])
     check("「1」记号在（第 2 站）", cnt("#dyn .one") >= 1, cnt("#dyn .one"))
@@ -140,13 +160,15 @@ def play(w):
     st = sent("state")[-1]["payload"]; check("state 6 盘发完", st == {"station": 2, "plates": 6, "each": 2, "taken": 0}, st)
     check("换了盘子数又发完过", ev("S.redealt") is True, ev("S.redealt")); shot("2f-six")
     check("三件事做完出「看明白了」", "看明白了" in w.buttons(), w.buttons())
-    btn("看明白了"); shot("2g-reveal"); btn("去第 3 站")
+    btn("看明白了"); shot("2g-reveal")
+    w.check_rewards(2, 0)
+    btn("去第 3 站")
     # ---------- 第 3 站 · 找回来 ----------
     shot("3a-intro"); btn("然后呢"); shot("3b-ask")
     check("第 3 站提问时没有圆钮", grips() == 0, grips())
     check("第 3 站提问时不画袋子（不泄露答案）", cnt("#dyn .bag") == 0, cnt("#dyn .bag"))
     check("第 3 站提问时只有 5 颗糖", cnt("#dyn .candy") == 5, cnt("#dyn .candy"))
-    btn("8 颗"); neutral("第 3 站猜错用中性气泡"); btn("摆一摆"); page.wait_for_timeout(300); shot("3c-act-first", first=True)
+    w.guess("8 颗"); neutral("第 3 站猜错用中性气泡"); btn("摆一摆"); page.wait_for_timeout(300); shot("3c-act-first", first=True)
     # 圆钮规格 G5：圆钮只装在这一刻能动的东西上。1/3 摆满以前分母不能换，所以第一屏没有分母托，手放在按住按钮上
     check("第 3 站第一屏没有圆钮，手放在按住按钮上（G5）", grips() == 0 and cnt("#actions button.hold") == 1, [grips(), cnt("#actions button.hold")])
     check("第 3 站一开始 1/3、1 份", ev("S.station") == 3 and ev("S.den") == 3 and ev("S.copies") == 1, [ev("S.den"), ev("S.copies")])
@@ -185,7 +207,10 @@ def play(w):
     check("到「哇」", ev("S.mode") == "wow", ev("S.mode"))
     check("蓝鲸读数（事实核对 R4：「大约」）", readout() == "蓝鲸大约 30 米 · 它的 1 10 是 3 米 · 两个舰长大约 260 厘米", readout())
     check("蓝鲸说 3 米", "3 米" in said(), said())
-    btn("看我的星卡"); page.wait_for_timeout(300); shot("4-card")
+    w.check_rewards(3, 0)
+    btn("看我的星卡")
+    w.check_rewards(3, 1)
+    page.wait_for_timeout(300); shot("4-card")
     # ---------- 星卡和事件 ----------
     card = ev("S.card")
     check("星卡是孩子最后做到的：L=64、6 盘、1/2", card is not None and card.get("L") == 64 and card.get("plates") == 6 and card.get("den") == 2, card)
@@ -226,6 +251,7 @@ def play(w):
     text = ev("[...document.querySelectorAll('#dyn text')].map(t=>t.textContent).join('')").replace(" ", "")
     check("星卡换成这次停的 L=48", ev("S.card.L") == 48 and "1=48厘米" in text, [ev("S.card"), text[:120]])
     check("重玩一站不多记猜测和完成", events() == before, [before, events()]); check("重玩一站不再发 complete", len(sent("complete")) == 1, len(sent("complete")))
+    w.check_rewards(3, 1)
     btn("从头玩"); page.wait_for_timeout(300)
     check("从头玩回到第 1 站，复位", ev("S.station") == 1 and ev("S.mode") == "intro1" and ev("S.L") == 16, [ev("S.station"), ev("S.mode"), ev("S.L")]); shot("5-replay")
     check("页面没有横向溢出", ev("document.documentElement.scrollWidth <= innerWidth"), ev("document.documentElement.scrollWidth"))

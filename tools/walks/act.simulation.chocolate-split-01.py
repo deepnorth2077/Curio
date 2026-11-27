@@ -24,7 +24,7 @@ def play(w):
     btn("继续")
     btn("帮你找找")
     shot("1b-ask")
-    btn("4 块")
+    w.guess("4 块")
     check("猜错用温和气泡", "hmm" in ev("document.getElementById('say').className"))
     btn("拉开包装纸")
     page.wait_for_timeout(200)
@@ -72,11 +72,12 @@ def play(w):
     check("试够 3 条缝进揭晓", ev("S.scene") == "s1r", ev("S.scene"))
     shot("1f-reveal")
     btn("还有呢")
+    w.check_rewards(1, 0)
     btn("去第 2 站")
 
     # ---------- 第 2 站：拼起来 ----------
     shot("2a-ask")
-    btn("能，就是 (3+4)×5")
+    w.guess("能，就是 (3+4)×5")
     btn("拼拼看")
     page.wait_for_timeout(200)
     shot("2b-act-first", first=True)
@@ -102,11 +103,12 @@ def play(w):
     check("4×5 拼成整块进入揭晓", ev("S.merged") is True and ev("S.mode") == "talk", [ev("S.merged"), ev("S.mode")])
     shot("2d-merged")
     btn("还有呢")
+    w.check_rewards(2, 0)
     btn("去第 3 站")
 
     # ---------- 第 3 站：乘 101 的魔术机 ----------
     shot("3a-ask")
-    btn("3701")
+    w.guess("3701")
     btn("打开魔术机")
     page.wait_for_timeout(200)
     shot("3b-act-first", first=True)
@@ -125,7 +127,9 @@ def play(w):
     shot("3d-reveal")
     btn("还有呢")
     check("三位数反例 12423", "12423" in said(), said())
+    w.check_rewards(3, 0)
     btn("看我的星卡")
+    w.check_rewards(3, 1)
     page.wait_for_timeout(300)
     shot("4-card")
 
@@ -151,6 +155,7 @@ def play(w):
     btn("回星卡")
     page.wait_for_timeout(250)
     check("重玩不重复记事件和 complete", len(sent("event")) == before and len(sent("complete")) == 1, [len(sent("event")), len(sent("complete"))])
+    w.check_rewards(3, 1)
     check("页面没有横向溢出", ev("document.documentElement.scrollWidth <= innerWidth"), ev("document.documentElement.scrollWidth"))
 
 

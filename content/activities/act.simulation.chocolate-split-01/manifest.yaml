@@ -1,9 +1,9 @@
 id: act.simulation.chocolate-split-01
 contract: activity/1.2
-kit: 1
+kit: 2
 station_count: 3
 type: simulation
-version: 3
+version: 4
 title: 掰巧克力
 targets: [math.operation.distributive-law]
 age_band: G3-4

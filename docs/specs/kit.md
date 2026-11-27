@@ -66,14 +66,14 @@
 #### 2.1 设计边界
 
 - **无背景音乐、无循环音、无外部音频文件**：只用浏览器原生 `AudioContext`（`OscillatorNode`、`GainNode`、短噪声 `AudioBuffer` + `BiquadFilterNode`）实时合成一次性物理微音效。
-- **克制不吵耳**：单次发声时长控制在 `15ms～600ms`，峰值增益上限 `<= 0.12`（高频触发的 `tick` 上限 `<= 0.05`），播完立即断开节点回收。
+- **克制不吵耳**：kit/1 单次发声时长控制在 `15ms～600ms`，峰值增益上限 `<= 0.12`（高频触发的 `tick` 上限 `<= 0.05`），播完立即断开节点回收。
 - **静音与环境降级**：
   - 外壳在 `localStorage`（键 `curio.muted`，`"1"` 为静音，默认有声；主题键 `curio.theme`，`"light" | "dark"`，未设时跟随系统）保存偏好——这两项是设备界面偏好，不是学习事实，不写学习事件，也不改变备份格式。
   - 外壳左侧导航栏底部（桌面端 `.ribbon` 锁图标上方、移动端顶栏/家长页旁，不增加页面导航项）提供轻量的**声音开关**与**明暗切换**按钮，带清晰 `aria-label` 与 `aria-pressed`。
   - `muted === true`、环境无 `AudioContext`（如 Node 单测）、或浏览器尚未收到用户手势解锁音频时，所有 `Sfx.*()` 静默无操作，不抛错。
   - 在 `pointerdown`、`keydown`、`touchend` 或 `click` 的用户手势中，若 `AudioContext.state === "suspended"`，自动调用 `resume()`。
 
-#### 2.2 七个语义「声位」
+#### 2.2 kit/1 的七个声位
 
 模块与外壳只调用语义声位，不在业务代码里手写频率和包络：
 
@@ -87,7 +87,26 @@
 | `Sfx.nudge()` | `~90ms` 低柔木质双轻叩（不用刺耳蜂鸣器） | 答错触发误区引导、分母填 0 等温和提醒 |
 | `Sfx.lit()` | `~550ms` 温暖四音泛音琶音和弦（如 `C5–E5–G5–C6`），配 1.2 秒点亮动效；`prefers-reduced-motion` 下照常发声（除非静音） | 星星首次点亮、动手探索全部站完成领星卡 |
 
-- **测试接缝**：`createSfx({ AudioCtx, nowMs })` 纯工厂函数（以最新 `kit/<N>/kit.js` 的 `curio-sfx` 标记段为原件，工具同步到 `app/sfx.js` 导出）支持在 `node:test` 注入假 `AudioCtx` 与假时钟，精确验证：静音时不建节点、`35ms` 节流生效、7 个声位参数合法且自动清理节点、无 `AudioCtx` 时不抛错。
+- **测试接缝**：`createSfx({ AudioCtx, nowMs })` 纯工厂函数（以最新 `kit/<N>/kit.js` 的 `curio-sfx` 标记段为原件，工具同步到 `app/sfx.js` 导出）支持在 `node:test` 注入假 `AudioCtx` 与假时钟，精确验证：静音时不建节点、`35ms` 节流生效、各版本声位参数合法且自动清理节点、无 `AudioCtx` 时不抛错。
+
+#### 2.3 kit/2 声音层次
+
+iPad 试音结果（#258、#260）为 `tick=B hop=A snap=B tap=B right=B nudge=B lit=B discover=B station=B volume=3`。外壳和模块都将各声部接入 3× 总增益，再通过一个压缩器输出。阈值 −18 dB、压缩比 4:1、启动 3 ms、释放 120 ms。静音设置继续由宿主下发。
+
+| 层次 | 声位 | 何时响 | 选定的声音 |
+| --- | --- | --- | --- |
+| 操作 | `tick(step)` | 拖动滑尺跨过一档 | 沿用 18 ms 带通噪声，间隔至少 35 ms |
+| 操作 | `hop(step)` | 小火箭每跳一步 | A 版三角波，330 Hz 起，每步上移 1/18 八度，最多 12 步 |
+| 操作 | `snap()` | 掰开、切下、扣合时 | 高通咔嗒声加 620→420 Hz 木腔声和 1240 Hz 弱泛音 |
+| 操作 | `tap()` | 点按钮、选猜想 | 880→660 Hz 的 20 ms 轻点 |
+| 发现 | `discover()` | 完成一轮、看到结果、解释或挑战题答对 | E5 单音 90 ms，峰值为完成音首音的 0.7 倍 |
+| 一站做完 | `right()` | `observedOnce(n)` 首次确认该站完成 | C5、G5 两声「叮咚」 |
+| 拿到星卡 | `lit()` | 活动第一次调用 `Host.complete()` 领卡，或外壳首次展示点亮结果 | C5–E5–G5–C6 琶音，末音延长至 700 ms，叠 5.5 Hz 的 ±6 音分轻颤和四分之一音量的 G6 |
+| 提醒 | `nudge()` | 操作失误或外壳挑战题答错 | 440→370 Hz、392→330 Hz 两下木叩，各叠 0.35 倍的二次泛音 |
+
+- `ask()` 的每个选项统一响一次 `tap()`。孩子看到的反馈、原有猜测事件和判定保持原样。
+- 模块在完成一站时调用 `observedOnce(n)`，领卡时调用 `Host.complete()`。零件库根据当前会话和宿主的 `completed_stations`、`activity_completed` 去重。重玩已完成站、回看星卡或从头玩时，已经领过的奖励保持安静。
+- 《切分机》第三站每排满一轮响一次发现音，点「看三个放大圈」时响完成音。走查用 `Sfx.count(name)` 核对每个声位，再用 `Sfx.seq()` 核对点击发出的总次数。计数记录静音时的调用，节流挡掉的刻度不计入。
 
 ---
 
@@ -111,9 +130,9 @@ kit/
   系统深色和手动深色都从同一份深色色值生成。同步工具按平台色表生成 `--curio-palette-keys`，宿主读取这些键并校验各值。深浅两套色表使用同一组键。
   段后保留外壳别名：`--c-sci: var(--sage); --c-sci-bg: var(--sage-bg); --c-math: var(--apricot); --c-sky: var(--sky); --wash: var(--paper);`（`--c-sci-2`、`--c-math-2`、`--c-math-bg` 留在外壳自身）。
 - **明确扫描白名单**（不扫 `docs/`、`prompts/` 或构建产物）：
-  - `app/sfx.js` 的 `curio-sfx` 段
+  - `app/sfx.js` 的 `curio-sfx` 段跟随最新版本。家长试音页 `app/sfx-lab.html` 的同名段固定取自 kit/1，以便复听原始 A/B。
   - `app/index.html`、`preview/template.html`（原型 `prototype/index.html` 已冻结，不强改）
-  - `.claude/skills/curio-anatomy/references/starter.html`（改为基于 `curio-kit:1` 的薄骨架）
+  - `.claude/skills/curio-anatomy/references/starter.html`（当前骨架基于 `curio-kit:2`）
   - `content/activities/*/index.html` 中对应 `manifest.yaml` 声明了 `kit` 的模块
 - `python tools/kit.py sync [文件…]`：按标记写入对应文件（LF 换行）。
 - `python tools/kit.py check`：逐字节核对白名单内所有带标记文件与 `kit/` 原件一致，不一致返回非零退出码。
@@ -125,7 +144,8 @@ kit/
 3. 标记段以外不得重新声明 `kit` 导出的顶层名字（`Host`、`Kit`、`Sk`、`sketchLib`、`Sfx`、`fracS`、`oneMark`、`grip`、`lineStrip` 等）。允许函数内部定义独立的局部变量。
 4. 模块内禁止 `<audio>`、`<video>` 或外部音频引用（`module_lint.py`），声音统一走 `Sfx`。
 5. 版本首次发布前，检查后备色与当时平台色表一致。主线上的活动一旦使用过某一版，该版目录就永久冻结，即使使用它的最后一个活动已迁走。之后平台可以改色和增加色位，只同步外壳。独立打开的旧活动继续使用其发版时的后备色。
-6. 相对目标分支新增的互动模块（`content/activities/<id>/manifest.yaml`）必须声明最新零件库版本及对应契约（当前为 `contract: "activity/1.2"`、`kit: 1`）；主线上已有的旧模块修改时不强制升级。
+6. 相对目标分支新增的互动模块（`content/activities/<id>/manifest.yaml`）必须声明最新零件库版本及对应契约（当前为 `contract: "activity/1.2"`、`kit: 2`）；主线上已有的旧模块修改时不强制升级。
+7. kit/2 模块在库标记外手写 `Sfx.right()` 会被模块检查拦下。站完成音由库内的 `observedOnce(n)` 统一发出。
 
 ---
 
@@ -134,7 +154,7 @@ kit/
 | 步 | 做完以后能看到什么 | 改到哪里 |
 | --- | --- | --- |
 | **5a** | 1. 正式外壳有「明暗切换」和「声音开关」；挑战答对、误区提醒、点亮星星有轻柔微音效，点静音立刻安静。<br>2. 建立 `kit/tokens.css`、`kit/1/`、`tools/kit.py`、CI 与 schema 门禁，正式宿主支持 `1.2`。<br>3. 迁移两颗代表星（《几分之几：数线跳跳》验证火箭跳步 `hop` 与拨片，《乘法分配律：掰巧克力》验证掰开 `snap` 与拖拽 `tick`）到 `activity/1.2` + `kit: 1`：在外壳切明暗或切静音后进入（或中途切换），模块配色、强调色 `#A797F7` 与微音效全部跟着切换；四个生命/其他 `1.1` 模块零改动照常可玩。 | `schemas/activity.schema.json`、`docs/`、`GLOSSARY.md`、`kit/`、`tools/kit.py`、`tools/ci_checks.py`、`tools/module_lint.py` 及正反测试、`app/`、`preview/template.html`、`starter.html`、两颗标杆活动模块 |
-| **5b** | Luka 与舰长试玩确认 5a 的深浅配色与微音效音量/音色满意后，其余需改版或新建的模块直接用薄骨架 `kit: 1`（目标单模块自有代码 400 行以内）。 | 后续新星或改版星的 `kp/` 分支 |
+| **5b** | Luka 与舰长试玩确认 5a 的深浅配色与微音效音量/音色满意后，kit/2 四星迁移合入后，其余需改版或新建的模块直接用薄骨架 `kit: 2`（目标单模块自有代码 400 行以内）。 | 后续新星或改版星的 `kp/` 分支 |
 
 ---
 
@@ -143,7 +163,7 @@ kit/
 | 接缝 | 验证什么 |
 | --- | --- |
 | `tools/kit.py check` + `test_kit.py`（正反例） | 原样通过；手改标记段内 1 个字符报错；缺半边标记报错；不存在的 `kit: 99` 报错；已上 `main` 的 `kit/1/` 被改动报错；`1.2` 模块写了 `prefers-color-scheme` 或重声明 `Sfx`/`Host` 报错 |
-| `app/test/sfx.test.js`（假 `AudioContext`） | 7 个声位正常合成并自动断开节点；`muted: true` 时零节点创建；`tick` 在 `35ms` 内连续调用只响一次；无 `AudioContext` 环境不抛错 |
+| `app/test/sfx.test.js`（假 `AudioContext`） | kit/1 的 7 个声位和 kit/2 的 8 个声位正常合成并回收声部节点，kit/2 八个声位共用 3× 压缩总线；`muted: true` 时零节点创建；`tick` 在 `35ms` 内连续调用只响一次；无 `AudioContext` 环境不抛错 |
 | `app/test/exploration.test.js`（宿主契约测试） | `1.2` 模块收到 20 键十六进制 `palette`、`scheme`、`muted`；外壳切明暗发 `theme`、切静音发 `mute`；`1.1` 模块仍按原样收到 `activity/1.1` 消息且不被强灌紫色强调色 |
 | 走查与浏览器实测 | 迁移后的《数线跳跳》和《掰巧克力》走查全绿；外壳切浅色/深色进入同一活动，按钮、选中态和紫色强调色 `#A797F7` 跟着切换；静音开关对挑战和探索同时生效 |
 
