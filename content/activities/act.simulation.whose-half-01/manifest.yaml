@@ -14,5 +14,5 @@ capabilities: [pointer, keyboard, audio]
 misconceptions: [ignore-the-whole, numerator-as-count, denominator-as-count, add-instead-of-copy]
 emits: [predicted, observed]
 author: {model: Claude Opus 5.5 (claude-opus-5-5), prompt_ref: docs/constellations/zero-to-one/stars/03-the-whole.md}
-review: approved  # Luka 2026-11-22 验收（#233）；2026-11-26 升至 activity/1.2 + kit: 1（#255）
+review: approved  # Luka 2026-11-22 验收（#233）；升至 activity/1.2 + kit: 2（#261）
 # END OF FILE

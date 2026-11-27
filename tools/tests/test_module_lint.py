@@ -99,18 +99,32 @@ class TestAllModules(Lint):
         self.ok(page('/* curio-kit:1 begin */\nconst Kit={start(fn){fn()}};\n/* curio-kit:1 end */\nfunction enter1(){}\nKit.start(enter1);\n'),
                 {"contract": "activity/1.2", "kit": 1, "emits": []})
 
-    def test_kit2_reserves_station_sound_for_shared_code(self):
-        shared = "/* curio-kit:2 begin */\nconst Sfx = {}; function observedOnce() { Sfx.right(); }\n/* curio-kit:2 end */\n"
-        # 引用来自真实脚本，注释、字符串及函数局部同名对象不触发门禁。
-        def html(own):
-            return page(shared + "Host.ready();\n" + own)
+    def test_kit2_reserves_reward_sounds_for_shared_code(self):
+        shared = """/* curio-kit:2 begin */
+const Sfx = {};
+function observedOnce() { Sfx.right(); }
+const Host = { complete() { Sfx.lit(); } };
+/* curio-kit:2 end */
+Host.ready();
+"""
         v2 = {"kit": 2, "emits": ["observed"]}
-        self.ok(html('observedOnce(1); /* Sfx.right() */ "Sfx.right()"; function test(Sfx) { Sfx.right(); }'), v2)
-        for call in ("Sfx.right()", 'Sfx["right"]()', "Sfx?.right?.()", "queueMicrotask(Sfx.right)"):
-            with self.subTest(call=call):
-                self.fails(html(call), "不能手写 Sfx.right()", v2)
-        self.fails(page(shared + "Host.ready();", body='<script type="module">Sfx.right()</script>'), "不能手写 Sfx.right()", v2)
-        self.ok(html("Sfx.right()"), {"kit": 1})
+        self.ok(page(shared + "observedOnce(1); Host.complete({}); Sfx.hop(3);"), v2)
+        for name, entrypoint in (("right", "observedOnce(n)"), ("lit", "Host.complete()")):
+            with self.subTest(name=name):
+                direct = f"Sfx.{name}()"
+                # 注释、字符串及函数局部同名对象不触发门禁。
+                self.ok(page(shared + f'/* {direct} */ "{direct}"; function test(Sfx) {{ {direct}; }}'), v2)
+                for call in (direct, f'Sfx["{name}"]()', f"Sfx?.{name}?.()", f"queueMicrotask(Sfx.{name})"):
+                    self.fails(page(shared + call), f"不能手写 {direct}，请由 {entrypoint}", v2)
+                module = f'<script type="module">{direct}</script>'
+                self.fails(page(shared, body=module), f"不能手写 {direct}", v2)
+                inline_btn = f'<button onclick="{direct}">星卡</button>'
+                self.fails(page(shared, body=inline_btn), f"不能手写 {direct}，请由 {entrypoint}", v2)
+                self.fails(page(shared, body=f'<button onclick="return {direct}">星卡</button>'), f"不能手写 {direct}", v2)
+                self.fails(page(shared, body=f'<svg><circle onclick="{direct}"/></svg>'), f"不能手写 {direct}", v2)
+                self.fails(page(shared, body=f'<a href="javascript:{direct}">星卡</a>'), f"不能手写 {direct}", v2)
+                self.ok(page(shared, body=f'<!-- <button onclick="{direct}">星卡</button> --><button data-onclick="{direct}">星卡</button>'), v2)
+                self.ok(page(shared + direct), {"kit": 1})
 
     def test_v12_forbids_prefers_color_scheme_and_redeclaring_kit_exports(self):
         m12 = {"contract": "activity/1.2", "kit": 1, "emits": ["predicted", "observed"], "misconceptions": ["bigger-denominator-bigger"]}

@@ -16,6 +16,7 @@
 用法：python tools/module_lint.py <模块目录> [<模块目录> …]
 """
 from collections import defaultdict
+from html.parser import HTMLParser
 import re
 import sys
 from pathlib import Path
@@ -79,11 +80,12 @@ JS_VAR_SCOPES = {
     "generator_function", "arrow_function", "method_definition", "class_static_block",
 }
 JS_CALLS = Query(JS, "(call_expression) @call")
-# 检查成员引用也能覆盖把 Sfx.right 作为回调传递的情况。
+# 检查成员引用也能覆盖把音效作为回调传递的情况。
 JS_SFX_MEMBERS = Query(JS, """
     (member_expression object: (identifier) @object property: (property_identifier) @property)
     (subscript_expression object: (identifier) @object index: [(string) (template_string)] @property)
 """)
+KIT_REWARD_ENTRYPOINTS = {"right": "observedOnce(n)", "lit": "Host.complete()"}
 SECTION_BREAK = re.compile(r"/\* =+|</style>|</script>")
 
 # 长按不选字、不弹菜单（#156）：孩子会碰到的页面都要有这两条，ci_checks 也拿它查三个外壳文件
@@ -203,15 +205,50 @@ def _script_events(own, local, exports):
     return verbs, completes_station
 
 
-def _uses_station_sound(script, bindings):
+class _EventHandlers(HTMLParser):
+    """收集 HTML/SVG 元素上以内联事件或 javascript: URL 形式出现的脚本片段。"""
+
+    CDATA_CONTENT_ELEMENTS = ("script", "style", "title", "textarea", "iframe", "noscript", "noembed", "noframes", "xmp")
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.scripts = []
+
+    def handle_starttag(self, tag, attrs):
+        seen = set()
+        for raw_name, raw_val in attrs:
+            name = raw_name.lower()
+            if name in seen:
+                continue
+            seen.add(name)
+            if not raw_val:
+                continue
+            if name.startswith("on") and len(name) > 2:
+                self.scripts.append(raw_val)
+            elif name in ("href", "xlink:href", "action", "formaction"):
+                stripped = raw_val.lstrip()
+                if stripped[:11].lower() == "javascript:":
+                    self.scripts.append(stripped[11:])
+
+
+def _event_handler_scripts(html):
+    parser = _EventHandlers()
+    parser.feed(html)
+    parser.close()
+    return parser.scripts
+
+
+def _reward_sounds_used(script, bindings):
+    names = set()
     for _, match in QueryCursor(JS_SFX_MEMBERS).matches(script):
         obj, prop = match["object"][0], match["property"][0]
-        if obj.text == b"Sfx" and (_literal(prop) or prop.text.decode()) == "right" and not _shadowed(obj, "Sfx", bindings):
-            return True
-    return False
+        name = _literal(prop) or prop.text.decode()
+        if obj.text == b"Sfx" and name in KIT_REWARD_ENTRYPOINTS and not _shadowed(obj, "Sfx", bindings):
+            names.add(name)
+    return names
 
 
-def _kit_usage(html, check_station_sound=False):
+def _kit_usage(html, check_reward_sounds=False):
     """经典脚本共用全局绑定；各 module 可调用全局 kit，也可以在自己的作用域内重新用名。"""
     classic = "\n;\n".join(executable_scripts(html, classic_only=True))
     parser = Parser(JS)
@@ -221,16 +258,21 @@ def _kit_usage(html, check_station_sound=False):
     global_bindings = _scope_bindings(own)
     conflicts = global_bindings[own] & exports
     verbs, completes_station = _script_events(own, global_bindings, exports)
-    station_sound = check_station_sound and _uses_station_sound(own, global_bindings)
+    reward_sounds = _reward_sounds_used(own, global_bindings) if check_reward_sounds else set()
     for script in executable_scripts(html, modules_only=True):
         module = parser.parse(script.encode()).root_node
         module_bindings = _scope_bindings(module)
         module_verbs, module_completes = _script_events(module, module_bindings, exports)
-        if check_station_sound:
-            station_sound |= _uses_station_sound(module, module_bindings)
+        if check_reward_sounds:
+            reward_sounds.update(_reward_sounds_used(module, module_bindings))
         verbs.update(module_verbs)
         completes_station |= module_completes
-    return verbs, completes_station, conflicts, station_sound
+    if check_reward_sounds:
+        for code in _event_handler_scripts(html):
+            handler = parser.parse(f"function _handler(event){{\n{code}\n}}".encode()).root_node
+            handler_bindings = _scope_bindings(handler)
+            reward_sounds.update(_reward_sounds_used(handler, handler_bindings))
+    return verbs, completes_station, conflicts, reward_sounds
 
 
 def kit_reports_station(html):
@@ -318,9 +360,9 @@ def lint(html, manifest=None, node_misconceptions=None, starter=None):
     literals = [s[1:-1] for s in STRING_LITERAL.findall(_strip_comments(scripts))]
     if uses_kit:
         version = manifest.get("kit")
-        sent, _, conflicts, station_sound = _kit_usage(html, type(version) is int and version >= 2)
-        if station_sound:
-            errors.append("模块不能手写 Sfx.right()，请由 observedOnce(n) 在首次完成该站时发声")
+        sent, _, conflicts, reward_sounds = _kit_usage(html, type(version) is int and version >= 2)
+        for name in sorted(reward_sounds):
+            errors.append(f"模块不能手写 Sfx.{name}()，请由 {KIT_REWARD_ENTRYPOINTS[name]} 统一发声")
     else:
         sent = {v for v in MODULE_VERBS if v in literals}
     emits = set(manifest.get("emits") or [])
