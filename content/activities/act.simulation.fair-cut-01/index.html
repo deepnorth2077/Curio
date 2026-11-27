@@ -832,7 +832,7 @@ function settle1(){   // 转盘停住 0.6 秒：这一份的一个复制品落�
   S.settled = true; const n = S.n; S.lastN = n; S.settles++;
   const fresh = !S.tray.some(it => it.n === n);
   addToTray(n);
-  if (fresh) Sfx.discover();
+  if (fresh) Sfx.hop(n);
   const k = kinds(), miss = MODEL.mustTry.filter(m => !k.includes(m));
   if (S.settles === 1) say(`平均切成 ${n} 份，这一份就是这张饼的 ${F(1, n)}，读作${cnFrac(1, n)}。这样的数叫分数。`);
   else if (S.settles === 2) say("下面的数是平均切成几份，叫分母。上面的数是拿了几份，叫分子。中间那道叫分数线。");

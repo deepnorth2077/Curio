@@ -14,5 +14,5 @@ capabilities: [pointer, keyboard, audio]
 misconceptions: [multiply-one-part, add-instead-of-multiply, merge-unlike, drop-small-part]
 emits: [predicted, observed]
 author: {model: Claude Opus 5.5 (claude-opus-5-5), prompt_ref: prompts/act.simulation.chocolate-split-01.md}
-review: approved  # Luka 2026-11-22 要求进正式外壳（#54）；2026-11-25 升至 activity/1.2 + kit: 1（#251）
+review: approved  # Luka 2026-11-22 要求进正式外壳（#54）；2026-11-25 接入 activity/1.2（#251），后升级至 kit: 2（#261）
 # END OF FILE

@@ -25,6 +25,12 @@ def play(w):
     if rm == "no-preference":
         check("1.5 秒内不提醒", not cue()); page.wait_for_timeout(1500); check("1.5 秒后提醒", cue()); shot("1e-cue")
     page.locator("#stage").focus()
+    ev("""() => {
+      const hop = Sfx.hop;
+      window.station1Pitches = [];
+      Sfx.hop = parts => { window.station1Pitches.push(parts); return hop(parts); };
+    }""")
+    discoveries1 = ev('Sfx.count("discover")')
 
     def turn_to(n):
         w.step(f"拧到 {n}")
@@ -43,6 +49,9 @@ def play(w):
     turn_to(11); st = sent("state")[-1]["payload"]; check("state n=11 deg=32.73", st == {"station": 1, "n": 11, "deg": 32.73}, st)
     check("还没切 8，提醒切 8", "8 份" in said(), said())
     turn_to(8); turn_to(7); turn_to(8)
+    pitches = ev("window.station1Pitches")
+    check("第 1 站每种新份数只响一次，音高刻度等于份数", pitches == [3, 7, 11, 8], pitches)
+    check("第 1 站切出新份数无发现音", ev('Sfx.count("discover")') == discoveries1)
     tray = ev("S.tray.filter(t=>!t.auto).map(t=>t.n).sort((a,b)=>a-b)"); check("托盘同一个 n 只留一块", tray == [3, 7, 8, 11], tray)
     xs = ev("trayLayout().map(t=>[t.n,t.tx,sliceH(t.n,TRAY.r)])"); check("托盘从少到多、一块比一块矮", all(xs[i][0] < xs[i+1][0] and xs[i][1] < xs[i+1][1] and xs[i][2] > xs[i+1][2] for i in range(len(xs)-1)), xs)
     turn_to(12); turn_to(2); shot("1i-ready")
