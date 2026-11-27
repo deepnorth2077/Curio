@@ -63,13 +63,32 @@ def play(w):
     def drag_handle(to_cm, mid=None):
         hx, hy_svg = ev("handleXY()")
         fx, fy = pt(hx, hy_svg); tx, _ = pt(ev(f"lenX({to_cm})"), hy_svg)
-        before = (lambda: (page.wait_for_timeout(200), shot(mid))) if mid else None
+
+        def before():
+            if not mid:
+                return
+            page.wait_for_timeout(200)
+            shot(mid)
+            if name == "desk":
+                seq = ev("Sfx.seq()")
+                page.mouse.move(tx - 2, fy)
+                w.wait(70)
+                page.mouse.move(tx, fy)
+                check("拉手在同一档内微移不响", ev("Sfx.seq()") == seq, ev("Sfx.seq()") - seq)
+                cross_x, _ = pt(ev("lenX(56)"), hy_svg)
+                w.wait(70)
+                page.mouse.move(cross_x, fy)
+                check("拉手跨过一档只响一次", ev("Sfx.seq()") == seq + 1, ev("Sfx.seq()") - seq)
+                w.wait(70)
+                page.mouse.move(tx, fy)
+
+        before_cb = before if mid else None
         if touch and name == "phone":   # 真实触摸事件（教训 25）
             path = [(fx, fy)] + [(fx + (tx - fx) * i / 14, fy + 30 * math.sin(i)) for i in range(1, 15)]
-            w.touch_drag(path, before_release=before, no_scroll="拖拉手时页面不滚")
+            w.touch_drag(path, before_release=before_cb, no_scroll="拖拉手时页面不滚")
         else:
             path = [(fx, fy)] + [(fx + (tx - fx) * i / 14, fy) for i in range(1, 15)]
-            w.mouse_drag(path, before_release=before)
+            w.mouse_drag(path, before_release=before_cb)
         page.wait_for_timeout(300)
 
     w.open()

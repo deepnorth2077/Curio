@@ -59,13 +59,32 @@ def play(w):
 
     def drag_knife(to, steps=14, release=True, mid=None):
         kx, ky = pt(*ev("[cellX(S.knifeP)-KN.off, KN.grip]")); tx, _ = pt(*ev(f"[cellX({to})-KN.off, KN.grip]"))
-        before = (lambda: (page.wait_for_timeout(250), shot(mid))) if mid else None
+
+        def before():
+            if not mid:
+                return
+            page.wait_for_timeout(250)
+            shot(mid)
+            if name == "desk":
+                seq = ev("Sfx.seq()")
+                page.mouse.move(tx + 2, ky)
+                w.wait(70)
+                page.mouse.move(tx, ky)
+                check("刀在同一档内来回拖不响", ev("Sfx.seq()") == seq, ev("Sfx.seq()") - seq)
+                cross_x, _ = pt(*ev(f"[cellX({to} + 5)-KN.off, KN.grip]"))
+                w.wait(70)
+                page.mouse.move(cross_x, ky)
+                check("刀跨过一档只响一次", ev("Sfx.seq()") == seq + 1, ev("Sfx.seq()") - seq)
+                w.wait(70)
+                page.mouse.move(tx, ky)
+
+        before_cb = before if mid else None
         if touch and name == "phone":   # 真实触摸事件（教训 25）
             path = [(kx, ky)] + [(kx + (tx - kx) * i / steps, ky + 30 * math.sin(i)) for i in range(1, steps + 1)]
-            w.touch_drag(path, before_release=before, release=release, no_scroll="拖刀时页面不滚")
+            w.touch_drag(path, before_release=before_cb, release=release, no_scroll="拖刀时页面不滚")
         else:
             path = [(kx, ky)] + [(kx + (tx - kx) * i / steps, ky) for i in range(1, steps + 1)]
-            w.mouse_drag(path, before_release=before, release=release)
+            w.mouse_drag(path, before_release=before_cb, release=release)
         page.wait_for_timeout(250)
     drag_knife(46, mid="2e-dragging")
     check("46 格：不落刀", ev("S.cuts.length") == 0 and ev("S.knife") == 46, [ev("S.cuts"), ev("S.knife")])
