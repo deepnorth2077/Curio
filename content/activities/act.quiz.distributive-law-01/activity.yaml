@@ -1,7 +1,7 @@
 id: act.quiz.distributive-law-01
 schema: activity-def/1
 kind: quiz
-version: 1
+version: 2
 title: "掰巧克力大挑战"
 targets: [math.operation.distributive-law]
 age_band: G3-4
@@ -15,25 +15,25 @@ body:
   shuffle: false
   items:
     - id: q1
-      stem: "一大块巧克力每排 6 小块，有 4 排。沿一条缝掰成两大块：左边每排 2 小块，右边每排 4 小块。两大块一共有几小块？"
+      stem: "一整板巧克力每排 6 小块，有 4 排。顺着一条缝掰成左右两片：左边那片每排 2 小块，右边那片每排 4 小块。这两片合起来一共有几小块？"
       answer:
         type: number
         value: 24
         tolerance: 0
-        unit: 块
+        unit: 小块
         common_wrong:
           - value: 12
             misconception: multiply-one-part
-            feedback: "右边那块不止一排。它有几排？和左边比一比。"
+            feedback: "右边那片不止一排。它有几排？和左边那片比一比。"
           - value: 10
             misconception: add-instead-of-multiply
-            feedback: "6 是每排几块，4 是有几排。4 排，每排 6 块。"
+            feedback: "6 是每排几小块，4 是有几排。4 排，每排 6 小块。"
       hints:
-        - "掰开以后，两块各有几排？"
-        - "先数左边那块，再数右边那块，最后合起来。"
+        - "掰开以后，左右两片各有几排？"
+        - "先算左边那片有几小块，再算右边那片有几小块，最后合起来。"
       feedback:
-        correct: "你看出了掰开以后两块都还是 4 排：2×4 + 4×4 = 8 + 16 = 24，和没掰时 6×4 一样多。"
-        wrong: "回头看右边那块有几排，和左边比一比。"
+        correct: "你看出了掰开以后两片都还是 4 排：2×4 + 4×4 = 8 + 16 = 24，和没掰时 6×4 一样多。"
+        wrong: "回头看右边那片有几排，和左边那片比一比。"
     - id: q2
       stem: "哪一个算式，能写成 (3+5)×4？"
       answer:
@@ -42,20 +42,20 @@ body:
           - id: a
             text: "3×4 + 5×6"
             misconception: merge-unlike
-            feedback: "一块 4 排，一块 6 排。拼起来，下面会多出一截。"
+            feedback: "一片 4 排，一片 6 排。拼起来，下面会多出一截。"
           - id: b
             text: "3×4 + 5×4"
             correct: true
           - id: c
             text: "3×4 + 5"
             misconception: multiply-one-part
-            feedback: "5 块只够摆一排。另外几排去哪了？"
+            feedback: "5 小块只够摆一排。另外几排去哪了？"
       hints:
-        - "把每个乘法想成一块巧克力：每排几块 × 几排。"
-        - "看看哪个选项里，两块的排数一样。"
+        - "把每个乘法想成一片巧克力：每排几小块 × 几排。"
+        - "看看哪个选项里，两片的排数一样。"
       feedback:
-        correct: "你看出了两块都是 4 排。拼起来每排 3 + 5 = 8 块，还是 4 排。"
-        wrong: "回头比一比，每个算式里的两块各有几排。"
+        correct: "你看出了两片都是 4 排。拼起来每排 3 + 5 = 8 小块，还是 4 排。"
+        wrong: "回头比一比，每个算式里的两片各有几排。"
     - id: q3
       stem: "口算 14×6 等于多少？可以像掰巧克力那样，掰开再算。"
       answer:
