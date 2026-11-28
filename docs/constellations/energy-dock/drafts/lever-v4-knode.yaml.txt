@@ -1,0 +1,59 @@
+id: physics.machine.lever
+schema: knode/1
+title: 杠杆：把支点挪一格
+subjects:
+- science
+- physics
+theme: ene
+grade: G6
+unit: 手里的力
+prerequisites: []
+driving_question: 六枚小铁环才和箱子一样重，只挂一枚，能把箱子翘起来吗？
+objectives:
+- 拖动一枚铁环，找出刚好打平（不再压秤）和刚好翘起箱子的两个相邻挂孔。
+- 往秤杆上挂铁环，用两种不同的「枚数和格数」让秤杆停平，称出一袋东西的重量。
+- 推动撬棍下的支点石，找出用同样的力能撬起石头的位置，并说出支点该往哪边挪。
+misconceptions:
+- id: heavy-wins
+  text: 箱子比铁环重，不管挂在哪一孔都该是箱子先下沉。
+- id: balance-ceiling
+  text: 轻环挪到杆尾最多只能让杆平，抬不起重箱。
+- id: equal-loads
+  text: 两边挂得一样重就一定平，挂在哪孔都一样。
+- id: far-wins
+  text: 挂得远的那头一定先低，不用看挂了多少。
+- id: pivot-carries-hooks
+  text: 移动三角木时，两端的挂钩也跟着走，所以到支点仍一样远。
+- id: wrong-side
+  text: 用木尖到箱子的格数代替木尖到左钩的格数。
+- id: overbalances
+  text: 能把箱子抬起来的一组，也就能让它停平。
+- id: far-needs-more
+  text: 铁环挂得越远越使不上劲，要的铁环越多。
+- id: position-irrelevant
+  text: 一枚铁环就是 1 牛，挂在哪个孔都顶 1 牛。
+- id: pivot-near-hand
+  text: 支点离用力的手近一点才好使劲，所以该往手这边挪。
+- id: balance-lifts
+  text: 两边打平了，就能把重的那头抬起来。
+- id: more-rings-enough
+  text: 只要多挂铁环就够了，不管支点离石头多远。
+sources:
+- type: reference
+  ref: OpenStax · College Physics 2e · 9.5
+  url: https://github.com/openstax/osbooks-college-physics-bundle/blob/66fcef29596e3a32818162b837dd0c85b754cbad/modules/m42174/index.cnxml
+lenses:
+- band: G3-4
+  approach: 拖铁环看小机器人身上的读数一格少一牛，直到箱子翘起；挂铁环称陨石；推支点石撬开舱盖。
+- band: G5-6
+  approach: 保持两端挂钩固定，移动支点；用摆平同一个箱子要挂几牛来比较两种摆法。
+- band: G7-9
+  approach: 在水平轻杆上比较两力与各自力臂的乘积，用从水平释放时的转动方向检验推断。
+activities:
+- act.simulation.lever-dock-01
+- act.quiz.lever-dock-01
+status: draft
+version: 4
+curriculum:
+- std: 义务教育科学课程标准（2022年版）
+  ref: 简单机械与机械能

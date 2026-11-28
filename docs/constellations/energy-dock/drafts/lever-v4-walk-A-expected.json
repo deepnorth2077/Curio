@@ -1,0 +1,33 @@
+{
+  "_说明": "杠杆 v4 交付 A（开场 + 第 1 站）的期望值，全部从 prompts/act.simulation.lever-dock-01.md v5 第 2、5、8 节手算，不读模块代码。screen = max(0, 6 - k)；lifted = k >= 7。",
+  "intro": {
+    "options": [
+      {"text": "不能，箱子太重", "correct": false, "misconception": "heavy-wins"},
+      {"text": "能", "correct": true, "misconception": null},
+      {"text": "最多跟箱子打平，翘不起来", "correct": false, "misconception": "balance-ceiling"}
+    ],
+    "screen_at_open": 6,
+    "say_wrong_heavy_wins": "箱子确实比铁环重多了。我们挂上去看看。",
+    "say_right": "那就看看，要挂多远。"
+  },
+  "station1": {
+    "station_label": "第1站·共3站",
+    "hint": "拖铁环，让箱子离开秤秤",
+    "min_gap_px": 12,
+    "holes": [
+      {"k": 1, "screen": 5, "lifted": false},
+      {"k": 2, "screen": 4, "lifted": false},
+      {"k": 3, "screen": 3, "lifted": false},
+      {"k": 4, "screen": 2, "lifted": false},
+      {"k": 5, "screen": 1, "lifted": false},
+      {"k": 6, "screen": 0, "lifted": false},
+      {"k": 7, "screen": 0, "lifted": true},
+      {"k": 8, "screen": 0, "lifted": true}
+    ],
+    "reveal_say": "第6格刚好打平",
+    "reveal_readout_k7": "1×7=7·比6多·翘起",
+    "end_title": "第1站完成",
+    "end_station": "星卡",
+    "end_caption": {"8": "1枚铁环，第8格，翘起6牛", "7": "1枚铁环，第7格，翘起6牛"}
+  }
+}
