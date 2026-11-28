@@ -1,7 +1,9 @@
 id: act.simulation.slide-rule-01
-contract: activity/1.1
+contract: activity/1.2
+kit: 2
+station_count: 3
 type: simulation
-version: 2
+version: 3
 title: 滑尺
 targets:
   - math.decimal.point-shift
@@ -12,6 +14,7 @@ pedagogy: explain
 capabilities:
   - pointer
   - keyboard
+  - audio
 misconceptions:
   - append-zero
   - multiply-whole-part-only
@@ -23,4 +26,4 @@ emits:
 author:
   model: Codex
   prompt_ref: docs/constellations/zero-to-one/stars/06-point-shift.md
-review: approved  # Luka 2026-11-22 验收（#233）
+review: approved  # Luka 2026-11-22 验收（#233）；升至 activity/1.2 + kit: 2（#263）
