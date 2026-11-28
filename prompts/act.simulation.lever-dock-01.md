@@ -2,10 +2,10 @@
 task: act.simulation.lever-dock-01
 issue: 195
 constellation_issue: 193
-version: v6
+version: v7
 ---
 
-> 契约 activity/1.1 · 基于提交 `{{commit}}`
+> 契约 activity/1.2 · 零件库 kit/2 · 基于提交 `{{commit}}`
 
 # 任务：为知识点「杠杆：把支点挪一格」做动手探索模块「货舱里的杠杆」
 
@@ -31,14 +31,14 @@ v4 是重写。v3 被 Luka 和舰长打回，原因记在这里，实现者也�
 - 第 1 站完成后（按下「就这样」以后），进入一个**临时结尾**：卡片标题「第 1 站完成」，画一张小图：孩子按「就这样」时的那根杆（按固定排版画，不用动画位置），下面写「1 枚铁环，第 k 格，翘起 6 牛」，再放「再玩一次」按钮。临时结尾第一次出现时发 `complete`（payload `{}`），「再玩一次」回到开场，不再发 `complete`。
 - `#station` 写「第 1 站 · 共 3 站」，临时结尾写「星卡」。
 - 不做：第 2、3 站，星卡三格，挑战。后面这些章节照样读，用来理解整颗星往哪走、哪些零件以后会复用（比如铁环和圆钮），但不要实现。
-- manifest：`misconceptions` 这次只写 `heavy-wins`、`balance-ceiling`；`emits` 写 `[predicted, observed]`；`version: 4`；`title: 货舱里的杠杆`；`duration_min: 3`；`author` 写你自己的模型名，`prompt_ref: prompts/act.simulation.lever-dock-01.md`，`review: pending`。其他字段照第 12 节给的旧 manifest。
+- manifest：`contract: activity/1.2`、`kit: 2`、`capabilities: [pointer, keyboard, audio]`；交付 A 不写 `station_count`（三站都交齐的 B 再写 `station_count: 3`）。`misconceptions` 这次只写 `heavy-wins`、`balance-ceiling`；`emits` 写 `[predicted, observed]`；`version: 4`；`title: 货舱里的杠杆`；`duration_min: 3`；`author` 写你自己的模型名，`prompt_ref: prompts/act.simulation.lever-dock-01.md`，`review: pending`。其他字段照第 12 节给的旧 manifest。
 - 第 10 节验收清单里，这次只查和开场、第 1 站有关的条目。
 
 交付前自查：逐条对照第 2 节验收用例里第 1 站的四行、第 10 节第 1、2、2a、4、5、6、7、9、10 条，把对不上的和你拿不准的写进交付包的「说明」。
 
 ## 项目背景
 
-你在为 Curio 工作：这是一个家庭自用的理科探索网站，陪一个孩子从小学三年级用到高中。孩子是飞船舰长，知识点是星图上的星球，陪他说话的是领航员。你要做的是一个可以插进平台的互动小程序：单文件 `index.html` 加一个 `manifest.yaml`，运行在平台提供的沙箱 iframe（`sandbox="allow-scripts"`）里，只通过固定的消息和平台通信。从第 9 节的骨架 `starter.html` 起步。
+你在为 Curio 工作：这是一个家庭自用的理科探索网站，陪一个孩子从小学三年级用到高中。孩子是飞船舰长，知识点是星图上的星球，陪他说话的是领航员。你要做的是一个可以插进平台的互动小程序：单文件 `index.html` 加一个 `manifest.yaml`，运行在平台提供的沙箱 iframe（`sandbox="allow-scripts"`）里，只通过固定的消息和平台通信。从第 9 节的骨架 `starter.html` 起步。骨架里已经内联了零件库 kit/2（`curio-kit:2 begin` 到 `end` 的两段），**标记段里一个字节都不能改**，CI 逐字节核对；你的代码写在脚本标记段之后，不要重新声明库里已有的名字（`Host`、`Kit`、`Sk`、`sketchLib`、`Sfx`、`grip` 等）。
 
 ## 舰长
 
@@ -215,6 +215,7 @@ v4 是重写。v3 被 Luka 和舰长打回，原因记在这里，实现者也�
 - `state`：第 1 站 `{station:1, hole:k, screen:n, lifted:bool, robot_out:bool}`；第 2 站 `{station:2, hole:h, rings:r, tilt:deg, level:bool, found:[[r,h],…]}`；第 3 站 `{station:3, from_rock:d, pressing:bool, gauge:n, open:bool}`，`gauge` 撬开后是 0。
 - `event`：`predicted`（开场、第 2 站、第 3 站各一次，`{station, choice, correct, misconception}`，开场的 `station` 写 1）、`observed`（每站完成时一次，`{station}`）。manifest 的 `emits` 写 `[predicted, observed]`。
 - `complete` 只在第一次打开星卡时发一次，payload `{}`。
+- 声音只用库里的 `Sfx` 声位，不写频率，不引音频文件（见 `docs/specs/kit.md` 2.3）。这颗星这样配：铁环每走一格 `Sfx.hop(k)`（k 是格数，越远音越高，秤秤数字跟着掉）；第 2 站挂上、取下一枚 `Sfx.snap()`，挪挂钩跨一格 `Sfx.tick(h)`；第 3 站支点石跨一格 `Sfx.tick(d)`；箱子翘起、秤杆停平、舱盖弹开那一刻 `Sfx.discover()`；按「使劲压」没撬开 `Sfx.nudge()`。**不要手写 `Sfx.right()`、`Sfx.lit()`**：站完成音由 `observedOnce(n)` 发，星卡音由 `Host.complete()` 发，检查会拦下手写。猜测题用骨架的 `ask()`，它自己会发轻点声。
 - 交付 A 的走查已经写好，按下面这些细节断言，照做：
   - 第 1 站键盘：← 让铁环往外走一格（格数加 1），→ 往里走一格。
   - `data-part` 的范围：`beam` 只包木杆本身（不含铁环、孔号、挡块）；`robot` 包秤秤的身体和屏幕；`robot-screen` 里只有数字；`crate` 只包箱子本身（不含绳子）；`ring` 只包铁环。
@@ -262,7 +263,10 @@ v4 是重写。v3 被 Luka 和舰长打回，原因记在这里，实现者也�
 
 {{embed: schemas/activity.schema.json}}
 
-### 技术契约 activity/1.1
+### 技术契约 activity/1.2（零件库细节见 kit/2 的 README）
+
+{{embed: kit/2/README.md}}
+
 
 {{embed: docs/activity-contract.md}}
 
